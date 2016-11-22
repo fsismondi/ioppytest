@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+strings:
+  - &UTEST Uri-Path option "test"
+  - &USEP Uri-Path option "separate"
+  - &UQUERY Uri-Path option "query"
+  - &UVAL Uri-Path option "validate"
+  - &CMID Client-generated Message ID (➔ CMID)
+  - &CMID2 Another client-generated Message ID ≠ CMID (➔ CMID2)
+  - &CMID3 Another client-generated Message ID ≠ CMID and ≠ CMID2 (➔ CMID3)
+  - &CMID4 Another client-generated Message ID ≠ CMID, CMID2, CMID3 (➔ CMID4)
+  - &CTOK Client-generated Token (➔ CTOK)
+  - &CTOK2 Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
+  - &CTOK3 Client-generated Token which may or may not be ≠ CTOK or CTOK2 (➔ CTOK3)
+  - &CTOK4 Client-generated Token which may or may not be ≠ CTOK, CTOK2, CTOK3 (➔ CTOK4)
+  - &SAME_MID Message ID = CMID
+  - &SAME_MID_TOKEN Message ID = CMID, Token = CTOK
+  - &SAME_MID_TOKEN2 Message ID = CMID2, Token = CTOK2
+  - &SAME_MID_TOKEN3 Message ID = CMID3, Token = CTOK3
+  - &SAME_MID_TOKEN4 Message ID = CMID4, Token = CTOK4
+  - &SMID Server-generated Message ID (➔ SMID)
+  - &SAME_SMID Message ID = SMID
+  - &SAME_TOKEN Token = CTOK
+  - &SETAG Option type = ETag, value = a value chosen by the server (➔ ETAG1)
+  - &SETAG2 Option type = ETag, value = a value ≠ ETAG1 chosen by the server (➔ ETAG2)
+  - &OLP Zero or more Location-path options
+  - &CFO Content-format option
+  - &OCFO Optional Content-format option
+  - &ONEP Empty or non-empty Payload
+  - &CFONE Content-format option if payload non-empty
+  - &NEP Non-empty Payload
+  - &EP Empty Payload
+  - &ACK0S

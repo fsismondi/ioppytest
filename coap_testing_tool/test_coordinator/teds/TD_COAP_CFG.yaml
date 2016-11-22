@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+configuration_id: CoAP_CFG_01
+uri: http://f-interop.paris.inria.fr/tests/CoAP_CFG_01
+nodes:
+  - coap_client
+  - coap_server
+topology:
+  - channel_01: (coap_client,coap_server)
+capture:
+  - channel_01:
+    filter: udp port 5683
+description:
+  - coap_server:
+    - CoAP servers are requested to offer the following resources
+      - /test
+        - Default test resource
+        - Should not exceed 64bytes
+      - /seg1/seg2/seg3
+        - Long path ressource
+        - Should not exceed 64bytes
+      - /query
+        - Ressource accepting query parameters
+        - Should not exceed 64bytes
+      - /separate
+        - Ressource which cannot be served immediately and which cannot be acknowledged in a piggy-backed way
+        - Should not exceed 64bytes
+      - /large
+        - Large resource (>1024 bytes)
+        - shall not exceed 2048bytes
+      - /large_update
+        - Large resource that can be updated using PUT method (>1024 bytes)
+        - shall not exceed 2048bytes
+      - /large_create
+        - Large resource that can be  created using POST method (>1024 bytes)
+        - shall not exceed 2048bytes
+      - /obs
+        - Observable resource which changes every 5 seconds
+        - shall not exceed 2048bytes
+      - /.well-known/core
+        - CoRE Link Format
+        - may require usage of Block options
+
+  - coap_client:
+    - None
