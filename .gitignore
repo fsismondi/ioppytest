@@ -3,6 +3,7 @@
 
 # testing tool
 coap_testing_tool/test_coordinator/tmp/
+coap_testing_tool/sniffer/dumps/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
