@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
+
 from asyncio import log
 from collections import OrderedDict
 from kombu import Connection, Exchange, Queue, Producer
@@ -8,11 +9,17 @@ from itertools import cycle
 from enum import Enum
 from coap_testing_tool.utils.exceptions import TatError, SnifferError,CoordinatorError, AmqpMessageError
 from coap_testing_tool.utils.amqp_synch_call import AmqpSynchronousCallClient
-import yaml, os, logging, json
+import yaml, os, json
 import requests
 import base64
 import errno
 import traceback
+from coap_testing_tool.test_coordinator.webserver import HTTPServer,HTTPServer_RequestHandler
+from coap_testing_tool.test_coordinator.logger import *
+
+
+
+from multiprocessing import Process
 
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
@@ -40,7 +47,6 @@ SNIFFER_PARAMS = ('udp port 5683', 'lo0')
 TMPDIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'tmp')
 DATADIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'data')
 LOGDIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'log')
-LOGFILE = os.path.join( os.getcwd(), LOGDIR, 'coord.log')
 TD_DIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'teds')
 
 # set temporarilly as default TODO get this from finterop session context!
@@ -116,7 +122,6 @@ def import_teds(yamlfile):
         #             logging.info(' \t Parsed test case step %s :' % s)
 
     return td_list
-
 
 
 class Verdict:
@@ -260,11 +265,9 @@ class Step():
         else:
             self.iut = None
 
-        # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
-        if type == "check" and ANALYSIS_MODE == 'post_mortem':
-            self.state = 'postponed'
-        else:
-            self.state = None
+        self.state = None
+
+
 
     def __repr__(self):
         node = ''
@@ -276,9 +279,20 @@ class Step():
                %(self.__class__.__name__, self.id, self.type, self.description, node , mode)
 
     def reinit(self):
-        self.change_state(None)
+
         if self.type in ('check','verify'):
             self.partial_verdict = Verdict()
+
+            # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
+            logging.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
+            self.id, self.type, ANALYSIS_MODE))
+            logging.debug(self.type == 'check' and ANALYSIS_MODE == 'post_mortem')
+            if self.type == 'check' and ANALYSIS_MODE == 'post_mortem':
+                self.change_state('postponed')
+            else:
+                self.change_state(None)
+        else: #its a stimuli
+            self.change_state(None)
 
     def to_dict(self, verbose = None):
         step_dict = OrderedDict()
@@ -286,9 +300,9 @@ class Step():
         if verbose:
             step_dict['step_type'] = self.type
             step_dict['step_info'] = self.description
+            step_dict['step_state'] = self.state
             # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
             if self.type == 'stimuli' or self.type == 'verify':
-                logging.warning('WTF'+str(self.iut))
                 step_dict.update(self.iut.to_dict())
         return step_dict
 
@@ -405,7 +419,8 @@ class TestCase():
         :return: tuple: (final_verdict, verdict_description, tc_report) ,
                  where final_verdict in ("None", "error", "inconclusive","pass","fail")
                  where description is String type
-                 where tc report is a list :[(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
+                 where tc report is a list :
+                                [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
         """
         # TODO hanlde frame id associated to the step , used for GUI purposes
         assert self.check_all_steps_finished()
@@ -422,7 +437,7 @@ class TestCase():
                 if step.state == "postponed":
                     tc_report.append((step.id, None, "%s postponed" %step.type.upper(), ""))
                 elif step.state == "finished":
-                    tc_report.append((step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
+                    tc_report.append((step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(),""))
                     # update global verdict
                     final_verdict.update(step.partial_verdict.get_value(),step.partial_verdict.get_message())
                 else:
@@ -447,18 +462,22 @@ class Coordinator(ConsumerMixin):
     """
     F-Interop API
     source:  http://doc.f-interop.eu/#services-provided
-    testcoordination.selectTestCases	Message for selecting the test cases to be executed.
-    api call not implemented yet, instead we preselect all and we implement a select in runtime test case (like a "jump to")
-    testcoordination.testcase.select Message for selecting next test case to be executed. Allows the user to relaunch an already executed test case.
-    testcoordination.testcase.start	Message for triggering the start of the test case. The command is given by one of the users of the session.
-    testcoordination.testcase.restart	Message for triggering the restart of a test case (TBD any of the participants MAY send this?)
-    testcoordination.testcase.finish	Message for triggering the end of a test case. This command is given by one of the users of the session.
-    testcoordination.testcase.skip	Message for skipping a test case. Coordinator passes to the next test case.
-    testcoordination.step.finish	    Message for indicating to the coordinator that the step has already been executed.
-    testcoordination.testsuite.gettestcases	Message for requesting the list of test cases included in the test suite.
-    testcoordination.testsuite.start	Message for triggering start of test suite. The command is given by one of the users of the session.
-    testcoordination.testsuite.abort	Message for aborting the ongoing test session.
+    |[*testcoordination.testsuite.getstatus*](#testcoordination-testsuite-getstatus) | Message for debugging purposes. The coordination component returns the status of the execution |
+    |[*testcoordination.testsuite.gettestcases*](#testcoordination-gettestcases) | Message for requesting the list of test cases included in the test suite.|
+    |[*testcoordination.testsuite.start*](#testcoordination-testsuite-start) | Message for triggering start of test suite. The command is given by one of the users of the session.|
+    |[*testcoordination.testsuite.abort*](#testcoordination-testsuite-abort)| Message for aborting the ongoing test session.|
+    |[*testcoordination.testcase.skip*](#testcoordination-testcase-skip) | Message for skipping a test case. Coordinator passes to the next test case if there is any left.|
+    |[*testcoordination.testcase.select*](#testcoordination-testcase-select) | Message for selecting next test case to be executed. Allows the user to relaunch an already executed test case.|
+    |[*testcoordination.testcase.start*](#testcoordination-testcase-start) | Message for triggering the start of the test case. The command is given by one of the users of the session.|
+    |[*testcoordination.testcase.restart*](#testcoordination-testcase-restart) | Message for triggering the restart of a test case (TBD any of the participants MAY send this?)|
+    |[*testcoordination.testcase.finish*](#testcoordination-testcase-finish) |  Message for triggering the end of a test case. This command is given by one of the users of the session.|
+    |[*testcoordination.step.finished*](#testcoordination-step-finished) | Message for indicating to the coordinator that the step has already been executed.|
+    |[*testcoordination.step.stimuli.executed*](#testcoordination-step-stimuli-executed)| Message pushed by UI or agent indicating the stimuli was executed.|
+    |[*testcoordination.step.check.response*](#testcoordination-step-check-response)| TBD  (for step_by_step analysis).|
+    |[*testcoordination.step.verify.response*](#testcoordination-step-verify-response)| Message pushed by UI or agent providing the response to verify step.|
+
     """
+
 
     def __init__(self, amqp_connection, ted_file):
         # import TEDs (test extended descriptions), the import_ted "builds" the test cases
@@ -475,7 +494,7 @@ class Coordinator(ConsumerMixin):
         self.exchange = Exchange(DEFAULT_EXCHANGE, type="topic", durable=True)
         self.control_queue = Queue("control.testcoordination.service@{name}".format(name=COMPONENT_ID),
                                    exchange=self.exchange,
-                                   routing_key='control.testcoordination.service',
+                                   routing_key='control.testcoordination',
                                    durable=False)
 
         self.producer = self.connection.Producer(serializer='json')
@@ -504,8 +523,6 @@ class Coordinator(ConsumerMixin):
         ###### AUXILIAR MESSAGING FUNCTIONS #####
 
         def amqp_reply(orig_message, response):
-
-            logging.warning('WTF4'+str(orig_message))
 
             # check first that sender didnt forget about reply to and corr id
             try:
@@ -581,6 +598,16 @@ class Coordinator(ConsumerMixin):
             response.update({'_type' : event_type})
             response.update({'ok':True})
             response.update(testcases)
+            amqp_reply(message,json.dumps(response))
+
+
+        elif event_type == "testcoordination.testsuite.getstatus":
+
+            status = self.states_summary()
+            # this is a request so I answer directly on the message
+            response.update({'_type' : event_type})
+            response.update({'ok':True})
+            response.update({'status': status})
             amqp_reply(message,json.dumps(response))
 
         elif event_type == "testcoordination.testcase.skip":
@@ -817,7 +844,7 @@ class Coordinator(ConsumerMixin):
             self.current_tc = self.teds[tc_id]
             # in case is was already executed once
             self.current_tc.reinit()
-            logging.debug("Test case selected and be next executed: %s" %self.current_tc.id)
+            logging.debug("Test case selected to be executed: %s" %self.current_tc.id)
             return self.current_tc.to_dict(verbose=True)
         else:
             logging.error( "%s not found in : %s "%(tc_id,self.teds))
@@ -1116,6 +1143,8 @@ class Coordinator(ConsumerMixin):
             # return None when TC finished
             return None
 
+        logging.info('Next step to execute: %s'%self.current_tc.current_step.id)
+
         return self.current_tc.current_step
 
     def execute_step(self):
@@ -1153,10 +1182,14 @@ class Coordinator(ConsumerMixin):
 
     def states_summary(self):
         summ=[]
-        summ.extend("Current test case %s" %self.current_tc.id,
-                   "Current step %s" %self.current_tc.current_step.id,
-                   )
-        # TODO append info of already executed TCs and not yet executed ones...
+        if self.current_tc:
+            summ.append("Current test case %s" %self.current_tc.id)
+            if self.current_tc.current_step:
+                summ.append("Current step %s" %list((self.current_tc.current_step.to_dict(verbose=True).items())))
+            else:
+                summ.append("Test case hasn't started yet")
+        else:
+            summ.append("Testsuite not started yet")
         return summ
 
     def get_testcase(self,testcase_id):
@@ -1172,6 +1205,32 @@ class Coordinator(ConsumerMixin):
 
 
 if __name__ == '__main__':
+
+    # generate dirs
+    for d in TMPDIR, DATADIR, LOGDIR:
+        try:
+            os.makedirs(d)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    #init logger to stnd output and log files
+    initialize_logger(LOGDIR)
+
+
+    def launchHttpServerLogger():
+        logging.info('starting server...')
+        # Server settings
+        server_address = ('0.0.0.0', 8080)
+        http_serv = HTTPServer(server_address, HTTPServer_RequestHandler)
+        logging.info('running server...')
+        http_serv.serve_forever()
+
+
+    # start http server process
+    http_server_p = Process(target=launchHttpServerLogger)
+    http_server_p.start()
+
 
     #first lets get the AMQP params from the ENV
 
@@ -1193,24 +1252,27 @@ if __name__ == '__main__':
         # AMQP_EXCHANGE = "default"
 
 
-
+    # open AMQP connection
     conn = Connection(hostname = AMQP_SERVER,
                       userid = AMQP_USER,
                       password = AMQP_PASS,
                       virtual_host = AMQP_VHOST,
                       transport_options={'confirm_publish': True})
 
-    for d in TMPDIR, DATADIR, LOGDIR:
-        try:
-            os.makedirs(d)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
 
+    # start the coordinator
+    # TODO point to the correct TED using session bootstrap message
     coord = Coordinator(conn,TD_COAP)
 
     try:
         coord.run()
+    except KeyboardInterrupt as KI:
+        logging.warning('Keyboard interrupt. Shutting down...')
+        #shutdown http server
+        http_server_p.terminate()
+        #close AMQP connection
+        conn.close()
+
     except Exception as e:
         error_msg = str(e)
         logging.error(' Critical exception found: %s' %error_msg)
