@@ -1,0 +1,3 @@
+TODO
+find a way of deploying automatically an agent that acts as gateway on the data plane
+AMQP (data.packet.raw) -> tun interfaces (IP packets)
