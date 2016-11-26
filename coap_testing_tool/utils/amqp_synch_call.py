@@ -2,22 +2,27 @@
 import base64
 import pika
 import json
-import logging
 import uuid
 import time
 
 from coap_testing_tool.utils.exceptions import TatError, SnifferError,CoordinatorError, AmqpMessageError
-
-#timeout in seconds
-AMQP_REPLY_TOUT = 10
+from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
 
 
-class AmqpSynchronousCallClient(object):
+class AmqpSynchronousCallClient:
+
+    # timeout in seconds
+    AMQP_REPLY_TOUT = 10
+
     def __init__(self, component_id):
         self.component_id = component_id
-        self.credentials = pika.PlainCredentials('guest', 'guest')
+
+        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
+
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host='localhost', credentials=self.credentials))
+            host=AMQP_SERVER,
+            virtual_host=AMQP_VHOST,
+            credentials = credentials))
 
         self.channel = self.connection.channel()
 
@@ -34,11 +39,12 @@ class AmqpSynchronousCallClient(object):
 
     def call(self, routing_key, body):
         # by convention routing key of answer is routing_key + .reply
-        self.channel.queue_bind(exchange='default',
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=self.callback_queue,
                                 routing_key=routing_key + '.reply')
 
-        self.channel.basic_consume(self.on_response, no_ack=True,
+        self.channel.basic_consume(self.on_response,
+                                   no_ack=True,
                                    queue=self.callback_queue)
         self.response = None
         self.corr_id = str(uuid.uuid4())
@@ -51,6 +57,7 @@ class AmqpSynchronousCallClient(object):
                                    ),
                                    body=json.dumps(body),
                                    )
+
         timer = AMQP_REPLY_TOUT/0.1 #if sleep 0.1s => timout trigger after 10secs
         while self.response is None and not timer < 0:
             self.connection.process_data_events()
@@ -58,7 +65,7 @@ class AmqpSynchronousCallClient(object):
             timer -= 1
         if timer < 0:
             raise AmqpMessageError("Coordinator response timeout")
-        return json.loads(self.response.decode('ascii'))
+        return json.loads(self.response.decode('utf-8'))
 
 #this is just an example of usage where we ask the sniffer for a pcap capture and we save it disk after:
 if __name__ == '__main__':
