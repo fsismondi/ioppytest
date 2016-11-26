@@ -1,16 +1,10 @@
 import unittest, logging, os
 from kombu import Connection
-from coap_testing_tool.test_coordinator.coordinator import Coordinator,import_teds, CoordinatorError, TatError, SnifferError
+from coap_testing_tool.test_coordinator.coordinator import Coordinator,import_teds
+from coap_testing_tool.utils.exceptions import CoordinatorError, TatError, SnifferError
+from coap_testing_tool import *
 
-# default values
-AMQP_SERVER = "localhost"
-AMQP_USER = "guest"
-AMQP_PASS = "guest"
-AMQP_VHOST = "/"
-AMQP_EXCHANGE = "default"
-
-TED_DIR = os.path.join('coap_testing_tool','test_coordinator','teds')
-TD_COAP = os.path.join(TED_DIR,'TD_COAP_CORE.yaml')
+TD_COAP = os.path.join(TD_DIR,'TD_COAP_CORE.yaml')
 
 class CoordinatorTestCase(unittest.TestCase):
 
