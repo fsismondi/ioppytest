@@ -1,5 +1,14 @@
 Webserver component:
 
-Auxiliary component for providing a file server/explorer.
-The purpose is mainly serve for downloading PCAPs, the extended test 
-descriptions and logs for debugging purposes.
+Auxiliary component for providing a web-based file explorer.
+
+It's purpose is mainly for:
+- downloading PCAPs, 
+- the extended test descriptions (TEDs)
+- logs for debugging purposes.
+
+Excecute as script:
+```
+cd coap_testing_tool
+python3 -m coap_testing_tool.webserver
+```
