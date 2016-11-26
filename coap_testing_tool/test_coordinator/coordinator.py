@@ -1,26 +1,23 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 
-from asyncio import log
-from collections import OrderedDict
-from kombu import Connection, Exchange, Queue, Producer
-from kombu.mixins import ConsumerMixin
-from itertools import cycle
-from enum import Enum
-from coap_testing_tool.utils.exceptions import TatError, SnifferError,CoordinatorError, AmqpMessageError
-from coap_testing_tool.utils.amqp_synch_call import AmqpSynchronousCallClient
-import yaml, os, json
-import requests
 import base64
 import errno
+import json
+import os
 import traceback
-from coap_testing_tool.test_coordinator.webserver import HTTPServer,HTTPServer_RequestHandler
-from coap_testing_tool.test_coordinator.logger import *
+from collections import OrderedDict
+from itertools import cycle
 
+import yaml
+import pika
 
-
-from multiprocessing import Process
-
+from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
+from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
+from coap_testing_tool.utils.amqp_synch_call import AmqpSynchronousCallClient
+from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError
+from coap_testing_tool.utils.logger import initialize_logger
+import sys
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 COAP_CLIENT_IUT_MODE =  'user-assisted'
@@ -34,23 +31,16 @@ COMPONENT_DIR = 'coap_testing_tool/test_coordinator'
 DEFAULT_PLATFORM = "127.0.0.1:15672"
 DEFAULT_EXCHANGE = "default"
 
-
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
-
 # TODO delete after AMQP interfaces implemented
 API_TAT = "http://127.0.0.1:2080"
 API_SNIFFER = "http://127.0.0.1:8081"
 SNIFFER_PARAMS = ('udp port 5683', 'lo0')
 
-# folders testcases, logs and data
-TMPDIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'tmp')
-DATADIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'data')
-LOGDIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'log')
-TD_DIR = os.path.join( os.getcwd(), COMPONENT_DIR, 'teds')
 
-# set temporarilly as default TODO get this from finterop session context!
+# set temporarilly as default
+# TODO get this from finterop session context!
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
+
 
 # Other API params
 #from webserver import API_TAT,API_SNIFFER
@@ -116,10 +106,10 @@ def import_teds(yamlfile):
         yaml_docs = yaml.load_all(stream)
         for yaml_doc in yaml_docs:
              if type(yaml_doc) is TestCase:
-                 logging.info(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                 logger.debug(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
                  td_list.append(yaml_doc)
         #         for s in yaml_doc.sequence:
-        #             logging.info(' \t Parsed test case step %s :' % s)
+        #             logger.info(' \t Parsed test case step %s :' % s)
 
     return td_list
 
@@ -268,7 +258,6 @@ class Step():
         self.state = None
 
 
-
     def __repr__(self):
         node = ''
         mode = ''
@@ -284,9 +273,9 @@ class Step():
             self.partial_verdict = Verdict()
 
             # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
-            logging.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
+            logger.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
             self.id, self.type, ANALYSIS_MODE))
-            logging.debug(self.type == 'check' and ANALYSIS_MODE == 'post_mortem')
+            logger.debug(self.type == 'check' and ANALYSIS_MODE == 'post_mortem')
             if self.type == 'check' and ANALYSIS_MODE == 'post_mortem':
                 self.change_state('postponed')
             else:
@@ -310,7 +299,7 @@ class Step():
         # postponed state used when checks are postponed for the end of the TC execution
         assert state in (None,'executing','finished','postponed')
         self.state = state
-        logging.info('Step %s state changed to: %s'%(self.id,self.state))
+        logger.info('Step %s state changed to: %s'%(self.id,self.state))
 
     def set_result(self,result,result_info):
         # Only check and verify steps can have a result
@@ -348,7 +337,7 @@ class TestCase():
                     assert "iut" in s
                 self.sequence.append(Step(**s))
             except:
-                logging.error("Error found while trying to parse: %s" %str(s))
+                logger.error("Error found while trying to parse: %s" %str(s))
                 raise
         self._step_it = iter(self.sequence)
         self.current_step = None
@@ -395,7 +384,7 @@ class TestCase():
     def change_state(self,state):
         assert state in (None,'skipped', 'executing','ready_for_analysis','analyzing','finished')
         self.state = state
-        logging.info('Testcase %s changed state to %s'%(self.id, state))
+        logger.info('Testcase %s changed state to %s'%(self.id, state))
 
     def check_all_steps_finished (self):
         it = iter(self.sequence)
@@ -405,12 +394,12 @@ class TestCase():
             while True:
                 # check that there's no steps in state = None or executing
                 if step.state is None or step.state == 'executing':
-                    logging.debug("[TESTCASE] - there are still steps to execute or under execution")
+                    logger.debug("[TESTCASE] - there are still steps to execute or under execution")
                     return False
                 else:
                     step = it.__next__()
         except StopIteration:
-            logging.debug("[TESTCASE] - all steps are either finished or pending (waiting for analysis)")
+            logger.debug("[TESTCASE] - all steps are either finished or pending (waiting for analysis)")
             return True
 
     def generate_final_verdict(self,tat_analysis_report_a_posteriori=None):
@@ -427,12 +416,12 @@ class TestCase():
 
         final_verdict = Verdict()
         tc_report = []
-        logging.debug("[VERDICT GENERATION] starting the verdict generation")
+        logger.debug("[VERDICT GENERATION] starting the verdict generation")
         for step in self.sequence:
             # for the verdict we use the info in the checks and verify steps
             if step.type in ("check","verify"):
 
-                logging.debug("[VERDICT GENERATION] Processing step %s" %step.id)
+                logger.debug("[VERDICT GENERATION] Processing step %s" %step.id)
 
                 if step.state == "postponed":
                     tc_report.append((step.id, None, "%s postponed" %step.type.upper(), ""))
@@ -442,7 +431,7 @@ class TestCase():
                     final_verdict.update(step.partial_verdict.get_value(),step.partial_verdict.get_message())
                 else:
                     msg="step %s not ready for analysis"%(step.id)
-                    logging.error("[VERDICT GENERATION] " + msg)
+                    logger.error("[VERDICT GENERATION] " + msg)
                     raise CoordinatorError(msg)
 
         # append at the end of the report the analysis done a posteriori (if any)
@@ -458,7 +447,7 @@ class TestCase():
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
 
 
-class Coordinator(ConsumerMixin):
+class Coordinator:
     """
     F-Interop API
     source:  http://doc.f-interop.eu/#services-provided
@@ -489,128 +478,175 @@ class Coordinator(ConsumerMixin):
         self._ted_it = cycle(self.teds.values())
         self.current_tc = None
 
-        # queues & default exchange declaration
+        # AMQP queues and callbacks config
         self.connection = amqp_connection
-        self.exchange = Exchange(DEFAULT_EXCHANGE, type="topic", durable=True)
-        self.control_queue = Queue("control.testcoordination.service@{name}".format(name=COMPONENT_ID),
-                                   exchange=self.exchange,
-                                   routing_key='control.testcoordination',
-                                   durable=False)
+        self.channel = self.connection.channel()
+        result1 = self.channel.queue_declare(queue='services@%s' %COMPONENT_ID)
+        result2= self.channel.queue_declare(queue='events@%s' %COMPONENT_ID)
 
-        self.producer = self.connection.Producer(serializer='json')
+        self.services_q = result1.method.queue
+        self.events_q = result2.method.queue
 
-        self.producer.publish(
-            body = json.dumps({"_type":'testcoordination.info',
-                               'message':'Test Coordinator is up!'}),
-            routing_key='control.testcoordination.info',
-            exchange=self.exchange
+        # in case its not declared
+        self.channel.exchange_declare(exchange=AMQP_EXCHANGE,
+                                 type='topic',
+                                 durable=True,
+                                 )
+
+        self.channel.queue_bind(exchange = AMQP_EXCHANGE,
+                           queue = self.services_q,
+                           routing_key = 'control.testcoordination.service')
+
+        self.channel.queue_bind(exchange = AMQP_EXCHANGE,
+                           queue = self.events_q,
+                           routing_key = 'control.testcoordination')
+
+        self.channel.basic_publish(body = json.dumps({"_type":'testcoordination.info',
+                                                    'message':'Test Coordinator is up!'}),
+                                   exchange = AMQP_EXCHANGE,
+                                   routing_key ='control.testcoordination.info'
+                                   )
+
+        self.channel.basic_consume(self.handle_service,
+                              queue = self.services_q,
+                              no_ack = True)
+
+        self.channel.basic_consume(self.handle_control,
+                              queue = self.events_q,
+                              no_ack = True)
+
+
+
+    def run(self):
+        logger.info('start consuming..')
+        self.channel.start_consuming()
+
+
+    ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
+
+    def amqp_reply(self,props, response):
+
+        # check first that sender didnt forget about reply to and corr id
+        try:
+            reply_to = props.reply_to
+            correlation_id = props.correlation_id
+        except KeyError:
+            logger.error(msg='There is an error on the request, either reply_to or correlation_id not provided')
+            return
+
+        self.channel.basic_publish(
+            body = json.dumps(response,ensure_ascii=False),
+            routing_key=reply_to,
+            exchange = AMQP_EXCHANGE,
+            properties = pika.BasicProperties(
+                content_type='application/json',
+                correlation_id = correlation_id,
+            )
         )
 
-    def get_consumers(self, Consumer, channel):
-        return [
-            Consumer(queues=[self.control_queue],
-                     callbacks=[self.handle_control],
-                     no_ack=True,
-                     accept=['json']),
-        ]
-
-    def on_consume_ready(self, connection, channel, consumers, wakeup=True, **kwargs):
-        log.info("Ready")
-
-    def handle_control(self, body, message):
 
 
-        ###### AUXILIAR MESSAGING FUNCTIONS #####
+    def notify_current_testcase(self):
+        # testcoordination notification
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type': 'testcoordination.testcase.next'})
+        coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
+        coordinator_notif.update(self.current_tc.to_dict(verbose = True))
 
-        def amqp_reply(orig_message, response):
-
-            # check first that sender didnt forget about reply to and corr id
-            try:
-                orig_message.properties['reply_to']
-                orig_message.properties['correlation_id']
-            except KeyError:
-                logging.error(msg='There is an error on the request, either reply_to or correlation_id not provided')
-                return
-
-            self.producer.publish(response, exchange=self.exchange,
-                             routing_key=orig_message.properties['reply_to'],
-                             correlation_id=orig_message.properties['correlation_id']
-                                  )
-            message.ack()
-
-        def notify_current_testcase():
-            # testcoordination notification
-            coordinator_notif = OrderedDict()
-            coordinator_notif.update({'_type': 'testcoordination.testcase.next'})
-            coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
-            coordinator_notif.update(self.current_tc.to_dict(verbose = True))
-
-
-            self.producer.publish(
-                body=json.dumps(coordinator_notif),
-                routing_key='control.testcoordination.testcase',
-                exchange=self.exchange
+        self.channel.basic_publish(
+            body = json.dumps(coordinator_notif,ensure_ascii=False),
+            routing_key = 'control.testcoordination.testcase',
+            exchange = AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
             )
+        )
 
-        def notify_current_step_execute():
-            # testcoordination notification
-            coordinator_notif = OrderedDict()
-            coordinator_notif.update({'_type': 'testcoordination.step.execute'})
-            coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
-            coordinator_notif.update(self.current_tc.current_step.to_dict(verbose = True))
+    def notify_current_step_execute(self):
+        # testcoordination notification
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type': 'testcoordination.step.execute'})
+        coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
+        coordinator_notif.update(self.current_tc.current_step.to_dict(verbose = True))
 
-            self.producer.publish(
-                body=json.dumps(coordinator_notif),
-                routing_key='control.testcoordination.step',
-                exchange=self.exchange
+        self.channel.basic_publish(
+        body = json.dumps(coordinator_notif,ensure_ascii=False),
+        routing_key = 'control.testcoordination.step',
+        exchange = AMQP_EXCHANGE,
+        properties=pika.BasicProperties(
+            content_type='application/json',
             )
+        )
 
-        def notify_coordination_error( message, error_code):
-            # testcoordination.error notification
-            # TODO error codes?
-            coordinator_notif = OrderedDict()
-            coordinator_notif.update({'_type': 'testcoordination.error',})
-            coordinator_notif.update({'message': message,})
-            coordinator_notif.update({'error_code' : error_code,})
+    def notify_coordination_error(self, message, error_code):
+        # testcoordination.error notification
+        # TODO error codes?
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type': 'testcoordination.error',})
+        coordinator_notif.update({'message': message,})
+        coordinator_notif.update({'error_code' : error_code,})
 
-            self.producer.publish(
-                body=json.dumps(coordinator_notif),
-                routing_key='control.testcoordination.error',
-                exchange=self.exchange
+        self.channel.basic_publish(
+            body = json.dumps(coordinator_notif,ensure_ascii=False),
+            routing_key = 'control.testcoordination.error',
+            exchange = AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
             )
+        )
 
+    def handle_service(self, ch, method, properties, body):
+        print('sthasdlakjsbfkja')
 
-        ### EVENT HANDLING ###
-
-        logging.debug('event received on the queue: %s || %s' % (body, message))
+        logger.debug('[services queue callback] service request received on the queue: %s || %s'
+                      %(method.routing_key,json.loads(body.decode('utf-8'))))
 
         # TODO check malformed messages first
-        event = json.loads(body)
+        event = json.loads(body.decode('utf-8'))
+        event_type = event['_type']
+
+        # prepare response
+        response = OrderedDict()
+
+        if event_type == "testcoordination.testsuite.gettestcases":
+            # this is a request so I answer directly on the message
+            testcases = self.get_test_cases_basic(verbose=True)
+            response.update({'_type': event_type})
+            response.update({'ok': True})
+            response.update(testcases)
+            self.amqp_reply(properties, json.dumps(response))
+
+        elif event_type == "testcoordination.testsuite.getstatus":
+            status = self.states_summary()
+            # this is a request so I answer directly on the message
+            response.update({'_type': event_type})
+            response.update({'ok': True})
+            response.update({'status': status})
+            self.amqp_reply(properties, json.dumps(response))
+
+        else:
+            self.notify_coordination_error(message='Cannot dispatch event_type %s' % event_type, error_code=None)
+            logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
+            return
+
+
+        logger.info('Service request handled, response sent through the bus: %s'%(json.dumps(response)))
+
+
+    def handle_control(self, ch, method, properties, body):
+        print('sthasdlakjsbfkja CONTROL')
+
+        logger.debug('[event queue callback] service request received on the queue: %s || %s'
+                      %(method.routing_key,json.loads(body.decode('utf-8'))))
+
+        # TODO check malformed messages first
+        event = json.loads(body.decode('utf-8'))
         event_type = event['_type']
 
         #prepare response
         response = OrderedDict()
 
-        if event_type == "testcoordination.testsuite.gettestcases":
-
-            # this is a request so I answer directly on the message
-            testcases = self.get_test_cases_basic(verbose=True)
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            response.update(testcases)
-            amqp_reply(message,json.dumps(response))
-
-
-        elif event_type == "testcoordination.testsuite.getstatus":
-
-            status = self.states_summary()
-            # this is a request so I answer directly on the message
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            response.update({'status': status})
-            amqp_reply(message,json.dumps(response))
-
-        elif event_type == "testcoordination.testcase.skip":
+        if event_type == "testcoordination.testcase.skip":
 
             # if no testcase_id was sent then I skip  the current one
             try:
@@ -625,12 +661,12 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, json.dumps(response))
+            self.amqp_reply(properties, json.dumps(response))
 
             # if skipped tc is current test case then next tc
             if testcase_skip == self.current_tc.id:
                 self.next_test_case()
-                notify_current_testcase()
+                self.notify_current_testcase()
 
 
         elif event_type == "testcoordination.testsuite.start":
@@ -641,10 +677,10 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # send general notif
-            notify_current_testcase()
+            self.notify_current_testcase()
 
         elif event_type == "testcoordination.testcase.select":
 
@@ -652,33 +688,35 @@ class Coordinator(ConsumerMixin):
             try:
                 # jump to selected tc
                 self.select_test_case(event['testcase_id'])
+
             except KeyError:
                 error_msg = "Incorrect or empty testcase_id"
                 # response not ok
                 response.update({'_type': event_type})
                 response.update({'ok': False})
                 response.update({'message' : error_msg})
-                amqp_reply(message, response)
+                self.amqp_reply(properties, response)
                 # send general notif
-                notify_coordination_error(message=error_msg,error_code=None)
+                self.notify_coordination_error(message=error_msg,error_code=None)
+
             except CoordinatorError as e:
                 error_msg = e.message
                 # response not ok
                 response.update({'_type': event_type})
                 response.update({'ok': False})
                 response.update({'message': error_msg})
-                amqp_reply(message, response)
+                self.amqp_reply(properties, response)
                 # send general notif
-                notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
 
 
             #response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # send general notif
-            notify_current_testcase()
+            self.notify_current_testcase()
 
 
         elif event_type == "testcoordination.testcase.start":
@@ -690,10 +728,10 @@ class Coordinator(ConsumerMixin):
                 response.update({'_type': event_type})
                 response.update({'ok': False})
                 response.update({'message': error_msg})
-                amqp_reply(message, response)
+                self.amqp_reply(properties, response)
 
                 # notify all
-                notify_coordination_error(message =error_msg, error_code=None)
+                self.notify_coordination_error(message =error_msg, error_code=None)
                 return
 
             # TODO handle configuration phase before execution!
@@ -701,10 +739,10 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # send general notif
-            notify_current_step_execute()
+            self.notify_current_step_execute()
 
 
         elif event_type == "testcoordination.testsuite.start":
@@ -714,10 +752,10 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # send general notif
-            notify_current_testcase()
+            self.notify_current_testcase()
 
 
         elif event_type == "testcoordination.step.stimuli.executed":
@@ -727,11 +765,11 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # pass to next step
             if self.next_step():
-                notify_current_step_execute()
+                self.notify_current_step_execute()
             else:
                 self.finish_test_case()
 
@@ -746,9 +784,9 @@ class Coordinator(ConsumerMixin):
                 response.update({'_type': event_type})
                 response.update({'ok': False})
                 response.update({'message': error_msg})
-                amqp_reply(message, response)
+                self.amqp_reply(properties, response)
                 # send general notif
-                notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
 
 
             self.process_verify_step_response(verify_response)
@@ -756,11 +794,11 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # pass to next step
             if self.next_step():
-                notify_current_step_execute()
+                self.notify_current_step_execute()
             else:
                 self.finish_test_case()
 
@@ -773,18 +811,18 @@ class Coordinator(ConsumerMixin):
                 verdict = event['partial_verdict']
                 description = event['description']
             except KeyError:
-                notify_coordination_error(message='Malformed CHECK response', error_code=None)
+                self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
 
             self.process_check_step_response(verdict,description)
 
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # pass to next step
             if self.next_step():
-                notify_current_step_execute()
+                self.notify_current_step_execute()
             else:
                 self.finish_test_case()
 
@@ -794,15 +832,16 @@ class Coordinator(ConsumerMixin):
             # response ok
             response.update({'_type' : event_type})
             response.update({'ok':True})
-            amqp_reply(message, response)
+            self.amqp_reply(properties, response)
 
             # send general notif
-            notify_current_testcase()
+            self.notify_current_testcase()
 
         else:
-            notify_coordination_error(message='Cannot dispatch event_type %s'%event_type , error_code=None)
+            self.notify_coordination_error(message='Cannot dispatch event_type %s'%event_type , error_code=None)
+            logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
 
-        logging.info('Event handled, response sent through the bus: %s'%(json.dumps(response)))
+        logger.info('Event handled, response sent through the bus: %s'%(json.dumps(response)))
 
     # # Call to other components methods
     # # TODO this should be implement using events..
@@ -812,7 +851,7 @@ class Coordinator(ConsumerMixin):
     #     # Finish sniffer, the goal here is to clear unfinished test sessions
     #     try:
     #         r = requests.post(sniffer_url)
-    #         logging.info( self.log_message("Content of the response on %s call is %s", sniffer_url, r.content))
+    #         logger.info( self.log_message("Content of the response on %s call is %s", sniffer_url, r.content))
     #     except:
     #         raise CoordinatorError( "Sniffer API doesn't respond on %s, maybe it isn't up yet" % sniffer_url)
 
@@ -844,10 +883,10 @@ class Coordinator(ConsumerMixin):
             self.current_tc = self.teds[tc_id]
             # in case is was already executed once
             self.current_tc.reinit()
-            logging.debug("Test case selected to be executed: %s" %self.current_tc.id)
+            logger.debug("Test case selected to be executed: %s" %self.current_tc.id)
             return self.current_tc.to_dict(verbose=True)
         else:
-            logging.error( "%s not found in : %s "%(tc_id,self.teds))
+            logger.error( "%s not found in : %s "%(tc_id,self.teds))
             raise CoordinatorError('Testcase not found')
 
 
@@ -887,7 +926,7 @@ class Coordinator(ConsumerMixin):
         # sniffer_url = API_SNIFFER + '/sniffer_api/launchSniffer'
         # try:
         #     r = requests.post(sniffer_url, params=par)
-        #     logging.info(
+        #     logger.info(
         #         "Content of the response on %s call with %s is %s",
         #         sniffer_url,
         #         par,
@@ -928,7 +967,7 @@ class Coordinator(ConsumerMixin):
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
-        logging.debug("[step_finished event] step %s, type %s -> new state : %s"
+        logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                       %(self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
@@ -949,7 +988,7 @@ class Coordinator(ConsumerMixin):
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
-        logging.debug("[step_finished event] step %s, type %s -> new state : %s"
+        logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                       %(self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
@@ -970,7 +1009,7 @@ class Coordinator(ConsumerMixin):
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
-        logging.debug("[step_finished event] step %s, type %s -> new state : %s"
+        logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                       %(self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
@@ -1002,7 +1041,7 @@ class Coordinator(ConsumerMixin):
             body = {'_type':'sniffing.getCapture','testcase_id': tc_id}
             try:
                 ret = amqp_rpc_client.call(routing_key ="control.sniffing.service", body= body)
-                logging.info("Content of the response on the sniffing.getCapture call is %s" %(str(ret)))
+                logger.info("Content of the response on the sniffing.getCapture call is %s" %(str(ret)))
             except Exception as e:
                 raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                    %(str(ret),str(e)))
@@ -1016,7 +1055,7 @@ class Coordinator(ConsumerMixin):
                 # save to file
                 with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
                     nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                    logging.info("Pcap correctly saved %dB at %s from sniffer" % (nb, TMPDIR))
+                    logger.info("Pcap correctly saved %dB at %s from sniffer" % (nb, TMPDIR))
             except Exception as e:
                 raise CoordinatorError("Cannot decode received PCAP received from sniffer \n Exception info: %s "
                                        %(str(e)))
@@ -1033,7 +1072,7 @@ class Coordinator(ConsumerMixin):
             }
 
             tat_response = amqp_rpc_client.call(routing_key="control.analysis.service", body=body)
-            logging.info("Response received from TAT: %s " % (tat_response))
+            logger.info("Response received from TAT: %s " % (tat_response))
 
             # TODO check if the response is ok first, else raise an error
 
@@ -1061,7 +1100,7 @@ class Coordinator(ConsumerMixin):
             step_count += 1
             p = ("A_POSTERIORI_CHECK_%d"%step_count, item[0] , item[1])
             partial_verd.append(p)
-            logging.debug("partial verdict received from TAT: %s"%str(p))
+            logger.debug("partial verdict received from TAT: %s"%str(p))
 
         # generates a general verdict considering other steps partial verdicts besides TAT's
         gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
@@ -1081,7 +1120,7 @@ class Coordinator(ConsumerMixin):
             self.current_tc.report.append(item)
 
 
-        logging.info("General verdict generated: %s" %str(self.current_tc.report))
+        logger.info("General verdict generated: %s" %str(self.current_tc.report))
         # pass to the next testcase
         # tc = self.next_test_case()
 
@@ -1096,7 +1135,7 @@ class Coordinator(ConsumerMixin):
         #     information['next_test_case'] = None
         #     ret.append(information)
         #
-        # logging.info("sending response to GUI " + json.dumps(ret))
+        # logger.info("sending response to GUI " + json.dumps(ret))
 
         return self.current_tc.report
 
@@ -1139,11 +1178,11 @@ class Coordinator(ConsumerMixin):
                 self.current_tc.current_step = next(self.current_tc._step_it)
 
         except StopIteration:
-            logging.info('Test case finished. No more steps to execute in testcase: %s' %self.current_tc.id)
+            logger.info('Test case finished. No more steps to execute in testcase: %s' %self.current_tc.id)
             # return None when TC finished
             return None
 
-        logging.info('Next step to execute: %s'%self.current_tc.current_step.id)
+        logger.info('Next step to execute: %s'%self.current_tc.current_step.id)
 
         return self.current_tc.current_step
 
@@ -1206,6 +1245,9 @@ class Coordinator(ConsumerMixin):
 
 if __name__ == '__main__':
 
+    #init logging to stnd output and log files
+    logger = initialize_logger(LOGDIR,COMPONENT_ID)
+
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR:
         try:
@@ -1214,75 +1256,63 @@ if __name__ == '__main__':
             if e.errno != errno.EEXIST:
                 raise
 
-    #init logger to stnd output and log files
-    initialize_logger(LOGDIR)
 
-
-    def launchHttpServerLogger():
-        logging.info('starting server...')
-        # Server settings
-        server_address = ('0.0.0.0', 8080)
-        http_serv = HTTPServer(server_address, HTTPServer_RequestHandler)
-        logging.info('running server...')
-        http_serv.serve_forever()
-
-
-    # start http server process
-    http_server_p = Process(target=launchHttpServerLogger)
-    http_server_p.start()
-
-
-    #first lets get the AMQP params from the ENV
+    ### SETUPING UP CONNECTION ###
 
     try:
-        AMQP_SERVER = str(os.environ['AMQP_SERVER'])
-        AMQP_USER = str(os.environ['AMQP_USER'])
-        AMQP_PASS = str(os.environ['AMQP_PASS'])
-        AMQP_VHOST = str(os.environ['AMQP_VHOST'])
-        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        logger.info('Setting up AMQP connection..')
+        # setup AMQP connection
+        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(
+            host=AMQP_SERVER,
+            virtual_host=AMQP_VHOST,
+            credentials = credentials))
 
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
+        sys.exit(1)
 
-    except KeyError as e:
-        logging.error(' Cannot retrieve environment variables for AMQP connection')
-        # default values
-        # AMQP_SERVER = "localhost"
-        # AMQP_USER = "guest"
-        # AMQP_PASS = "guest"
-        # AMQP_VHOST = "/"
-        # AMQP_EXCHANGE = "default"
+    ### INIT COMPONENTS ###
 
-
-    # open AMQP connection
-    conn = Connection(hostname = AMQP_SERVER,
-                      userid = AMQP_USER,
-                      password = AMQP_PASS,
-                      virtual_host = AMQP_VHOST,
-                      transport_options={'confirm_publish': True})
-
-
-    # start the coordinator
     # TODO point to the correct TED using session bootstrap message
-    coord = Coordinator(conn,TD_COAP)
 
     try:
-        coord.run()
+        logger.info('Instanciating coordinator..')
+        coordinator = Coordinator(connection, TD_COAP)
+    except Exception as e:
+        # at this level i cannot emit AMQP messages if sth fails
+        error_msg = str(e)
+        logger.error(' Critical exception found: %s' % error_msg)
+        logger.debug(traceback.format_exc())
+        sys.exit(1)
+
+    ### RUN COMPONENTS ###
+
+    try:
+        logger.info('Starting coordinator execution ..')
+        # start consuming messages
+        coordinator.run()
+        logger.info('Finishing...')
+
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP connection closed: %s' % str(cc))
+        sys.exit(1)
+
     except KeyboardInterrupt as KI:
-        logging.warning('Keyboard interrupt. Shutting down...')
-        #shutdown http server
-        http_server_p.terminate()
         #close AMQP connection
-        conn.close()
+        connection.close()
 
     except Exception as e:
         error_msg = str(e)
-        logging.error(' Critical exception found: %s' %error_msg)
-        # lets push the error message into the bus
+        logger.error(' Critical exception found: %s' %error_msg)
+        logger.debug(traceback.format_exc())
 
-        coord.producer.publish(json.dumps({'_type':'testcoordination.error',
+        # lets push the error message into the bus
+        coordinator.producer.publish(json.dumps({'_type':'testcoordination.error',
                                            'message': error_msg,
-                                           'traceback':traceback.print_exc(),
+                                           'traceback':traceback.format_exc(),
                                            }),
-                               exchange=coord.exchange,
+                               exchange=AMQP_EXCHANGE,
                                routing_key='control.testcoordination.error'
                               )
 
