@@ -2,8 +2,8 @@
 # Created by https://www.gitignore.io/api/python
 
 # testing tool
-coap_testing_tool/test_coordinator/tmp/
-coap_testing_tool/sniffer/dumps/
+tmp/
+data/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
