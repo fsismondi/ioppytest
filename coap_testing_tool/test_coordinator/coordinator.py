@@ -128,7 +128,7 @@ class Verdict:
      - 'error': A runtime error occured during the test
 
     At initialisation time, the verdict is set to None. Then it can be updated
-    one or multiple times, either explicitely calling set_verdict() or
+    one or multiple times, either explicitly calling set_verdict() or
     implicitly if an unhandled exception is caught by the control module
     (error verdict) or if the user interrupts the test manually (aborted
     verdict).
@@ -164,7 +164,7 @@ class Verdict:
         assert new_verdict in self.__values
 
         new_value = self.__values.index(new_verdict)
-        if new_value > self.__value:
+        if new_value >= self.__value:
             self.__value = new_value
             self.__message = message
 
@@ -275,7 +275,6 @@ class Step():
             # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
             logger.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
             self.id, self.type, ANALYSIS_MODE))
-            logger.debug(self.type == 'check' and ANALYSIS_MODE == 'post_mortem')
             if self.type == 'check' and ANALYSIS_MODE == 'post_mortem':
                 self.change_state('postponed')
             else:
@@ -307,7 +306,7 @@ class Step():
         assert result in Verdict.values()
         self.partial_verdict.update(result,result_info)
 
-class TestCase():
+class TestCase:
     """
     FSM:
     (None,'skipped', 'executing','ready_for_analysis','analyzing','finished')
@@ -399,7 +398,7 @@ class TestCase():
                 else:
                     step = it.__next__()
         except StopIteration:
-            logger.debug("[TESTCASE] - all steps are either finished or pending (waiting for analysis)")
+            logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis)")
             return True
 
     def generate_final_verdict(self,tat_analysis_report_a_posteriori=None):
@@ -442,7 +441,12 @@ class TestCase():
                 final_verdict.update(item[1], item[2])
 
         if final_verdict.get_value() == 'pass':
-            final_verdict.__message = 'Test case executed correctly'
+            # hack to overwrite the verdict message
+            final_verdict.update('pass','Test case executed correctly')
+            logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
+        else:
+            logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
+            logger.debug("[VERDICT GENERATION] info: %s' "%final_verdict.get_value() )
 
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
 
@@ -516,6 +520,25 @@ class Coordinator:
                               no_ack = True)
 
 
+    def check_testsuite_finished (self):
+        #cyclic as user may not have started by the first TC
+        it = cycle(self.teds.values())
+
+        # we need to check if we already did a cycle (cycle never raises StopIteration)
+        iter_counts = len(self.teds)
+        tc = next(it)
+
+        while iter_counts >=0 :
+            # check that there's no steps in state = None or executing
+            if tc.state in (None,'executing','ready_for_analysis','analyzing'):
+                logger.debug("[TESTSUITE] - there is still unfinished & non-skipped test cases")
+                return False
+            else: # TC state is 'skipped' or 'finished'
+                tc = next(it)
+            iter_counts -= 1
+        if iter_counts < 0:
+            logger.debug("[TESTSUITE] - Testsuite finished. No more test cases to execute.")
+            return True
 
     def run(self):
         logger.info('start consuming..')
@@ -544,8 +567,6 @@ class Coordinator:
             )
         )
 
-
-
     def notify_current_testcase(self):
         # testcoordination notification
         coordinator_notif = OrderedDict()
@@ -554,8 +575,8 @@ class Coordinator:
         coordinator_notif.update(self.current_tc.to_dict(verbose = True))
 
         self.channel.basic_publish(
-            body = json.dumps(coordinator_notif,ensure_ascii=False),
-            routing_key = 'control.testcoordination.testcase',
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key = 'control.testcoordination',
             exchange = AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',
@@ -568,15 +589,51 @@ class Coordinator:
         coordinator_notif.update({'_type': 'testcoordination.step.execute'})
         coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
         coordinator_notif.update(self.current_tc.current_step.to_dict(verbose = True))
+        #coordinator_notif={**coordinator_notif,**self.current_tc.current_step.to_dict(verbose=True)}
 
         self.channel.basic_publish(
         body = json.dumps(coordinator_notif,ensure_ascii=False),
-        routing_key = 'control.testcoordination.step',
+        routing_key = 'control.testcoordination',
         exchange = AMQP_EXCHANGE,
         properties=pika.BasicProperties(
             content_type='application/json',
             )
         )
+
+    def notify_testcase_finished(self):
+            # testcoordination notification
+            coordinator_notif = OrderedDict()
+            coordinator_notif.update({'_type': 'testcoordination.testcase.finished'})
+            coordinator_notif.update(
+                {'message': 'Testcase %s finished' % self.current_tc.id})
+            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+
+            self.channel.basic_publish(
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key='control.testcoordination',
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                    content_type='application/json',
+                )
+            )
+
+    def notify_testcase_verdict(self):
+            # testcoordination notification
+            coordinator_notif = OrderedDict()
+            coordinator_notif.update({'_type': 'testcoordination.testcase.verdict'})
+            # lets add the report info of the TC into the answer
+            coordinator_notif.update(self.current_tc.report)
+            # lets add basic info about the TC
+            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+
+            self.channel.basic_publish(
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key='control.testcoordination',
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                    content_type='application/json',
+                )
+            )
 
     def notify_coordination_error(self, message, error_code):
         # testcoordination.error notification
@@ -587,7 +644,7 @@ class Coordinator:
         coordinator_notif.update({'error_code' : error_code,})
 
         self.channel.basic_publish(
-            body = json.dumps(coordinator_notif,ensure_ascii=False),
+            body = json.dumps(coordinator_notif,ensure_ascii=False,sort_keys=True),
             routing_key = 'control.testcoordination.error',
             exchange = AMQP_EXCHANGE,
             properties=pika.BasicProperties(
@@ -595,14 +652,30 @@ class Coordinator:
             )
         )
 
+    def notify_testsuite_finished(self):
+        # testcoordination notification
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type': 'testcoordination.testsuite.finished'})
+
+        self.channel.basic_publish(
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key='control.testcoordination',
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
+
+
+    ### API ENDPOINTS ###
+
     def handle_service(self, ch, method, properties, body):
-        print('sthasdlakjsbfkja')
 
         logger.debug('[services queue callback] service request received on the queue: %s || %s'
-                      %(method.routing_key,json.loads(body.decode('utf-8'))))
+                      %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
 
         # TODO check malformed messages first
-        event = json.loads(body.decode('utf-8'))
+        event = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
         event_type = event['_type']
 
         # prepare response
@@ -614,7 +687,7 @@ class Coordinator:
             response.update({'_type': event_type})
             response.update({'ok': True})
             response.update(testcases)
-            self.amqp_reply(properties, json.dumps(response))
+            self.amqp_reply(properties,response)
 
         elif event_type == "testcoordination.testsuite.getstatus":
             status = self.states_summary()
@@ -622,10 +695,9 @@ class Coordinator:
             response.update({'_type': event_type})
             response.update({'ok': True})
             response.update({'status': status})
-            self.amqp_reply(properties, json.dumps(response))
+            self.amqp_reply(properties, response)
 
         else:
-            self.notify_coordination_error(message='Cannot dispatch event_type %s' % event_type, error_code=None)
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
             return
 
@@ -634,13 +706,12 @@ class Coordinator:
 
 
     def handle_control(self, ch, method, properties, body):
-        print('sthasdlakjsbfkja CONTROL')
 
         logger.debug('[event queue callback] service request received on the queue: %s || %s'
-                      %(method.routing_key,json.loads(body.decode('utf-8'))))
+                      %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
 
         # TODO check malformed messages first
-        event = json.loads(body.decode('utf-8'))
+        event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         event_type = event['_type']
 
         #prepare response
@@ -658,11 +729,6 @@ class Coordinator:
             testcase_t = self.get_testcase(testcase_skip)
             testcase_t.change_state("skipped")
 
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, json.dumps(response))
-
             # if skipped tc is current test case then next tc
             if testcase_skip == self.current_tc.id:
                 self.next_test_case()
@@ -674,10 +740,8 @@ class Coordinator:
             # TODO maybe return next test case
             # TODO reboot automated IUTs
             # TODO open tun interfaces in agents
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
+
+            self.start_test_suite()
 
             # send general notif
             self.notify_current_testcase()
@@ -691,29 +755,31 @@ class Coordinator:
 
             except KeyError:
                 error_msg = "Incorrect or empty testcase_id"
-                # response not ok
-                response.update({'_type': event_type})
-                response.update({'ok': False})
-                response.update({'message' : error_msg})
-                self.amqp_reply(properties, response)
+                # # response not ok
+                # response.update({'_type': event_type})
+                # response.update({'ok': False})
+                # response.update({'message' : error_msg})
+                # self.amqp_reply(properties, response)
+
                 # send general notif
                 self.notify_coordination_error(message=error_msg,error_code=None)
 
             except CoordinatorError as e:
                 error_msg = e.message
-                # response not ok
-                response.update({'_type': event_type})
-                response.update({'ok': False})
-                response.update({'message': error_msg})
-                self.amqp_reply(properties, response)
+                # # response not ok
+                # response.update({'_type': event_type})
+                # response.update({'ok': False})
+                # response.update({'message': error_msg})
+                # self.amqp_reply(properties, response)
+
                 # send general notif
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
 
-            #response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
+            # #response ok
+            # response.update({'_type' : event_type})
+            # response.update({'ok':True})
+            # self.amqp_reply(properties, response)
 
             # send general notif
             self.notify_current_testcase()
@@ -724,88 +790,97 @@ class Coordinator:
             if self.current_tc is None:
                 error_msg = "No testcase selected"
 
-                # response not ok
-                response.update({'_type': event_type})
-                response.update({'ok': False})
-                response.update({'message': error_msg})
-                self.amqp_reply(properties, response)
+                # # response not ok
+                # response.update({'_type': event_type})
+                # response.update({'ok': False})
+                # response.update({'message': error_msg})
+                # self.amqp_reply(properties, response)
 
                 # notify all
                 self.notify_coordination_error(message =error_msg, error_code=None)
                 return
 
             # TODO handle configuration phase before execution!
-            self.start_test_case()
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
 
-            # send general notif
-            self.notify_current_step_execute()
+            if self.check_testsuite_finished():
+                self.notify_testsuite_finished()
+            else:
+                self.start_test_case()
 
-
-        elif event_type == "testcoordination.testsuite.start":
-            # TODO only enter if current_ tc = None
-            self.start_test_suite()
-
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
-
-            # send general notif
-            self.notify_current_testcase()
+                # send general notif
+                self.notify_current_step_execute()
 
 
         elif event_type == "testcoordination.step.stimuli.executed":
-            # TODO verify source if of message?
+
+            # process event only if I current step is a STIMULI
+            if self.current_tc.current_step.type != 'stimuli':
+                message = 'Coordination was expecting message for step type: %s , but got type: STIMULI' \
+                          % (self.current_tc.current_step.type.upper())
+                logger.error(message)
+                self.notify_coordination_error(message, None)
+                return
+
             self.process_stimuli_step_executed()
 
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
-
-            # pass to next step
+            # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            else:
+            elif not self.check_testsuite_finished():
+                # im at the end of the TC:
                 self.finish_test_case()
+                self.notify_testcase_finished()
+                self.notify_testcase_verdict()
+            else:
+                self.finish_testsuite()
+                self.notify_testsuite_finished()
 
         elif event_type == "testcoordination.step.verify.response":
+
+            # process event only if I current step is a verify
+            if self.current_tc.current_step.type != 'verify':
+                message = 'Coordination was expecting message for step type: %s , but got type: VERIFY' \
+                          % (self.current_tc.current_step.type.upper())
+                logger.error(message)
+                self.notify_coordination_error(message, None)
+                return
 
             # assert and get testcase_id from message
             try:
                 verify_response = event['verify_response']
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
-                # response not ok
-                response.update({'_type': event_type})
-                response.update({'ok': False})
-                response.update({'message': error_msg})
-                self.amqp_reply(properties, response)
+
                 # send general notif
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
 
             self.process_verify_step_response(verify_response)
 
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
-
-            # pass to next step
+            # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            else:
+            elif not self.check_testsuite_finished():
+                # im at the end of the TC:
                 self.finish_test_case()
+                self.notify_testcase_finished()
+                self.notify_testcase_verdict()
+            else:
+                self.finish_testsuite()
+                self.notify_testsuite_finished()
 
 
         elif event_type == "testcoordination.step.check.response":
             # This is call is just used when we have step_by_step analysis mode
-            assert ANALYSIS_MODE == 'step_by_step'
+            #assert ANALYSIS_MODE == 'step_by_step'
+
+            # process event only if I current step is a check
+            if self.current_tc.current_step.type != 'check':
+                message = 'Coordination was expecting message for step type: %s , but got type: CHECK' \
+                          % (self.current_tc.current_step.type.upper())
+                logger.error(message)
+                self.notify_coordination_error(message, None)
+                return
 
             try:
                 verdict = event['partial_verdict']
@@ -815,45 +890,33 @@ class Coordinator:
 
             self.process_check_step_response(verdict,description)
 
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
-
-            # pass to next step
+            # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            else:
+            elif not self.check_testsuite_finished():
+                # im at the end of the TC:
                 self.finish_test_case()
+                self.notify_testcase_finished()
+                self.notify_testcase_verdict()
+            else:
+                self.finish_testsuite()
+                self.notify_testsuite_finished()
 
-        elif event_type == "testcoordination.testcase.finish":
-            self.finish_test_case()
-
-            # response ok
-            response.update({'_type' : event_type})
-            response.update({'ok':True})
-            self.amqp_reply(properties, response)
-
-            # send general notif
-            self.notify_current_testcase()
+        # elif event_type == "testcoordination.testcase.finish":
+        #     self.finish_test_case()
+        #
+        #
+        #     # send general notif
+        #     self.notify_current_testcase()
 
         else:
-            self.notify_coordination_error(message='Cannot dispatch event_type %s'%event_type , error_code=None)
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
 
         logger.info('Event handled, response sent through the bus: %s'%(json.dumps(response)))
 
-    # # Call to other components methods
-    # # TODO this should be implement using events..
-    # def sniffer_clear(self):
-    #     sniffer_url = API_SNIFFER + '/sniffer_api/finishSniffer'
-    #
-    #     # Finish sniffer, the goal here is to clear unfinished test sessions
-    #     try:
-    #         r = requests.post(sniffer_url)
-    #         logger.info( self.log_message("Content of the response on %s call is %s", sniffer_url, r.content))
-    #     except:
-    #         raise CoordinatorError( "Sniffer API doesn't respond on %s, maybe it isn't up yet" % sniffer_url)
+
+
+    ### TRANSITION METHODS for the Coordinator FSM ###
 
     def get_test_cases_basic(self, verbose = None):
 
@@ -890,6 +953,7 @@ class Coordinator:
             raise CoordinatorError('Testcase not found')
 
 
+
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -906,6 +970,10 @@ class Coordinator:
         except:
             raise
 
+    def finish_testsuite(self):
+        # TODO copy json and PCAPs to results repo
+        # TODO prepare a test suite report of the tescases verdicts?
+        pass
 
     def start_test_case(self):
         """
@@ -935,22 +1003,29 @@ class Coordinator:
         # except Exception as e:
         #     raise SnifferError("Sniffer API doesn't respond, maybe it isn't up yet? \n Exception thrown %s"%str(e))
 
+
         try:
             # init testcase and step and their states if they are None
-            if self.current_tc is None:
+            if self.current_tc is None or self.current_tc.state == 'finished':
                 self.next_test_case()
+
             if self.current_tc.current_step is None:
                 self.next_step()
+
             self.current_tc.change_state('executing')
 
-            return self.execute_step()
+            return self.current_tc.current_step
         except:
             raise
 
 
     def process_verify_step_response(self, verify_response):
+        # some sanity checks on the states
+        assert self.current_tc is not None
+        assert self.current_tc.state is not None
+        assert self.current_tc.current_step is not None
+        assert self.current_tc.current_step.state == 'executing'
         assert verify_response is not None
-
 
         if verify_response == True:
             self.current_tc.current_step.set_result("pass",
@@ -978,8 +1053,9 @@ class Coordinator:
         assert self.current_tc is not None
         assert self.current_tc.state is not None
         assert self.current_tc.current_step is not None
+        assert self.current_tc.current_step.state == 'executing'
 
-        #sanity checks on the passed params
+        # sanity checks on the passed params
         assert verdict is not None
         assert description is not None
         assert verdict.lower() in Verdict.__values
@@ -1022,6 +1098,7 @@ class Coordinator:
         :return:
         """
         assert self.current_tc.check_all_steps_finished()
+        self.current_tc.current_step = None
 
         global API_SNIFFER
         global API_TAT
@@ -1037,11 +1114,12 @@ class Coordinator:
 
         if ANALYSIS_MODE == 'post_mortem' :
 
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
+            amqp_rpc_client = AmqpSynchronousCallClient(component_id = COMPONENT_ID)
             body = {'_type':'sniffing.getCapture','testcase_id': tc_id}
+            ret = ''
             try:
-                ret = amqp_rpc_client.call(routing_key ="control.sniffing.service", body= body)
-                logger.info("Content of the response on the sniffing.getCapture call is %s" %(str(ret)))
+                ret = amqp_rpc_client.call(routing_key ="control.sniffing.service", body = body)
+                logger.info("Recieved answer from sniffer: sniffing.getCapture, data: %s" %(str(ret)))
             except Exception as e:
                 raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                    %(str(ret),str(e)))
@@ -1055,7 +1133,7 @@ class Coordinator:
                 # save to file
                 with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
                     nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                    logger.info("Pcap correctly saved %dB at %s from sniffer" % (nb, TMPDIR))
+                    logger.info("Pcap correctly saved %dB at %s" % (nb, TMPDIR))
             except Exception as e:
                 raise CoordinatorError("Cannot decode received PCAP received from sniffer \n Exception info: %s "
                                        %(str(e)))
@@ -1074,54 +1152,66 @@ class Coordinator:
             tat_response = amqp_rpc_client.call(routing_key="control.analysis.service", body=body)
             logger.info("Response received from TAT: %s " % (tat_response))
 
-            # TODO check if the response is ok first, else raise an error
+            if tat_response['ok'] == True:
+                # TODO check if the response is ok first, else raise an error
 
-            # Save the json object
+                # Save the json object received
 
-            json_save = os.path.join(
-                TMPDIR,
-                tc_id + '.json'
-            )
-            try:
-                with open(json_save, 'w') as f:
-                    json.dump(tat_response, f)
-            except:
-                CoordinatorError("Couldn't write the json file")
+                json_save = os.path.join(
+                    TMPDIR,
+                    tc_id + '_analysis.json'
+                )
+                try:
+                    with open(json_save, 'w') as f:
+                        json.dump(tat_response, f)
+                except:
+                    CoordinatorError("Couldn't write the json file")
 
-        # TODO for BOTH post_mortem analysis & step_by_step push PCAP(s) to results repo
+                # let's process the partial verdicts from TAT's answer
+                # they come as [[str,str]] first string is partial verdict , second is description.
+                partial_verd = []
+                step_count = 0
+                for item in tat_response['partial_verdicts']:
+                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
+                    # info, so ill make a name up(this is just for visualization purposes)
+                    step_count += 1
+                    p = ("A_POSTERIORI_CHECK_%d"%step_count, item[0] , item[1])
+                    partial_verd.append(p)
+                    logger.debug("partial verdict received from TAT: %s"%str(p))
 
-        # let's process the partial verdicts from TAT's answer
-        # they come as [[str,str]] first string is partial verdict , second is description.
-        partial_verd = []
-        step_count = 0
-        for item in tat_response['partial_verdicts']:
-            # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
-            # info, so ill make a name up(this is just for visualization purposes)
-            step_count += 1
-            p = ("A_POSTERIORI_CHECK_%d"%step_count, item[0] , item[1])
-            partial_verd.append(p)
-            logger.debug("partial verdict received from TAT: %s"%str(p))
+                # generates a general verdict considering other steps partial verdicts besides TAT's
+                gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
 
-        # generates a general verdict considering other steps partial verdicts besides TAT's
-        gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
+                # overwrite for generating final verdict, description and report, the rest of the fields keep them unchanged
+                final_report = OrderedDict()
+                final_report['verdict'] = gen_verdict
+                final_report['description'] = gen_description
+                final_report['partial_verdicts'] = report
 
-        # overwrite for generating final verdict, description and report, the rest of the fields keep them unchanged
+                # lets generate test case report
+                self.current_tc.report = final_report
+                # for item in overridden_response:
+                #     self.current_tc.report.append(item)
 
-        assert type(tat_response) is dict
-        overridden_response = tat_response
-        overridden_response['verdict'] = gen_verdict
-        overridden_response['description'] = gen_description
-        overridden_response['partial_verdicts'] = report
+                # Save the final verdict as json
+                json_save = os.path.join(
+                    TMPDIR,
+                    tc_id + '_verdict.json'
+                )
+                try:
+                    with open(json_save, 'w') as f:
+                        json.dump(report, f)
+                except:
+                    CoordinatorError("Couldn't write the json file")
 
+            # change tc state
+            self.current_tc.change_state('finished')
+            logger.info("General verdict generated: %s" %json.dumps(self.current_tc.report))
 
-        # lets generate test case report
-        self.current_tc.report=[]
-        for item in overridden_response:
-            self.current_tc.report.append(item)
-
-
-        logger.info("General verdict generated: %s" %str(self.current_tc.report))
-        # pass to the next testcase
+        else:
+            logger.error("Error on TAT analysis reponse")
+            self.notify_coordination_error("Error on TAT analysis reponse",'')
+        # go to the next testcase
         # tc = self.next_test_case()
 
         # if tc:
@@ -1164,13 +1254,17 @@ class Coordinator:
     def next_step(self):
         """
         Simple iterator over the steps.
-        Starts the TC if current_TC is None
+        Goes to next TC if current_TC is None or finished
         :return: step or None if testcase finished
 
         """
         if self.current_tc is None:
             self.next_test_case()
         try:
+            # if None then nothing else to execute
+            if self.current_tc is None:
+                return None
+
             self.current_tc.current_step = next(self.current_tc._step_it)
 
             # skip postponed steps
@@ -1182,51 +1276,22 @@ class Coordinator:
             # return None when TC finished
             return None
 
-        logger.info('Next step to execute: %s'%self.current_tc.current_step.id)
+        # update step state to executing
+        self.current_tc.current_step.change_state('executing')
+
+        logger.info('Next step to execute: %s' % self.current_tc.current_step.id)
 
         return self.current_tc.current_step
 
-    def execute_step(self):
-        """
-        Notes:
-            stimulis: are executed by the IUTs - either user-assisted-iut(print in GUI) or automated IUTs
-            (agents receive the step_id and they interface with the IUTs somehow)
-            checks: are executed by the TATs either in an active mode(in a synchronous way)
-            or passive -at the end of the testcase-
-            verify: idem as stimulis, the difference is that we receive an answer when executing these steps
-
-        :returns: current step
-        """
-
-        # if self.current_tc.current_step is None:
-        #     self.next_step()
-
-        assert self.current_tc.current_step is not None
-
-        if self.current_tc.current_step.type == "stimuli":
-            self.current_tc.current_step.change_state('executing')
-
-        elif self.current_tc.current_step.type == "verify":
-            self.current_tc.current_step.change_state('executing')
-
-        elif self.current_tc.current_step.type == "check":
-            if ANALYSIS_MODE == 'step_by_step':
-                self.current_tc.current_step.change_state('executing')
-            elif ANALYSIS_MODE == 'post_mortem':
-                self.current_tc.current_step.change_state('postponed')
-            else:
-                CoordinatorError(message='ANALYSIS_MODE expected step_by_step or post_mortem, but %s found'%ANALYSIS_MODE)
-
-        return self.current_tc.current_step
 
     def states_summary(self):
         summ=[]
         if self.current_tc:
-            summ.append("Current test case %s" %self.current_tc.id)
+            summ.append("Current test case: %s, state: %s" %(self.current_tc.id,self.current_tc.state))
             if self.current_tc.current_step:
                 summ.append("Current step %s" %list((self.current_tc.current_step.to_dict(verbose=True).items())))
             else:
-                summ.append("Test case hasn't started yet")
+                summ.append("No step under execution.")
         else:
             summ.append("Testsuite not started yet")
         return summ
@@ -1277,12 +1342,12 @@ if __name__ == '__main__':
     # TODO point to the correct TED using session bootstrap message
 
     try:
-        logger.info('Instanciating coordinator..')
+        logger.info('Instantiating coordinator..')
         coordinator = Coordinator(connection, TD_COAP)
     except Exception as e:
         # at this level i cannot emit AMQP messages if sth fails
         error_msg = str(e)
-        logger.error(' Critical exception found: %s' % error_msg)
+        logger.error(' Critical exception found: %s , traceback: %s' %(error_msg,traceback.format_exc()))
         logger.debug(traceback.format_exc())
         sys.exit(1)
 
@@ -1304,17 +1369,22 @@ if __name__ == '__main__':
 
     except Exception as e:
         error_msg = str(e)
-        logger.error(' Critical exception found: %s' %error_msg)
+        logger.error(' Critical exception found: %s, traceback: %s' %(error_msg,traceback.format_exc()))
         logger.debug(traceback.format_exc())
 
         # lets push the error message into the bus
-        coordinator.producer.publish(json.dumps({'_type':'testcoordination.error',
-                                           'message': error_msg,
-                                           'traceback':traceback.format_exc(),
-                                           }),
-                               exchange=AMQP_EXCHANGE,
-                               routing_key='control.testcoordination.error'
-                              )
+        coordinator.channel.basic_publish(
+            body = json.dumps({
+                'traceback':traceback.format_exc(),
+                'message': error_msg,
+                '_type': 'testcoordination.error',
+            }),
+            exchange = AMQP_EXCHANGE,
+            routing_key ='control.testcoordination.error',
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
 
 
 
