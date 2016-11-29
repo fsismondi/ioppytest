@@ -8,6 +8,7 @@ TMPDIR = os.path.join( __abs_path,'tmp')
 DATADIR = os.path.join( __abs_path,'data')
 LOGDIR = os.path.join( __abs_path,'log')
 TD_DIR = os.path.join( __abs_path,'coap_testing_tool','extended_test_descriptions')
+PCAPDIR =  os.path.join( DATADIR,'dumps')
 
 # lets get the AMQP params from the ENV
 
