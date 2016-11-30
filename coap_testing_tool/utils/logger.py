@@ -35,19 +35,3 @@ def initialize_logger(output_dir, component_id):
     logger.addHandler(handler)
 
     return logger
-
-def logging_file_handler(output_dir):
-    # create debug file handler and set level to debug
-    handler = logging.FileHandler(os.path.join(output_dir, "all.log"), "w")
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("[ %(module)s] %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    return handler
-
-def logging_console_handler():
-    # create console handler and set level to info
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("[ %(module)s] %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    return handler
