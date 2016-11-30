@@ -6,18 +6,17 @@ import errno
 import json
 import os
 import traceback
-from collections import OrderedDict
-from itertools import cycle
-
+import sys
 import yaml
 import pika
 
+from itertools import cycle
+from collections import OrderedDict
 from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
 from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError
 from coap_testing_tool.utils.logger import initialize_logger
-import sys
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -34,7 +33,8 @@ COMPONENT_ID = 'test_coordinator'
 # TODO get this from finterop session context!
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 
-
+# init logging to stnd output and log files
+logger = initialize_logger(LOGDIR, COMPONENT_ID)
 
 
 ### AUX functions ###
@@ -386,9 +386,9 @@ class TestCase:
             logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis)")
             return True
 
-    def generate_final_verdict(self,tat_analysis_report_a_posteriori=None):
+    def generate_final_verdict(self,tat_post_mortem_analysis_report=None):
         """
-        Generates the final verdict and report taking into account the CHECKs and VERIFYs of the testcase
+        Generates the final verdict of TC and report taking into account the CHECKs and VERIFYs of the testcase
         :return: tuple: (final_verdict, verdict_description, tc_report) ,
                  where final_verdict in ("None", "error", "inconclusive","pass","fail")
                  where description is String type
@@ -419,14 +419,20 @@ class TestCase:
                     raise CoordinatorError(msg)
 
         # append at the end of the report the analysis done a posteriori (if any)
-        if tat_analysis_report_a_posteriori:
-            for item in tat_analysis_report_a_posteriori:
+        if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report)!=0:
+            logger.warning('WTF PASEE' + str(tat_post_mortem_analysis_report))
+            for item in tat_post_mortem_analysis_report:
                 # TODO process the items correctly
                 tc_report.append(item)
+                logger.warning('WTF ' +str(item))
                 final_verdict.update(item[1], item[2])
+        else:
+            # we cannot emit a final verdict if the report from TAT is empy (no CHECKS-> error verdict)
+            logger.warning('[VERDICT GENERATION] Empty list of report passed from TAT')
+            final_verdict.update('error', 'Test Analysis Tool returned an empty analysis report')
 
+        # hack to overwrite the final verdict MESSAGE in case of pass
         if final_verdict.get_value() == 'pass':
-            # hack to overwrite the verdict message
             final_verdict.update('pass','No interoperability error was detected,')
             logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
@@ -452,7 +458,6 @@ class Coordinator:
     |[*testcoordination.step.stimuli.executed*](#testcoordination-step-stimuli-executed)| Message pushed by UI or agent indicating the stimuli was executed.|
     |[*testcoordination.step.check.response*](#testcoordination-step-check-response)| TBD  (for step_by_step analysis).|
     |[*testcoordination.step.verify.response*](#testcoordination-step-verify-response)| Message pushed by UI or agent providing the response to verify step.|
-
     """
 
     def __init__(self, amqp_connection, ted_file):
@@ -468,24 +473,28 @@ class Coordinator:
         # AMQP queues and callbacks config
         self.connection = amqp_connection
         self.channel = self.connection.channel()
-        result1 = self.channel.queue_declare(queue='services@%s' %COMPONENT_ID)
-        result2= self.channel.queue_declare(queue='events@%s' %COMPONENT_ID)
 
-        self.services_q = result1.method.queue
-        self.events_q = result2.method.queue
+        self.services_q_name = 'services@%s' %COMPONENT_ID
+        self.events_q_name = 'events@%s' %COMPONENT_ID
 
-        # in case its not declared
-        self.channel.exchange_declare(exchange=AMQP_EXCHANGE,
-                                 type='topic',
-                                 durable=True,
-                                 )
+        result1 = self.channel.queue_declare(queue=self.services_q_name,auto_delete = True)
+        result2= self.channel.queue_declare(queue=self.events_q_name,auto_delete = True)
+
+        # self.services_q = result1.method.queue
+        # self.events_q = result2.method.queue
+
+        # # in case its not declared
+        # self.channel.exchange_declare(exchange=AMQP_EXCHANGE,
+        #                          type='topic',
+        #                          durable=True,
+        #                          )
 
         self.channel.queue_bind(exchange = AMQP_EXCHANGE,
-                           queue = self.services_q,
+                           queue = self.services_q_name,
                            routing_key = 'control.testcoordination.service')
 
         self.channel.queue_bind(exchange = AMQP_EXCHANGE,
-                           queue = self.events_q,
+                           queue = self.events_q_name,
                            routing_key = 'control.testcoordination')
 
         self.channel.basic_publish(body = json.dumps({"_type":'testcoordination.info',
@@ -495,11 +504,11 @@ class Coordinator:
                                    )
 
         self.channel.basic_consume(self.handle_service,
-                              queue = self.services_q,
+                              queue = self.services_q_name,
                               no_ack = False)
 
         self.channel.basic_consume(self.handle_control,
-                              queue = self.events_q,
+                              queue = self.events_q_name,
                               no_ack = False)
 
     def check_testsuite_finished (self):
@@ -529,98 +538,111 @@ class Coordinator:
     ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
 
     def notify_current_testcase(self):
+        _type = 'testcoordination.testcase.next'
+        r_key = 'control.testcoordination'
+
         # testcoordination notification
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': 'testcoordination.testcase.next'})
+        coordinator_notif.update({'_type':_type })
         coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
         coordinator_notif.update(self.current_tc.to_dict(verbose = True))
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key = 'control.testcoordination',
-            exchange = AMQP_EXCHANGE,
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',
             )
         )
 
     def notify_current_step_execute(self):
-        # testcoordination notification
+        _type = 'testcoordination.step.execute'
+        r_key = 'control.testcoordination'
+
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': 'testcoordination.step.execute'})
+        coordinator_notif.update({'_type':_type })
         coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
         coordinator_notif.update(self.current_tc.current_step.to_dict(verbose = True))
         #coordinator_notif={**coordinator_notif,**self.current_tc.current_step.to_dict(verbose=True)}
 
         self.channel.basic_publish(
-        body = json.dumps(coordinator_notif,ensure_ascii=False),
-        routing_key = 'control.testcoordination',
-        exchange = AMQP_EXCHANGE,
-        properties=pika.BasicProperties(
-            content_type='application/json',
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
             )
         )
 
     def notify_testcase_finished(self):
-            # testcoordination notification
-            coordinator_notif = OrderedDict()
-            coordinator_notif.update({'_type': 'testcoordination.testcase.finished'})
-            coordinator_notif.update(
-                {'message': 'Testcase %s finished' % self.current_tc.id})
-            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+        _type = 'testcoordination.testcase.finished'
+        r_key = 'control.testcoordination'
+        # testcoordination notification
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type': _type})
+        coordinator_notif.update({'message': 'Testcase %s finished' % self.current_tc.id})
+        coordinator_notif.update(self.current_tc.to_dict(verbose=True))
 
-            self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key='control.testcoordination',
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                    content_type='application/json',
-                )
+        self.channel.basic_publish(
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
             )
+        )
 
     def notify_testcase_verdict(self):
-            # testcoordination notification
-            coordinator_notif = OrderedDict()
-            coordinator_notif.update({'_type': 'testcoordination.testcase.verdict'})
-            # lets add the report info of the TC into the answer
-            coordinator_notif.update(self.current_tc.report)
-            # lets add basic info about the TC
-            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+        _type = 'testcoordination.testcase.verdict'
+        r_key = 'control.testcoordination'
 
-            self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key='control.testcoordination',
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                    content_type='application/json',
-                )
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type':_type })
+        # lets add the report info of the TC into the answer
+        coordinator_notif.update(self.current_tc.report)
+        # lets add basic info about the TC
+        coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+
+        self.channel.basic_publish(
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
             )
+        )
 
     def notify_coordination_error(self, message, error_code):
+        _type = 'testcoordination.error'
+        r_key =  'control.testcoordination.error'
+
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': 'testcoordination.error',})
+        coordinator_notif.update({'_type':_type })
         coordinator_notif.update({'message': message,})
         coordinator_notif.update({'error_code' : error_code,})
 
         self.channel.basic_publish(
-            body = json.dumps(coordinator_notif,ensure_ascii=False,sort_keys=True),
-            routing_key = 'control.testcoordination.error',
-            exchange = AMQP_EXCHANGE,
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',
             )
         )
 
     def notify_testsuite_finished(self):
+        _type = 'testcoordination.testsuite.finished'
+        r_key =  'control.testcoordination'
         # testcoordination notification
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': 'testcoordination.testsuite.finished'})
+        coordinator_notif.update({'_type':_type })
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key='control.testcoordination',
+            routing_key=r_key,
             exchange=AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',
@@ -628,9 +650,10 @@ class Coordinator:
         )
 
     def call_service_sniffer_start(self,capture_id,filter_if,filter_proto):
-        # testcoordination notification
+        _type = 'sniffing.start'
+        r_key =  'control.sniffing.service'
         body = OrderedDict()
-        body.update({'_type': 'sniffing.start'})
+        body.update({'_type': _type})
         body.update({'capture_id': capture_id})
         body.update({'filter_if': filter_if})
         body.update({'filter_proto': filter_proto})
@@ -638,27 +661,69 @@ class Coordinator:
         try:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
-            ret = amqp_rpc_client.call(routing_key="control.sniffing.service", body=body)
-            logger.info("Recieved answer from sniffer: sniffing.start, answer: %s" % (str(ret)))
+            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,str(ret)))
             return ret['ok']
         except Exception as e:
             raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                            % (str(ret), str(e)))
 
     def call_service_sniffer_stop(self):
-        # testcoordination notification
+        _type = 'sniffing.stop'
+        r_key = 'control.sniffing.service'
         body = OrderedDict()
-        body.update({'_type': 'sniffing.stop'})
+        body.update({'_type': _type})
 
         try:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
-            ret = amqp_rpc_client.call(routing_key="control.sniffing.service", body=body)
-            logger.info("Recieved answer from sniffer: sniffing.stop, answer: %s" % (str(ret)))
+            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type, str(ret)))
             return ret['ok']
         except Exception as e:
             raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                    % (str(ret), str(e)))
+
+    def call_service_sniffer_get_capture(self, capture_id):
+        _type = 'sniffing.getcapture'
+        r_key = 'control.sniffing.service'
+        body = OrderedDict()
+        body.update({'_type': _type})
+        body.update({'capture_id': capture_id})
+
+        try:
+            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
+            ret = ''
+            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,str(ret)))
+            return ret
+
+        except Exception as e:
+            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+                           % (str(ret), str(e)))
+
+    def call_service_testcase_analysis(self, testcase_id, testcase_ref, filetype, filename, value):
+        _type = 'analysis.testcase.analyze'
+        r_key = 'control.analysis.service'
+        body = OrderedDict()
+        body.update({'_type': _type})
+        body.update({'testcase_id': testcase_id})
+        body.update({'testcase_ref': testcase_ref})
+        body.update({'filetype': filetype})
+        body.update({'filename': filename})
+        body.update({'value': value})
+
+        try:
+            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
+            ret = ''
+            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
+            logger.info("Received answer from TAT: %s, answer: %s" % (_type, str(ret)))
+            return ret
+
+        except Exception as e:
+            raise SnifferError("TAT API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+                                       % (str(ret), str(e)))
+
 
     ### API ENDPOINTS ###
 
@@ -1075,10 +1140,8 @@ class Coordinator:
                         self.current_tc.current_step.state))
 
 
-    #TODO internal use of the coordinator or should be added to the API calls?
     def finish_testcase(self):
         """
-
         :return:
         """
         assert self.current_tc.check_all_steps_finished()
@@ -1094,59 +1157,38 @@ class Coordinator:
         # TODO first tell sniffer to stop!
 
         if ANALYSIS_MODE == 'post_mortem' :
-            # TODO put all this code insde a remote_service_call_get_capture()
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id = COMPONENT_ID)
-            body = {'_type':'sniffing.getcapture','capture_id': tc_id}
-            ret = ''
-            try:
-                ret = amqp_rpc_client.call(routing_key ="control.sniffing.service", body = body)
-                logger.info("Recieved answer from sniffer: sniffing.getcapture, data: %s" %(str(ret)))
-            except Exception as e:
-                raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                                   %(str(ret),str(e)))
+
+            sniffer_response = self.call_service_sniffer_get_capture(tc_id)
 
             # let's try to save the file and then push it to results repo
-            # TODO push PCAP to results repo
             pcap_file_base64 = ''
-            try:
-                pcap_file_base64 = ret['value']
-                filename = ret['filename']
-                # save to file
-                with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
-                    nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                    logger.info("Pcap correctly saved %dB at %s" % (nb, TMPDIR))
-            except Exception as e:
-                raise CoordinatorError("Cannot decode received PCAP received from sniffer \n Exception info: %s "
-                                       %(str(e)))
+            pcap_file_base64 = sniffer_response['value']
+            filename = sniffer_response['filename']
+            # save to file
+            with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
+                nb = pcap_file.write(base64.b64decode(pcap_file_base64))
+                logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
 
+            # Forwards PCAP to TAT API and get CHECKs info
+            tat_response = self.call_service_testcase_analysis(tc_id,
+                                                               tc_ref,
+                                                               filetype = "pcap_base64",
+                                                               filename = tc_id+".pcap",
+                                                               value = pcap_file_base64)
 
-            # Forwards PCAP to TAT API
-            body = {
-                '_type': 'analysis.testcase.analyze',
-                'testcase_id': tc_id,
-                "testcase_ref": tc_ref,
-                "filetype":"pcap_base64",
-                "filename":tc_id+".pcap",
-                "value":pcap_file_base64
-            }
-
-            tat_response = amqp_rpc_client.call(routing_key="control.analysis.service", body=body)
-            logger.info("Response received from TAT: %s " % (tat_response))
+            logger.info("Response received from TAT: %s " % str(tat_response))
 
             if tat_response['ok'] == True:
                 # TODO check if the response is ok first, else raise an error
 
                 # Save the json object received
-
-                json_save = os.path.join(
+                json_file = os.path.join(
                     TMPDIR,
                     tc_id + '_analysis.json'
                 )
-                try:
-                    with open(json_save, 'w') as f:
-                        json.dump(tat_response, f)
-                except:
-                    CoordinatorError("Couldn't write the json file")
+
+                with open(json_file, 'w') as f:
+                    json.dump(tat_response, f)
 
                 # let's process the partial verdicts from TAT's answer
                 # they come as [[str,str]] first string is partial verdict , second is description.
@@ -1158,7 +1200,7 @@ class Coordinator:
                     step_count += 1
                     p = ("A_POSTERIORI_CHECK_%d"%step_count, item[0] , item[1])
                     partial_verd.append(p)
-                    logger.debug("partial verdict received from TAT: %s"%str(p))
+                    logger.debug("Processing partical verdict received from TAT: %s"%str(p))
 
                 # generates a general verdict considering other steps partial verdicts besides TAT's
                 gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
@@ -1175,15 +1217,16 @@ class Coordinator:
                 #     self.current_tc.report.append(item)
 
                 # Save the final verdict as json
-                json_save = os.path.join(
+                json_file = os.path.join(
                     TMPDIR,
                     tc_id + '_verdict.json'
                 )
-                try:
-                    with open(json_save, 'w') as f:
+                with open(json_file, 'w') as f:
                         json.dump(report, f)
-                except:
-                    CoordinatorError("Couldn't write the json file")
+
+            else:
+                logger.error('Response from TAT not ok: %s'%(tat_response))
+                return
 
             # change tc state
             self.current_tc.change_state('finished')
@@ -1192,21 +1235,7 @@ class Coordinator:
         else:
             logger.error("Error on TAT analysis reponse")
             self.notify_coordination_error("Error on TAT analysis reponse",'')
-        # go to the next testcase
-        # tc = self.next_testcase()
-
-        # if tc:
-        #     information = OrderedDict()
-        #     information['_type'] = 'information'
-        #     information['next_testcase'] = tc.id
-        #     ret.append(information)
-        # else:
-        #     information = OrderedDict()
-        #     information['_type'] = 'information'
-        #     information['next_testcase'] = None
-        #     ret.append(information)
-        #
-        # logger.info("sending response to GUI " + json.dumps(ret))
+            return
 
         return self.current_tc.report
 
@@ -1287,84 +1316,3 @@ class Coordinator:
             return self.teds[testcase_id]
         except KeyError:
             return None
-
-if __name__ == '__main__':
-
-    #init logging to stnd output and log files
-    logger = initialize_logger(LOGDIR,COMPONENT_ID)
-
-    # generate dirs
-    for d in TMPDIR, DATADIR, LOGDIR:
-        try:
-            os.makedirs(d)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-
-
-    ### SETUP CONNECTION ###
-
-    try:
-        logger.info('Setting up AMQP connection..')
-        # setup AMQP connection
-        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials = credentials))
-
-    except pika.exceptions.ConnectionClosed as cc:
-        logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
-        sys.exit(1)
-
-    ### INIT COMPONENTS ###
-
-    # TODO point to the correct TED using session bootstrap message
-
-    try:
-        logger.info('Instantiating coordinator..')
-        coordinator = Coordinator(connection, TD_COAP)
-    except Exception as e:
-        # at this level i cannot emit AMQP messages if sth fails
-        error_msg = str(e)
-        logger.error(' Critical exception found: %s , traceback: %s' %(error_msg,traceback.format_exc()))
-        logger.debug(traceback.format_exc())
-        sys.exit(1)
-
-    ### RUN COMPONENTS ###
-
-    try:
-        logger.info('Starting coordinator execution ..')
-        # start consuming messages
-        coordinator.run()
-        logger.info('Finishing...')
-
-    except pika.exceptions.ConnectionClosed as cc:
-        logger.error(' AMQP connection closed: %s' % str(cc))
-        sys.exit(1)
-
-    except KeyboardInterrupt as KI:
-        #close AMQP connection
-        connection.close()
-
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(' Critical exception found: %s, traceback: %s' %(error_msg,traceback.format_exc()))
-        logger.debug(traceback.format_exc())
-
-        # lets push the error message into the bus
-        coordinator.channel.basic_publish(
-            body = json.dumps({
-                'traceback':traceback.format_exc(),
-                'message': error_msg,
-                '_type': 'testcoordination.error',
-            }),
-            exchange = AMQP_EXCHANGE,
-            routing_key ='control.testcoordination.error',
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
-        )
-
-
-
