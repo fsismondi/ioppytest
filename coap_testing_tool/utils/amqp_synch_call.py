@@ -11,6 +11,26 @@ from coap_testing_tool.utils.exceptions import TatError, SnifferError,Coordinato
 from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
 from collections import OrderedDict
 
+
+def amqp_reply(channel, props, response):
+    # check first that sender didnt forget about reply to and corr id
+    try:
+        reply_to = props.reply_to
+        correlation_id = props.correlation_id
+    except KeyError:
+        logging.error(msg='There is an error on the request, either reply_to or correlation_id not provided')
+        return
+
+    channel.basic_publish(
+        body=json.dumps(response, ensure_ascii=False),
+        routing_key=reply_to,
+        exchange=AMQP_EXCHANGE,
+        properties=pika.BasicProperties(
+            content_type='application/json',
+            correlation_id=correlation_id,
+        )
+    )
+
 # timeout in seconds
 AMQP_REPLY_TOUT = 10
 
@@ -98,7 +118,7 @@ if __name__ == '__main__':
         virtual_host=AMQP_VHOST,
         credentials=credentials))
 
-    amqpRPCClient = AmqpSynchronousCallClient("dummy_component",connection)
+    amqpRPCClient = AmqpSynchronousCallClient("dummy_component")
 
     body = {'_type': 'sniffing.getCapture', 'testcase_id': 'testcase pepito'}
     ret = amqpRPCClient.call("control.sniffing.service", body=body)
