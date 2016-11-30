@@ -105,6 +105,7 @@ def on_request(ch, method, props, body):
         amqp_reply(ch, props, response)
 
     elif req_type == 'sniffing.stop':
+
         logger.info('Processing %s request' % req_type)
         # try:
         #     capture_id = req_dict['capture_id']
@@ -123,11 +124,13 @@ def on_request(ch, method, props, body):
         amqp_reply(ch, props, response)
 
     else:
-        response = {
-            "_type": "sniffing.error",
-            "value": "Wrong request received: %" % str(req_dict)
-        }
+        response = OrderedDict()
+        response.update({'_type': req_type})
+        response.update({'ok': False})
+        response.update({'value': 'Wrong request received: %s' % str(req_dict)})
+
         amqp_reply(ch, props, response)
+        logger.error('Wrong request received: %s' % str(req_dict))
 
 ### IMPLEMENTATION OF SERVICES ###
 
