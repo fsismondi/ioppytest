@@ -3,12 +3,15 @@
 import os
 import sys
 
-__abs_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-TMPDIR = os.path.join( __abs_path,'tmp')
-DATADIR = os.path.join( __abs_path,'data')
+#__abs_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+__abs_path = os.path.dirname(os.path.realpath(__file__))
+project_dir = os.path.join(__abs_path, '..')
+
+TMPDIR = os.path.join( project_dir,'tmp')
+DATADIR = os.path.join( project_dir,'data')
 PCAP_DIR =  os.path.join( DATADIR,'dumps')
-LOGDIR = os.path.join( __abs_path,'log')
-TD_DIR = os.path.join( __abs_path,'coap_testing_tool','extended_test_descriptions')
+LOGDIR = os.path.join( project_dir,'log')
+TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptions')
 
 # lets get the AMQP params from the ENV
 

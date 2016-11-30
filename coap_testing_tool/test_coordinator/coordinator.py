@@ -14,39 +14,30 @@ import pika
 
 from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
 from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
-from coap_testing_tool.utils.amqp_synch_call import AmqpSynchronousCallClient
+from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError
 from coap_testing_tool.utils.logger import initialize_logger
 import sys
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
+# TODO get filter from config of the TEDs
 COAP_CLIENT_IUT_MODE =  'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
 ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
-
+SNIFFER_FILTER_PROTO = 'udp port 5683'
+SNIFFER_FILTER_IF = 'lo0'
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
-COMPONENT_DIR = 'coap_testing_tool/test_coordinator'
-DEFAULT_PLATFORM = "127.0.0.1:15672"
-DEFAULT_EXCHANGE = "default"
-
-# TODO delete after AMQP interfaces implemented
-API_TAT = "http://127.0.0.1:2080"
-API_SNIFFER = "http://127.0.0.1:8081"
-SNIFFER_PARAMS = ('udp port 5683', 'lo0')
-
 
 # set temporarilly as default
 # TODO get this from finterop session context!
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 
 
-# Other API params
-#from webserver import API_TAT,API_SNIFFER
 
 
-# - - - AUX functions - - - - -
+### AUX functions ###
 
 def list_to_str(ls):
     """
@@ -69,11 +60,7 @@ def list_to_str(ls):
             ret += l +' \n '
     return ret
 
-
-
-
-# - - - - YAML parser aux classes and methods - - - -
-
+#YAML parser aux classes and methods
 def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
@@ -112,7 +99,6 @@ def import_teds(yamlfile):
         #             logger.info(' \t Parsed test case step %s :' % s)
 
     return td_list
-
 
 class Verdict:
     """
@@ -205,7 +191,6 @@ class Verdict:
         :rtype: str
         """
         return self.__values[self.__value]
-
 
 class Iut:
     def __init__(self, node = None, mode="user_assisted"):
@@ -442,14 +427,13 @@ class TestCase:
 
         if final_verdict.get_value() == 'pass':
             # hack to overwrite the verdict message
-            final_verdict.update('pass','Test case executed correctly')
+            final_verdict.update('pass','No interoperability error was detected,')
             logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
             logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
             logger.debug("[VERDICT GENERATION] info: %s' "%final_verdict.get_value() )
 
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
-
 
 class Coordinator:
     """
@@ -470,7 +454,6 @@ class Coordinator:
     |[*testcoordination.step.verify.response*](#testcoordination-step-verify-response)| Message pushed by UI or agent providing the response to verify step.|
 
     """
-
 
     def __init__(self, amqp_connection, ted_file):
         # import TEDs (test extended descriptions), the import_ted "builds" the test cases
@@ -513,12 +496,11 @@ class Coordinator:
 
         self.channel.basic_consume(self.handle_service,
                               queue = self.services_q,
-                              no_ack = True)
+                              no_ack = False)
 
         self.channel.basic_consume(self.handle_control,
                               queue = self.events_q,
-                              no_ack = True)
-
+                              no_ack = False)
 
     def check_testsuite_finished (self):
         #cyclic as user may not have started by the first TC
@@ -544,28 +526,7 @@ class Coordinator:
         logger.info('start consuming..')
         self.channel.start_consuming()
 
-
     ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
-
-    def amqp_reply(self,props, response):
-
-        # check first that sender didnt forget about reply to and corr id
-        try:
-            reply_to = props.reply_to
-            correlation_id = props.correlation_id
-        except KeyError:
-            logger.error(msg='There is an error on the request, either reply_to or correlation_id not provided')
-            return
-
-        self.channel.basic_publish(
-            body = json.dumps(response,ensure_ascii=False),
-            routing_key=reply_to,
-            exchange = AMQP_EXCHANGE,
-            properties = pika.BasicProperties(
-                content_type='application/json',
-                correlation_id = correlation_id,
-            )
-        )
 
     def notify_current_testcase(self):
         # testcoordination notification
@@ -666,11 +627,44 @@ class Coordinator:
             )
         )
 
+    def call_service_sniffer_start(self,capture_id,filter_if,filter_proto):
+        # testcoordination notification
+        body = OrderedDict()
+        body.update({'_type': 'sniffing.start'})
+        body.update({'capture_id': capture_id})
+        body.update({'filter_if': filter_if})
+        body.update({'filter_proto': filter_proto})
+
+        try:
+            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
+            ret = ''
+            ret = amqp_rpc_client.call(routing_key="control.sniffing.service", body=body)
+            logger.info("Recieved answer from sniffer: sniffing.start, answer: %s" % (str(ret)))
+            return ret['ok']
+        except Exception as e:
+            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+                           % (str(ret), str(e)))
+
+    def call_service_sniffer_stop(self):
+        # testcoordination notification
+        body = OrderedDict()
+        body.update({'_type': 'sniffing.stop'})
+
+        try:
+            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
+            ret = ''
+            ret = amqp_rpc_client.call(routing_key="control.sniffing.service", body=body)
+            logger.info("Recieved answer from sniffer: sniffing.stop, answer: %s" % (str(ret)))
+            return ret['ok']
+        except Exception as e:
+            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+                                   % (str(ret), str(e)))
 
     ### API ENDPOINTS ###
 
     def handle_service(self, ch, method, properties, body):
 
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         logger.debug('[services queue callback] service request received on the queue: %s || %s'
                       %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
 
@@ -683,11 +677,11 @@ class Coordinator:
 
         if event_type == "testcoordination.testsuite.gettestcases":
             # this is a request so I answer directly on the message
-            testcases = self.get_test_cases_basic(verbose=True)
+            testcases = self.get_testcases_basic(verbose=True)
             response.update({'_type': event_type})
             response.update({'ok': True})
             response.update(testcases)
-            self.amqp_reply(properties,response)
+            amqp_reply(self.channel, properties,response)
 
         elif event_type == "testcoordination.testsuite.getstatus":
             status = self.states_summary()
@@ -695,7 +689,7 @@ class Coordinator:
             response.update({'_type': event_type})
             response.update({'ok': True})
             response.update({'status': status})
-            self.amqp_reply(properties, response)
+            amqp_reply(self.channel, properties, response)
 
         else:
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
@@ -707,6 +701,7 @@ class Coordinator:
 
     def handle_control(self, ch, method, properties, body):
 
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         logger.debug('[event queue callback] service request received on the queue: %s || %s'
                       %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
 
@@ -730,8 +725,8 @@ class Coordinator:
             testcase_t.change_state("skipped")
 
             # if skipped tc is current test case then next tc
-            if testcase_skip == self.current_tc.id:
-                self.next_test_case()
+            if self.current_tc is not None and (testcase_skip == self.current_tc.id):
+                self.next_testcase()
                 self.notify_current_testcase()
 
 
@@ -751,7 +746,7 @@ class Coordinator:
             # assert and get testcase_id from message
             try:
                 # jump to selected tc
-                self.select_test_case(event['testcase_id'])
+                self.select_testcase(event['testcase_id'])
 
             except KeyError:
                 error_msg = "Incorrect or empty testcase_id"
@@ -805,7 +800,7 @@ class Coordinator:
             if self.check_testsuite_finished():
                 self.notify_testsuite_finished()
             else:
-                self.start_test_case()
+                self.start_testcase()
 
                 # send general notif
                 self.notify_current_step_execute()
@@ -828,7 +823,7 @@ class Coordinator:
                 self.notify_current_step_execute()
             elif not self.check_testsuite_finished():
                 # im at the end of the TC:
-                self.finish_test_case()
+                self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
             else:
@@ -862,7 +857,7 @@ class Coordinator:
                 self.notify_current_step_execute()
             elif not self.check_testsuite_finished():
                 # im at the end of the TC:
-                self.finish_test_case()
+                self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
             else:
@@ -895,7 +890,7 @@ class Coordinator:
                 self.notify_current_step_execute()
             elif not self.check_testsuite_finished():
                 # im at the end of the TC:
-                self.finish_test_case()
+                self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
             else:
@@ -903,7 +898,7 @@ class Coordinator:
                 self.notify_testsuite_finished()
 
         # elif event_type == "testcoordination.testcase.finish":
-        #     self.finish_test_case()
+        #     self.finish_testcase()
         #
         #
         #     # send general notif
@@ -918,7 +913,7 @@ class Coordinator:
 
     ### TRANSITION METHODS for the Coordinator FSM ###
 
-    def get_test_cases_basic(self, verbose = None):
+    def get_testcases_basic(self, verbose = None):
 
         resp = []
         for tc_v in self.teds.values():
@@ -929,12 +924,12 @@ class Coordinator:
 
         return {'tc_list' : resp}
 
-    def get_test_cases_list(self):
+    def get_testcases_list(self):
         return list(self.teds.keys())
 
     #def select_testcases(self, tc_id):
 
-    def select_test_case(self,params):
+    def select_testcase(self,params):
         """
         this is more like a jump to function rather than select
         :param params: test case id
@@ -965,7 +960,7 @@ class Coordinator:
                 tc.reinit()
             # init testcase if None
             if self.current_tc is None:
-                self.next_test_case()
+                self.next_testcase()
             return self.current_tc
         except:
             raise
@@ -975,49 +970,38 @@ class Coordinator:
         # TODO prepare a test suite report of the tescases verdicts?
         pass
 
-    def start_test_case(self):
+    def start_testcase(self):
         """
-        :return: next step to be executed
+
+        :return:
         """
-        global API_SNIFFER
-        global SNIFFER_PARAMS
-
-
-        # TODO get filter from config of the TEDs
-        par = {
-            'testcase_id': self.current_tc.id[:-4],
-            'filter': SNIFFER_PARAMS[0],
-            'interface': SNIFFER_PARAMS[1],
-        }
-
-        # TODO implement in separate method & handle it with RMQ messages
-        # sniffer_url = API_SNIFFER + '/sniffer_api/launchSniffer'
-        # try:
-        #     r = requests.post(sniffer_url, params=par)
-        #     logger.info(
-        #         "Content of the response on %s call with %s is %s",
-        #         sniffer_url,
-        #         par,
-        #         r.content
-        #     )
-        # except Exception as e:
-        #     raise SnifferError("Sniffer API doesn't respond, maybe it isn't up yet? \n Exception thrown %s"%str(e))
-
+        # TODO add some doc!!!
 
         try:
             # init testcase and step and their states if they are None
             if self.current_tc is None or self.current_tc.state == 'finished':
-                self.next_test_case()
+                self.next_testcase()
 
             if self.current_tc.current_step is None:
                 self.next_step()
 
             self.current_tc.change_state('executing')
-
-            return self.current_tc.current_step
         except:
             raise
 
+        sniff_params = {
+            'capture_id': self.current_tc.id[:-4],
+            'filter_proto': SNIFFER_FILTER_PROTO,
+            'filter_if': SNIFFER_FILTER_IF,
+        }
+
+        if ANALYSIS_MODE == 'post_mortem':
+            if self.call_service_sniffer_start(**sniff_params):
+                logger.info('Sniffer succesfully started')
+            else:
+                logger.error('Sniffer couldnt be started')
+
+        return self.current_tc.current_step
 
     def process_verify_step_response(self, verify_response):
         # some sanity checks on the states
@@ -1092,16 +1076,13 @@ class Coordinator:
 
 
     #TODO internal use of the coordinator or should be added to the API calls?
-    def finish_test_case(self):
+    def finish_testcase(self):
         """
 
         :return:
         """
         assert self.current_tc.check_all_steps_finished()
         self.current_tc.current_step = None
-
-        global API_SNIFFER
-        global API_TAT
 
         # get TC params
         #tc_id = self.current_tc.id
@@ -1113,13 +1094,13 @@ class Coordinator:
         # TODO first tell sniffer to stop!
 
         if ANALYSIS_MODE == 'post_mortem' :
-
+            # TODO put all this code insde a remote_service_call_get_capture()
             amqp_rpc_client = AmqpSynchronousCallClient(component_id = COMPONENT_ID)
-            body = {'_type':'sniffing.getCapture','testcase_id': tc_id}
+            body = {'_type':'sniffing.getcapture','capture_id': tc_id}
             ret = ''
             try:
                 ret = amqp_rpc_client.call(routing_key ="control.sniffing.service", body = body)
-                logger.info("Recieved answer from sniffer: sniffing.getCapture, data: %s" %(str(ret)))
+                logger.info("Recieved answer from sniffer: sniffing.getcapture, data: %s" %(str(ret)))
             except Exception as e:
                 raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                    %(str(ret),str(e)))
@@ -1141,7 +1122,7 @@ class Coordinator:
 
             # Forwards PCAP to TAT API
             body = {
-                '_type': 'analysis.testCaseAnalyze',
+                '_type': 'analysis.testcase.analyze',
                 'testcase_id': tc_id,
                 "testcase_ref": tc_ref,
                 "filetype":"pcap_base64",
@@ -1212,17 +1193,17 @@ class Coordinator:
             logger.error("Error on TAT analysis reponse")
             self.notify_coordination_error("Error on TAT analysis reponse",'')
         # go to the next testcase
-        # tc = self.next_test_case()
+        # tc = self.next_testcase()
 
         # if tc:
         #     information = OrderedDict()
         #     information['_type'] = 'information'
-        #     information['next_test_case'] = tc.id
+        #     information['next_testcase'] = tc.id
         #     ret.append(information)
         # else:
         #     information = OrderedDict()
         #     information['_type'] = 'information'
-        #     information['next_test_case'] = None
+        #     information['next_testcase'] = None
         #     ret.append(information)
         #
         # logger.info("sending response to GUI " + json.dumps(ret))
@@ -1230,7 +1211,7 @@ class Coordinator:
         return self.current_tc.report
 
 
-    def next_test_case(self):
+    def next_testcase(self):
         """
         circular iterator over the testcases returns only not yet executed ones
         :return: current test case (Tescase object) or None if nothing else left to execute
@@ -1259,7 +1240,7 @@ class Coordinator:
 
         """
         if self.current_tc is None:
-            self.next_test_case()
+            self.next_testcase()
         try:
             # if None then nothing else to execute
             if self.current_tc is None:
@@ -1307,7 +1288,6 @@ class Coordinator:
         except KeyError:
             return None
 
-
 if __name__ == '__main__':
 
     #init logging to stnd output and log files
@@ -1322,7 +1302,7 @@ if __name__ == '__main__':
                 raise
 
 
-    ### SETUPING UP CONNECTION ###
+    ### SETUP CONNECTION ###
 
     try:
         logger.info('Setting up AMQP connection..')
