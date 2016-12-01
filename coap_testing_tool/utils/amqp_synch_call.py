@@ -17,10 +17,13 @@ def amqp_reply(channel, props, response):
     try:
         reply_to = props.reply_to
         correlation_id = props.correlation_id
+        logging.info("reply_to: %s type: %s"%(str(reply_to),str(type(reply_to))))
+        logging.info("corr_id: %s type: %s" % (str(correlation_id), str(type(correlation_id))))
     except KeyError:
         logging.error(msg='There is an error on the request, either reply_to or correlation_id not provided')
         return
 
+    logging.debug('Sending reply through the bus: r_key: %s , corr_id: %s'%(reply_to,correlation_id))
     channel.basic_publish(
         body=json.dumps(response, ensure_ascii=False),
         routing_key=reply_to,
@@ -120,7 +123,7 @@ if __name__ == '__main__':
 
     amqpRPCClient = AmqpSynchronousCallClient("dummy_component")
 
-    body = {'_type': 'sniffing.getCapture', 'testcase_id': 'testcase pepito'}
+    body = {'_type': 'sniffing.getcapture', 'testcase_id': 'testcase pepito'}
     ret = amqpRPCClient.call("control.sniffing.service", body=body)
 
     out = ret['value']
