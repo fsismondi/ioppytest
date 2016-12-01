@@ -32,6 +32,7 @@ COMPONENT_ID = 'test_coordinator'
 # set temporarilly as default
 # TODO get this from finterop session context!
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
+TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
 
 # init logging to stnd output and log files
 logger = initialize_logger(LOGDIR, COMPONENT_ID)
@@ -60,7 +61,7 @@ def list_to_str(ls):
             ret += l +' \n '
     return ret
 
-#YAML parser aux classes and methods
+### YAML parser aux classes and methods ###
 def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
@@ -68,7 +69,18 @@ def testcase_constructor(loader, node):
     #print("pasing test case: " + str(state))
     instance.__init__(**state)
 
+
+def test_config_constructor(loader, node):
+    instance = TestConfig.__new__(TestConfig)
+    yield instance
+    state = loader.construct_mapping(node, deep=True)
+    #print("pasing test case: " + str(state))
+    instance.__init__(**state)
+
+yaml.add_constructor(u'!configuration', test_config_constructor)
+
 yaml.add_constructor(u'!testcase', testcase_constructor)
+
 
 # def yaml_include(loader, node):
 #     # Get the path out of the yaml file
@@ -80,13 +92,10 @@ yaml.add_constructor(u'!testcase', testcase_constructor)
 # yaml.add_constructor("!include", yaml_include)
 # yaml.add_constructor(u'!configuration', testcase_constructor)
 
-
 def import_teds(yamlfile):
     """
-    TODO implement specif import for configs? or use the same?
-
     :param yamlfile:
-    :return: list of imported test cases objects
+    :return: list of imported testCase(s) and testConfig(s) object(s)
     """
     td_list = []
     with open(yamlfile, "r", encoding="utf-8") as stream:
@@ -95,10 +104,14 @@ def import_teds(yamlfile):
              if type(yaml_doc) is TestCase:
                  logger.debug(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
                  td_list.append(yaml_doc)
-        #         for s in yaml_doc.sequence:
-        #             logger.info(' \t Parsed test case step %s :' % s)
+             elif type(yaml_doc) is TestConfig:
+                 logger.debug(' Parsed test case config: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                 td_list.append(yaml_doc)
+             else:
+                 logger.error('Couldnt processes import: %s from %s'%(str(yaml_doc),yamlfile))
 
     return td_list
+
 
 class Verdict:
     """
@@ -215,10 +228,26 @@ class Iut:
             return "%s(node=%s, mode=%s)" % (self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
         return "%s(node=%s)" % (self.__class__.__name__, self.node)
 
-class Config:
-     def __init__(self,config_id, uri, sniffers_configs, topology, description):
-        pass
-        #TBD
+class TestConfig:
+    def __init__(self, configuration_id, uri, nodes, topology, description):
+        self.id = configuration_id
+        self.uri = uri
+        self.nodes = nodes
+        self.topology = topology
+        self.description = description
+
+    def to_dict(self,verbose=None):
+
+        d = OrderedDict()
+        d['configuration_id'] = self.id
+
+        if verbose:
+            d['configuration_ref'] = self.uri
+            d['nodes'] = self.nodes
+            d['topology'] = self.topology
+            d['description'] = self.description
+
+        return dict(d)
 
 class Step():
 
@@ -314,7 +343,7 @@ class TestCase:
         self.pre_conditions = pre_conditions
         self.sequence=[]
         for s in sequence:
-            # TODO add more sanity checks
+            # some sanity checks of imported steps
             try:
                 assert "step_id" and "description" and "type" in s
                 if s['type']=='stimuli':
@@ -460,12 +489,25 @@ class Coordinator:
     |[*testcoordination.step.verify.response*](#testcoordination-step-verify-response)| Message pushed by UI or agent providing the response to verify step.|
     """
 
-    def __init__(self, amqp_connection, ted_file):
-        # import TEDs (test extended descriptions), the import_ted "builds" the test cases
-        imported_docs = import_teds(ted_file)
+    def __init__(self, amqp_connection, ted_file, tc_configs_files):
+        # first let's import the TC configurations
+        imported_configs = import_teds(tc_configs_files)
+        self.tc_configs = OrderedDict()
+        for tc_config in imported_configs:
+            self.tc_configs[tc_config.id]=tc_config
+
+        logger.info('Imports: %s TC configurations imported'%len(self.tc_configs))
+
+        # lets import TCs and make sure there's a tc config for each one of them
+        imported_teds = import_teds(ted_file)
         self.teds=OrderedDict()
-        for ted in imported_docs:
+        for ted in imported_teds:
             self.teds[ted.id]=ted
+            if ted.configuration_id not in self.tc_configs:
+                logger.error('Missing configuration:%s for test case:%s '%(ted.configuration_id,ted.id))
+            assert ted.configuration_id in self.tc_configs
+
+        logger.info('Imports: %s test cases imported' % len(self.teds))
         # test cases iterator (over the TC objects, not the keys)
         self._ted_it = cycle(self.teds.values())
         self.current_tc = None
@@ -497,11 +539,16 @@ class Coordinator:
                            queue = self.events_q_name,
                            routing_key = 'control.testcoordination')
 
-        self.channel.basic_publish(body = json.dumps({"_type":'testcoordination.info',
-                                                    'message':'Test Coordinator is up!'}),
-                                   exchange = AMQP_EXCHANGE,
-                                   routing_key ='control.testcoordination.info'
-                                   )
+        self.channel.basic_publish(
+                body = json.dumps(
+                        {
+                            'message':'Test Coordinator is up!',
+                            '_type':'testcoordination.info',
+                        }
+                        ),
+                exchange = AMQP_EXCHANGE,
+                routing_key ='control.testcoordination.info'
+            )
 
         self.channel.basic_consume(self.handle_service,
                               queue = self.services_q_name,
@@ -636,7 +683,7 @@ class Coordinator:
     def notify_testsuite_finished(self):
         _type = 'testcoordination.testsuite.finished'
         r_key =  'control.testcoordination'
-        # testcoordination notification
+
         coordinator_notif = OrderedDict()
         coordinator_notif.update({'_type':_type })
 
@@ -649,7 +696,27 @@ class Coordinator:
             )
         )
 
-    def call_service_sniffer_start(self,capture_id,filter_if,filter_proto):
+    def notify_current_configuration(self,config_id,node,message):
+        _type = 'testcoordination.testcase.configuration'
+        r_key =  'control.testcoordination'
+
+        coordinator_notif = OrderedDict()
+        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'configuration_id': config_id})
+        coordinator_notif.update({'node': node})
+        coordinator_notif.update({'message': message})
+
+        self.channel.basic_publish(
+            body=json.dumps(coordinator_notif, ensure_ascii=False),
+            routing_key=r_key,
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
+
+
+    def call_service_sniffer_start(self,capture_id,filter_if,filter_proto,link_id):
         _type = 'sniffing.start'
         r_key =  'control.sniffing.service'
         body = OrderedDict()
@@ -657,6 +724,7 @@ class Coordinator:
         body.update({'capture_id': capture_id})
         body.update({'filter_if': filter_if})
         body.update({'filter_proto': filter_proto})
+        body.update({'link_id':link_id})
 
         try:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
@@ -1013,7 +1081,6 @@ class Coordinator:
             raise CoordinatorError('Testcase not found')
 
 
-
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -1054,13 +1121,31 @@ class Coordinator:
         except:
             raise
 
-        sniff_params = {
-            'capture_id': self.current_tc.id[:-4],
-            'filter_proto': SNIFFER_FILTER_PROTO,
-            'filter_if': SNIFFER_FILTER_IF,
-        }
 
-        if ANALYSIS_MODE == 'post_mortem':
+        # CONFIGURATION PHASE
+        config_id = self.current_tc.configuration_id
+        config = self.tc_configs[config_id]
+
+        # notify each IUT/user about the current config
+        # TODO do we need a confirmation for this?
+        for desc in config.description:
+            message = desc['message']
+            node = desc['node']
+            self.notify_current_configuration(config_id,node,message)
+
+        # start sniffing each link
+        for link in config.topology:
+            filter_proto = link['capture_filter']
+            link_id =  link['link_id']
+
+
+            sniff_params = {
+                'capture_id': self.current_tc.id[:-4],
+                'filter_proto': filter_proto,
+                'filter_if': SNIFFER_FILTER_IF,
+                'link_id' : link_id,
+            }
+
             if self.call_service_sniffer_start(**sniff_params):
                 logger.info('Sniffer succesfully started')
             else:
