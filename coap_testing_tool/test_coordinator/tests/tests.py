@@ -2,7 +2,7 @@ import unittest, logging, os
 from coap_testing_tool.test_coordinator.coordinator import *
 from coap_testing_tool import LOGDIR,TD_DIR
 
-TD_COAP = os.path.join(TD_DIR,'TD_COAP_CORE.yaml')
+#TD_COAP = os.path.join(TD_DIR,'TD_COAP_CORE.yaml')
 
 class CoordinatorTestCase(unittest.TestCase):
 
@@ -18,7 +18,7 @@ class CoordinatorTestCase(unittest.TestCase):
         # it docs its a raw import
 
         # this tests import and the construction of Coordinator and test cases from yaml file
-        self.coord = Coordinator(connection,TD_COAP)
+        self.coord = Coordinator(connection, TD_COAP, TD_COAP_CFG)
 
     def test_parse_yaml(self):
         print("raw parse : ")
@@ -87,28 +87,20 @@ class CoordinatorTestCase(unittest.TestCase):
             tc = c.next_testcase()
         print("TD finished!")
 
+    def test_stepping_over_TC_config_atributes_chech_not_None(self):
+        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
+        c = self.coord
 
+        for conf, conf_v in c.tc_configs.items():
+            print("starting with: " + conf)
 
-            # def test_step_execution(self):
-    #     c = self.coord
-    #     tc = c.next_testcase()
-    #     print("starting execution of steps in the TD")
-    #     print("starting with: " + tc.id)
-    #     while tc is not None:
-    #         print("\t running TC: "+ str(tc.id))
-    #         res , s_next = c.execute_step()
-    #         print("\t return: %s next step %s" %(res , s_next))
-    #         s = s_next
-    #         while s is not None:
-    #             print("\t \t  step executed: %s , type: %s" %(s.id,s.type))
-    #             res, s_next = c.execute_step()
-    #             print("\t \t  step executed RESULT: : %s " % (res))
-    #             s = s_next
-    #
-    #
-    #         tc = c.next_testcase()
-    #     print("TD EXECUTION finished!")
+            print(conf_v.id)
+            print(conf_v.description)
+            print(conf_v.nodes)
+            print(conf_v.topology)
+            print(conf_v.uri)
+            print(conf_v.capture_config)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.test_stepping_over_TC_config_atributes_chech_not_None()
