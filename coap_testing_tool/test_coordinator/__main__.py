@@ -8,7 +8,7 @@ from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
 COMPONENT_ID = 'test_coordinator'
 
 # init logging to stnd output and log files
-logger = initialize_logger(LOGDIR, COMPONENT_ID)
+logger = initialize_logger(LOGDIR, __file__)
 
 if __name__ == '__main__':
 
@@ -38,11 +38,17 @@ if __name__ == '__main__':
         logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
         sys.exit(1)
 
+    # in case its not declared
+    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
+                             type='topic',
+                             durable=True,
+                             )
+
     ### INIT COMPONENTS ###
     # TODO point to the correct TED using session bootstrap message
     try:
         logger.info('Instantiating coordinator..')
-        coordinator = Coordinator(connection, TD_COAP)
+        coordinator = Coordinator(connection, TD_COAP, TD_COAP_CFG)
     except Exception as e:
         # at this level i cannot emit AMQP messages if sth fails
         error_msg = str(e)
