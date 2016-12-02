@@ -1,41 +1,8 @@
 # -*- coding: utf-8 -*-
-# TODO add anchors and aliases features in the YAML parser
-strings:
-  - &UTEST Uri-Path option "test"
-  - &USEP Uri-Path option "separate"
-  - &UQUERY Uri-Path option "query"
-  - &UVAL Uri-Path option "validate"
-  - &CMID Client-generated Message ID (➔ CMID)
-  - &CMID2 Another client-generated Message ID ≠ CMID (➔ CMID2)
-  - &CMID3 Another client-generated Message ID ≠ CMID and ≠ CMID2 (➔ CMID3)
-  - &CMID4 Another client-generated Message ID ≠ CMID, CMID2, CMID3 (➔ CMID4)
-  - &CTOK Client-generated Token (➔ CTOK)
-  - &CTOK2 Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
-  - &CTOK3 Client-generated Token which may or may not be ≠ CTOK or CTOK2 (➔ CTOK3)
-  - &CTOK4 Client-generated Token which may or may not be ≠ CTOK, CTOK2, CTOK3 (➔ CTOK4)
-  - &SAME_MID Message ID = CMID
-  - &SAME_MID_TOKEN Message ID = CMID, Token = CTOK
-  - &SAME_MID_TOKEN2 Message ID = CMID2, Token = CTOK2
-  - &SAME_MID_TOKEN3 Message ID = CMID3, Token = CTOK3
-  - &SAME_MID_TOKEN4 Message ID = CMID4, Token = CTOK4
-  - &SMID Server-generated Message ID (➔ SMID)
-  - &SAME_SMID Message ID = SMID
-  - &SAME_TOKEN Token = CTOK
-  - &SETAG Option type = ETag, value = a value chosen by the server (➔ ETAG1)
-  - &SETAG2 Option type = ETag, value = a value ≠ ETAG1 chosen by the server (➔ ETAG2)
-  - &OLP Zero or more Location-path options
-  - &CFO Content-format option
-  - &OCFO Optional Content-format option
-  - &ONEP Empty or non-empty Payload
-  - &CFONE Content-format option if payload non-empty
-  - &NEP Non-empty Payload
-  - &EP Empty Payload
-  - &ACK0S
-
 --- !testcase
 testcase_id: TD_COAP_CORE_01_v01
 uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01
-configuration: CoAP_configuration_BASIC
+configuration: COAP_CFG_01_v01
 objective: Perform GET transaction(CON mode)
 pre_conditions: Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
 references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
@@ -78,7 +45,7 @@ sequence:
 testcase_id : TD_COAP_CORE_02_v01
 uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_02
 objective: Perform DELETE transaction (CON mode)
-configuration: CoAP_configuration_BASIC
+configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
 pre_conditions: Server offers a /test resource that handles DELETE
 sequence:
@@ -125,7 +92,7 @@ sequence:
   testcase_id : TD_COAP_CORE_03_v01
   uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_03
   objective: Perform PUT transaction (CON mode)
-  configuration: CoAP_configuration_BASIC
+  configuration: COAP_CFG_01_v01
   references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"
   pre_conditions: Server offers already available resource /test or accepts creation of new
     resource on /test that handles PUT

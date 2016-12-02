@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+  # TODO add anchors and aliases features in the YAML parser
 strings:
   - &UTEST Uri-Path option "test"
   - &USEP Uri-Path option "separate"
