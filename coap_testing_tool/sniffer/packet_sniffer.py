@@ -10,7 +10,6 @@ import traceback
 import pika
 from collections import OrderedDict
 import json
-import logging
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply
 from coap_testing_tool.utils.logger import  initialize_logger
 from coap_testing_tool import TMPDIR, DATADIR, PCAP_DIR, LOGDIR, AMQP_EXCHANGE, AMQP_USER, AMQP_SERVER, AMQP_PASS, AMQP_VHOST
@@ -37,7 +36,11 @@ def on_request(ch, method, props, body):
         # TODO forward errors to event bus
         raise e
 
-    if req_type == 'sniffing.getcapture':
+    if method.routing_key in ('control.sniffing.info','control.sniffing.error','control.sniffing.service.reply'):
+        # ignore echo message
+        logger.debug('Ignoring echo message: %s with r_key:%s' %(str(req_dict),method.routing_key))
+
+    elif req_type == 'sniffing.getcapture':
         logger.info('Processing %s request'%req_type)
         try:
             capture_id = req_dict['capture_id']
@@ -52,9 +55,8 @@ def on_request(ch, method, props, body):
         except FileNotFoundError as fne:
             logger.error('Coulnt retrieve file %s from dir'%file)
             raise
-            return
 
-        logging.info("Encoding PCAP file into base64 ...")
+        logger.info("Encoding PCAP file into base64 ...")
         with open(PCAP_DIR+"/%s.pcap"%capture_id, "rb") as file:
             enc = base64.b64encode(file.read())
 
@@ -66,8 +68,8 @@ def on_request(ch, method, props, body):
         response.update({'filename':'%s.pcap'%capture_id})
         response.update({'value': enc.decode("utf-8")})
 
-        logging.info("Response ready, PCAP bytes: \n" + str(response))
-        logging.info("Sending PCAP through the AMQP interface ...")
+        logger.info("Response ready, PCAP bytes: \n" + str(response))
+        logger.info("Sending response through AMQP interface ...")
 
         amqp_reply(ch, props, response)
 
@@ -96,7 +98,7 @@ def on_request(ch, method, props, body):
         try:
             _launch_sniffer(filename,filter_if,filter_proto)
         except:
-            raise SnifferError('Didnt succeed launching sniffer')
+            raise SnifferError('Didnt succeed starting the capture')
 
         # lets build response
         response = OrderedDict()
@@ -115,7 +117,7 @@ def on_request(ch, method, props, body):
         try:
             _stop_sniffer()
         except:
-            raise SnifferError('Didnt succeed stopping sniffer')
+            raise SnifferError('Didnt succeed stopping the capture')
 
         # lets build response
         response = OrderedDict()
@@ -124,19 +126,19 @@ def on_request(ch, method, props, body):
         amqp_reply(ch, props, response)
 
     else:
-        response = OrderedDict()
-        response.update({'_type': req_type})
-        response.update({'ok': False})
-        response.update({'value': 'Wrong request received: %s' % str(req_dict)})
-
-        amqp_reply(ch, props, response)
+        # response = OrderedDict()
+        # response.update({'_type': req_type})
+        # response.update({'ok': False})
+        # response.update({'value': 'Wrong request received: %s' % str(req_dict)})
+        #
+        # amqp_reply(ch, props, response)
         logger.error('Wrong request received: %s' % str(req_dict))
 
 ### IMPLEMENTATION OF SERVICES ###
 
 #sudo needed?
 def _launch_sniffer(filename, filter_if, filter_proto):
-    logger.info('Launching sniffer..')
+    logger.info('Launching packet capture..')
 
     if filter_proto is None:
         filter_proto=''
@@ -176,7 +178,7 @@ def _launch_sniffer(filename, filter_if, filter_proto):
 def _stop_sniffer():
     proc = subprocess.Popen(["pkill", "-INT", "tcpdump"], stdout=subprocess.PIPE)
     proc.wait()
-    logger.info('Sniffing stopped')
+    logger.info('Packet capture stopped')
     return True
 
 
@@ -220,102 +222,12 @@ if __name__ == '__main__':
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
+    channel.basic_publish(
+        body=json.dumps({'message': '%s is up!'%COMPONENT_ID,"_type": 'sniffing.info'}),
+        exchange=AMQP_EXCHANGE,
+        routing_key='control.sniffing.info'
+    )
+
     print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
     channel.start_consuming()
-#
-#
-# # DELETE:
-#
-# #!/usr/bin/env python3
-#
-# # import sys, platform
-# # from os import listdir, path, walk, stat
-# # import glob
-# # from flask import  Flask, Response, request, abort, jsonify, send_from_directory
-#
-# PCAP_DIR = './data/dumps/'
-# ALLOWED_EXTENSIONS = set(['pcap'])
-# LAST_FILENAME="TEST"
-#
-# import subprocess
-# import json
-#
-# app = Flask(__name__)
-#
-#
-# #for the remote sniffer
-# @app.route('/sniffer_api/HelloWorld', methods=['GET'])
-# def get_HelloWorld():
-#     return Response(json.dumps("HelloWorld"))
-#
-#
-# #for the remote sniffer
-# @app.route('/sniffer_api/launchSniffer', methods=['POST'])
-# def launchSniffer():
-#     testcase_id = request.args.get('testcase_id', '')
-#     interface_name = request.args.get('interface', '')
-#     filter = request.args.get('filter', '')
-#
-#     if filter is '':
-#         #defaults
-#         filter = 'udp port 5683'
-#
-#     if (interface_name is None ) or (interface_name==''):
-#         sys_type = platform.system()
-#         if sys_type == 'Darwin':
-#             interface_name = 'lo0'
-#         else:
-#             interface_name = 'lo'
-#         # TODO for windows?
-#
-#         # when coordinator is beeing deployed in a VM it should provide the iterface name ex iminds-> 'eth0.29'
-#
-#
-#     print("-----------------")
-#     print("LAUNCHING SNIFFER")
-#     print("-----------------")
-#
-#     _launchSniffer(testcase_id,interface_name,filter)
-#     return Response(json.dumps( ("sniffer","sniffing traffic for " + testcase_id + ' / ' + filter + ' / ' + interface_name)))
-#
-# #for the remote sniffer
-# @app.route('/sniffer_api/finishSniffer', methods=['GET','POST'])
-# def get_finishSniffer():
-#     global LAST_FILENAME
-#     print("-----------------")
-#     print("TERMINATE SNIFFER")
-#     print("-----------------")
-#     _finishSniffer()
-#     return Response(json.dumps("testcase sniffer stopped, dumped file : " + LAST_FILENAME ))
-#
-#
-#
-#
-# #sudo needed?
-# def _launchSniffer(testcase_id, interface_name, filter):
-#     # TODO re-implement with subprocess module
-#     import os
-#     global LAST_FILENAME
-#     LAST_FILENAME = PCAP_DIR + testcase_id + ".pcap"
-#
-#     # -U -w params: as each packet is saved, it will be written to the output
-#     #               file, rather than being written only when the output buffer
-#     #               fills.
-#     cmd = "tcpdump -i " + interface_name + " -s 200 -U -w " + LAST_FILENAME +  " " + filter+ " &"
-#     print("-----------------")
-#     print("sniffing:  " + cmd)
-#     print("-----------------")
-#     os.system(cmd)
-#
-#
-# #sudo needed?
-# def _finishSniffer():
-#     proc = subprocess.Popen(["pkill", "-INT", "tcpdump"], stdout=subprocess.PIPE)
-#     proc.wait()
-#
-# #sudo needed?
-# def _getSniffedPcap():
-#     return LAST_FILENAME
-
-
 
