@@ -730,7 +730,7 @@ class Coordinator:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,str(ret)))
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
             return ret['ok']
         except Exception as e:
             raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
@@ -746,7 +746,7 @@ class Coordinator:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type, str(ret)))
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type, json.dumps(ret)))
             return ret['ok']
         except Exception as e:
             raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
@@ -763,21 +763,21 @@ class Coordinator:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,str(ret)))
+            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
             return ret
 
         except Exception as e:
             raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                            % (str(ret), str(e)))
 
-    def call_service_testcase_analysis(self, testcase_id, testcase_ref, filetype, filename, value):
+    def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
         _type = 'analysis.testcase.analyze'
         r_key = 'control.analysis.service'
         body = OrderedDict()
         body.update({'_type': _type})
         body.update({'testcase_id': testcase_id})
         body.update({'testcase_ref': testcase_ref})
-        body.update({'filetype': filetype})
+        body.update({'file_enc': file_enc})
         body.update({'filename': filename})
         body.update({'value': value})
 
@@ -785,7 +785,7 @@ class Coordinator:
             amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
             ret = ''
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from TAT: %s, answer: %s" % (_type, str(ret)))
+            logger.info("Received answer from TAT: %s, answer: %s" % (_type, json.dumps(ret)))
             return ret
 
         except Exception as e:
@@ -1257,7 +1257,7 @@ class Coordinator:
             # Forwards PCAP to TAT API and get CHECKs info
             tat_response = self.call_service_testcase_analysis(tc_id,
                                                                tc_ref,
-                                                               filetype = "pcap_base64",
+                                                               file_enc = "pcap_base64",
                                                                filename = tc_id+".pcap",
                                                                value = pcap_file_base64)
 
