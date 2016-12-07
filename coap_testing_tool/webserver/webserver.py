@@ -190,6 +190,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         '.h': 'text/plain',
         '.yaml' : 'text/plain',
         '.yml': 'text/plain',
+        '.log': 'text/plain',
         })
 
 
