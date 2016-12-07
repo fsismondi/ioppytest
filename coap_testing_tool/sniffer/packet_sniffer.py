@@ -64,7 +64,7 @@ def on_request(ch, method, props, body):
         response = OrderedDict()
         response.update({'_type': req_type})
         response.update({'ok': True})
-        response.update({'filetype':'pcap_base64'})
+        response.update({'file_enc':'pcap_base64'})
         response.update({'filename':'%s.pcap'%capture_id})
         response.update({'value': enc.decode("utf-8")})
 
@@ -81,6 +81,7 @@ def on_request(ch, method, props, body):
             raise ApiMessageFormatError(message='No capture_id provided')
 
         filename = PCAP_DIR + '/' + capture_id + ".pcap"
+        filter_if = ''
 
         try:
             filter_if = req_dict['filter_if']
@@ -198,6 +199,9 @@ if __name__ == '__main__':
     ### SETUPING UP CONNECTION ###
 
     try:
+
+        logger.info('Env vars imported for AMQP connection: %s , %s, %s, %s'
+                    %(AMQP_VHOST,AMQP_SERVER,AMQP_USER,AMQP_PASS))
         logger.info('Setting up AMQP connection..')
         # setup AMQP connection
         credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
