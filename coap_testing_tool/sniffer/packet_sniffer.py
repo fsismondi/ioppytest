@@ -152,22 +152,13 @@ def _launch_sniffer(filename, filter_if, filter_proto):
             filter_if = 'lo'
             # TODO windows?
 
-    # when coordinator is being deployed in a VM it should provide the iterface name ex iminds-> 'eth0.29'
+    # lets try removing the file in case there's a previous execution of the TC
+    try:
+        params = 'rm ' + filename +' '+ filter_proto + '&'
+        os.system(params)
+    except:
+        pass
 
-    # TODO re-implement with subprocess module
-
-
-    # -U -w params: as each packet is saved, it will be written to the output
-    #               file, rather than being written only when the output buffer
-    #               fills.
-    # params = ['tcpdump',
-    #           '-i ' + filter_if,
-    #           '-s 200',
-    #           '-U -w '+ filename,
-    #           filter_proto,
-    #           '-vv',
-    #           '&']
-    #proc = subprocess.Popen(params, stdout=subprocess.PIPE)
 
     params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto + '&'
     os.system(params)
