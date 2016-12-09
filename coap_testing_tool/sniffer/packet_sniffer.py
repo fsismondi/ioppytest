@@ -19,7 +19,11 @@ COMPONENT_ID = 'packet_sniffer'
 
 ALLOWED_EXTENSIONS = set(['pcap'])
 
+last_capture = None
+
 def on_request(ch, method, props, body):
+
+    global last_capture
 
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -45,7 +49,11 @@ def on_request(ch, method, props, body):
         try:
             capture_id = req_dict['capture_id']
         except:
-            raise ApiMessageFormatError(message='No capture_id provided')
+
+            if last_capture:
+                capture_id = last_capture
+            else:
+                raise ApiMessageFormatError(message='No capture_id provided')
 
         try:
             file = PCAP_DIR+'/%s.pcap'%capture_id
@@ -101,6 +109,9 @@ def on_request(ch, method, props, body):
         except:
             raise SnifferError('Didnt succeed starting the capture')
 
+        # lets keep track of the undergoing capture name
+        last_capture = capture_id
+
         # lets build response
         response = OrderedDict()
         response.update({'_type': req_type})
@@ -154,7 +165,7 @@ def _launch_sniffer(filename, filter_if, filter_proto):
 
     # lets try removing the file in case there's a previous execution of the TC
     try:
-        params = 'rm ' + filename +' '+ filter_proto + '&'
+        params = 'rm ' + filename
         os.system(params)
     except:
         pass
