@@ -38,7 +38,8 @@ def on_request(ch, method, props, body):
 
     except Exception as e:
         # TODO forward errors to event bus
-        raise e
+        logger.error('No _type found on event meesage : %s'%str(req_dict))
+        #raise e
 
     if method.routing_key in ('control.sniffing.info','control.sniffing.error','control.sniffing.service.reply'):
         # ignore echo message
@@ -53,16 +54,21 @@ def on_request(ch, method, props, body):
             if last_capture:
                 capture_id = last_capture
             else:
-                raise ApiMessageFormatError(message='No capture_id provided')
+                #raise ApiMessageFormatError(message='No capture_id provided')
+                logger.error('No capture id provided')
+                return
 
         try:
             file = PCAP_DIR+'/%s.pcap'%capture_id
         # check if the size of PCAP is not zero
             if os.path.getsize(file)== 0:
-                raise SnifferError(message='Problem encountered with the requested PCAP')
+                #raise SnifferError(message='Problem encountered with the requested PCAP')
+                logger.error('Problem encountered with the requested PCAP')
+                return
         except FileNotFoundError as fne:
             logger.error('Coulnt retrieve file %s from dir'%file)
-            raise
+            return
+            #raise
 
         logger.info("Encoding PCAP file into base64 ...")
         with open(PCAP_DIR+"/%s.pcap"%capture_id, "rb") as file:
@@ -86,7 +92,9 @@ def on_request(ch, method, props, body):
         try:
             capture_id = req_dict['capture_id']
         except:
-            raise ApiMessageFormatError(message='No capture_id provided')
+            #raise ApiMessageFormatError(message='No capture_id provided')
+            logger.error('No capture id provided')
+            return
 
         filename = PCAP_DIR + '/' + capture_id + ".pcap"
         filter_if = ''
@@ -107,7 +115,8 @@ def on_request(ch, method, props, body):
         try:
             _launch_sniffer(filename,filter_if,filter_proto)
         except:
-            raise SnifferError('Didnt succeed starting the capture')
+            #raise SnifferError('Didnt succeed starting the capture')
+            logger.error('Didnt succeed starting the capture')
 
         # lets keep track of the undergoing capture name
         last_capture = capture_id
@@ -129,7 +138,8 @@ def on_request(ch, method, props, body):
         try:
             _stop_sniffer()
         except:
-            raise SnifferError('Didnt succeed stopping the capture')
+            #raise SnifferError('Didnt succeed stopping the capture')
+            logger.error('Didnt succeed stopping the capture')
 
         # lets build response
         response = OrderedDict()
