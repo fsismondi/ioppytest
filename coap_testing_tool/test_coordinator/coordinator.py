@@ -24,7 +24,8 @@ COAP_CLIENT_IUT_MODE =  'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
 ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
 SNIFFER_FILTER_PROTO = 'udp port 5683'
-SNIFFER_FILTER_IF = 'lo0'
+# leave empty => packet_sniffer chooses the loopback
+SNIFFER_FILTER_IF = ''
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
