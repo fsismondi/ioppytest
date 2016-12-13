@@ -30,8 +30,9 @@ def on_request(ch, method, props, body):
 
     req_dict = json.loads(body.decode('utf-8'))
 
+    # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
     logger.debug('[event queue callback] service request received on the queue: %s || %s'
-                 % (method.routing_key, json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)))
+                 % (method.routing_key, json.dumps(json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict))))
 
     try:
         req_type = req_dict['_type']

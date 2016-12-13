@@ -15,7 +15,7 @@ def initialize_logger(output_dir, component_id):
 
     # create console handler and set level to info
     handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
+    handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter("[ %(module)s] %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)

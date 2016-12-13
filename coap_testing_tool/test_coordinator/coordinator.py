@@ -496,7 +496,7 @@ class Coordinator:
         for tc_config in imported_configs:
             self.tc_configs[tc_config.id]=tc_config
 
-        logger.info('Imports: %s TC configurations imported'%len(self.tc_configs))
+        logger.info('Imports: %s TC_CONFIG imported'%len(self.tc_configs))
 
         # lets import TCs and make sure there's a tc config for each one of them
         imported_teds = import_teds(ted_file)
@@ -507,7 +507,7 @@ class Coordinator:
                 logger.error('Missing configuration:%s for test case:%s '%(ted.configuration_id,ted.id))
             assert ted.configuration_id in self.tc_configs
 
-        logger.info('Imports: %s test cases imported' % len(self.teds))
+        logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
         # test cases iterator (over the TC objects, not the keys)
         self._ted_it = cycle(self.teds.values())
         self.current_tc = None
@@ -798,8 +798,11 @@ class Coordinator:
     def handle_service(self, ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
         logger.debug('[services queue callback] service request received on the queue: %s || %s'
-                      %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
+                     % (
+                     method.routing_key, json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
 
         # TODO check malformed messages first
         event = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
@@ -835,8 +838,10 @@ class Coordinator:
     def handle_control(self, ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
         logger.debug('[event queue callback] service request received on the queue: %s || %s'
-                      %(method.routing_key,json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)))
+                     % (
+                     method.routing_key, json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
 
         # TODO check malformed messages first
         event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
