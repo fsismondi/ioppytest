@@ -55,8 +55,16 @@ def on_request(ch, method, props, body):
             if last_capture:
                 capture_id = last_capture
             else:
+                err_mess = 'No capture id provided'
                 #raise ApiMessageFormatError(message='No capture_id provided')
-                logger.error('No capture id provided')
+                logger.warning(err_mess)
+
+                # lets build response
+                response = OrderedDict()
+                response.update({'_type': req_type})
+                response.update({'ok': False})
+                response.update({'message': ''})
+                amqp_reply(ch, props, response)
                 return
 
         try:

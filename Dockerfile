@@ -1,3 +1,5 @@
+# IMPORTANT: THIS IS NOT UPDATED
+
 FROM ubuntu:16.04
 #update software repo and install python3
 RUN  apt-get update -y -qq && apt-get -y -qq install python3-dev git
@@ -24,4 +26,4 @@ EXPOSE 80 5671 5672
 #CMD python3 -m coap_testing_tool.test
 
 #CMD python3 -m coap_testing_tool.test_coordinator.test
-CMD python3 -m coap_testing_tool.test_coordinator.coordinator
+CMD python3 -m coap_testing_tool.test_coordinator
