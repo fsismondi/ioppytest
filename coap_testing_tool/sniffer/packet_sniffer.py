@@ -63,7 +63,7 @@ def on_request(ch, method, props, body):
                 response = OrderedDict()
                 response.update({'_type': req_type})
                 response.update({'ok': False})
-                response.update({'message': ''})
+                response.update({'message': err_mess})
                 amqp_reply(ch, props, response)
                 return
 
