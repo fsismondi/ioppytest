@@ -55,7 +55,7 @@ def on_request(ch, method, props, body):
             if last_capture:
                 capture_id = last_capture
             else:
-                err_mess = 'No capture id provided'
+                err_mess = 'No capture to return. Maybe testsuite not started yet?'
                 #raise ApiMessageFormatError(message='No capture_id provided')
                 logger.warning(err_mess)
 
@@ -64,6 +64,7 @@ def on_request(ch, method, props, body):
                 response.update({'_type': req_type})
                 response.update({'ok': False})
                 response.update({'message': err_mess})
+                response.update({'error_code': 'TBD'})
                 amqp_reply(ch, props, response)
                 return
 

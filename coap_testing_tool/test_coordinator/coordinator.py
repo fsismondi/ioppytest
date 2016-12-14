@@ -1255,7 +1255,7 @@ class Coordinator:
             pcap_file_base64 = ''
             pcap_file_base64 = sniffer_response['value']
             filename = sniffer_response['filename']
-            # save to file
+            # save PCAP to file
             with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
                 logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
@@ -1289,7 +1289,7 @@ class Coordinator:
                     # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
                     # info, so ill make a name up(this is just for visualization purposes)
                     step_count += 1
-                    p = ("A_POSTERIORI_CHECK_%d"%step_count, item[0] , item[1])
+                    p = ("CHECK_%d_post_mortem_analysis"%step_count, item[0] , item[1])
                     partial_verd.append(p)
                     logger.debug("Processing partical verdict received from TAT: %s"%str(p))
 
@@ -1313,7 +1313,7 @@ class Coordinator:
                     tc_id + '_verdict.json'
                 )
                 with open(json_file, 'w') as f:
-                        json.dump(report, f)
+                        json.dump(final_report, f)
 
             else:
                 logger.error('Response from TAT not ok: %s'%(tat_response))
