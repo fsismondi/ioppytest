@@ -81,7 +81,9 @@ def on_request(ch, method, props, body):
             #raise
 
         logger.info("Encoding PCAP file into base64 ...")
-        with open(PCAP_DIR+"/%s.pcap"%capture_id, "rb") as file:
+
+        # do not dump into PCAP_DIR, coordinator puts the PCAPS
+        with open(TMPDIR+"/%s.pcap"%capture_id, "rb") as file:
             enc = base64.b64encode(file.read())
 
         # lets build response
@@ -211,7 +213,7 @@ if __name__ == '__main__':
     logger = initialize_logger(LOGDIR, COMPONENT_ID)
 
     # generate dirs
-    for d in TMPDIR, DATADIR, LOGDIR:
+    for d in TMPDIR, DATADIR, LOGDIR, PCAP_DIR:
         try:
             os.makedirs(d)
         except OSError as e:

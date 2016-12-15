@@ -13,7 +13,7 @@ import pika
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
-from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
+from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError
 from coap_testing_tool.utils.logger import initialize_logger
@@ -1256,7 +1256,7 @@ class Coordinator:
             pcap_file_base64 = sniffer_response['value']
             filename = sniffer_response['filename']
             # save PCAP to file
-            with open(os.path.join(TMPDIR, filename), "wb") as pcap_file:
+            with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
                 logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
 
@@ -1274,7 +1274,7 @@ class Coordinator:
 
                 # Save the json object received
                 json_file = os.path.join(
-                    TMPDIR,
+                    RESULTS_DIR,
                     tc_id + '_analysis.json'
                 )
 

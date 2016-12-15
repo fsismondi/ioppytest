@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
 
     # generate dirs
-    for d in TMPDIR, DATADIR, LOGDIR:
+    for d in TMPDIR, DATADIR, LOGDIR, RESULTS_DIR, PCAP_DIR:
         try:
             os.makedirs(d)
         except OSError as e:
@@ -90,3 +90,7 @@ if __name__ == '__main__':
                 content_type='application/json',
             )
         )
+        #close AMQP connection
+        connection.close()
+
+        sys.exit(1)

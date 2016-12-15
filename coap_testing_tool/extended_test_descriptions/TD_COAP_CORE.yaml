@@ -40,10 +40,8 @@ sequence:
         - Client displays the received information
 
 --- !testcase
-#strings: !include common_strings.yaml
-
 testcase_id : TD_COAP_CORE_02_v01
-uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_02
+uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_02_v01
 objective: Perform DELETE transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
@@ -90,7 +88,7 @@ sequence:
 
 --- !testcase
   testcase_id : TD_COAP_CORE_03_v01
-  uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_03
+  uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_03_v01
   objective: Perform PUT transaction (CON mode)
   configuration: COAP_CFG_01_v01
   references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"

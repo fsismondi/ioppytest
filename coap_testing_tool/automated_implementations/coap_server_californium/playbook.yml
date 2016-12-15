@@ -1,0 +1,23 @@
+- name: Install Java and maven
+  apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
+  tags: coap
+  become: True
+  with_items:
+    - maven
+    - default-jdk
+
+- name: Copy plugtest server source files
+  tags: coap
+  become: True
+  copy: src=../tat/coap_plugtest_server dest={{ finterop_proj_path }}/coap owner={{ unix_user }} group={{ unix_user }}
+
+- name: Build COAP plugtest server
+  tags: coap
+  become: True
+  command: mvn package
+  args:
+    chdir: "{{ finterop_proj_path }}/coap/coap_plugtest_server"
+    creates: "{{ finterop_proj_path }}/coap/coap_plugtest_server/target/"
+
+#    chdir: "{{ finterop_proj_path }}/coap/coap_plugtest_server"
+#    creates: "{{ finterop_proj_path }}/coap/coap_plugtest_server/target/"
