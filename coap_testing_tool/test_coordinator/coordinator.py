@@ -473,21 +473,9 @@ class TestCase:
 
 class Coordinator:
     """
-    F-Interop API
-    source:  http://doc.f-interop.eu/#services-provided
-    |[*testcoordination.testsuite.getstatus*](#testcoordination-testsuite-getstatus) | Message for debugging purposes. The coordination component returns the status of the execution |
-    |[*testcoordination.testsuite.gettestcases*](#testcoordination-gettestcases) | Message for requesting the list of test cases included in the test suite.|
-    |[*testcoordination.testsuite.start*](#testcoordination-testsuite-start) | Message for triggering start of test suite. The command is given by one of the users of the session.|
-    |[*testcoordination.testsuite.abort*](#testcoordination-testsuite-abort)| Message for aborting the ongoing test session.|
-    |[*testcoordination.testcase.skip*](#testcoordination-testcase-skip) | Message for skipping a test case. Coordinator passes to the next test case if there is any left.|
-    |[*testcoordination.testcase.select*](#testcoordination-testcase-select) | Message for selecting next test case to be executed. Allows the user to relaunch an already executed test case.|
-    |[*testcoordination.testcase.start*](#testcoordination-testcase-start) | Message for triggering the start of the test case. The command is given by one of the users of the session.|
-    |[*testcoordination.testcase.restart*](#testcoordination-testcase-restart) | Message for triggering the restart of a test case (TBD any of the participants MAY send this?)|
-    |[*testcoordination.testcase.finish*](#testcoordination-testcase-finish) |  Message for triggering the end of a test case. This command is given by one of the users of the session.|
-    |[*testcoordination.step.finished*](#testcoordination-step-finished) | Message for indicating to the coordinator that the step has already been executed.|
-    |[*testcoordination.step.stimuli.executed*](#testcoordination-step-stimuli-executed)| Message pushed by UI or agent indicating the stimuli was executed.|
-    |[*testcoordination.step.check.response*](#testcoordination-step-check-response)| TBD  (for step_by_step analysis).|
-    |[*testcoordination.step.verify.response*](#testcoordination-step-verify-response)| Message pushed by UI or agent providing the response to verify step.|
+    see F-Interop API for the coordination events and services
+    http://doc.f-interop.eu/#services-provided
+
     """
 
     def __init__(self, amqp_connection, ted_file, tc_configs_files):
@@ -660,6 +648,14 @@ class Coordinator:
                 content_type='application/json',
             )
         )
+
+        # Overwrite final verdict file with final details
+        json_file = os.path.join(
+                RESULTS_DIR,
+                self.current_tc.id + '_verdict.json'
+        )
+        with open(json_file, 'w') as f:
+            json.dump(json_file, f)
 
     def notify_coordination_error(self, message, error_code):
         _type = 'testcoordination.error'
@@ -1270,11 +1266,9 @@ class Coordinator:
             logger.info("Response received from TAT: %s " % str(tat_response))
 
             if tat_response['ok'] == True:
-                # TODO check if the response is ok first, else raise an error
-
                 # Save the json object received
                 json_file = os.path.join(
-                    RESULTS_DIR,
+                    TMPDIR,
                     tc_id + '_analysis.json'
                 )
 
@@ -1296,7 +1290,7 @@ class Coordinator:
                 # generates a general verdict considering other steps partial verdicts besides TAT's
                 gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
 
-                # overwrite for generating final verdict, description and report, the rest of the fields keep them unchanged
+                # save sent message in RESULTS dir
                 final_report = OrderedDict()
                 final_report['verdict'] = gen_verdict
                 final_report['description'] = gen_description

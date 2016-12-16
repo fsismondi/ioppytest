@@ -12,7 +12,7 @@ from collections import OrderedDict
 import json
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply
 from coap_testing_tool.utils.logger import  initialize_logger
-from coap_testing_tool import TMPDIR, DATADIR, PCAP_DIR, LOGDIR, AMQP_EXCHANGE, AMQP_USER, AMQP_SERVER, AMQP_PASS, AMQP_VHOST
+from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_USER, AMQP_SERVER, AMQP_PASS, AMQP_VHOST
 from coap_testing_tool.utils.exceptions import ApiMessageFormatError, SnifferError
 
 COMPONENT_ID = 'packet_sniffer'
@@ -69,7 +69,7 @@ def on_request(ch, method, props, body):
                 return
 
         try:
-            file = PCAP_DIR+'/%s.pcap'%capture_id
+            file = TMPDIR +'/%s.pcap'%capture_id
         # check if the size of PCAP is not zero
             if os.path.getsize(file)== 0:
                 #raise SnifferError(message='Problem encountered with the requested PCAP')
@@ -108,7 +108,7 @@ def on_request(ch, method, props, body):
             logger.error('No capture id provided')
             return
 
-        filename = PCAP_DIR + '/' + capture_id + ".pcap"
+        filename = TMPDIR + '/' + capture_id + ".pcap"
         filter_if = ''
 
         try:
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     logger = initialize_logger(LOGDIR, COMPONENT_ID)
 
     # generate dirs
-    for d in TMPDIR, DATADIR, LOGDIR, PCAP_DIR:
+    for d in TMPDIR, DATADIR, LOGDIR:
         try:
             os.makedirs(d)
         except OSError as e:
