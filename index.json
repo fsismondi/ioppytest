@@ -18,28 +18,3 @@
   "testing_tool_results_link": "http://f-interop.rennes.inria.fr:8080/data/results/index.json"
 }
 
-//
-//
-//{
-//	"_type": "testsuite.input",
-//	"available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
-//	"protocol_under_test": ["coap", "coap_core"],
-//	"protocol_extensions": [
-//      {
-//            "protocol_extension": "CoAP_core",
-//            "specification_id":"rfc7252",
-//            "specification_ref": "https://tools.ietf.org/html/rfc7252",
-//			"test_description_id": "TD_COAP_CORE",
-//			"test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
-//      }
-//
-//
-//    ],
-//	"selectable_iut_roles": ["coap_client", "coap_server"],
-//
-//
-//
-//}
-//
-//
-//"expected_environment_variables": ["AMQP_SERVER", "AMQP_USER", "AMQP_PASS", "AMQP_VHOST", "AMQP_EXCHANGE"]
