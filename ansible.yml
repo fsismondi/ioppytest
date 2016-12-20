@@ -6,6 +6,12 @@
 
   tasks:
 
+  - name: Install supervisor
+    apt: name=supervisor state=present
+
+  - name: Start supervisor service
+    service: name=supervisor state=started enabled=true
+
   - name: apt-get installs
     apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
     tags: coap_test_suite
