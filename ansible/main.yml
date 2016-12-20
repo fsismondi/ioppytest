@@ -35,35 +35,41 @@
       clone: yes
       repo: https://gitlab.distantaccess.com/fsismondi/coap_testing_tool.git
       recursive: yes
-      dest: /tmp/ansible_clone/coap_testing_tool
-#      dest : {{ clone_dest }}
+      dest : "{{ clone_dest }}/coap_testing_tool"
 #        version={{ version }}
 
   - name: Install python requirements for coordinator
     become: True
     pip:
-#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
-      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/test_coordinator/requirements.txt
+      requirements: "{{ clone_dest }}/coap_testing_tool/coap_testing_tool/test_coordinator/requirements.txt"
 
   - name: Install python requirements for sniffer
     become: True
     pip:
-#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
-      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/sniffer/requirements.txt
+      requirements: "{{ clone_dest }}/coap_testing_tool/coap_testing_tool/sniffer/requirements.txt"
 
   - name: Install python requirements for TAT
     become: True
     pip:
-#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
-      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/test_analysis_tool/requirements.txt
+      requirements: "{{ clone_dest }}/coap_testing_tool/coap_testing_tool/test_analysis_tool/requirements.txt"
 
   - name: Install python requirements for webserver (serving files)
     become: True
     pip:
-#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
-      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/webserver/requirements.txt
+      requirements: "{{ clone_dest }}/coap_testing_tool/coap_testing_tool/webserver/requirements.txt"
 
+  - name: Copy plugtest server source files
+    tags: coap
+    become: True
+    copy: src=../tat/coap_plugtest_server dest={{ finterop_proj_path }}/coap owner={{ unix_user }} group={{ unix_user }}
 
+  - name: Build COAP plugtest server
+    tags: coap
+    become: True
+    command: mvn package
+    args:
+      chdir: "{{ finterop_proj_path }}/coap/coap_plugtest_server"
+      creates: "{{ finterop_proj_path }}/coap/coap_plugtest_server/target/"
 
 
 
