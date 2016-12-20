@@ -2,7 +2,8 @@
 - hosts: 127.0.0.1
   connection: local
   vars:
-    clone_dest: '/home/{{ unix_user }}/coap_testing_tool'
+    unix_user: fedesismo
+    clone_dest: "/home/{{ unix_user }}/coap_testing_tool"
 
   tasks:
 
@@ -36,7 +37,6 @@
       recursive: yes
       dest : "{{ clone_dest }}"
 
-
   - name: Install python requirements for coordinator
     tags: coap_test_suite
     become: True
@@ -61,39 +61,19 @@
     pip:
       requirements: "{{ clone_dest }}/coap_testing_tool/webserver/requirements.txt"
 
-#  - name: Copy plugtest server source files
-#    tags: automated_iut
-#    become: True
-#    copy:
-#      src="{{ clone_dest }}/automated_implementations/coap_server_californium"
-#      dest={{ finterop_proj_path }}/coap
-#      owner={{ unix_user }}
-#      group={{ unix_user }}
-#
-#  - name: Build COAP plugtest server
-#    tags: coap_automated_iut
-#    become: True
-#    command: mvn package
-#    args:
-#      chdir: "{{ finterop_proj_path }}/coap/coap_plugtest_server"
-#      creates: "{{ finterop_proj_path }}/coap/coap_plugtest_server/target/"
+  - name: Copy plugtest server source files
+    tags: automated_iut
+    become: True
+    copy:
+      src="{{ clone_dest }}/coap_testing_tool/automated_implementations/coap_server_californium"
+      dest='{{ clone_dest }}/coap_testing_tool/build-automated-iut'
+      owner={{ unix_user }}
+      group={{ unix_user }}
 
-
-
-#
-#
-#    - name: install dependencies
-#      action: pip requirements={{project_root}}{{project_name}}/requirements.txt
-
-
-#   version: 'rel1'
-
-#  tasks:
-#    - name: Install Java and maven
-#      apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
-#      tags: coap
-#      become: True
-#      with_items:
-#        - maven
-#        - default-jdk
-#        - tcpdump
+  - name: Build COAP plugtest server
+    tags: coap_automated_iut
+    become: True
+    command: mvn package
+    args:
+      chdir: "{{ clone_dest }}/coap_testing_tool/build-automated-iut/coap_server_californium"
+      creates: "{{ clone_dest }}/coap_testing_tool/build-automated-iut/coap_server_californium/target"
