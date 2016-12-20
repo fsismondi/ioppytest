@@ -2,7 +2,7 @@
 - hosts: 127.0.0.1
   connection: local
   vars:
-    unix_user: fedesismo
+    unix_user: f-interop
     clone_dest: "/home/{{ unix_user }}/coap_testing_tool"
 
   tasks:
