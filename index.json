@@ -15,6 +15,7 @@
   "iut_role_options": ["coap_client", "coap_server"],
   "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
   "testing_tool_results_dir": "./data/results/",
-  "testing_tool_results_link": "http://f-interop.rennes.inria.fr:8080/data/results/index.json"
+  "testing_tool_results_link": "http://f-interop.rennes.inria.fr:8080/data/results/index.json",
+  "testing_tool_ansible_playbook": "ansible.yml"
 }
 

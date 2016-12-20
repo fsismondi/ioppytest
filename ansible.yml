@@ -1,0 +1,80 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  vars:
+    clone_dest: /tmp/ansible_clone
+
+  tasks:
+
+  - name: apt-get installs
+    apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
+    tags: coap_test_suite
+    become: True
+    with_items:
+      - default-jdk
+      - default-jre
+      - maven
+      - git-core
+      - python-dev
+      - python-pip
+      - python-setuptools
+      - tcpdump
+
+  - name: install pip
+    action: easy_install name=pip
+
+  - name: Download last version of testing tool
+    become: True
+    git:
+      clone: yes
+      repo: https://gitlab.distantaccess.com/fsismondi/coap_testing_tool.git
+      recursive: yes
+      dest: /tmp/ansible_clone/coap_testing_tool
+#      dest : {{ clone_dest }}
+#        version={{ version }}
+
+  - name: Install python requirements for coordinator
+    become: True
+    pip:
+#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
+      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/test_coordinator/requirements.txt
+
+  - name: Install python requirements for sniffer
+    become: True
+    pip:
+#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
+      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/sniffer/requirements.txt
+
+  - name: Install python requirements for TAT
+    become: True
+    pip:
+#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
+      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/test_analysis_tool/requirements.txt
+
+  - name: Install python requirements for webserver (serving files)
+    become: True
+    pip:
+#     requirements: /home/{{ unix_user }}/test/coap_testing_tool/requirements.txt
+      requirements: /tmp/ansible_clone/coap_testing_tool/coap_testing_tool/webserver/requirements.txt
+
+
+
+
+
+#
+#
+#    - name: install dependencies
+#      action: pip requirements={{project_root}}{{project_name}}/requirements.txt
+
+
+#   version: 'rel1'
+
+#  tasks:
+#    - name: Install Java and maven
+#      apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
+#      tags: coap
+#      become: True
+#      with_items:
+#        - maven
+#        - default-jdk
+#        - tcpdump

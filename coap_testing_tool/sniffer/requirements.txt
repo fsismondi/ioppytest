@@ -1,2 +1,2 @@
-flask
-tcpdump
+Flask==0.10.1
+pika==0.10.0
