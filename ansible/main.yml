@@ -66,9 +66,9 @@
     become: True
     copy:
       src="{{ clone_dest }}/coap_testing_tool/automated_implementations/coap_server_californium"
-      dest='{{ clone_dest }}/coap_testing_tool/build-automated-iut'
-      owner={{ unix_user }}
-      group={{ unix_user }}
+      dest="{{ clone_dest }}/coap_testing_tool/build-automated-iut"
+      owner="{{ unix_user }}"
+      group="{{ unix_user }}"
 
   - name: Build COAP plugtest server
     tags: coap_automated_iut
