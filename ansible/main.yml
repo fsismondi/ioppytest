@@ -80,17 +80,3 @@
       chdir: "{{ clone_dest }}/coap_testing_tool/build-automated-iut/coap_server_californium"
       creates: "{{ clone_dest }}/coap_testing_tool/build-automated-iut/coap_server_californium/target"
 
-  - name: Creates log dir directory
-    file:
-      path: "{{ clone_dest }}/log"
-      state: directory
-
-  - name: Creates tmp dir directory
-    file:
-      path: "{{ clone_dest }}/tmp"
-      state: directory
-
-  - name: Creates data&results dir directory
-    file:
-      path: "{{ clone_dest }}/data/results"
-      state: directory

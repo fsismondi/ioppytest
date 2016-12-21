@@ -2,8 +2,8 @@
 # Created by https://www.gitignore.io/api/python
 
 # testing tool
-tmp/
-data/
+
+
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
