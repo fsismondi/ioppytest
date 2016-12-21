@@ -30,23 +30,31 @@ for debian based OS & macos:
 
 - installation 
 
-  - install RMQ broker
-  - install dependencies
+  - install locally RMQ broker
+    - create RMQ vhost, user, pass
+    
   - install supervisor (for spawning and monitoring processes)
 
+- install testing tool requirements:
+    
+    ```
+    cd coap_testing_tool
+    ansible-playbook -i "localhost," -c local ansible/main.yml --ask-become-pass
+    ```
 
 - create credentials for connection, vhost, and then export connection parameters for the AMQP connection:
 
     e.g.: 
     ```
-    export AMQP_VHOST=‘/‘
-    export AMQP_EXCHANGE=‘default'
-    export AMQP_USER=‘walrus’
-    export AMQP_PASS=‘somePassword’
-    export AMQP_SERVER=‘f-interop.rennes.inria.fr'
+    export AMQP_VHOST='/'
+    export AMQP_EXCHANGE='default'
+    export AMQP_USER='walrus'
+    export AMQP_PASS='somePassword’
+    export AMQP_SERVER='f-interop.rennes.inria.fr'
     ```
 
 - run CoAP testing tool and monitor processes
+    
     ```
     cd coap_testing_tool
     sudo supervisord -c supervisor.conf 

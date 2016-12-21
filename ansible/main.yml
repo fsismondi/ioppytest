@@ -30,28 +30,28 @@
     tags: coap_test_suite
     become: True
     pip:
-      requirements: ".coap_testing_tool/test_coordinator/requirements.txt"
+      requirements: "coap_testing_tool/test_coordinator/requirements.txt"
       executable: pip3
 
   - name: Install python requirements for sniffer
     tags: coap_test_suite
     become: True
     pip:
-      requirements: "./coap_testing_tool/sniffer/requirements.txt"
+      requirements: "coap_testing_tool/sniffer/requirements.txt"
       executable: pip3
 
   - name: Install python requirements for TAT
     tags: coap_test_suite
     become: True
     pip:
-      requirements: "./coap_testing_tool/test_analysis_tool/requirements.txt"
+      requirements: "coap_testing_tool/test_analysis_tool/requirements.txt"
       executable: pip3
 
   - name: Install python requirements for webserver (serving files)
     tags: coap_test_suite
     become: True
     pip:
-      requirements: "./coap_testing_tool/webserver/requirements.txt"
+      requirements: "coap_testing_tool/webserver/requirements.txt"
       executable: pip3
 
   - name: Build COAP plugtest server
@@ -59,6 +59,6 @@
     become: True
     command: mvn package
     args:
-      chdir: "./coap_testing_tool/automated_implementations/coap_server_californium"
-      creates: "./coap_testing_tool/automated_implementations/coap_server_californium/target"
+      chdir: "coap_testing_tool/automated_implementations/coap_server_californium"
+      creates: "coap_testing_tool/automated_implementations/coap_server_californium/target"
 
