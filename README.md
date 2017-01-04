@@ -8,10 +8,9 @@ This can be run as standalone software and also integrated to f-interop
 architecture.
 
 ### TODO
-- add client automated IUT
+- add coap client automated IUT
 - add feat for handling step by step analysis
-- add more functional testing of coordinator component
-- add windows support(?)
+- add more unit testing of coordinator component
 - document isntallation of requirements and dependencies
 
 ### CoAP Testing tools components
@@ -30,21 +29,24 @@ for debian based OS & macos:
 
 - installation 
 
-  - install locally RMQ broker
-    - create RMQ vhost, user, pass
+  - install locally RMQ broker on local machine
+    - create RMQ vhost, user, pass on local machine
     
   - install supervisor (for spawning and monitoring processes)
+  
+(this last two on a non standalone execution are provided by f-interop)
 
 - install testing tool requirements:
+	change in anible/main.yml the variable unix_user from f-interop to your
+	local unix user, then run ansible script:
     
     ```
     cd coap_testing_tool
     ansible-playbook -i "localhost," -c local ansible/main.yml --ask-become-pass
     ```
 
-- create credentials for connection, vhost, and then export connection parameters for the AMQP connection:
-
-    e.g.: 
+- export credentials, server, and vhost for local RMQ connection: 
+    
     ```
     export AMQP_VHOST='/'
     export AMQP_EXCHANGE='default'
