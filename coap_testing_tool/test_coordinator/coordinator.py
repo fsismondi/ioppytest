@@ -1082,7 +1082,6 @@ class Coordinator:
             logger.error( "%s not found in : %s "%(tc_id,self.teds))
             raise CoordinatorError('Testcase not found')
 
-
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -1183,7 +1182,6 @@ class Coordinator:
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
-
     def process_check_step_response(self, verdict, description):
         # some sanity checks on the states
         assert self.current_tc is not None
@@ -1205,7 +1203,6 @@ class Coordinator:
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
-
     def process_stimuli_step_executed(self):
         """
         :return: dict of the next step to be executed
@@ -1225,7 +1222,6 @@ class Coordinator:
                       %(self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
-
 
     def finish_testcase(self):
         """
@@ -1324,7 +1320,6 @@ class Coordinator:
 
         return self.current_tc.report
 
-
     def next_testcase(self):
         """
         circular iterator over the testcases returns only not yet executed ones
@@ -1377,7 +1372,6 @@ class Coordinator:
         logger.info('Next step to execute: %s' % self.current_tc.current_step.id)
 
         return self.current_tc.current_step
-
 
     def states_summary(self):
         summ=[]
