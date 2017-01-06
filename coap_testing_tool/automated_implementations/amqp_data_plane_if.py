@@ -1,6 +1,7 @@
 import json
 import logging
 import click
+import sys
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
 import uuid
@@ -13,7 +14,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger("agent")
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 __version__ = (0, 0, 1)
@@ -83,7 +84,7 @@ class Agent(ConsumerMixin):
 
         self.cli.add_command(self.connect_command)
 
-        self.name = self.name_option
+
 
 
     def get_consumers(self, Consumer, channel):
@@ -104,6 +105,8 @@ class Agent(ConsumerMixin):
 
         This create a file/token that is reused to access the f-interop platform.
         """
+        self.name = name
+
         data = {
             "user": user,
             "password": password,
@@ -112,6 +115,8 @@ class Agent(ConsumerMixin):
             "name": name
         }
         log.info("Try to connect with %s" % data)
+
+
 
         self.connection = Connection(
                 'amqp://{user}:{password}@{server}/{session}'.format(user=user,
@@ -132,19 +137,25 @@ class Agent(ConsumerMixin):
                                 durable=True,
                                 routing_key="data.fromAgent.#")
 
-        self.tun = OpenTunMACOS(
-            name=self.name,
-            rmq_connection=self.connection,
-            ipv6_host=":2",
-            ipv6_prefix=DEFAULT_IPV6_PREFIX
-        )
+        if sys.platform.startswith('win32'):
+            log.error('Agent TunTap not yet supported for windows')
+            sys.exit(1)
 
-        # self.tun = OpenTunLinux(
-        #     name=self.name,
-        #     rmq_connection=self.connection,
-        #     ipv6_host=":2",
-        #     ipv6_prefix=DEFAULT_IPV6_PREFIX
-        # )
+        elif sys.platform.startswith('linux'):
+            self.tun = OpenTunLinux(
+                name=self.name,
+                rmq_connection=self.connection,
+                ipv6_host=":2",
+                ipv6_prefix=DEFAULT_IPV6_PREFIX
+            )
+
+        elif sys.platform.startswith('darwin'):
+            self.tun = OpenTunMACOS(
+                    name=self.name,
+                    rmq_connection=self.connection,
+                    ipv6_host=":2",
+                    ipv6_prefix=DEFAULT_IPV6_PREFIX
+            )
 
         log.info("Let's bootstrap this.")
 

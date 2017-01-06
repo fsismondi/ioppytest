@@ -286,7 +286,7 @@ class TunReadThread(threading.Thread):
                 log.debug('packet captured on tun interface: {0}'.format(formatBuf(p)))
 
                 # remove tun ID octets
-                p = p[4:]
+                #p = p[4:]
 
                 # make sure it's an IPv6 packet (i.e., starts with 0x6x)
                 if (p[0] & 0xf0) != 0x60:
@@ -628,7 +628,7 @@ class OpenTunMACOS(object):
                 tun_counter+=1
 
         if tun_counter==16:
-            raise OSError('TUN device not found: check if it exists or if it is busy')
+            raise OSError('TUN device not found: check if it exists or if it is busy. TunTap driver installed on MacOs?')
         else:
         #=====
             log.info("configuring IPv6 address...")
@@ -680,7 +680,6 @@ class OpenTunMACOS(object):
         Called when receiving data from the TUN interface.
 
         This function forwards the data to the the EventBus.
-        Read from 6lowPAN and forward to tun interface
         """
         routing_key = "data.fromAgent.{name}".format(name=self.name)
         log.debug("This is my routing key: %s" % routing_key)
