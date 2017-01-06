@@ -3,6 +3,8 @@
 import os
 import sys
 
+__version__ = (0, 0, 1)
+
 #__abs_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 __abs_path = os.path.dirname(os.path.realpath(__file__))
 project_dir = os.path.join(__abs_path, '..')
