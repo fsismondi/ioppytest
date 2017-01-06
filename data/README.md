@@ -1,0 +1,1 @@
+# folder where we testing tool puts results and data that needs to be preserved after end of session
