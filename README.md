@@ -59,10 +59,11 @@ for debian based OS & macos:
     
     ```
     cd coap_testing_tool
-    sudo supervisord -c supervisor.conf 
+    sudo -E supervisord -c supervisor.conf 
     sudo supervisorctl -c supervisor.conf  
 
     ```
+	note the -E when launching supervisor process, it preserves the env vars
 
 
 

@@ -54,12 +54,8 @@ class PacketRouterTestCase(unittest.TestCase):
         :return:
         """
 
-        # forging agent 1 message
-        self.channel.basic_publish(
-            body=json.dumps({'_type': 'packet.raw', 'data': 'hello world'}),
-            routing_key='data.tun.fromAgent.agent1',
-            exchange=self.AMQP_EXCHANGE,
-        )
+        self._send_packet_fromAgent1()
+
         time.sleep(1)
         method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
         print(method_frame, header_frame, body)
@@ -75,6 +71,39 @@ class PacketRouterTestCase(unittest.TestCase):
         # now in the other direction:
         time.sleep(2)
 
+        self._send_packet_fromAgent2()
+
+        time.sleep(1)
+        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
+        print(method_frame, header_frame, body)
+        assert method_frame is not None
+        self.channel.basic_ack(method_frame.delivery_tag)
+
+        time.sleep(1)
+        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
+        print(method_frame, header_frame, body)
+        assert method_frame is not None
+        self.channel.basic_ack(method_frame.delivery_tag)
+
+    def _send_packet_fromAgent1(self):
+        """
+        tests
+        :return:
+        """
+
+        # forging agent 1 message
+        self.channel.basic_publish(
+            body=json.dumps({'_type': 'packet.raw', 'data': 'hello world'}),
+            routing_key='data.tun.fromAgent.agent1',
+            exchange=self.AMQP_EXCHANGE,
+        )
+
+    def _send_packet_fromAgent2(self):
+        """
+        tests
+        :return:
+        """
+
         # forging agent 1 message
         self.channel.basic_publish(
             body=json.dumps({'_type': 'packet.raw', 'data': 'hello world'}),
@@ -82,18 +111,8 @@ class PacketRouterTestCase(unittest.TestCase):
             exchange=self.AMQP_EXCHANGE,
         )
 
-        time.sleep(1)
-        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
-        print(method_frame, header_frame, body)
-        assert method_frame is not None
-        self.channel.basic_ack(method_frame.delivery_tag)
-
-        time.sleep(1)
-        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
-        print(method_frame, header_frame, body)
-        assert method_frame is not None
-        self.channel.basic_ack(method_frame.delivery_tag)
 
 if __name__ == '__main__':
     unittest.test_packet_router_agent1_to_agent2()
     #python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase.test_packet_router_agent1_to_agent2
+    #python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase._send_packet_fromAgent2
