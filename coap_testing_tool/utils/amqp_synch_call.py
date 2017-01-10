@@ -89,6 +89,7 @@ class AmqpSynchronousCallClient:
                                    properties=pika.BasicProperties(
                                        reply_to= routing_key + '.reply',
                                        correlation_id=self.corr_id,
+                                       content_type='application/json',
                                    ),
                                    body=json.dumps(body),
                                    )
