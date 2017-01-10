@@ -54,9 +54,12 @@ class PacketRouter(threading.Thread):
 
         # Hello world message
         self.channel.basic_publish(
-            body=json.dumps({'_type': 'packet_router.info', 'value': 'packet router is up!'}),
-            routing_key='control.packetrouter.info',
-            exchange=AMQP_EXCHANGE,
+                body=json.dumps({'_type': 'packet_router.info', 'value': 'packet router is up!'}),
+                routing_key='control.packetrouter.info',
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
         self.channel.basic_qos(prefetch_count=1)
@@ -120,9 +123,12 @@ class PacketRouter(threading.Thread):
 
         # resend with dst_rkey
         self.channel.basic_publish(
-            body=json.dumps({'_type': 'packet.raw', 'data': data}),
-            routing_key=dst_rkey,
-            exchange=AMQP_EXCHANGE,
+                body=json.dumps({'_type': 'packet.to_inject.raw', 'data': data}),
+                routing_key=dst_rkey,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
 

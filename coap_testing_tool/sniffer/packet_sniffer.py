@@ -253,7 +253,10 @@ if __name__ == '__main__':
     channel.basic_publish(
         body=json.dumps({'message': '%s is up!'%COMPONENT_ID,"_type": 'sniffing.info'}),
         exchange=AMQP_EXCHANGE,
-        routing_key='control.sniffing.info'
+        routing_key='control.sniffing.info',
+        properties=pika.BasicProperties(
+            content_type='application/json',
+        )
     )
 
     print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
