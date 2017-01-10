@@ -536,7 +536,10 @@ class Coordinator:
                         }
                         ),
                 exchange = AMQP_EXCHANGE,
-                routing_key ='control.testcoordination.info'
+                routing_key ='control.testcoordination.info',
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
             )
 
         self.channel.basic_consume(self.handle_service,
