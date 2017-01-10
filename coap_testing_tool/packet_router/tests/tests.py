@@ -85,6 +85,12 @@ class PacketRouterTestCase(unittest.TestCase):
         assert method_frame is not None
         self.channel.basic_ack(method_frame.delivery_tag)
 
+    def test_send_packet_fromAgent1(self):
+        self._send_packet_fromAgent1()
+
+    def test_send_packet_fromAgent2(self):
+        self._send_packet_fromAgent2()
+
     def _send_packet_fromAgent1(self):
         """
         tests
@@ -93,9 +99,18 @@ class PacketRouterTestCase(unittest.TestCase):
 
         # forging agent 1 message
         self.channel.basic_publish(
-            body=json.dumps({'_type': 'packet.raw', 'data': 'hello world'}),
+            body=json.dumps(
+                    {
+                        '_type': 'packet.sniffed.raw',
+                        'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243, 139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0, 166, 127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
+                        'description':'hello world',
+                     }
+            ),
             routing_key='data.tun.fromAgent.agent1',
             exchange=self.AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
     def _send_packet_fromAgent2(self):
@@ -106,9 +121,18 @@ class PacketRouterTestCase(unittest.TestCase):
 
         # forging agent 1 message
         self.channel.basic_publish(
-            body=json.dumps({'_type': 'packet.raw', 'data': 'hello world'}),
+            body=json.dumps(
+                    {
+                        '_type': 'packet.sniffed.raw',
+                        'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243, 139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0, 166, 127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
+                        'description':'hello world',
+                     }
+            ),
             routing_key='data.tun.fromAgent.agent2',
             exchange=self.AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
 
