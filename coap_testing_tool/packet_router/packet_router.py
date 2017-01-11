@@ -32,10 +32,12 @@ class PacketRouter(threading.Thread):
             self.routing_table = routing_table
         else:
             #default routing
+            #agent_TT is the agent instanciated by the testing tools
             self.routing_table = {
-                'data.tun.fromAgent.agent1': 'data.tun.toAgent.agent2',
-                'data.tun.fromAgent.agent2': 'data.tun.toAgent.agent1',
+                'data.tun.fromAgent.agent1': ['data.tun.toAgent.agent2','data.tun.toAgent.agent_TT'],
+                'data.tun.fromAgent.agent2': ['data.tun.toAgent.agent1','data.tun.toAgent.agent_TT'],
             }
+
         logging.info('routing table: {table}'.format(table=json.dumps(self.routing_table)))
 
         # queues & default exchange declaration
@@ -116,31 +118,29 @@ class PacketRouter(threading.Thread):
 
         src_rkey = method.routing_key
         if src_rkey in self.routing_table.keys():
-            dst_rkey = self.routing_table[src_rkey]
+            list_dst_rkey = self.routing_table[src_rkey]
+            for dst_rkey in list_dst_rkey:
+                # resend to dst_rkey
+                self.channel.basic_publish(
+                        body=json.dumps({'_type': 'packet.to_inject.raw', 'data': data}),
+                        routing_key=dst_rkey,
+                        exchange=AMQP_EXCHANGE,
+                        properties=pika.BasicProperties(
+                                content_type='application/json',
+                        )
+                )
+
+                print('\n* * * * * * ROUTING MESSAGE (%s) * * * * * * *' % self.message_count)
+                print("TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
+                print(" - - - ")
+                print("ROUTING_KEY SRC: %s" % src_rkey)
+                print("ROUTING_KEY DST: %s" % dst_rkey)
+                print(" - - - ")
+                # print("ERRORS: %s" % )
+                print('* * * * * * * * * * * * * * * * * * * * * \n')
         else:
             logging.error('No know route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
-
-        # resend with dst_rkey
-        self.channel.basic_publish(
-                body=json.dumps({'_type': 'packet.to_inject.raw', 'data': data}),
-                routing_key=dst_rkey,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
-        )
-
-
-        print('\n* * * * * * ROUTING MESSAGE (%s) * * * * * * *'%self.message_count)
-        print("TIME: %s"%datetime.datetime.time(datetime.datetime.now()))
-        print(" - - - ")
-        print("ROUTING_KEY SRC: %s" %src_rkey)
-        print("ROUTING_KEY DST: %s" %dst_rkey)
-        print(" - - - ")
-        #print("ERRORS: %s" % )
-        print('* * * * * * * * * * * * * * * * * * * * * \n')
-
 
 
     def run(self):
