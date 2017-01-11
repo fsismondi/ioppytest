@@ -1,3 +1,6 @@
 [submodule "coap_testing_tool/test_analysis_tool"]
 	path = coap_testing_tool/test_analysis_tool
 	url = https://gitlab.distantaccess.com/fsismondi/ttproto.git 
+[submodule "coap_testing_tool/agent"]
+	path = coap_testing_tool/agent
+	url = git@gitlab.distantaccess.com:f-interop-contributors/agent.git

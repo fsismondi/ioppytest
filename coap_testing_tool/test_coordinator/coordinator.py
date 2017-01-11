@@ -9,6 +9,7 @@ import traceback
 import sys
 import yaml
 import pika
+import time
 
 from itertools import cycle
 from collections import OrderedDict
@@ -24,8 +25,8 @@ COAP_CLIENT_IUT_MODE =  'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
 ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
 SNIFFER_FILTER_PROTO = 'udp port 5683'
-# leave empty => packet_sniffer chooses the loopback
-SNIFFER_FILTER_IF = ''
+# if left empty => packet_sniffer chooses the loopback
+SNIFFER_FILTER_IF = 'tun0'
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
@@ -536,7 +537,10 @@ class Coordinator:
                         }
                         ),
                 exchange = AMQP_EXCHANGE,
-                routing_key ='control.testcoordination.info'
+                routing_key ='control.testcoordination.info',
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
             )
 
         self.channel.basic_consume(self.handle_service,
@@ -572,6 +576,33 @@ class Coordinator:
         self.channel.start_consuming()
 
     ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
+
+    def notify_tun_interfaces_start(self):
+        """
+        Starts tun interface in agent1, agent2 and agent TT
+        TODO: check which queues exist in RMQ and get that way the quantity of agents on the bus?
+        Returns:
+
+        """
+        d = {
+            "_type": "tun.start",
+            "ipv6_host": ":1",
+            "ipv6_prefix": "bbbb"
+        }
+
+        logger.debug("Let's start the bootstrap the agents")
+
+        for agent, ip in (('agent1','1'),('agent2','2'),('agent_TT',3)):
+            d["ipv6_host"] = str(ip)
+            self.channel.basic_publish(
+                    exchange=AMQP_EXCHANGE,
+                    routing_key='control.tun.toAgent.%s'%agent,
+                    mandatory=True,
+                    body=json.dumps(d),
+                    properties=pika.BasicProperties(
+                        content_type='application/json',
+                    )
+            )
 
     def notify_current_testcase(self):
         _type = 'testcoordination.testcase.next'
@@ -712,10 +743,9 @@ class Coordinator:
             )
         )
 
-
     def call_service_sniffer_start(self,capture_id,filter_if,filter_proto,link_id):
         _type = 'sniffing.start'
-        r_key =  'control.sniffing.service'
+        r_key = 'control.sniffing.service'
         body = OrderedDict()
         body.update({'_type': _type})
         body.update({'capture_id': capture_id})
@@ -870,6 +900,8 @@ class Coordinator:
             # TODO maybe return next test case
             # TODO reboot automated IUTs
             # TODO open tun interfaces in agents
+            self.notify_tun_interfaces_start()
+            time.sleep(2)
 
             self.start_test_suite()
 
