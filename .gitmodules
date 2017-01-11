@@ -3,4 +3,4 @@
 	url = https://gitlab.distantaccess.com/fsismondi/ttproto.git 
 [submodule "coap_testing_tool/agent"]
 	path = coap_testing_tool/agent
-	url = git@gitlab.distantaccess.com:f-interop-contributors/agent.git
+	url = https://gitlab.distantaccess.com/f-interop-contributors/agent.git
