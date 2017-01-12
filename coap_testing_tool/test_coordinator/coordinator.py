@@ -26,12 +26,13 @@ COAP_SERVER_IUT_MODE = 'automated'
 ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
 SNIFFER_FILTER_PROTO = 'udp port 5683'
 # if left empty => packet_sniffer chooses the loopback
+# TODO send flag to sniffer telling him to look for a tun interface instead!
 SNIFFER_FILTER_IF = 'tun0'
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
 
-# set temporarilly as default
+# set temporarily as default
 # TODO get this from finterop session context!
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
@@ -46,7 +47,7 @@ def list_to_str(ls):
     """
     flattens a nested list up to two levels of depth
 
-    :param ls:
+    :param ls: the list
     :return: single string with all the items inside the list
     """
 
@@ -580,10 +581,11 @@ class Coordinator:
     def notify_tun_interfaces_start(self):
         """
         Starts tun interface in agent1, agent2 and agent TT
-        TODO: check which queues exist in RMQ and get that way the quantity of agents on the bus?
+
         Returns:
 
         """
+        # TODO check which queues exist, get those names from somewhere and not just asumme agent1 agent2 agentTT
         d = {
             "_type": "tun.start",
             "ipv6_host": ":1",
@@ -592,8 +594,8 @@ class Coordinator:
 
         logger.debug("Let's start the bootstrap the agents")
 
-        for agent, ip in (('agent1','1'),('agent2','2'),('agent_TT',3)):
-            d["ipv6_host"] = str(ip)
+        for agent, assigned_ip in (('agent1',':1'),('agent2',':2'),('agent_TT',':3')):
+            d["ipv6_host"] = assigned_ip
             self.channel.basic_publish(
                     exchange=AMQP_EXCHANGE,
                     routing_key='control.tun.toAgent.%s'%agent,
@@ -899,7 +901,9 @@ class Coordinator:
             # TODO in here maybe launch the enxt configuration of IUT
             # TODO maybe return next test case
             # TODO reboot automated IUTs
-            # TODO open tun interfaces in agents
+
+            # lets open tun interfaces
+            # TODO do it before the testsuite start signal, after opened send TESTGIN TOOL ready signal (for GUI)
             self.notify_tun_interfaces_start()
             time.sleep(2)
 
