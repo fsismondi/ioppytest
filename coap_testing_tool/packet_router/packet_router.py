@@ -54,11 +54,10 @@ class PacketRouter(threading.Thread):
                            queue=queue_name,
                            routing_key='data.tun.fromAgent.#')
 
-        # Hello world message
-        self.channel.basic_publish(
-                body=json.dumps({'_type': 'packet_router.info', 'value': 'packet router is up!'}),
-                routing_key='control.packetrouter.info',
+        channel.basic_publish(
+                body=json.dumps({'message': '%s is up!' % COMPONENT_ID, "_type": 'packetrouting.ready'}),
                 exchange=AMQP_EXCHANGE,
+                routing_key='control.session.bootstrap',
                 properties=pika.BasicProperties(
                         content_type='application/json',
                 )

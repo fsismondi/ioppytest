@@ -516,12 +516,6 @@ class Coordinator:
         # self.services_q = result1.method.queue
         # self.events_q = result2.method.queue
 
-        # # in case its not declared
-        # self.channel.exchange_declare(exchange=AMQP_EXCHANGE,
-        #                          type='topic',
-        #                          durable=True,
-        #                          )
-
         self.channel.queue_bind(exchange = AMQP_EXCHANGE,
                            queue = self.services_q_name,
                            routing_key = 'control.testcoordination.service')
@@ -530,19 +524,6 @@ class Coordinator:
                            queue = self.events_q_name,
                            routing_key = 'control.testcoordination')
 
-        self.channel.basic_publish(
-                body = json.dumps(
-                        {
-                            'message':'Test Coordinator is up!',
-                            '_type':'testcoordination.info',
-                        }
-                        ),
-                exchange = AMQP_EXCHANGE,
-                routing_key ='control.testcoordination.info',
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
-            )
 
         self.channel.basic_consume(self.handle_service,
                               queue = self.services_q_name,
@@ -1322,28 +1303,30 @@ class Coordinator:
                 # generates a general verdict considering other steps partial verdicts besides TAT's
                 gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
 
-                # save sent message in RESULTS dir
-                final_report = OrderedDict()
-                final_report['verdict'] = gen_verdict
-                final_report['description'] = gen_description
-                final_report['partial_verdicts'] = report
-
-                # lets generate test case report
-                self.current_tc.report = final_report
-                # for item in overridden_response:
-                #     self.current_tc.report.append(item)
-
-                # Save the final verdict as json
-                json_file = os.path.join(
-                    TMPDIR,
-                    tc_id + '_verdict.json'
-                )
-                with open(json_file, 'w') as f:
-                        json.dump(final_report, f)
-
             else:
                 logger.error('Response from TAT not ok: %s'%(tat_response))
-                return
+                gen_verdict = 'error'
+                gen_description = 'Response from test analyzer: %s'%tat_response
+                report = []
+
+            # save sent message in RESULTS dir
+            final_report = OrderedDict()
+            final_report['verdict'] = gen_verdict
+            final_report['description'] = gen_description
+            final_report['partial_verdicts'] = report
+
+            # lets generate test case report
+            self.current_tc.report = final_report
+            # for item in overridden_response:
+            #     self.current_tc.report.append(item)
+
+            # Save the final verdict as json
+            json_file = os.path.join(
+                    TMPDIR,
+                    tc_id + '_verdict.json'
+            )
+            with open(json_file, 'w') as f:
+                json.dump(final_report, f)
 
             # change tc state
             self.current_tc.change_state('finished')

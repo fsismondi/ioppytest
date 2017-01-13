@@ -251,9 +251,9 @@ if __name__ == '__main__':
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
     channel.basic_publish(
-        body=json.dumps({'message': '%s is up!'%COMPONENT_ID,"_type": 'sniffing.info'}),
+        body=json.dumps({'message': '%s is up!'%COMPONENT_ID,"_type": 'sniffing.ready'}),
         exchange=AMQP_EXCHANGE,
-        routing_key='control.sniffing.info',
+        routing_key='control.session.bootstrap',
         properties=pika.BasicProperties(
             content_type='application/json',
         )
