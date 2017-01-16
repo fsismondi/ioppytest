@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
-  "protocol_under_test": ["coap", "coap_core"],
-  "protocol_extensions": [
+  "protocols_under_test": ["coap", "coap_core"],
+  "protocol_info": [
     {
       "protocol_extension": "CoAP_core",
       "specification_id":"rfc7252",
@@ -10,8 +10,10 @@
       "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml",
     }
   ],
+
   "iut_role_options": ["coap_client", "coap_server"],
   "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
+  "underlying_supported_protocol": ["ipv6","ipv4","udp"],
   "testing_tool_results_dir": "./data/results/",
   "testing_tool_results_link": "http://some_ref_to_session_webserver/data/results/index.json",
   "testing_tool_ansible_playbook": "ansible/main.yml"
