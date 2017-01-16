@@ -169,6 +169,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt as KI:
         #close AMQP connection
         connection.close()
+        sys.exit(1)
 
     except Exception as e:
         error_msg = str(e)

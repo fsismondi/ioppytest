@@ -210,6 +210,8 @@ if __name__ == '__main__':
 
     ### SETUPING UP CONNECTION ###
 
+    connection = None
+
     try:
 
         logger.info('Env vars imported for AMQP connection: %s , %s, %s, %s'
@@ -251,7 +253,26 @@ if __name__ == '__main__':
     try:
         print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
         channel.start_consuming()
+
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP connection closed: %s' % str(cc))
+        sys.exit(1)
+
+    except KeyboardInterrupt as KI:
+        logger.info('SIGINT')
+
     except Exception as e:
         logger.error(' Unexpected error \n More: %s' % traceback.format_exc())
         sys.exit(1)
+
+    finally:
+        #close AMQP connection
+        if connection:
+            connection.close()
+        sys.exit(1)
+
+
+
+
+
 
