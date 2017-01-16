@@ -16,7 +16,7 @@ from collections import OrderedDict
 from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
 from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
-from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError
+from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
 from coap_testing_tool.utils.logger import initialize_logger
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
@@ -743,8 +743,8 @@ class Coordinator:
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
             logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
             return ret['ok']
-        except Exception as e:
-            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+        except AmqpMessageError as e:
+            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                            % (str(ret), str(e)))
 
     def call_service_sniffer_stop(self):
@@ -759,8 +759,8 @@ class Coordinator:
             ret = amqp_rpc_client.call(routing_key=r_key, body=body)
             logger.info("Received answer from sniffer: %s, answer: %s" % (_type, json.dumps(ret)))
             return ret['ok']
-        except Exception as e:
-            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+        except AmqpMessageError as e:
+            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                    % (str(ret), str(e)))
 
     def call_service_sniffer_get_capture(self, capture_id):
@@ -777,8 +777,8 @@ class Coordinator:
             logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
             return ret
 
-        except Exception as e:
-            raise SnifferError("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+        except AmqpMessageError as e:
+            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                            % (str(ret), str(e)))
 
     def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
@@ -799,8 +799,8 @@ class Coordinator:
             logger.info("Received answer from TAT: %s, answer: %s" % (_type, json.dumps(ret)))
             return ret
 
-        except Exception as e:
-            raise SnifferError("TAT API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
+        except AmqpMessageError as e:
+            logger.error("TAT API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
                                        % (str(ret), str(e)))
 
 
