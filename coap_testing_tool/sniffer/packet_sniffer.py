@@ -179,7 +179,9 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     except:
         pass
 
-    params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto +' '+'&'
+    #params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto +' '+'&'
+    # TODO when using filter_proto and tun0 then udp messages are filtered out, it may be sth related with the checksum
+    params = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + '&'
     os.system(params)
 
     logger.info('creating process tcpdump with: %s'%params)
