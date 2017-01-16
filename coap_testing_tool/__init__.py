@@ -5,9 +5,12 @@ import json
 
 __version__ = (0, 0, 1)
 
-#__abs_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-__abs_path = os.path.dirname(os.path.realpath(__file__))
-project_dir = os.path.join(__abs_path, '..')
+project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
+
+if '/coap_testing_tool' in project_dir:
+     project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
+
+print('Project dir: %s'%project_dir)
 
 TMPDIR = os.path.join( project_dir,'tmp')
 DATADIR = os.path.join( project_dir,'data')
