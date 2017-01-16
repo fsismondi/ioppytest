@@ -17,7 +17,7 @@ TT_check_list = [
     'agent_TT',
 ]
 # time to wait for components to send for READY signal
-READY_SIGNAL_TOUT = 10
+READY_SIGNAL_TOUT = 15
 
 # init logging to stnd output and log files
 logger = initialize_logger(LOGDIR, __file__)

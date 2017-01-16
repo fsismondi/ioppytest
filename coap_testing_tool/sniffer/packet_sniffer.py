@@ -13,7 +13,6 @@ import json
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply
 from coap_testing_tool.utils.logger import  initialize_logger
 from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_USER, AMQP_SERVER, AMQP_PASS, AMQP_VHOST
-from coap_testing_tool.utils.exceptions import ApiMessageFormatError, SnifferError
 
 COMPONENT_ID = 'packet_sniffer'
 
@@ -142,16 +141,11 @@ def on_request(ch, method, props, body):
     elif req_type == 'sniffing.stop':
 
         logger.info('Processing %s request' % req_type)
-        # try:
-        #     capture_id = req_dict['capture_id']
-        # except:
-        #     raise ApiMessageFormatError(message='No testcase id provided')
 
         try:
             _stop_sniffer()
         except:
-            #raise SnifferError('Didnt succeed stopping the capture')
-            logger.error('Didnt succeed stopping the capture')
+            logger.error('Didnt succeed stopping the sniffer')
 
         # lets build response
         response = OrderedDict()
@@ -160,17 +154,10 @@ def on_request(ch, method, props, body):
         amqp_reply(ch, props, response)
 
     else:
-        # response = OrderedDict()
-        # response.update({'_type': req_type})
-        # response.update({'ok': False})
-        # response.update({'value': 'Wrong request received: %s' % str(req_dict)})
-        #
-        # amqp_reply(ch, props, response)
         logger.error('Wrong request received: %s' % str(req_dict))
 
 ### IMPLEMENTATION OF SERVICES ###
 
-#sudo needed?
 def _launch_sniffer(filename, filter_if, filter_proto):
     logger.info('Launching packet capture..')
 
@@ -185,15 +172,14 @@ def _launch_sniffer(filename, filter_if, filter_proto):
             filter_if = 'lo'
             # TODO windows?
 
-    # lets try removing the file in case there's a previous execution of the TC
+    # lets try to remove the filemame in case there's a previous execution of the TC
     try:
         params = 'rm ' + filename
         os.system(params)
     except:
         pass
 
-
-    params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto + '&'
+    params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto +' '+'&'
     os.system(params)
 
     logger.info('creating process tcpdump with: %s'%params)
@@ -259,6 +245,11 @@ if __name__ == '__main__':
         )
     )
 
-    print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
-    channel.start_consuming()
+
+    try:
+        print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
+        channel.start_consuming()
+    except Exception as e:
+        logger.error(' Unexpected error \n More: %s' % traceback.format_exc())
+        sys.exit(1)
 

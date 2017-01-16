@@ -23,8 +23,9 @@ from coap_testing_tool.utils.logger import initialize_logger
 # TODO get filter from config of the TEDs
 COAP_CLIENT_IUT_MODE =  'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
+
 ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
-SNIFFER_FILTER_PROTO = 'udp port 5683'
+
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
 SNIFFER_FILTER_IF = 'tun0'
