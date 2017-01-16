@@ -8,7 +8,7 @@ nodes:
   - coap_server
 topology:
   - link_id : link_01
-    capture_filter: udp port 5683
+    capture_filter: udp
     nodes:
       - coap_client
       - coap_server
@@ -57,12 +57,12 @@ nodes:
   - gateway
 topology:
   - link_id : link_01
-    capture_filter: udp port 5683
+    capture_filter: udp and dst port 5683
     nodes:
       - coap_client
       - gateway
   - link_id : link_02
-    capture_filter: udp port 5683
+    capture_filter: udp and src port 5683
     nodes:
       - gateway
       - coap_server
