@@ -482,6 +482,7 @@ class Coordinator:
     """
 
     def __init__(self, amqp_connection, ted_file, tc_configs_files):
+
         # first let's import the TC configurations
         imported_configs = import_teds(tc_configs_files)
         self.tc_configs = OrderedDict()
@@ -500,6 +501,7 @@ class Coordinator:
             assert ted.configuration_id in self.tc_configs
 
         logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
+
         # test cases iterator (over the TC objects, not the keys)
         self._ted_it = cycle(self.teds.values())
         self.current_tc = None
@@ -592,19 +594,22 @@ class Coordinator:
         _type = 'testcoordination.testcase.next'
         r_key = 'control.testcoordination'
 
-        # testcoordination notification
         coordinator_notif = OrderedDict()
         coordinator_notif.update({'_type':_type })
-        coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
-        coordinator_notif.update(self.current_tc.to_dict(verbose = True))
+
+        if self.current_tc:
+            coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
+            coordinator_notif.update(self.current_tc.to_dict(verbose = True))
+        else:
+            coordinator_notif.update({'message': 'No test case selected, or no more available'})
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
     def notify_current_step_execute(self):
@@ -634,6 +639,7 @@ class Coordinator:
         coordinator_notif.update({'_type': _type})
         coordinator_notif.update({'message': 'Testcase %s finished' % self.current_tc.id})
         coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+        coordinator_notif.update(self.testsuite_report())
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
@@ -681,7 +687,8 @@ class Coordinator:
         coordinator_notif = OrderedDict()
         coordinator_notif.update({'_type':_type })
         coordinator_notif.update({'message': message,})
-        coordinator_notif.update({'error_code' : error_code,})
+        coordinator_notif.update({'error_code' : error_code})
+        coordinator_notif.update({'testsuite_status': self.states_summary() })
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
@@ -878,10 +885,12 @@ class Coordinator:
                 self.next_testcase()
                 self.notify_current_testcase()
 
+            if self.current_tc is None and self.check_testsuite_finished():
+                self.finish_testsuite()
+                self.notify_testsuite_finished()
 
         elif event_type == "testcoordination.testsuite.start":
             # TODO in here maybe launch the enxt configuration of IUT
-            # TODO maybe return next test case
             # TODO reboot automated IUTs
 
             # lets open tun interfaces
@@ -903,31 +912,14 @@ class Coordinator:
 
             except KeyError:
                 error_msg = "Incorrect or empty testcase_id"
-                # # response not ok
-                # response.update({'_type': event_type})
-                # response.update({'ok': False})
-                # response.update({'message' : error_msg})
-                # self.amqp_reply(properties, response)
 
                 # send general notif
                 self.notify_coordination_error(message=error_msg,error_code=None)
 
             except CoordinatorError as e:
                 error_msg = e.message
-                # # response not ok
-                # response.update({'_type': event_type})
-                # response.update({'ok': False})
-                # response.update({'message': error_msg})
-                # self.amqp_reply(properties, response)
-
                 # send general notif
                 self.notify_coordination_error(message=error_msg, error_code=None)
-
-
-            # #response ok
-            # response.update({'_type' : event_type})
-            # response.update({'ok':True})
-            # self.amqp_reply(properties, response)
 
             # send general notif
             self.notify_current_testcase()
@@ -937,12 +929,6 @@ class Coordinator:
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
-
-                # # response not ok
-                # response.update({'_type': event_type})
-                # response.update({'ok': False})
-                # response.update({'message': error_msg})
-                # self.amqp_reply(properties, response)
 
                 # notify all
                 self.notify_coordination_error(message =error_msg, error_code=None)
@@ -961,6 +947,18 @@ class Coordinator:
 
         elif event_type == "testcoordination.step.stimuli.executed":
 
+            if self.current_tc is None:
+                error_msg = "No testcase selected"
+                # notify all
+                self.notify_coordination_error(message =error_msg, error_code=None)
+                return
+
+            if self.current_tc.state is None:
+                error_msg = "Test case not yet started"
+                # notify all
+                self.notify_coordination_error(message =error_msg, error_code=None)
+                return
+
             # process event only if I current step is a STIMULI
             if self.current_tc.current_step.type != 'stimuli':
                 message = 'Coordination was expecting message for step type: %s , but got type: STIMULI' \
@@ -974,14 +972,21 @@ class Coordinator:
             # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            elif not self.check_testsuite_finished():
+            else:
                 # im at the end of the TC:
                 self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
-            else:
-                self.finish_testsuite()
-                self.notify_testsuite_finished()
+
+                # there is at least a TC left
+                if not self.check_testsuite_finished():
+                    self.next_testcase()
+                    self.notify_current_testcase()
+
+                # im at the end of the TC and also of the TS
+                else:
+                    self.finish_testsuite()
+                    self.notify_testsuite_finished()
 
         elif event_type == "testcoordination.step.verify.response":
 
@@ -1008,14 +1013,21 @@ class Coordinator:
             # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            elif not self.check_testsuite_finished():
+            else:
                 # im at the end of the TC:
                 self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
-            else:
-                self.finish_testsuite()
-                self.notify_testsuite_finished()
+
+                # there is at least a TC left
+                if not self.check_testsuite_finished():
+                    self.next_testcase()
+                    self.notify_current_testcase()
+
+                # im at the end of the TC and also of the TS
+                else:
+                    self.finish_testsuite()
+                    self.notify_testsuite_finished()
 
 
         elif event_type == "testcoordination.step.check.response":
@@ -1038,17 +1050,36 @@ class Coordinator:
 
             self.process_check_step_response(verdict,description)
 
+            # # go to next step
+            # if self.next_step():
+            #     self.notify_current_step_execute()
+            # elif not self.check_testsuite_finished():
+            #     # im at the end of the TC:
+            #     self.finish_testcase()
+            #     self.notify_testcase_finished()
+            #     self.notify_testcase_verdict()
+            # else:
+            #     self.finish_testsuite()
+            #     self.notify_testsuite_finished()
+
             # go to next step
             if self.next_step():
                 self.notify_current_step_execute()
-            elif not self.check_testsuite_finished():
+            else:
                 # im at the end of the TC:
                 self.finish_testcase()
                 self.notify_testcase_finished()
                 self.notify_testcase_verdict()
-            else:
-                self.finish_testsuite()
-                self.notify_testsuite_finished()
+
+                # there is at least a TC left
+                if not self.check_testsuite_finished():
+                    self.next_testcase()
+                    self.notify_current_testcase()
+
+                # im at the end of the TC and also of the TS
+                else:
+                    self.finish_testsuite()
+                    self.notify_testsuite_finished()
 
         # elif event_type == "testcoordination.testcase.finish":
         #     self.finish_testcase()
@@ -1109,8 +1140,11 @@ class Coordinator:
             # resets all previously executed TC
             for tc in self.teds.values():
                 tc.reinit()
+
             # init testcase if None
             if self.current_tc is None:
+                # so that we start back from the first
+                self._ted_it = cycle(self.teds.values())
                 self.next_testcase()
             return self.current_tc
         except:
@@ -1123,30 +1157,27 @@ class Coordinator:
 
     def start_testcase(self):
         """
+        Method to start current tc (the previously selected tc). In the case current TC is none then next_testcase()
+        is run.
 
         :return:
         """
-        # TODO add some doc!!!
+        # init testcase and step and their states if they are None
+        if self.current_tc is None or self.current_tc.state == 'finished':
+            self.next_testcase()
 
-        try:
-            # init testcase and step and their states if they are None
-            if self.current_tc is None or self.current_tc.state == 'finished':
-                self.next_testcase()
+        if self.current_tc.current_step is None:
+            self.next_step()
 
-            if self.current_tc.current_step is None:
-                self.next_step()
+        self.current_tc.change_state('executing')
 
-            self.current_tc.change_state('executing')
-        except:
-            raise
-
-
-        # CONFIGURATION PHASE
+        # # # CONFIGURATION PHASE # # #
         config_id = self.current_tc.configuration_id
         config = self.tc_configs[config_id]
 
         # notify each IUT/user about the current config
         # TODO do we need a confirmation for this?
+
         for desc in config.description:
             message = desc['message']
             node = desc['node']
@@ -1342,7 +1373,7 @@ class Coordinator:
 
     def next_testcase(self):
         """
-        circular iterator over the testcases returns only not yet executed ones
+        Circularly itererates over the testcases and returns only those which are not yet executed
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
@@ -1360,6 +1391,16 @@ class Coordinator:
                 return None
 
         return self.current_tc
+
+    def testsuite_report(self):
+        """
+
+        :return: list of reports
+        """
+        report = OrderedDict()
+        for tc in self.teds.values():
+            report[tc.id] = tc.report
+        return report
 
     def next_step(self):
         """

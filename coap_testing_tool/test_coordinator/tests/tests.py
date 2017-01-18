@@ -87,6 +87,40 @@ class CoordinatorTestCase(unittest.TestCase):
             tc = c.next_testcase()
         print("TD finished!")
 
+
+    def test_testsuite_report(self):
+        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
+        c = self.coord
+        tc = c.next_testcase()
+        assert tc is not None
+
+        print("starting iteration over all steps in the TD")
+        print("starting with: " + tc.id)
+
+        while tc is not None:
+            print("running TC: "+ str(tc.id))
+            s = c.next_step()
+
+            while s is not None:
+                print("\t passing: " + s.id)
+                s.change_state('postponed')
+                s = c.next_step()
+
+            tc.change_state('finished')
+
+            final_report = OrderedDict()
+            final_report['verdict'] = 'test verdict'
+            final_report['description'] = 'test description'
+            final_report['partial_verdicts'] = 'test partial verd.'
+            tc.report = final_report
+
+            tc = c.next_testcase()
+        print("TD finished!")
+
+        print(json.dumps(c.testsuite_report()))
+
+
+
     def test_stepping_over_TC_config_atributes_chech_not_None(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!
         c = self.coord
