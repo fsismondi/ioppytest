@@ -639,7 +639,7 @@ class Coordinator:
         coordinator_notif.update({'_type': _type})
         coordinator_notif.update({'message': 'Testcase %s finished' % self.current_tc.id})
         coordinator_notif.update(self.current_tc.to_dict(verbose=True))
-        coordinator_notif.update(self.testsuite_report())
+
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
@@ -705,6 +705,7 @@ class Coordinator:
 
         coordinator_notif = OrderedDict()
         coordinator_notif.update({'_type':_type })
+        coordinator_notif.update(self.testsuite_report())
 
         self.channel.basic_publish(
             body=json.dumps(coordinator_notif, ensure_ascii=False),
@@ -1338,7 +1339,7 @@ class Coordinator:
             else:
                 logger.error('Response from TAT not ok: %s'%(tat_response))
                 gen_verdict = 'error'
-                gen_description = 'Response from test analyzer: %s'%tat_response
+                gen_description = 'Response from test analyzer: %s'%json.dumps(tat_response)
                 report = []
 
             # save sent message in RESULTS dir
