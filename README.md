@@ -48,7 +48,7 @@ for debian based OS & macos:
     
     ```
     cd coap_testing_tool
-    ansible-playbook -i "localhost," -c local ansible/main.yml --ask-become-pass
+    ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass
     ```
 
 - export credentials, server, and vhost for local RMQ connection: 
