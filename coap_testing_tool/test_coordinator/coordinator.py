@@ -218,8 +218,8 @@ class Iut:
         self.mode = mode
 
     def to_dict(self):
-        ret = OrderedDict({'iut':self.node})
-        ret.update({'iut_mode':self.mode})
+        ret = OrderedDict({'node':self.node})
+        ret.update({'node_execution_mode':self.mode})
         return ret
 
 
@@ -282,7 +282,7 @@ class Step():
         if self.iut is not None:
             node = self.iut.node
             mode =  self.iut.mode
-        return "%s(step_id=%s, type=%s, description=%s, iut node=%s, iut mode =%s)" \
+        return "%s(step_id=%s, type=%s, description=%s, iut node=%s, iut execution mode =%s)" \
                %(self.__class__.__name__, self.id, self.type, self.description, node , mode)
 
     def reinit(self):

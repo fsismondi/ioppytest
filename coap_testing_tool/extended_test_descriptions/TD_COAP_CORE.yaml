@@ -9,7 +9,7 @@ references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
 sequence:
   - step_id: 'TD_COAP_CORE_01_v01_step_01'
     type: stimuli
-    iut : coap_client
+    node : coap_client
     description:
       - Client is requested to send a GET request with
       - Type = 0(CON)
@@ -35,7 +35,7 @@ sequence:
 
   - step_id: TD_COAP_CORE_01_v01_step_04
     type: verify
-    iut: coap_client
+    node: coap_client
     description:
         - Client displays the received information
 
@@ -50,7 +50,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_02_v01_step_01
     type : stimuli
-    iut : coap_client
+    node : coap_client
     description:
       - 'Client is requested to send a DELETE request with:'
       - - Type = 0 (CON)
@@ -82,7 +82,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_02_v01_step_04
     type : verify
-    iut : coap_client
+    node : coap_client
     description:
         - Client displays the received information
 
@@ -98,7 +98,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_03_v01_step_01
     type : stimuli
-    iut : coap_client
+    node : coap_client
     description:
       - 'Client is requested to send a PUT request with:'
       - - Type = 0 (CON)
@@ -122,7 +122,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_03_v01_step_03
     type : verify
-    iut : coap_client
+    node : coap_client
     description:
       - Server displays received information
 
@@ -140,7 +140,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_03_v01_step_05
     type : verify
-    iut : coap_client
+    node : coap_client
     description:
       - Client displays the received response
 
