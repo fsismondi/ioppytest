@@ -256,7 +256,7 @@ class TestConfig:
 class Step():
 
     # TODO check step id uniqueness
-    def __init__(self, step_id, type, description, iut=None):
+    def __init__(self, step_id, type, description, node=None):
         self.id = step_id
         assert type in ("stimuli","check","verify")
         # TODO sth else might need to be defined for conformance testing TBD (inject? drop packet?)..
@@ -265,8 +265,8 @@ class Step():
 
         # stimuli and verify step MUST have a iut field in the YAML file
         if type=='stimuli' or type=='verify':
-            assert iut is not None
-            self.iut = Iut(iut)
+            assert node is not None
+            self.iut = Iut(node)
 
             # Check and verify steps need a partial verdict
             self.partial_verdict = Verdict()
@@ -351,7 +351,7 @@ class TestCase:
             try:
                 assert "step_id" and "description" and "type" in s
                 if s['type']=='stimuli':
-                    assert "iut" in s
+                    assert "node" in s
                 self.sequence.append(Step(**s))
             except:
                 logger.error("Error found while trying to parse: %s" %str(s))
