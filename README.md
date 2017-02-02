@@ -11,6 +11,8 @@ architecture.
 - add coap client automated IUT
 - add feat for handling step by step analysis
 - add more unit testing of coordinator component
+- fix: supervisor 'stop all' singal not stoping processes
+- fix: zombie processes issue with TAT/dissector
 - document isntallation of requirements and dependencies
 
 ### CoAP Testing tools components

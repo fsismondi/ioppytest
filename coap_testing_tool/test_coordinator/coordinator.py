@@ -968,7 +968,7 @@ class Coordinator:
                 self.notify_coordination_error(message, None)
                 return
 
-            self.process_stimuli_step_executed()
+            self.handle_stimuli_step_executed()
 
             # go to next step
             if self.next_step():
@@ -1009,7 +1009,7 @@ class Coordinator:
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
 
-            self.process_verify_step_response(verify_response)
+            self.handle_verify_step_response(verify_response)
 
             # go to next step
             if self.next_step():
@@ -1049,7 +1049,7 @@ class Coordinator:
             except KeyError:
                 self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
 
-            self.process_check_step_response(verdict,description)
+            self.handle_check_step_response(verdict,description)
 
             # # go to next step
             # if self.next_step():
@@ -1204,7 +1204,7 @@ class Coordinator:
 
         return self.current_tc.current_step
 
-    def process_verify_step_response(self, verify_response):
+    def handle_verify_step_response(self, verify_response):
         # some sanity checks on the states
         assert self.current_tc is not None
         assert self.current_tc.state is not None
@@ -1232,7 +1232,7 @@ class Coordinator:
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
-    def process_check_step_response(self, verdict, description):
+    def handle_check_step_response(self, verdict, description):
         # some sanity checks on the states
         assert self.current_tc is not None
         assert self.current_tc.state is not None
@@ -1253,7 +1253,7 @@ class Coordinator:
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
-    def process_stimuli_step_executed(self):
+    def handle_stimuli_step_executed(self):
         """
         :return: dict of the next step to be executed
         """
