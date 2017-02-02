@@ -1,16 +1,16 @@
 {
   "_type": "testsuite.manifest",
   "protocols_under_test": ["coap", "coap_core", "coap_observe"],
-  "protocol_info": [
+  "protocols_info": [
     {
-      "protocol_extension": "CoAP_core",
+      "protocol": "coap_core",
       "specification_id":"RFC7252",
       "specification_ref": "https://tools.ietf.org/html/rfc7252",
       "test_description_id": "TD_COAP_CORE",
       "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml",
     },
     {
-      "protocol_extension": "CoAP_observe",
+      "protocol": "coap_observe",
       "specification_id":"RFC7641",
       "specification_ref": "https://tools.ietf.org/html/rfc7641",
       "test_description_id": "TD_COAP_OBS",
