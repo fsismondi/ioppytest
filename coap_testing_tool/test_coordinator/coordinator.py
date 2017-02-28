@@ -453,11 +453,10 @@ class TestCase:
 
         # append at the end of the report the analysis done a posteriori (if any)
         if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report)!=0:
-            logger.warning('WTF PASEE' + str(tat_post_mortem_analysis_report))
+            logger.warning('Processing TAT partial verdict: ' + str(tat_post_mortem_analysis_report))
             for item in tat_post_mortem_analysis_report:
                 # TODO process the items correctly
                 tc_report.append(item)
-                logger.warning('WTF ' +str(item))
                 final_verdict.update(item[1], item[2])
         else:
             # we cannot emit a final verdict if the report from TAT is empy (no CHECKS-> error verdict)
