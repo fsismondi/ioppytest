@@ -32,10 +32,14 @@ class PacketRouter(threading.Thread):
             self.routing_table = routing_table
         else:
             #default routing
-            #agent_TT is the agent instanciated by the testing tools
+            #agent_TT is the agent instantiated by the testing tools
             self.routing_table = {
+                # first two entries is for a user to user setup
                 'data.tun.fromAgent.agent1': ['data.tun.toAgent.agent2','data.tun.toAgent.agent_TT'],
                 'data.tun.fromAgent.agent2': ['data.tun.toAgent.agent1','data.tun.toAgent.agent_TT'],
+
+                # entry for a user to automated iut setup (doesnt create any conflict with the previous ones)
+                'data.tun.fromAgent.agent_TT': ['data.tun.toAgent.agent1'],
             }
 
         logging.info('routing table: {table}'.format(table=json.dumps(self.routing_table)))
