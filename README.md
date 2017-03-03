@@ -11,8 +11,6 @@ architecture.
 - add coap client automated IUT
 - add feat for handling step by step analysis
 - add more unit testing of coordinator component
-- fix: supervisor 'stop all' singal not stoping processes
-- fix: zombie processes issue with TAT/dissector
 - document isntallation of requirements and dependencies
 
 ### CoAP Testing tools components
@@ -56,11 +54,8 @@ for debian based OS & macos:
 - export credentials, server, and vhost for local RMQ connection: 
     
     ```
-    export AMQP_VHOST='/'
+    export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
     export AMQP_EXCHANGE='default'
-    export AMQP_USER='walrus'
-    export AMQP_PASS='somePassword’
-    export AMQP_SERVER='f-interop.rennes.inria.fr'
     ```
 
 - run CoAP testing tool and monitor processes
