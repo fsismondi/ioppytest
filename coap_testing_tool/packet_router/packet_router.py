@@ -3,7 +3,6 @@
 
 import pika
 import threading
-import logging
 import time
 import json
 from datetime import timedelta
@@ -13,15 +12,26 @@ from collections import OrderedDict
 import datetime
 import os
 import signal
+import sys
+import logging
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 
 COMPONENT_ID = 'packet_router'
 
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
+# init logging to stnd output and log files
+logger = logging.getLogger(__name__)
 
-LOGGER = logging.getLogger(COMPONENT_ID)
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
 
 class PacketRouter(threading.Thread):
 
@@ -31,8 +41,8 @@ class PacketRouter(threading.Thread):
         if routing_table:
             self.routing_table = routing_table
         else:
-            #default routing
-            #agent_TT is the agent instantiated by the testing tools
+            # default routing
+            # agent_TT is the agent instantiated by the testing tools
             self.routing_table = {
                 # first two entries is for a user to user setup
                 'data.tun.fromAgent.agent1': ['data.tun.toAgent.agent2','data.tun.toAgent.agent_TT'],
@@ -42,14 +52,14 @@ class PacketRouter(threading.Thread):
                 'data.tun.fromAgent.agent_TT': ['data.tun.toAgent.agent1'],
             }
 
-        logging.info('routing table: {table}'.format(table=json.dumps(self.routing_table)))
+        logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
         # queues & default exchange declaration
         self.message_count = 0
 
         self.connection = conn
 
-        self.channel = connection.channel()
+        self.channel = self.connection.channel()
 
         queue_name = 'data_packets_queue@%s' % COMPONENT_ID
         self.channel.queue_declare(queue=queue_name)
@@ -58,7 +68,7 @@ class PacketRouter(threading.Thread):
                            queue=queue_name,
                            routing_key='data.tun.fromAgent.#')
 
-        channel.basic_publish(
+        self.channel.basic_publish(
                 body=json.dumps({'message': '%s is up!' % COMPONENT_ID, "_type": 'packetrouting.ready'}),
                 exchange=AMQP_EXCHANGE,
                 routing_key='control.session.bootstrap',
@@ -77,7 +87,7 @@ class PacketRouter(threading.Thread):
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
         body_dict = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        logging.info("Message sniffed: %s, body: %s" % (str(body_dict), str(body)))
+        logger.info("Message sniffed: %s" %json.dumps(body_dict))
         self.message_count += 1
 
         print('\n* * * * * * MESSAGE SNIFFED (%s) * * * * * * *'%self.message_count)
@@ -116,7 +126,7 @@ class PacketRouter(threading.Thread):
         try:
             data = body_dict['data']
         except:
-            logging.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
+            logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
             return
 
         src_rkey = method.routing_key
@@ -142,7 +152,7 @@ class PacketRouter(threading.Thread):
                 # print("ERRORS: %s" % )
                 print('* * * * * * * * * * * * * * * * * * * * * \n')
         else:
-            logging.error('No know route for r_key source: {r_key}'.format(r_key=src_rkey))
+            logger.error('No know route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
 
@@ -158,47 +168,36 @@ class PacketRouter(threading.Thread):
 
 if __name__ == '__main__':
 
-
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
-
-
-    # rewrite default values with ENV variables
-    try:
-        AMQP_SERVER = str(os.environ['AMQP_SERVER'])
-        AMQP_USER = str(os.environ['AMQP_USER'])
-        AMQP_PASS = str(os.environ['AMQP_PASS'])
-        AMQP_VHOST = str(os.environ['AMQP_VHOST'])
-        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
-
-        print('Env vars for AMQP connection succesfully imported')
-        print(json.dumps(
-                {
-                    'server': AMQP_SERVER,
-                    'session': AMQP_VHOST,
-                    'user': AMQP_USER,
-                    'pass': '#' * len(AMQP_PASS),
-                    'exchange':AMQP_EXCHANGE
-                }
-        ))
-
-    except KeyError as e:
-        print(' Cannot retrieve environment variables for AMQP connection')
-
-    credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials=credentials))
-
+    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     channel = connection.channel()
+
+    def signal_int_handler(channel):
+        # FINISHING... let's send a goodby message
+        msg = {
+            'message': '{component} is out! Bye bye..'.format(component=COMPONENT_ID),
+            "_type": '{component}.shutdown'.format(component=COMPONENT_ID)
+        }
+        channel.basic_publish(
+                body=json.dumps(msg),
+                routing_key='control.session.info',
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
+        )
+
+        logger.info('got SIGINT \n Bye bye!')
+
+        sys.exit(0)
+
+
+    signal.signal(signal.SIGINT, signal_int_handler)
 
     # in case its not declared
     connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
                              type='topic',
                              durable=True,
                              )
-
-
 
     # start amqp router thread
     r = PacketRouter(connection,None)

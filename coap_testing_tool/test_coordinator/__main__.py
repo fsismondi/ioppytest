@@ -1,13 +1,29 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 
+import logging
 from threading import Timer
-
 from coap_testing_tool.test_coordinator.coordinator import *
-from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'test_coordinator'
+
+# init logging to stnd output and log files
+logger = logging.getLogger(__name__)
+
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
+
 TT_check_list = [
     'dissection',
     'analysis',
@@ -19,9 +35,6 @@ TT_check_list = [
 # time to wait for components to send for READY signal
 READY_SIGNAL_TOUT = 15
 
-# init logging to stnd output and log files
-logger = initialize_logger(LOGDIR, __file__)
-
 if __name__ == '__main__':
 
     # generate dirs
@@ -32,19 +45,12 @@ if __name__ == '__main__':
             if e.errno != errno.EEXIST:
                 raise
 
-
-    # # # setup amqp connnection # # #
-
+    # setup amqp connection
     try:
         logger.info('Setting up AMQP connection..')
         # setup AMQP connection
-        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials = credentials))
-
-
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        channel = connection.channel()
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
         sys.exit(1)
@@ -66,8 +72,7 @@ if __name__ == '__main__':
             routing_key='control.session.bootstrap',
     )
 
-    # # # starting verification of the testing tool components # # #
-
+    # starting verification of the testing tool components
     channel.basic_publish(
             body=json.dumps({'message': '%s is up!' % COMPONENT_ID, "_type": 'testcoordination.ready'}),
             exchange=AMQP_EXCHANGE,
@@ -142,7 +147,7 @@ if __name__ == '__main__':
             )
     )
 
-    # # # lets start the test suite coordination phase # # #
+    # lets start the test suite coordination phase
 
     try:
         logger.info('Instantiating coordinator..')
@@ -154,7 +159,7 @@ if __name__ == '__main__':
         logger.debug(traceback.format_exc())
         sys.exit(1)
 
-    ### RUN COMPONENTS ###
+    ### RUN TEST COORDINATION COMPONENT ###
 
     try:
         logger.info('Starting coordinator execution ..')
@@ -176,7 +181,7 @@ if __name__ == '__main__':
         logger.error(' Critical exception found: %s, traceback: %s' %(error_msg,traceback.format_exc()))
         logger.debug(traceback.format_exc())
 
-        # lets push the error message into the bus
+        #lets push the error message into the bus
         coordinator.channel.basic_publish(
             body = json.dumps({
                 'traceback':traceback.format_exc(),
