@@ -8,56 +8,63 @@ import sys
 import base64
 import traceback
 import pika
-from collections import OrderedDict
+import logging
 import json
+from collections import OrderedDict
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply
-from coap_testing_tool.utils.logger import  initialize_logger
-from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_USER, AMQP_SERVER, AMQP_PASS, AMQP_VHOST
+from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'packet_sniffer'
 
 ALLOWED_EXTENSIONS = set(['pcap'])
+_last_capture = None
 
-last_capture = None
+# init logging to stnd output and log files
+logger = logging.getLogger(__name__)
+
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
 
 def on_request(ch, method, props, body):
 
-    global last_capture
+    global _last_capture
 
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
     req_dict = json.loads(body.decode('utf-8'))
-
     # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
     logger.debug('[event queue callback] service request received on the queue: %s || %s'
                  % (method.routing_key, json.dumps(json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict))))
 
     try:
         req_type = req_dict['_type']
-
     except Exception as e:
-        # TODO forward errors to event bus
         logger.error('No _type found on event meesage : %s'%str(req_dict))
-        #raise e
 
     if method.routing_key in ('control.sniffing.info','control.sniffing.error','control.sniffing.service.reply'):
         # ignore echo message
         logger.debug('Ignoring echo message: %s with r_key:%s' %(str(req_dict),method.routing_key))
-
     elif req_type == 'sniffing.getcapture':
         logger.info('Processing %s request'%req_type)
         try:
             capture_id = req_dict['capture_id']
         except:
 
-            if last_capture:
-                capture_id = last_capture
+            if _last_capture:
+                capture_id = _last_capture
             else:
                 err_mess = 'No capture to return. Maybe testsuite not started yet?'
                 #raise ApiMessageFormatError(message='No capture_id provided')
                 logger.warning(err_mess)
-
                 # lets build response
                 response = OrderedDict()
                 response.update({'_type': req_type})
@@ -130,7 +137,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed starting the capture')
 
         # lets keep track of the undergoing capture name
-        last_capture = capture_id
+        _last_capture = capture_id
 
         # lets build response
         response = OrderedDict()
@@ -179,12 +186,10 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     except:
         pass
 
-    #params = 'tcpdump -i ' + filter_if +' -s 200 ' + ' -U -w '+ filename +' '+ filter_proto +' '+'&'
-    # TODO when using filter_proto and tun0 then udp messages are filtered out, it may be sth related with the checksum
     params = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + '&'
     os.system(params)
-
     logger.info('creating process tcpdump with: %s'%params)
+    # TODO we need to catch tcpdump: <<tun0: No such device exists>> from stderr
 
     return True
 
@@ -196,9 +201,6 @@ def _stop_sniffer():
 
 
 if __name__ == '__main__':
-
-    # init logging to stnd output and log files
-    logger = initialize_logger(LOGDIR, COMPONENT_ID)
 
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR:
@@ -214,15 +216,11 @@ if __name__ == '__main__':
 
     try:
 
-        logger.info('Env vars imported for AMQP connection: %s , %s, %s, %s'
-                    %(AMQP_VHOST,AMQP_SERVER,AMQP_USER,AMQP_PASS))
         logger.info('Setting up AMQP connection..')
+
         # setup AMQP connection
-        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials=credentials))
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        channel = connection.channel()
 
         channel = connection.channel()
 
@@ -249,22 +247,17 @@ if __name__ == '__main__':
         )
     )
 
-
     try:
-        print(" [x] Awaiting AMQP requests on topic: control.sniffing.service")
+        logger.info("Awaiting AMQP requests on topic: control.sniffing.service")
         channel.start_consuming()
-
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP connection closed: %s' % str(cc))
         sys.exit(1)
-
     except KeyboardInterrupt as KI:
         logger.info('SIGINT')
-
     except Exception as e:
         logger.error(' Unexpected error \n More: %s' % traceback.format_exc())
         sys.exit(1)
-
     finally:
         #close AMQP connection
         if connection:
