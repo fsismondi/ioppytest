@@ -1,4 +1,9 @@
+import logging
 from coap_testing_tool.webserver.webserver import *
+
+COMPONENT_ID = 'webserver'
+
+logger = logging.getLogger(__name__)
 
 
 def launchHttpServerLogger():
@@ -10,10 +15,4 @@ def launchHttpServerLogger():
     http_serv.serve_forever()
 
 if __name__ == '__main__':
-
     launchHttpServerLogger()
-
-    # # start http server as different process
-    # http_server_p = Process(target=launchHttpServerLogger)
-    # http_server_p.start()
-    # http_server_p.join()
