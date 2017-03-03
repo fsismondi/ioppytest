@@ -14,9 +14,10 @@ import os
 import signal
 import sys
 import logging
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter, AMQP_URL
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
+
 COMPONENT_ID = 'packet_router'
-AMQP_EXCHANGE = 'default'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)

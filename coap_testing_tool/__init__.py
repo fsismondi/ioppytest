@@ -3,7 +3,7 @@
 import os
 import json
 
-__version__ = (0, 0, 1)
+__version__ = (0, 0, 2)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 
@@ -29,6 +29,8 @@ try:
     AMQP_PASS = str(os.environ['AMQP_PASS'])
     AMQP_VHOST = str(os.environ['AMQP_VHOST'])
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+    AMQP_URL = str(os.environ['AMQP_URL'])
+
     print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
