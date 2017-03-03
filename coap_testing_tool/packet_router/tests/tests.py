@@ -1,8 +1,13 @@
 import unittest, logging, os
 import time, json
 import pika
-
-#for running single: test python3 -m unittest test_module.TestClass.test_method
+from coap_testing_tool.packet_router.packet_router import PacketRouter
+"""
+launch it as
+    python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase
+for running single a single test:
+    python3 -m unittest test_module.TestClass.test_method
+"""
 
 class PacketRouterTestCase(unittest.TestCase):
 
@@ -45,6 +50,10 @@ class PacketRouterTestCase(unittest.TestCase):
         self.channel.queue_bind(exchange=self.AMQP_EXCHANGE,
                            queue=self.queue_name,
                            routing_key='data.tun.#')
+        # start packet router
+        packet_router = PacketRouter(self.connection,None)
+        packet_router.daemon=True
+        packet_router.start()
 
     def test_packet_routing(self):
         """
@@ -136,7 +145,3 @@ class PacketRouterTestCase(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
-    unittest.test_packet_router_agent1_to_agent2()
-    #python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase.test_packet_router_agent1_to_agent2
-    #python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase._send_packet_fromAgent2
