@@ -10,14 +10,14 @@ import sys
 import yaml
 import pika
 import time
+import logging
 
 from itertools import cycle
 from collections import OrderedDict
-from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
+from coap_testing_tool import AMQP_EXCHANGE
 from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
-from coap_testing_tool.utils.logger import initialize_logger
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -38,8 +38,7 @@ COMPONENT_ID = 'test_coordinator'
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
 
-# init logging to stnd output and log files
-logger = initialize_logger(LOGDIR, COMPONENT_ID)
+logger = logging.getLogger(__name__)
 
 
 ### AUX functions ###
