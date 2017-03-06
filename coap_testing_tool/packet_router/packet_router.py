@@ -15,9 +15,11 @@ import signal
 import sys
 import logging
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
 
 COMPONENT_ID = 'packet_router'
+
+
 
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
@@ -34,9 +36,14 @@ logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
 
 class PacketRouter(threading.Thread):
+    AGENT_1_ID = AGENT_NAMES[0]
+    AGENT_2_ID = AGENT_NAMES[1]
+    AGENT_TT_ID = AGENT_TT_ID
 
     def __init__(self, conn, routing_table):
         threading.Thread.__init__(self)
+
+        logger.info("Imported agent names of the test session: %s" %str(AGENT_NAMES))
 
         if routing_table:
             self.routing_table = routing_table
@@ -45,11 +52,22 @@ class PacketRouter(threading.Thread):
             # agent_TT is the agent instantiated by the testing tools
             self.routing_table = {
                 # first two entries is for a user to user setup
-                'data.tun.fromAgent.agent1': ['data.tun.toAgent.agent2','data.tun.toAgent.agent_TT'],
-                'data.tun.fromAgent.agent2': ['data.tun.toAgent.agent1','data.tun.toAgent.agent_TT'],
+                'data.tun.fromAgent.%s'%PacketRouter.AGENT_1_ID:
+                    [
+                        'data.tun.toAgent.%s'%PacketRouter.AGENT_2_ID,
+                        'data.tun.toAgent.%s'%PacketRouter.AGENT_TT_ID
+                    ],
+                'data.tun.fromAgent.%s'%PacketRouter.AGENT_2_ID:
+                    [
+                        'data.tun.toAgent.%s'%PacketRouter.AGENT_1_ID,
+                        'data.tun.toAgent.%s'%PacketRouter.AGENT_TT_ID
+                    ],
 
                 # entry for a user to automated iut setup (doesnt create any conflict with the previous ones)
-                'data.tun.fromAgent.agent_TT': ['data.tun.toAgent.agent1'],
+                'data.tun.fromAgent.%s'%PacketRouter.AGENT_TT_ID:
+                    [
+                        'data.tun.toAgent.%s'%PacketRouter.AGENT_1_ID
+                    ],
             }
 
         logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
