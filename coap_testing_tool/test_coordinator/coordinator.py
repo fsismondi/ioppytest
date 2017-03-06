@@ -15,7 +15,7 @@ import logging
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
-from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR
+from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
 
@@ -576,7 +576,7 @@ class Coordinator:
 
         logger.debug("Let's start the bootstrap the agents")
 
-        for agent, assigned_ip in (('agent1',':1'),('agent2',':2'),('agent_TT',':3')):
+        for agent, assigned_ip in ((AGENT_NAMES[0],':1'),(AGENT_NAMES[1],':2'),(AGENT_TT_ID,':3')):
             d["ipv6_host"] = assigned_ip
             self.channel.basic_publish(
                     exchange=AMQP_EXCHANGE,
