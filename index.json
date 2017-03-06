@@ -1,5 +1,8 @@
 {
   "_type": "testsuite.manifest",
+  "testing_tool":"Interop CoAP Testing Tool",
+  "version":"0.0.2",
+  "tests_type": "interoperability",
   "protocols_under_test": ["coap", "coap_core", "coap_observe"],
   "protocols_info": [
     {
@@ -7,20 +10,20 @@
       "specification_id":"RFC7252",
       "specification_ref": "https://tools.ietf.org/html/rfc7252",
       "test_description_id": "TD_COAP_CORE",
-      "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml",
+      "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
     },
     {
       "protocol": "coap_observe",
       "specification_id":"RFC7641",
       "specification_ref": "https://tools.ietf.org/html/rfc7641",
       "test_description_id": "TD_COAP_OBS",
-      "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_OBS.yaml",
+      "test_description_ref": "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_OBS.yaml"
     }
   ],
-
-  "iut_role_options": ["coap_client", "coap_server"],
-  "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
   "underlying_supported_protocol": ["ipv6","ipv4","udp"],
+  "iut_roles": ["coap_client", "coap_server"],
+  "agent_names": ["coap_client_agent", "coap_server_agent"],
+  "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
   "testing_tool_ansible_playbook": "ansible/main.yml",
   "owner": "F-Interop",
   "mantainer": "Federico Sismondi",
