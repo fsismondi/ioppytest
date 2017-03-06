@@ -51,3 +51,28 @@ print(json.dumps(
                 'exchange': AMQP_EXCHANGE
             }
     ))
+
+
+try:
+    # read config information from manifest file (index.json)
+    with open('index.json') as o:
+        AGENT_NAMES = json.load(o)['agent_names']
+
+except:
+    AGENT_NAMES = []
+
+AGENT_TT_ID = 'agent_TT'
+
+__all__ = [
+    __version__,
+    TMPDIR,
+    DATADIR,
+    RESULTS_DIR,
+    PCAP_DIR,
+    LOGDIR,
+    TD_DIR,
+    AMQP_SERVER,
+    AMQP_URL,
+    AGENT_NAMES,
+    AGENT_TT_ID
+]
