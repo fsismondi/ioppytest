@@ -2,7 +2,7 @@
   "_type": "testsuite.manifest",
   "testing_tool":"CoAP Testing Tool",
   "version":"0.0.3",
-  "tests_type": ["interoperability","conformance"]
+  "tests_type": ["interoperability","conformance"],
   "protocols_under_test": ["CoAP", "CoAP_CORE", "CoAP_OBS"],
   "protocols_info": [
     {
@@ -101,7 +101,7 @@
         "Automated IUT: Implementations under test which fully automated, bundled to F-Interop, and that are ready execute the tests without the need of a second user.",
         "User Assisted: Implementations under test which needs to be driven by a User to perform the interoperability test. Particularly for handling certain the CONFIGs and executing the STIMULIs described in the test description"
       ],
-      "mandatory": true
+      "mandatory": true,
       "field_hook": ""
     },
     {
