@@ -1,21 +1,13 @@
-import unittest, logging, os
-from coap_testing_tool.test_coordinator.coordinator import *
-from coap_testing_tool import LOGDIR,TD_DIR
-
-#TD_COAP = os.path.join(TD_DIR,'TD_COAP_CORE.yaml')
+import unittest, logging, os, pika, json
+from collections import OrderedDict
+from coap_testing_tool import AMQP_URL
+from coap_testing_tool.test_coordinator.coordinator import Coordinator, TD_COAP_CFG,TD_COAP, import_teds
 
 class CoordinatorTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        #print( str(os.environ['PYTHON_PATH']))
-        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials = credentials))
-
-        # it docs its a raw import
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
         # this tests import and the construction of Coordinator and test cases from yaml file
         self.coord = Coordinator(connection, TD_COAP, TD_COAP_CFG)
@@ -133,7 +125,7 @@ class CoordinatorTestCase(unittest.TestCase):
             print(conf_v.nodes)
             print(conf_v.topology)
             print(conf_v.uri)
-            print(conf_v.capture_config)
+            print(conf_v)
 
 
 if __name__ == '__main__':
