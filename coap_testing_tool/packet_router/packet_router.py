@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-
 import pika
 import threading
-import time
 import json
-from datetime import timedelta
-import traceback
-import uuid
 from collections import OrderedDict
 import datetime
-import os
 import signal
 import sys
 import logging
@@ -18,9 +12,6 @@ from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
 
 COMPONENT_ID = 'packet_router'
-
-
-
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
 
@@ -49,7 +40,7 @@ class PacketRouter(threading.Thread):
             self.routing_table = routing_table
         else:
             # default routing
-            # agent_TT is the agent instantiated by the testing tools
+            # agent_TT is the agent instantiated by the testing tool
             self.routing_table = {
                 # first two entries is for a user to user setup
                 'data.tun.fromAgent.%s'%PacketRouter.AGENT_1_ID:
