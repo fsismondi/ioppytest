@@ -1,10 +1,4 @@
 # temporary file for building docker images manually for the testing tool
-
-#run as :
-#docker run -it --env AMQP_EXCHANGE=default --env AMQP_VHOST=session03 --env AMQP_USER=paul --env
-#AMQP_PASS=iamthewalrus --env AMQP_SERVER='f-interop.rennes.inria.fr' --privileged finterop-coap bash
-
-
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
@@ -15,14 +9,12 @@ RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN	apt-get -y install tcpdump
 
-
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
-RUN echo $LANG
+#RUN echo $LANG
 #ENV LANG=en_US.utf8
-RUN echo $PATH
-RUN ls
-RUN ls /coap_testing_tool
+#RUN echo $PATH
+#RUN ls /coap_testing_tool
 WORKDIR /coap_testing_tool
 
 #py2 requirements
@@ -41,7 +33,7 @@ RUN	apt-get -y install default-jre
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap
 
-EXPOSE 80 8080 5671 5672
+EXPOSE 5671 5672
 
 # launch processes
 CMD supervisord -c supervisor.conf
