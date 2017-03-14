@@ -15,8 +15,9 @@ architecture.
 
 ### CoAP Testing tools components
 
-The CoAP testing tool handles the coordination, sniffing, dissection and analysis of CoAP test suite.
-It's based on the test scenarios and test cases described in 
+The CoAP testing tool handles the coordination, sniffing, dissection
+and analysis of traces for the tests described in the test description.
+The implemented test description is based on:
 [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)
 
 For description of components please visit: [f-interop doc](doc.f-interop.eu)
@@ -31,7 +32,6 @@ git submodule update --init --recursive
 ### Running it as standalone software
 
 for debian based OS & macos:
-
 
 - installation 
 
@@ -66,7 +66,8 @@ for debian based OS & macos:
     sudo supervisorctl -c supervisor.conf  
 
     ```
-	note: use -E when launching supervisor process, it preserves the env vars
+	note: use -E when launching supervisor process, it preserves the
+	env vars
 
 
 
