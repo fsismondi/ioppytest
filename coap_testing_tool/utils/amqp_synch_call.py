@@ -41,7 +41,7 @@ class AmqpSynchronousCallClient:
 
     def __init__(self, component_id ):
         # setup blocking connection, do not reuse the conection from coord, it needs to be a new one
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.component_id = component_id
 
         # this generates a blocking channel
