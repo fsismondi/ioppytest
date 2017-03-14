@@ -161,7 +161,7 @@ class PacketRouter(threading.Thread):
                 # print("ERRORS: %s" % )
                 print('* * * * * * * * * * * * * * * * * * * * * \n')
         else:
-            logger.error('No know route for r_key source: {r_key}'.format(r_key=src_rkey))
+            logger.error('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
 

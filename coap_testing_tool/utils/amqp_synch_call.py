@@ -8,7 +8,7 @@ import logging
 from threading import Timer
 
 from coap_testing_tool.utils.exceptions import TatError, SnifferError,CoordinatorError, AmqpMessageError
-from coap_testing_tool import AMQP_VHOST, AMQP_PASS,AMQP_SERVER,AMQP_USER, AMQP_EXCHANGE
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 from collections import OrderedDict
 
 
@@ -40,26 +40,16 @@ AMQP_REPLY_TOUT = 10
 class AmqpSynchronousCallClient:
 
     def __init__(self, component_id ):
-        credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-
-        # setup blocking connection, do not reuse the conenction from coord, it needs to be a new one!
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=AMQP_SERVER,
-            virtual_host=AMQP_VHOST,
-            credentials = credentials,
-        ))
+        # setup blocking connection, do not reuse the conection from coord, it needs to be a new one
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.component_id = component_id
 
-        #this generates a blocking channel
+        # this generates a blocking channel
         self.channel = self.connection.channel()
         self.reply_queue_name = 'service_responses@%s'%self.component_id
 
-
-
     def on_response(self, ch, method, props, body):
-
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
         if self.corr_id == props.correlation_id:
             self.response = body
         else:
@@ -67,10 +57,8 @@ class AmqpSynchronousCallClient:
 
 
     def call(self, routing_key, body):
-
         result = self.channel.queue_declare(queue = self.reply_queue_name)
         self.callback_queue = result.method.queue
-
 
         # by convention routing key of answer is routing_key + .reply
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
@@ -116,12 +104,7 @@ class AmqpSynchronousCallClient:
 
 #this is just an example of usage where we ask the sniffer for a pcap capture and we save it disk after:
 if __name__ == '__main__':
-    credentials = pika.PlainCredentials(AMQP_USER, AMQP_PASS)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host=AMQP_SERVER,
-        virtual_host=AMQP_VHOST,
-        credentials=credentials))
-
+    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     amqpRPCClient = AmqpSynchronousCallClient("dummy_component")
 
     body = {'_type': 'sniffing.getcapture', 'testcase_id': 'testcase pepito'}
