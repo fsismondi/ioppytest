@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+from urllib.parse import urlparse
 
-__version__ = (0, 0, 2)
+__version__ = (0, 0, 3)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 
@@ -22,43 +23,48 @@ TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptio
 # lets get the AMQP params from the ENV
 
 
-# rewrite default values with ENV variables
 try:
-    AMQP_SERVER = str(os.environ['AMQP_SERVER'])
-    AMQP_USER = str(os.environ['AMQP_USER'])
-    AMQP_PASS = str(os.environ['AMQP_PASS'])
-    AMQP_VHOST = str(os.environ['AMQP_VHOST'])
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+except KeyError as e:
+    AMQP_EXCHANGE = "default"
+
+try:
     AMQP_URL = str(os.environ['AMQP_URL'])
+    p = urlparse(AMQP_URL)
+    AMQP_USER = p.username
+    AMQP_PASS = p.password
+    AMQP_SERVER = p.hostname
+    AMQP_VHOST = p.path.strip('/')
 
     print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
+
     print('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
-    # default values
+    # load default values
     AMQP_SERVER = "localhost"
     AMQP_USER = "guest"
     AMQP_PASS = "guest"
     AMQP_VHOST = "/"
-    AMQP_EXCHANGE = "default"
+    AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format(AMQP_USER, AMQP_PASS, AMQP_SERVER, AMQP_VHOST)
 
 print(json.dumps(
-            {
-                'server': AMQP_SERVER,
-                'session': AMQP_VHOST,
-                'user': AMQP_USER,
-                'pass': '#' * len(AMQP_PASS),
-                'exchange': AMQP_EXCHANGE
-            }
-    ))
-
+                {
+                    'server': AMQP_SERVER,
+                    'session': AMQP_VHOST,
+                    'user': AMQP_USER,
+                    'pass': '#' * len(AMQP_PASS),
+                    'exchange': AMQP_EXCHANGE
+                }
+))
 
 try:
     # read config information from manifest file (index.json)
-    with open('index.json') as o:
-        AGENT_NAMES = json.load(o)['agent_names']
+    with open('index.json') as index_file:
+        AGENT_NAMES = json.load(index_file)['agent_names']
 
 except:
+    print('Cannot retrieve agent config from index file of the testing tool')
     AGENT_NAMES = []
 
 AGENT_TT_ID = 'agent_TT'
@@ -71,7 +77,6 @@ __all__ = [
     PCAP_DIR,
     LOGDIR,
     TD_DIR,
-    AMQP_SERVER,
     AMQP_URL,
     AGENT_NAMES,
     AGENT_TT_ID
