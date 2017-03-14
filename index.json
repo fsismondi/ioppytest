@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
   "testing_tool":"CoAP Testing Tool",
-  "version":"0.0.3",
+  "version":"0.0.4",
   "tests_type": ["interoperability","conformance"],
   "protocols_under_test": ["CoAP", "CoAP_CORE", "CoAP_OBS"],
   "protocols_info": [

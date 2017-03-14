@@ -4,7 +4,7 @@ import os
 import json
 from urllib.parse import urlparse
 
-__version__ = (0, 0, 3)
+__version__ = (0, 0, 4)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 
