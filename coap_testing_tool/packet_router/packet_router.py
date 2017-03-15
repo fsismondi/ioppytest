@@ -96,7 +96,7 @@ class PacketRouter(threading.Thread):
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
         body_dict = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        logger.info("Message sniffed: %s" %json.dumps(body_dict))
+        logger.debug("Message sniffed: %s" %(body_dict['_type']))
         self.message_count += 1
 
         print('\n* * * * * * MESSAGE SNIFFED (%s) * * * * * * *'%self.message_count)
@@ -166,9 +166,8 @@ class PacketRouter(threading.Thread):
 
 
     def run(self):
-        print("Starting thread listening on the event bus")
         self.channel.start_consuming()
-        print('Bye byes!')
+        logger.info('Bye byes!')
 
 
 
@@ -195,7 +194,7 @@ if __name__ == '__main__':
                 )
         )
 
-        logger.info('got SIGINT \n Bye bye!')
+        logger.info('got SIGINT. Bye bye!')
 
         sys.exit(0)
 
