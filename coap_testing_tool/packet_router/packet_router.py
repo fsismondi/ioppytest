@@ -152,14 +152,8 @@ class PacketRouter(threading.Thread):
                         )
                 )
 
-                print('\n* * * * * * ROUTING MESSAGE (%s) * * * * * * *' % self.message_count)
-                print("TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
-                print(" - - - ")
-                print("ROUTING_KEY SRC: %s" % src_rkey)
-                print("ROUTING_KEY DST: %s" % dst_rkey)
-                print(" - - - ")
-                # print("ERRORS: %s" % )
-                print('* * * * * * * * * * * * * * * * * * * * * \n')
+                logger.info("Routing packet (%d) from topic: %s to topic: %s"%(self.message_count,src_rkey,dst_rkey))
+
         else:
             logger.error('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
