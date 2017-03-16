@@ -198,7 +198,8 @@ class RabbitMQHandler(logging.Handler):
         )
 
     def close(self):
-        self.channel.close()
+        if self.channel:
+            self.channel.close()
 
 
 if __name__ == "__main__":
