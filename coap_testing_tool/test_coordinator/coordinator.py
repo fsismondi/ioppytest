@@ -15,7 +15,7 @@ import logging
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
-from coap_testing_tool import DATADIR,TMPDIR,LOGDIR,TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
+from coap_testing_tool import TMPDIR,TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP,TD_COAP_CFG
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
 
@@ -32,11 +32,6 @@ SNIFFER_FILTER_IF = 'tun0'
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
-
-# set temporarily as default
-# TODO get this from finterop session context!
-TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
-TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
 
 logger = logging.getLogger(__name__)
 

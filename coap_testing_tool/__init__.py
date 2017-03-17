@@ -19,6 +19,8 @@ RESULTS_DIR = os.path.join( DATADIR,'results')
 PCAP_DIR =  os.path.join( DATADIR,'dumps')
 LOGDIR = os.path.join( project_dir,'log')
 TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptions')
+TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
+TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
 
 # lets get the AMQP params from the ENV
 
