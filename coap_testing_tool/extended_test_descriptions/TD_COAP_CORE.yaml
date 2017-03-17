@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_COAP_CORE_01_v01
-uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01
+uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_01_v01
 configuration: COAP_CFG_01_v01
 objective: Perform GET transaction(CON mode)
 pre_conditions: Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
@@ -12,26 +12,26 @@ sequence:
     node : coap_client
     description:
       - Client is requested to send a GET request with
-      - Type = 0(CON)
-      - Code = 1(GET)
+      - - Type = 0(CON)
+      - - Code = 1(GET)
 
   - step_id: TD_COAP_CORE_01_v01_step_02
     type: check
     description:
       - The request sent by the client contains
-      - Type=0 and Code=1
-      - Client-generated Message ID(\u2794 CMID)
-      - Client-generated Token(\u2794 CTOK)
-      - Uri-Path option "test"
+      - - Type=0 and Code=1
+      - - Client-generated Message ID(\u2794 CMID)
+      - - Client-generated Token(\u2794 CTOK)
+      - - Uri-Path option "test"
 
   - step_id: TD_COAP_CORE_01_v01_step_03
     type: check
     description:
         - Server sends response containing
-        - Code = 2.05(Content)
-        - Message ID = CMID, Token = CTOK
-        - Content-format option
-        - Non-empty Payload
+        - - Code = 2.05(Content)
+        - - Message ID = CMID, Token = CTOK
+        - - Content-format option
+        - - Non-empty Payload
 
   - step_id: TD_COAP_CORE_01_v01_step_04
     type: verify
@@ -41,7 +41,7 @@ sequence:
 
 --- !testcase
 testcase_id : TD_COAP_CORE_02_v01
-uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_02_v01
+uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_02_v01
 objective: Perform DELETE transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
@@ -88,7 +88,7 @@ sequence:
 
 --- !testcase
   testcase_id : TD_COAP_CORE_03_v01
-  uri : http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_03_v01
+  uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_03_v01
   objective: Perform PUT transaction (CON mode)
   configuration: COAP_CFG_01_v01
   references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"

@@ -5,8 +5,8 @@
   "session_id" : "finterop_session_id_format_TBD",
   "date" : "2016-11-01T10:25:12.52Z",    //RFC3339-formatted
   "testsuite_test_descriptions" : [
-      "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CFG.yaml",
-      "http://f-interop.rennes.inria.fr:8080/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
+      "http://f-interop.rennes.inria.fr/coap_testing_tool/extended_test_descriptions/TD_COAP_CFG.yaml",
+      "http://f-interop.rennes.inria.fr/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
     ],
   "users": [
         "a",
@@ -29,11 +29,11 @@
   ],
   "tests": [
               {
-                "testcase_id": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01",
+                "testcase_id": "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_01",
                 "settings": {}
               },
               {
-                "testcase_id": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_02",
+                "testcase_id": "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_02",
                 "settings": {}
               }
   ],
