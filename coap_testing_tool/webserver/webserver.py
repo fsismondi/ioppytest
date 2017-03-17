@@ -11,11 +11,21 @@ import posixpath
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib
 import html
-import shutil
+import yaml
 import mimetypes
-from multiprocessing import Process
-from coap_testing_tool import LOGDIR, TD_DIR
+from coap_testing_tool import TD_COAP,TD_COAP_CFG
+from coap_testing_tool.test_coordinator.coordinator import TestCase
+logger = logging.getLogger(__name__)
 
+
+td_list = []
+with open(TD_COAP, "r", encoding="utf-8") as stream:
+    yaml_docs = yaml.load_all(stream)
+    for yaml_doc in yaml_docs:
+        if type(yaml_doc) is TestCase:
+            td_list.append(yaml_doc)
+
+# TODO server config files too
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
@@ -56,8 +66,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         None, in which case the caller has nothing further to do.
 
         """
+
+        # check if its a testcase in the ones already loaded
+        if self.path.startswith('/tests/'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_testcase(self.path)
+
+
+        # check if its a file in the testing tool dir
         path = self.translate_path(self.path)
         f = None
+
         if os.path.isdir(path):
             for index in "index.html", "index.htm":
                 index = os.path.join(path, index)
@@ -80,6 +99,122 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", ctype)
         self.end_headers()
         return f
+
+    def handle_testcase(self, path):
+        """
+        Helper to produce testcase for paths like : (...)/tests/TD_COAP_(...)
+        """
+        assert "/tests/" in path
+        tc_name = path.split('/')[-1]
+        tc = None
+
+        for tc_iter in td_list:
+            if tc_iter.id.lower() == tc_name.lower():
+                tc = tc_iter
+                break
+
+        if tc is None:
+            self.send_error(404, "Testcase couldn't be found")
+            return None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        head= """
+    <html>
+        <head>
+        <meta charset='utf-8'>
+        <style>
+            h2 {
+                font-family: Arial;
+                font-size: 25px;
+            }
+            h2 em{
+                font-family: Arial;
+                font-size: 20px;
+                font-style: normal;
+                font-weight: normal;
+            }
+            p {
+                font-family: Arial;
+                font-style: normal;
+                font-weight: normal;
+                font-size: 18px;
+            }
+            p em {
+                font-family: Arial;
+                font-style: normal;
+                font-weight: normal;
+                font-size: 15px;
+                paddomg-legt 1.8em
+            }
+
+            li {
+                display: list-item;
+                font-family: Arial;
+                font-style: normal;
+                font-weight: normal;
+                font-size: 13px;
+                paddomg-legt 1.8em
+            }
+
+            table {
+                border-collapse: collapse;
+                font-family: Arial;
+                margin-bottom: 2em;
+            }
+            table th, table td {
+                min-width: 30px;
+                padding: 4px 0 4px 10px;
+            }
+        </style>
+        </head>\n
+
+        """
+        self.wfile.write(bytes(head, 'utf-8'))
+        self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
+        self.wfile.write(bytes("<title>Testcase description</title>", 'utf-8'))
+        self.wfile.write(bytes("<h2>Testcase identifier: <em>%s</em> </h2>" % tc.id, 'utf-8'))
+
+
+        # Test case general info
+        self.wfile.write(bytes("<h2>Objective: <em>%s</em></h2>\n" % tc.objective, 'utf-8'))
+        self.wfile.write(bytes("<h2>Configuration: <em>%s</em></h2>\n" % tc.configuration_id, 'utf-8'))
+        self.wfile.write(bytes("<h2>Preconditions: <em>%s</em></h2>\n" % tc.pre_conditions, 'utf-8'))
+        self.wfile.write(bytes("<h2>References: <em>%s</em></h2>\n" % tc.references, 'utf-8'))
+        self.wfile.write(bytes("<hr>\n", 'utf-8'))
+
+        # test case step sequence
+        self.wfile.write(bytes("<h2>Step Sequence:</h2>\n", 'utf-8'))
+        self.wfile.write(bytes("<ol>\n", 'utf-8'))
+        for step in tc.sequence:
+            self.wfile.write(bytes("<p>Step identifier: <em>%s</em></p>\n" % str(step.id), 'utf-8'))
+            self.wfile.write(bytes("<p>Type: <em>%s</em></p>\n" % str(step.type), 'utf-8'))
+            self.wfile.write(bytes("<p>Description:\n", 'utf-8'))
+
+            # decompose up to two levels of nested list
+
+            if isinstance(step.description,list):
+                self.wfile.write(bytes("<ol>\n", 'utf-8'))
+                for item in step.description:
+                    if isinstance(item, list):
+                        self.wfile.write(bytes("<ol>\n", 'utf-8'))
+                        for item_of_item in item:
+                            self.wfile.write(bytes("<li>%s</li>  \n" % str(item_of_item), 'utf-8'))
+                        self.wfile.write(bytes("</ol>\n", 'utf-8'))
+                    else:
+                        self.wfile.write(bytes("<li>%s</li>"% str(item), 'utf-8'))
+                self.wfile.write(bytes("</ol>\n", 'utf-8'))
+            else:
+                self.wfile.write(bytes("<em>%s</em>\n" % str(step.description), 'utf-8'))
+
+            self.wfile.write(bytes("</p>\n", 'utf-8'))
+            self.wfile.write(bytes("<hr>\n", 'utf-8'))
+
+
+        self.wfile.write(bytes("</body>\n", 'utf-8'))
+        self.wfile.write(bytes("</html>\n",'utf-8'))
+        return
 
     def list_directory(self, path):
         """Helper to produce a directory listing (absent index.html).
@@ -117,8 +252,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 # Note: a link to a directory displays with @ and links with /
             self.wfile.write(bytes('<li><a href="%s">%s</a>\n' % (linkname, displayname), 'utf-8'))
         self.wfile.write(bytes("</ul>\n<hr>\n", 'utf-8'))
-
-
         return
 
     def translate_path(self, path):
