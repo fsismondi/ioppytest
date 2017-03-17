@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_COAP_CORE_01_v01
-uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_01_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01
 configuration: COAP_CFG_01_v01
 objective: Perform GET transaction(CON mode)
 pre_conditions: Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
@@ -41,7 +41,7 @@ sequence:
 
 --- !testcase
 testcase_id : TD_COAP_CORE_02_v01
-uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_02_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01
 objective: Perform DELETE transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
@@ -88,7 +88,7 @@ sequence:
 
 --- !testcase
   testcase_id : TD_COAP_CORE_03_v01
-  uri : http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_03_v01
+  uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01
   objective: Perform PUT transaction (CON mode)
   configuration: COAP_CFG_01_v01
   references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"

@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 td_list = []
+
+tail ="""
+"mantainer": "Federico Sismondi",
+"mantainer_email": "federico.sismondi@inria.fr"
+
+if you spotted any errors or you want to comment on sth don't hesitate to contact me.
+"""
+
 with open(TD_COAP, "r", encoding="utf-8") as stream:
     yaml_docs = yaml.load_all(stream)
     for yaml_doc in yaml_docs:
@@ -141,6 +149,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 font-weight: normal;
                 font-size: 18px;
             }
+            tail {
+                font-family: Arial;
+                font-style: normal;
+                font-weight: normal;
+                font-size: 10px;
+            }
             p em {
                 font-family: Arial;
                 font-style: normal;
@@ -212,7 +226,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes("<hr>\n", 'utf-8'))
 
 
-        self.wfile.write(bytes("</body>\n", 'utf-8'))
+        self.wfile.write(bytes("<tail>%s</tail> </body>\n"%tail, 'utf-8'))
         self.wfile.write(bytes("</html>\n",'utf-8'))
         return
 

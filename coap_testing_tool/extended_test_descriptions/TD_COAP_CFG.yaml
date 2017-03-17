@@ -2,7 +2,7 @@
 
 --- !configuration
 configuration_id: COAP_CFG_01_v01
-uri: http://f-interop.rennes.inria.fr/tests/CoAP_CFG_01
+uri: http://doc.f-interop.eu/tests/CoAP_CFG_01
 nodes:
   - coap_client
   - coap_server
@@ -54,7 +54,7 @@ description:
 
 --- !configuration
 configuration_id: CoAP_CFG_02_v01
-uri: http://f-interop.rennes.inria.fr/tests/CoAP_CFG_02
+uri: http://doc.f-interop.eu/tests/CoAP_CFG_02
 nodes:
   - coap_client
   - coap_server

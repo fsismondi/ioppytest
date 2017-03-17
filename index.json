@@ -10,14 +10,14 @@
       "specification_id":"RFC7252",
       "specification_ref": "https://tools.ietf.org/html/rfc7252",
       "test_description_id": "TD_COAP_CORE",
-      "test_description_ref": "http://f-interop.rennes.inria.fr/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
+      "test_description_ref": "http://doc.f-interop.eu/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
     },
     {
       "protocol": "CoAP_OBS",
       "specification_id":"RFC7641",
       "specification_ref": "https://tools.ietf.org/html/rfc7641",
       "test_description_id": "TD_COAP_OBS",
-      "test_description_ref": "http://f-interop.rennes.inria.fr/coap_testing_tool/extended_test_descriptions/TD_COAP_OBS.yaml"
+      "test_description_ref": "http://doc.f-interop.eu/coap_testing_tool/extended_test_descriptions/TD_COAP_OBS.yaml"
     }
   ],
   "underlying_supported_protocol": ["ipv6","udp"],
@@ -60,9 +60,9 @@
       "field_name": "Test cases selection",
       "type": "multi-selection",
       "values":[
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_01_v01",
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_02_v01",
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_03_v01"
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01"
       ],
       "mandatory": false
     }
@@ -114,9 +114,9 @@
       "field_name": "Test cases selection",
       "type": "multi-selection",
       "values":[
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_01_v01",
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_02_v01",
-        "http://f-interop.rennes.inria.fr/tests/TD_COAP_CORE_03_v01"
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01"
       ],
       "mandatory": false
     }
