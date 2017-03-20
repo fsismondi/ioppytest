@@ -64,7 +64,7 @@ def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    #print("pasing test case: " + str(state))
+    logger.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 
@@ -72,7 +72,7 @@ def test_config_constructor(loader, node):
     instance = TestConfig.__new__(TestConfig)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    #print("pasing test case: " + str(state))
+    logger.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 yaml.add_constructor(u'!configuration', test_config_constructor)
@@ -234,6 +234,9 @@ class TestConfig:
         self.topology = topology
         self.description = description
 
+    def __repr__(self):
+        return json.dumps(self.to_dict(True))
+
     def to_dict(self,verbose=None):
 
         d = OrderedDict()
@@ -268,7 +271,6 @@ class Step():
             self.iut = None
 
         self.state = None
-
 
     def __repr__(self):
         node = ''
@@ -368,7 +370,6 @@ class TestCase:
 
         for s in self.sequence:
             s.reinit()
-
 
     def __repr__(self):
         return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, test_sequence=%s)" % (self.__class__.__name__, self.id ,
@@ -474,10 +475,10 @@ class Coordinator:
 
     """
 
-    def __init__(self, amqp_connection, ted_file, tc_configs_files):
+    def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
 
         # first let's import the TC configurations
-        imported_configs = import_teds(tc_configs_files)
+        imported_configs = import_teds(ted_config_file)
         self.tc_configs = OrderedDict()
         for tc_config in imported_configs:
             self.tc_configs[tc_config.id]=tc_config
@@ -485,8 +486,8 @@ class Coordinator:
         logger.info('Imports: %s TC_CONFIG imported'%len(self.tc_configs))
 
         # lets import TCs and make sure there's a tc config for each one of them
-        imported_teds = import_teds(ted_file)
-        self.teds=OrderedDict()
+        imported_teds = import_teds(ted_tc_file)
+        self.teds = OrderedDict()
         for ted in imported_teds:
             self.teds[ted.id]=ted
             if ted.configuration_id not in self.tc_configs:
