@@ -19,7 +19,6 @@ if(env.JOB_NAME =~ 'F-Interop/'){
                 sudo apt-get install --fix-missing -y libssl-dev openssl
                 sudo apt-get install --fix-missing -y libffi-dev
                 sudo apt-get install --fix-missing -y curl tree netcat
-
                 sudo apt-get -y install supervisor
                 sudo apt-get -y install tcpdump
                 sudo pip install -r coap_testing_tool/agent/requirements.txt --upgrade
