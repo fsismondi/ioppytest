@@ -43,6 +43,7 @@ node('sudo'){
         sudo pip3 install -r coap_testing_tool/sniffer/requirements.txt --upgrade
         sudo pip3 install -r coap_testing_tool/webserver/requirements.txt --upgrade
         '''
+        }
     }
   }
 
