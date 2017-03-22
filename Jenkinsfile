@@ -46,7 +46,21 @@ node('sudo'){
 
   stage("Testing Tool components unit-testing"){
     gitlabCommitStatus("Testing Tool's components unit-testing"){
-        sh "python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py"
+        sh '''
+        python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py
+        python3 -m pytest coap_testing_tool/packet_router/tests/tests.py
+        python3 -m pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
+        cd coap/testing/tool
+        '''
+    }
+  }
+
+    stage("Test submodules"){
+    gitlabCommitStatus("Testing Tool's components unit-testing"){
+        sh '''
+        cd coap_testing_tool/test_analysis_tool
+        python3 -m pytest tests/test_core
+        '''
     }
   }
 }
