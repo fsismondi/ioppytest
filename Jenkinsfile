@@ -3,8 +3,14 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins_ci_session"
 
 node('sudo'){
-  stage ("Setup dependencies"){
-    checkout scm
+    stage ("Setup dependencies"){
+    checkout([
+        $class: 'GitSCM',
+        branches: scm.branches,
+        doGenerateSubmoduleConfigurations: true,
+        extensions: scm.extensions + [[$class: 'SubmoduleOption', parentCredentials: true]],
+        userRemoteConfigs: scm.userRemoteConfigs
+    ])
     withEnv(["DEBIAN_FRONTEND=noninteractive"]){
         sh '''
         sudo apt-get clean
@@ -17,6 +23,17 @@ node('sudo'){
         sudo apt-get install --fix-missing -y libssl-dev openssl
         sudo apt-get install --fix-missing -y libffi-dev
         sudo apt-get install --fix-missing -y curl tree netcat
+        '''
+
+        /* Show deployed code */
+        sh "tree ."
+      }
+  }
+
+  stage("Testing Tool components requirements"){
+    gitlabCommitStatus("Testing Tool's components unit-testing"){
+        withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+        sh '''
         sudo apt-get -y install supervisor
         sudo apt-get -y install tcpdump
         sudo pip install -r coap_testing_tool/agent/requirements.txt --upgrade
@@ -26,14 +43,12 @@ node('sudo'){
         sudo pip3 install -r coap_testing_tool/sniffer/requirements.txt --upgrade
         sudo pip3 install -r coap_testing_tool/webserver/requirements.txt --upgrade
         '''
-
-        /* Show deployed code */
-        sh "tree ."
-      }
+    }
   }
 
-  stage("Testing Tool's components unit-testing"){
-    gitlabCommitStatus("6TiSCH internal tests"){
+
+  stage("Testing Tool components unit-testing"){
+    gitlabCommitStatus("Testing Tool's components unit-testing"){
         sh "python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py"
     }
   }
