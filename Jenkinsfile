@@ -4,25 +4,21 @@ env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins_ci_sess
 
 node('sudo'){
     stage ("Setup dependencies"){
-    checkout([
-        $class: 'GitSCM',
-        doGenerateSubmoduleConfigurations: true,
-        extensions: scm.extensions + [[$class: 'SubmoduleOption', parentCredentials: true]],
-        userRemoteConfigs: scm.userRemoteConfigs
-    ])
-    withEnv(["DEBIAN_FRONTEND=noninteractive"]){
-        sh '''
-        sudo apt-get clean
-        sudo apt-get update
-        sudo apt-get upgrade -y
-        sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
-        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
-        sudo apt-get install --fix-missing -y build-essential
-        sudo apt-get install --fix-missing -y libyaml-dev
-        sudo apt-get install --fix-missing -y libssl-dev openssl
-        sudo apt-get install --fix-missing -y libffi-dev
-        sudo apt-get install --fix-missing -y curl tree netcat
-        '''
+        checkout scm
+        sh 'git submodule update --init'
+        withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+            sh '''
+            sudo apt-get clean
+            sudo apt-get update
+            sudo apt-get upgrade -y
+            sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
+            sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
+            sudo apt-get install --fix-missing -y build-essential
+            sudo apt-get install --fix-missing -y libyaml-dev
+            sudo apt-get install --fix-missing -y libssl-dev openssl
+            sudo apt-get install --fix-missing -y libffi-dev
+            sudo apt-get install --fix-missing -y curl tree netcat
+            '''
 
         /* Show deployed code */
         sh "tree ."
