@@ -31,6 +31,7 @@ node('sudo'){
         sh '''
         sudo apt-get -y install supervisor
         sudo apt-get -y install tcpdump
+        sudo pip3 install pytest
         sudo pip install -r coap_testing_tool/agent/requirements.txt --upgrade
         sudo pip3 install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
         sudo pip3 install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
