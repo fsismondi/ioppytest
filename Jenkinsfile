@@ -50,7 +50,6 @@ node('sudo'){
         python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py
         python3 -m pytest coap_testing_tool/packet_router/tests/tests.py
         python3 -m pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
-        cd coap/testing/tool
         '''
     }
   }
