@@ -2,6 +2,23 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
 env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins_ci_session"
 
+node ('docker'){
+ stage("Build ansible-containers"){
+        sh "sudo apt-get install -y python-pip"
+        sh "sudo pip install ansible-container"
+        checkout scm
+        sh "git submodule update --init"
+        sh "git submodule sync --recursive"
+        gitlabCommitStatus("ansible-container") {
+            env.DOCKER_CLIENT_TIMEOUT=3000
+            env.COMPOSE_HTTP_TIMEOUT=3000
+            ansiColor('xterm'){
+                sh "sudo ansible-container --debug build"
+            }
+       }
+    }
+ }
+
 
 if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
