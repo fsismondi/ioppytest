@@ -3,7 +3,7 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins_ci_session"
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool'){
+if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
         stage ("Setup dependencies"){
             checkout scm
@@ -69,3 +69,38 @@ if(env.JOB_NAME =~ 'coap_testing_tool'){
 }
 
 
+if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
+    stage ("Install docker"){
+        withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+            sh '''
+            sudo apt-get clean
+            sudo apt-get update
+            sudo apt-get upgrade -y
+            sudo apt-get install --fix-missing -y curl tree netcat
+
+            curl -sSL https://get.docker.com/ | sudo sh
+            sudo service docker start
+            '''
+
+            /* Show deployed code */
+            sh "tree ."
+            }
+        }
+
+    stage("Clone repo and submodules"){
+        checkout scm
+        sh 'git submodule update --init'
+    }
+
+    stage("Creating CoAP testing tool docker image from Dockerfile"){
+        gitlabCommitStatus("coap testing tool docker image") {
+            env.DOCKER_CLIENT_TIMEOUT=3000
+            env.COMPOSE_HTTP_TIMEOUT=3000
+            sh '''
+            git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git /tmp/coap_testing_tool
+            sudo docker build -t finterop-coap /tmp/coap_testing_tool/
+            sudo docker images
+            '''
+        }
+    }
+}
