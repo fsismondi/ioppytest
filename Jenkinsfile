@@ -58,7 +58,7 @@ node('sudo'){
     gitlabCommitStatus("Testing Tool's components unit-testing"){
         sh '''
         cd coap_testing_tool/test_analysis_tool
-        python3 -m pytest tests/test_core
+        sudo python3 -m pytest tests/test_core
         '''
     }
   }
