@@ -3,7 +3,7 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins_ci_session"
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool'){
+if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
         stage ("Setup dependencies"){
             checkout scm
@@ -69,7 +69,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool'){
 }
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool_docker_build'){
+if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
     stage ("Install docker"){
         withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
@@ -87,10 +87,12 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build'){
             }
         }
 
-    stage("Creating CoAP testing tool docker image from Dockerfile"){
+    stage("Clone repo and submodules"){
         checkout scm
         sh 'git submodule update --init'
+    }
 
+    stage("Creating CoAP testing tool docker image from Dockerfile"){
         gitlabCommitStatus("coap testing tool docker image") {
             env.DOCKER_CLIENT_TIMEOUT=3000
             env.COMPOSE_HTTP_TIMEOUT=3000
