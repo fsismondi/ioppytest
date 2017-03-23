@@ -25,7 +25,6 @@ For description of components please visit: [f-interop doc](doc.f-interop.eu)
 ### Clonning the project
 ```
 git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git
-cd coap_testing_tool
 ```
 
 ### Running it as standalone software
