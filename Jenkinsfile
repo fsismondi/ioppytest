@@ -27,7 +27,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 
             /* Show deployed code */
             sh "tree ."
-            sh "echo $AMQP_URL"
+            sh "echo ${AMQP_URL}"
           }
       }
 
@@ -115,16 +115,20 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
 
 if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
     node('sudo'){
-        stage("Install w/ Ansible Playbook"){
-            sh "sudo apt-get install -y python-pip"
-            sh "sudo apt install ansible"
+
+        stage("Install Ansible"){
+            sh '''
+            sudo apt-get install --fix-missing -y  python-pip
+            sudo apt-get install --fix-missing -y  ansible
+            '''
+        }
+
+        stage("Build w/ Ansible Playbook"){
             checkout scm
             sh "git submodule update --init"
             sh "git submodule sync --recursive"
-            sh "pwd"
             gitlabCommitStatus("ansible-container") {
                 sh "sudo ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass"
-                }
             }
         }
     }
