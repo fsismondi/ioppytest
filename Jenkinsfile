@@ -2,11 +2,8 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
 if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
-
-        environment {
-                AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/ci."${JOB_NAME}
-                AMQP_EXCHANGE="default"
-            }
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool"
+        env.AMQP_EXCHANGE="default"
 
         stage ("Setup dependencies"){
             checkout scm
@@ -27,7 +24,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 
             /* Show deployed code */
             sh "tree ."
-            sh "echo ${AMQP_URL}"
           }
       }
 
@@ -54,6 +50,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
       stage("Testing Tool components unit-testing"){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
+            echo $AMQP_URL
+
             python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py
             python3 -m pytest coap_testing_tool/packet_router/tests/tests.py
             python3 -m pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
@@ -64,8 +62,9 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         stage("Test submodules"){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
+            echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
-            sudo python3 -m pytest tests/test_core
+            python3 -m pytest tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -75,6 +74,10 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 
 if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
     node('sudo'){
+
+        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
+        env.AMQP_EXCHANGE="default"
+
         stage ("Install docker"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                 sh '''
@@ -94,7 +97,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
 
         stage("Clone repo and submodules"){
             checkout scm
-            sh 'git submodule update --init'
+            sh "git submodule update --init"
             sh "tree ."
         }
 
@@ -102,13 +105,37 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
             gitlabCommitStatus("coap testing tool docker image") {
                 env.DOCKER_CLIENT_TIMEOUT=3000
                 env.COMPOSE_HTTP_TIMEOUT=3000
-                sh '''
-                git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git /tmp/coap_testing_tool_${BUILD_NUMBER}
-                sudo docker build -t finterop-coap /tmp/coap_testing_tool_${BUILD_NUMBER}
-                sudo docker images
-                '''
+                sh "echo $BUILD_ID"
+                sh "echo cloning.."
+                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git coap_tt_${env.BUILD_ID}"
+                sh "echo buiding.."
+                sh "sudo docker build -t finterop-coap coap_tt_${env.BUILD_ID}"
+                sh "sudo docker images"
             }
         }
+
+         stage("Testing Tool run"){
+             long startTime = System.currentTimeMillis()
+             long timeoutInSeconds = 30
+             gitlabCommitStatus("Docker run") {
+                sh "echo $AMQP_URL"
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf"
+                    }
+                } catch (err) {
+                    long timePassed = System.currentTimeMillis() - startTime
+                    if (timePassed >= timeoutInSeconds * 1000) {
+                        echo 'Docker container kept on running!'
+                        currentBuild.result = 'SUCCESS'
+                    } else {
+                        currentBuild.result = 'FAILURE'
+                    }
+                }
+
+             }
+
+         }
     }
 }
 
