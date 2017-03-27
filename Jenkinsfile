@@ -162,7 +162,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
 }
 
 if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
-    node('sudo'){
+    node('docker'){
         stage("Build ansible-containers"){
             sh "sudo apt-get install -y python-pip"
             sh "sudo pip install ansible-container"
@@ -180,3 +180,4 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
         }
     }
 }
+
