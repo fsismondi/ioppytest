@@ -174,7 +174,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
                 env.DOCKER_CLIENT_TIMEOUT=3000
                 env.COMPOSE_HTTP_TIMEOUT=3000
                 ansiColor('xterm'){
-                    sh "sudo ansible-container --debug build"
+                    sh "sudo -E ansible-container --debug build"
                 }
             }
         }
