@@ -784,7 +784,7 @@ class Coordinator:
                            % (str(ret), str(e)))
 
     def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
-        _type = 'analysis.testcase.analyze'
+        _type = 'analysis.interop.testcase.analyze'
         r_key = 'control.analysis.service'
         body = OrderedDict()
         body.update({'_type': _type})
