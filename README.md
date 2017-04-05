@@ -91,12 +91,34 @@ Second, **build** the testing tool, from inside coap_testing_tool dir run:
 docker build -t finterop-coap .
 ```
 
+If build fails due to a "Failed to fetch http://archive.ubuntu ...."
+then:
+```
+docker build -t finterop-coap . --no-cache
+```
+
 Finally, **run** it, from inside coap_testing_tool run:
 ```
 docker run -it --env AMQP_EXCHANGE='default' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
 ```
 
+alternatively, you can:
+```
+docker run -it --env AMQP_EXCHANGE=default --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap  bash
+root@bab3b2220510:/coap_testing_tool# supervisord -c supervisor.conf
+root@bab3b2220510:/coap_testing_tool# supervisorctl -c supervisor.conf
+agent                            RUNNING   pid 28, uptime 0:00:02
+automated-iut                    STARTING
+bootstrap-agent-TT               RUNNING   pid 19, uptime 0:00:02
+packet-router                    RUNNING   pid 24, uptime 0:00:02
+packet-sniffer                   RUNNING   pid 18, uptime 0:00:02
+tat                              RUNNING   pid 17, uptime 0:00:02
+test-coordinator                 RUNNING   pid 26, uptime 0:00:02
+supervisor>
+```
+
 Run the CLI & Agent and you are ready to launch CoAP tests from your PC!
+
 
 #### Opt 2 & 3 - Build CoAP testing tool with ansible
 
