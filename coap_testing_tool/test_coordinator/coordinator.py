@@ -72,7 +72,7 @@ def test_config_constructor(loader, node):
     instance = TestConfig.__new__(TestConfig)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    logger.debug("pasing test case: " + str(state))
+    logger.debug("passing test case: " + str(state))
     instance.__init__(**state)
 
 yaml.add_constructor(u'!configuration', test_config_constructor)
@@ -92,21 +92,22 @@ yaml.add_constructor(u'!testcase', testcase_constructor)
 
 def import_teds(yamlfile):
     """
-    :param yamlfile:
+    :param yamlfile: TED yaml file
     :return: list of imported testCase(s) and testConfig(s) object(s)
     """
     td_list = []
     with open(yamlfile, "r", encoding="utf-8") as stream:
         yaml_docs = yaml.load_all(stream)
         for yaml_doc in yaml_docs:
-             if type(yaml_doc) is TestCase:
-                 logger.debug(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
-                 td_list.append(yaml_doc)
-             elif type(yaml_doc) is TestConfig:
-                 logger.debug(' Parsed test case config: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
-                 td_list.append(yaml_doc)
-             else:
-                 logger.error('Couldnt processes import: %s from %s'%(str(yaml_doc),yamlfile))
+            # TODO use same yaml for both test cases and config descriptions
+            if type(yaml_doc) is TestCase:
+                logger.debug(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                td_list.append(yaml_doc)
+            elif type(yaml_doc) is TestConfig:
+                logger.debug(' Parsed test case config: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                td_list.append(yaml_doc)
+            else:
+                logger.error('Couldnt processes import: %s from %s'%(str(yaml_doc),yamlfile))
 
     return td_list
 
@@ -322,13 +323,14 @@ class Step():
 
 class TestCase:
     """
-    FSM:
+    FSM states:
     (None,'skipped', 'executing','ready_for_analysis','analyzing','finished')
-    None -> Rest state
-    Skipped -> Nothing to do here, just skip this TC
-    Executing -> Executing intermediary states (executing steps, partial analysis for check steps -if active testing-, executing verify steps)
-    Analyzing -> Either TAT analysing PCAP -post_mortem type- or processing all partial verdicts from check steps -step_by_step-
-    Finished -> all steps finished, all checks analyzed, and verdict has been emitted
+    - None -> Rest state. Wait for user input.
+    - Skipped -> If a TC is in skipped state is probably cause of user input. Jump to next TC
+    - Executing -> Inside this state we iterate over the steps. Once iteration finished go to "Analyzing" state.
+    - Analyzing -> Most probably we are waiting for TAT analysis CHECK analysis (eith post_mortem or step_by_step).
+        Jump to finished once answer received and final verdict generated.
+    - Finished -> all steps finished, all checks analyzed, and verdict has been emitted. Jump to next TC
 
     ready_for_analysis -> intermediate state between executing and analyzing for waiting for user call to analyse TC
     """
