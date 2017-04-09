@@ -11,7 +11,7 @@ import pika
 import logging
 import json
 from collections import OrderedDict
-from coap_testing_tool.utils.amqp_synch_call import amqp_reply
+from coap_testing_tool.utils.amqp_synch_call import amqp_reply, publish_message
 from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.event_bus_messages import *
@@ -108,7 +108,7 @@ def on_request(ch, method, props, body):
 
         else:
             err_mess = 'No previous capture found.'
-            _publish_message(
+            publish_message(
                     ch,
                     MsgErrorReply(
                         request,
@@ -127,7 +127,7 @@ def on_request(ch, method, props, body):
 
         except Exception as e:
             err_mess = 'Failed to get capture_id field from request'
-            _publish_message(
+            publish_message(
                     ch,
                     MsgErrorReply(
                         request,
@@ -226,25 +226,6 @@ def on_request(ch, method, props, body):
 
     else:
         logger.error('Wrong request received: %s' % str(req_dict))
-
-
-
-def _publish_message(channel, message):
-    """ Published which uses message object metadata
-
-    :param channel:
-    :param message:
-    :return:
-    """
-
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-            exchange=AMQP_EXCHANGE,
-            routing_key=message.routing_key,
-            properties=properties,
-            body=message.to_json(),
-    )
 
 
 ### IMPLEMENTATION OF SERVICES ###
