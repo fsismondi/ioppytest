@@ -565,7 +565,6 @@ class Coordinator:
         Returns:
 
         """
-        # TODO check which queues exist, get those names from somewhere and not just asumme agent1 agent2 agentTT
         d = {
             "_type": "tun.start",
             "ipv6_host": ":1",

@@ -71,7 +71,7 @@ class PacketRouter(threading.Thread):
         self.channel = self.connection.channel()
 
         queue_name = 'data_packets_queue@%s' % COMPONENT_ID
-        self.channel.queue_declare(queue=queue_name)
+        self.channel.queue_declare(queue=queue_name, auto_delete )
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=queue_name,

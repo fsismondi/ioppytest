@@ -289,7 +289,7 @@ if __name__ == '__main__':
 
         channel = connection.channel()
 
-        channel.queue_declare(queue='services_queue@%s' % COMPONENT_ID)
+        channel.queue_declare(queue='services_queue@%s' % COMPONENT_ID, auto_delete=True)
 
         channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue='services_queue@%s' % COMPONENT_ID,

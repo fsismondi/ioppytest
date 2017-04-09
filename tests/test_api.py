@@ -139,7 +139,7 @@ class ApiTests(unittest.TestCase):
         # lets' first clean up the queue
         self.channel.queue_delete(queue=services_queue_name)
 
-        self.channel.queue_declare(queue=services_queue_name)
+        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#')
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(validate_message, queue=services_queue_name)
@@ -175,7 +175,7 @@ class ApiTests(unittest.TestCase):
         # lets' first clean up the queue
         channel.queue_delete(queue=services_queue_name)
 
-        channel.queue_declare(queue=services_queue_name)
+        channel.queue_declare(queue=services_queue_name, auto_delete=True)
         channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=services_queue_name,
                            routing_key='*.error.*')

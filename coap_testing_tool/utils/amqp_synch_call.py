@@ -76,7 +76,7 @@ def amqp_request(request_message : Message, component_id : str):
     channel = connection.channel()
     reply_queue_name = 'amqp_rpc_%s@%s' %(str(uuid.uuid4())[:8],component_id)
 
-    result = channel.queue_declare(queue=reply_queue_name)
+    result = channel.queue_declare(queue=reply_queue_name, auto_delete=True)
 
     callback_queue = result.method.queue
 
@@ -148,7 +148,7 @@ class AmqpSynchronousCallClient:
 
 
     def call(self, routing_key, body):
-        result = self.channel.queue_declare(queue = self.reply_queue_name)
+        result = self.channel.queue_declare(queue = self.reply_queue_name, auto_delete=True)
         self.callback_queue = result.method.queue
 
         # by convention routing key of answer is routing_key + .reply
