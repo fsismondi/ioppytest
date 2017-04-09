@@ -14,11 +14,17 @@ from collections import OrderedDict
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply
 from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from coap_testing_tool.utils.event_bus_messages import *
 
 COMPONENT_ID = 'packet_sniffer'
 
 ALLOWED_EXTENSIONS = set(['pcap'])
-_last_capture = None
+last_capture = None
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+logging.getLogger('pika').setLevel(logging.INFO)
 
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
@@ -35,12 +41,19 @@ logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
 
 def on_request(ch, method, props, body):
-
-    global _last_capture
-
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    global last_capture
+
+    try:
+        request = Message.from_json(body)
+    except Exception as e:
+        logger.error(str(e))
+        return
+
     req_dict = json.loads(body.decode('utf-8'))
+
     # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
     logger.debug('[event queue callback] service request received on the queue: %s || %s'
                  % (method.routing_key, json.dumps(json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict))))
@@ -53,30 +66,81 @@ def on_request(ch, method, props, body):
     if method.routing_key in ('control.sniffing.info','control.sniffing.error','control.sniffing.service.reply'):
         # ignore echo message
         logger.debug('Ignoring echo message: %s with r_key:%s' %(str(req_dict),method.routing_key))
+
+
+    elif req_type == 'sniffing.getlastcapture':
+        logger.info('Processing %s request'%req_type)
+
+        if last_capture:
+            capture_id = last_capture
+
+            try:
+                file = TMPDIR +'/%s.pcap'%capture_id
+                # check if the size of PCAP is not zero
+                if os.path.getsize(file)== 0:
+                    #raise SnifferError(message='Problem encountered with the requested PCAP')
+                    logger.error('Problem encountered with the requested PCAP')
+                    return
+
+            except FileNotFoundError as fne:
+                logger.error('Coulnt retrieve file %s from dir'%file)
+                return
+                #raise
+
+            logger.info("Encoding PCAP file into base64 ...")
+
+            # do not dump into PCAP_DIR, coordinator puts the PCAPS
+            with open(TMPDIR+"/%s.pcap"%capture_id, "rb") as file:
+                enc = base64.b64encode(file.read())
+
+            # lets build response
+            response = OrderedDict()
+            response.update({'_type': req_type})
+            response.update({'ok': True})
+            response.update({'file_enc':'pcap_base64'})
+            response.update({'filename':'%s.pcap'%capture_id})
+            response.update({'value': enc.decode("utf-8")})
+
+            logger.info("Response ready, PCAP bytes: \n" + str(response))
+            logger.info("Sending response through AMQP interface ...")
+
+            amqp_reply(ch, props, response)
+
+        else:
+            err_mess = 'No previous capture found.'
+            _publish_message(
+                    ch,
+                    MsgErrorReply(
+                        request,
+                        error_message=err_mess
+                    )
+            )
+            logger.error(err_mess)
+
+            return
+
+
     elif req_type == 'sniffing.getcapture':
         logger.info('Processing %s request'%req_type)
         try:
             capture_id = req_dict['capture_id']
-        except:
 
-            if _last_capture:
-                capture_id = _last_capture
-            else:
-                err_mess = 'No capture to return. Maybe testsuite not started yet?'
-                #raise ApiMessageFormatError(message='No capture_id provided')
-                logger.warning(err_mess)
-                # lets build response
-                response = OrderedDict()
-                response.update({'_type': req_type})
-                response.update({'ok': False})
-                response.update({'message': err_mess})
-                response.update({'error_code': 'TBD'})
-                amqp_reply(ch, props, response)
-                return
+        except Exception as e:
+            err_mess = 'Failed to get capture_id field from request'
+            _publish_message(
+                    ch,
+                    MsgErrorReply(
+                        request,
+                        error_message=str(err_mess)
+                    )
+            )
+            logger.error(str(e))
+
+            return
 
         try:
             file = TMPDIR +'/%s.pcap'%capture_id
-        # check if the size of PCAP is not zero
+            # check if the size of PCAP is not zero
             if os.path.getsize(file)== 0:
                 #raise SnifferError(message='Problem encountered with the requested PCAP')
                 logger.error('Problem encountered with the requested PCAP')
@@ -137,7 +201,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed starting the capture')
 
         # lets keep track of the undergoing capture name
-        _last_capture = capture_id
+        last_capture = capture_id
 
         # lets build response
         response = OrderedDict()
@@ -162,6 +226,26 @@ def on_request(ch, method, props, body):
 
     else:
         logger.error('Wrong request received: %s' % str(req_dict))
+
+
+
+def _publish_message(channel, message):
+    """ Published which uses message object metadata
+
+    :param channel:
+    :param message:
+    :return:
+    """
+
+    properties = pika.BasicProperties(**message.get_properties())
+
+    channel.basic_publish(
+            exchange=AMQP_EXCHANGE,
+            routing_key=message.routing_key,
+            properties=properties,
+            body=message.to_json(),
+    )
+
 
 ### IMPLEMENTATION OF SERVICES ###
 
