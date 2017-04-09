@@ -10,6 +10,9 @@ from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'test_coordinator'
 
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,9 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
+
+# make pika logger less verbose
+logging.getLogger('pika').setLevel(logging.INFO)
 
 TT_check_list = [
     'dissection',
