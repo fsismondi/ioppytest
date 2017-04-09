@@ -16,8 +16,9 @@ from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
 from coap_testing_tool import TMPDIR,TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP,TD_COAP_CFG
-from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient
+from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient, amqp_request
 from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
+from coap_testing_tool.utils.event_bus_messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -33,8 +34,7 @@ SNIFFER_FILTER_IF = 'tun0'
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger()
 
 ### AUX functions ###
 
@@ -64,7 +64,7 @@ def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    logger.debug("pasing test case: " + str(state))
+    #logger.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 
@@ -72,7 +72,7 @@ def test_config_constructor(loader, node):
     instance = TestConfig.__new__(TestConfig)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    logger.debug("passing test case: " + str(state))
+    #logger.debug("passing test case: " + str(state))
     instance.__init__(**state)
 
 yaml.add_constructor(u'!configuration', test_config_constructor)
@@ -731,59 +731,33 @@ class Coordinator:
             )
         )
 
-    def call_service_sniffer_start(self,capture_id,filter_if,filter_proto,link_id):
-        _type = 'sniffing.start'
-        r_key = 'control.sniffing.service'
-        body = OrderedDict()
-        body.update({'_type': _type})
-        body.update({'capture_id': capture_id})
-        body.update({'filter_if': filter_if})
-        body.update({'filter_proto': filter_proto})
-        body.update({'link_id':link_id})
+    def call_service_sniffer_start(self,**kwargs):
 
         try:
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
-            ret = ''
-            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
-            return ret['ok']
+            response = amqp_request(MsgSniffingStart(**kwargs),COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            return response
         except AmqpMessageError as e:
-            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                           % (str(ret), str(e)))
+            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_sniffer_stop(self):
-        _type = 'sniffing.stop'
-        r_key = 'control.sniffing.service'
-        body = OrderedDict()
-        body.update({'_type': _type})
 
         try:
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
-            ret = ''
-            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type, json.dumps(ret)))
-            return ret['ok']
+            response = amqp_request(MsgSniffingStop(),COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            return response
         except AmqpMessageError as e:
-            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                                   % (str(ret), str(e)))
+            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
-    def call_service_sniffer_get_capture(self, capture_id):
-        _type = 'sniffing.getcapture'
-        r_key = 'control.sniffing.service'
-        body = OrderedDict()
-        body.update({'_type': _type})
-        body.update({'capture_id': capture_id})
+    def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
-            ret = ''
-            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (_type,json.dumps(ret)))
-            return ret
-
+            response = amqp_request(MsgSniffingGetCapture(**kwargs),COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            return response
         except AmqpMessageError as e:
-            logger.error("Sniffer API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                           % (str(ret), str(e)))
+            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+
 
     def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
         _type = 'analysis.interop.testcase.analyze'
@@ -843,7 +817,7 @@ class Coordinator:
             amqp_reply(self.channel, properties, response)
 
         else:
-            logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
+            logger.debug('Event received but not processed: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
             return
 
 
@@ -1088,7 +1062,7 @@ class Coordinator:
         else:
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
 
-        logger.info('Event handled, response sent through the bus: %s'%(json.dumps(response)))
+        logger.info('Event handled, response sent through the bus: %s' %(json.dumps(response)))
 
 
 
@@ -1287,12 +1261,18 @@ class Coordinator:
 
         if ANALYSIS_MODE == 'post_mortem' :
 
-            sniffer_response = self.call_service_sniffer_get_capture(tc_id)
+            sniffer_response = self.call_service_sniffer_get_capture( capture_id = tc_id)
 
             # let's try to save the file and then push it to results repo
-            pcap_file_base64 = ''
-            pcap_file_base64 = sniffer_response['value']
-            filename = sniffer_response['filename']
+
+            try:
+                pcap_file_base64 = sniffer_response.value
+                filename = sniffer_response.filename
+
+            except AttributeError as ae:
+                logger.error('Failed to process Sniffer response: %s' %repr(sniffer_response))
+                raise ae
+
             # save PCAP to file
             with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
@@ -1432,15 +1412,18 @@ class Coordinator:
         return self.current_tc.current_step
 
     def states_summary(self):
-        summ=[]
+        summ = OrderedDict()
         if self.current_tc:
-            summ.append("Current test case: %s, state: %s" %(self.current_tc.id,self.current_tc.state))
+            summ['current_tc'] = {
+                'testcase_id' : self.current_tc.id,
+                'state' : self.current_tc.state,
+            }
             if self.current_tc.current_step:
-                summ.append("Current step %s" %list((self.current_tc.current_step.to_dict(verbose=True).items())))
+                summ['current_step'] = self.current_tc.current_step.to_dict(verbose=True)
             else:
-                summ.append("No step under execution.")
+                summ['current_step'] = "No step under execution"
         else:
-            summ.append("Testsuite not started yet")
+            summ['current_tc'] = "No current testcase. Testsuite not started yet"
         return summ
 
     def get_testcase(self,testcase_id):
