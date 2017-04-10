@@ -24,7 +24,7 @@
   "agent_names": ["coap_client_agent", "coap_server_agent"],
   "iut_roles": ["coap_client", "coap_server"],
   "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
-  "profile_conformance_test":[
+  "ui_profile_conformance_test":[
     {
       "field_name": "Testing Tool Description",
       "type": "text",
@@ -68,7 +68,7 @@
     }
   ],
 
-  "profile_interoperability_test":[
+  "ui_profile_interoperability_test":[
     {
       "field_name": "Testing Tool Description",
       "type": "text",
