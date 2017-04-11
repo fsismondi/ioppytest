@@ -51,7 +51,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
             echo $AMQP_URL
-
+            pwd
             python3 -m pytest coap_testing_tool/test_coordinator/tests/tests.py
             python3 -m pytest coap_testing_tool/packet_router/tests/tests.py
             python3 -m pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
@@ -64,7 +64,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
-            python3 -m pytest tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            pwd
+            python3 -m pytest tests/test_core.py --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -73,7 +74,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
             echo $AMQP_URL
-            python3 -m pytest tests/test_api
+            pwd
+            python3 -m pytest tests/test_api.py
             '''
         }
       }
