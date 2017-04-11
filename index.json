@@ -31,7 +31,7 @@
       "value": [
         "Reference-based interoperability (~conformance) Testing Tool for validating conformance to CoAP RFCs.",
         "The testing tool uses as reference implementation (golden image) Californium implementation (CoAP client and CoAP server).",
-        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf"
+        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)"
       ]
     },
     {
@@ -39,16 +39,6 @@
       "type": "selection",
       "selection_values":["coap_client", "coap_server"],
       "mandatory": true
-    },
-    {
-      "field_name": "User's IUT mode",
-      "type": "selection",
-      "selection_values":["automated_iut", "user_assisted"],
-      "user_info":[
-        "Automated IUT: Implementations under test which fully automated, bundled to F-Interop, and that are ready execute the tests without the need of a second user.",
-        "User Assisted (default): Implementations under test which needs to be driven by a User to perform the interoperability test. Particularly for handling certain the CONFIGs and executing the STIMULIs described in the test description"
-      ],
-      "mandatory": false
     },
     {
       "field_name": "Testing tool version",
@@ -102,7 +92,17 @@
         "User Assisted: Implementations under test which needs to be driven by a User to perform the interoperability test. Particularly for handling certain the CONFIGs and executing the STIMULIs described in the test description"
       ],
       "mandatory": true,
-      "field_hook": ""
+      "conditional_trigger": "if automated_iut then trigger(automated_iut_selection)"
+    },
+    {
+      "hook":"automated_iut_selection",
+      "field_name": "Resource selection for IUT 2 (automated)",
+      "type": "selection",
+      "resource_repository_query":["sth like select all resources which are coap and available and automated  "],
+      "user_info":[
+        "Choose one automated IUT to test agains from the list of the available resources."
+      ],
+      "mandatory": true
     },
     {
       "field_name": "Testing tool version",

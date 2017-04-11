@@ -68,7 +68,7 @@ import json
 import uuid
 import logging
 
-API_VERSION = '0.1.8'
+API_VERSION = '0.1.9'
 
 # TODO use metaclasses instead?
 # TODO Define also a reply method which provides amessage with routig key for the reply, correlation id, reply_to,etc
@@ -103,7 +103,7 @@ class Message:
         except AttributeError:
                 pass
 
-        # rewrite default metadata and data fields of the message instance
+        # rewrite default data fields with the passed args
         self._msg_data.update(kwargs)
 
         # add API's version
@@ -152,6 +152,11 @@ class Message:
         str += 'Message body: %s' %self.to_json()
         str += '\n' + ' - ' * 20
         return str
+
+    def update_properties(self, **kwargs):
+        for key, value in kwargs.items():
+            if key in self._properties:
+                setattr(self, key, value)
 
     @classmethod
     def from_json(cls, body):
@@ -208,7 +213,7 @@ class MsgReply(Message):
 
         super().__init__(**kwargs)
 
-        # override correlation id template and attribute
+        # overwrite correlation id template and attribute
         self._properties['correlation_id'] = request_message.correlation_id
         self.correlation_id = request_message.correlation_id
 
@@ -223,7 +228,7 @@ class MsgErrorReply(MsgReply):
     """
     def __init__(self, request_message, **kwargs):
         assert request_message
-        # msg_data_template doesnt include _type cause this class is generic, we can only get this at init,
+        # msg_data_template doesnt include _type cause this class is generic, we can only get this at init from request
         # so, let's copy the _type from request and let the MsgReply handle the rest of the fields
         self._msg_data_template['_type'] = request_message._type
         super().__init__(request_message, **kwargs)
@@ -517,8 +522,17 @@ class MsgSniffingGetCapture(Message):
     }
 
 class MsgSniffingGetCaptureReply(MsgReply):
-    # TODO implement
-    pass
+
+    routing_key = 'control.sniffing.service.reply'
+
+    _msg_data_template = {
+        '_type': 'sniffing.getcapture.reply',
+        'ok' : True,
+        'file_enc': 'pcap_base64',
+        'filename': 'TD_COAP_CORE_01.pcap',
+        'value': '1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA', #empty PCAP
+    }
+
 
 class MsgSniffingGetCaptureLast(Message):
     """
@@ -534,8 +548,18 @@ class MsgSniffingGetCaptureLast(Message):
     }
 
 class MsgSniffingGetCaptureLastReply(MsgReply):
-    # TODO implement
-    pass
+
+    routing_key =  'control.sniffing.service.reply'
+
+    _msg_data_template = {
+        '_type': 'sniffing.getlastcapture.reply',
+        'ok' : True,
+        'file_enc': 'pcap_base64',
+        'filename': 'TD_COAP_CORE_01.pcap',
+        'value': '1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA', #empty PCAP
+    }
+
+
 
 ###### ANALYSIS MESSAGES ######
 
