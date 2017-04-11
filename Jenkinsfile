@@ -73,7 +73,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
             echo $AMQP_URL
-            cd ..
             python3 -m pytest tests/test_api
             '''
         }
@@ -148,7 +147,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
          }
     }
 }
-
 
 if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
     node('sudo'){
