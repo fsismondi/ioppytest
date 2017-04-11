@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 
 import base64
 import errno
@@ -15,17 +15,17 @@ import logging
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
-from coap_testing_tool import TMPDIR,TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP,TD_COAP_CFG
+from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
 from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient, amqp_request
-from coap_testing_tool.utils.exceptions import SnifferError,CoordinatorError, AmqpMessageError
+from coap_testing_tool.utils.exceptions import SnifferError, CoordinatorError, AmqpMessageError
 from coap_testing_tool.utils.event_bus_messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
-COAP_CLIENT_IUT_MODE =  'user-assisted'
+COAP_CLIENT_IUT_MODE = 'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
 
-ANALYSIS_MODE = 'post_mortem' # either step_by_step or post_mortem
+ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
@@ -35,6 +35,7 @@ SNIFFER_FILTER_IF = 'tun0'
 COMPONENT_ID = 'test_coordinator'
 
 logger = logging.getLogger()
+
 
 ### AUX functions ###
 
@@ -48,23 +49,24 @@ def list_to_str(ls):
 
     ret = ''
     for l in ls:
-        if isinstance(l,list):
+        if isinstance(l, list):
             for sub_l in l:
-                if isinstance(sub_l,list):
+                if isinstance(sub_l, list):
                     # I truncate in the second level
                     pass
                 else:
-                    ret += sub_l +' \n '
+                    ret += sub_l + ' \n '
         else:
-            ret += l +' \n '
+            ret += l + ' \n '
     return ret
+
 
 ### YAML parser aux classes and methods ###
 def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    #logger.debug("pasing test case: " + str(state))
+    # logger.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 
@@ -72,8 +74,9 @@ def test_config_constructor(loader, node):
     instance = TestConfig.__new__(TestConfig)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    #logger.debug("passing test case: " + str(state))
+    # logger.debug("passing test case: " + str(state))
     instance.__init__(**state)
+
 
 yaml.add_constructor(u'!configuration', test_config_constructor)
 
@@ -101,13 +104,13 @@ def import_teds(yamlfile):
         for yaml_doc in yaml_docs:
             # TODO use same yaml for both test cases and config descriptions
             if type(yaml_doc) is TestCase:
-                logger.debug(' Parsed test case: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                logger.debug(' Parsed test case: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
                 td_list.append(yaml_doc)
             elif type(yaml_doc) is TestConfig:
-                logger.debug(' Parsed test case config: %s from yaml file: %s :'%(yaml_doc.id,yamlfile) )
+                logger.debug(' Parsed test case config: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
                 td_list.append(yaml_doc)
             else:
-                logger.error('Couldnt processes import: %s from %s'%(str(yaml_doc),yamlfile))
+                logger.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
 
     return td_list
 
@@ -194,7 +197,6 @@ class Verdict:
         """
         return self.__message
 
-
     def __str__(self) -> str:
         """
         Get the value of the verdict as string for printing it
@@ -204,8 +206,9 @@ class Verdict:
         """
         return self.__values[self.__value]
 
+
 class Iut:
-    def __init__(self, node = None, mode="user_assisted"):
+    def __init__(self, node=None, mode="user_assisted"):
         # TODO get IUT mode from session config!!!
         self.node = node
         if mode:
@@ -213,10 +216,9 @@ class Iut:
         self.mode = mode
 
     def to_dict(self):
-        ret = OrderedDict({'node':self.node})
-        ret.update({'node_execution_mode':self.mode})
+        ret = OrderedDict({'node': self.node})
+        ret.update({'node_execution_mode': self.mode})
         return ret
-
 
     # TODO implement this
     def configure(self):
@@ -224,8 +226,10 @@ class Iut:
 
     def __repr__(self):
         if self.mode:
-            return "%s(node=%s, mode=%s)" % (self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
+            return "%s(node=%s, mode=%s)" % (
+            self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
         return "%s(node=%s)" % (self.__class__.__name__, self.node)
+
 
 class TestConfig:
     def __init__(self, configuration_id, uri, nodes, topology, description):
@@ -238,8 +242,7 @@ class TestConfig:
     def __repr__(self):
         return json.dumps(self.to_dict(True))
 
-    def to_dict(self,verbose=None):
-
+    def to_dict(self, verbose=None):
         d = OrderedDict()
         d['configuration_id'] = self.id
 
@@ -251,18 +254,18 @@ class TestConfig:
 
         return dict(d)
 
-class Step():
 
+class Step():
     # TODO check step id uniqueness
     def __init__(self, step_id, type, description, node=None):
         self.id = step_id
-        assert type in ("stimuli","check","verify")
+        assert type in ("stimuli", "check", "verify")
         # TODO sth else might need to be defined for conformance testing TBD (inject? drop packet?)..
         self.type = type
         self.description = description
 
         # stimuli and verify step MUST have a iut field in the YAML file
-        if type=='stimuli' or type=='verify':
+        if type == 'stimuli' or type == 'verify':
             assert node is not None
             self.iut = Iut(node)
 
@@ -278,26 +281,26 @@ class Step():
         mode = ''
         if self.iut is not None:
             node = self.iut.node
-            mode =  self.iut.mode
+            mode = self.iut.mode
         return "%s(step_id=%s, type=%s, description=%s, iut node=%s, iut execution mode =%s)" \
-               %(self.__class__.__name__, self.id, self.type, self.description, node , mode)
+               % (self.__class__.__name__, self.id, self.type, self.description, node, mode)
 
     def reinit(self):
 
-        if self.type in ('check','verify'):
+        if self.type in ('check', 'verify'):
             self.partial_verdict = Verdict()
 
             # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
             logger.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
-            self.id, self.type, ANALYSIS_MODE))
+                self.id, self.type, ANALYSIS_MODE))
             if self.type == 'check' and ANALYSIS_MODE == 'post_mortem':
                 self.change_state('postponed')
             else:
                 self.change_state(None)
-        else: #its a stimuli
+        else:  # its a stimuli
             self.change_state(None)
 
-    def to_dict(self, verbose = None):
+    def to_dict(self, verbose=None):
         step_dict = OrderedDict()
         step_dict['step_id'] = self.id
         if verbose:
@@ -309,17 +312,18 @@ class Step():
                 step_dict.update(self.iut.to_dict())
         return step_dict
 
-    def change_state(self,state):
+    def change_state(self, state):
         # postponed state used when checks are postponed for the end of the TC execution
-        assert state in (None,'executing','finished','postponed')
+        assert state in (None, 'executing', 'finished', 'postponed')
         self.state = state
-        logger.info('Step %s state changed to: %s'%(self.id,self.state))
+        logger.info('Step %s state changed to: %s' % (self.id, self.state))
 
-    def set_result(self,result,result_info):
+    def set_result(self, result, result_info):
         # Only check and verify steps can have a result
-        assert self.type in ('check','verify')
+        assert self.type in ('check', 'verify')
         assert result in Verdict.values()
-        self.partial_verdict.update(result,result_info)
+        self.partial_verdict.update(result, result_info)
+
 
 class TestCase:
     """
@@ -335,7 +339,7 @@ class TestCase:
     ready_for_analysis -> intermediate state between executing and analyzing for waiting for user call to analyse TC
     """
 
-    def __init__(self, testcase_id , uri, objective, configuration, references, pre_conditions, sequence ):
+    def __init__(self, testcase_id, uri, objective, configuration, references, pre_conditions, sequence):
         self.id = testcase_id
         self.state = None
         self.uri = uri
@@ -343,16 +347,16 @@ class TestCase:
         self.configuration_id = configuration
         self.references = references
         self.pre_conditions = pre_conditions
-        self.sequence=[]
+        self.sequence = []
         for s in sequence:
             # some sanity checks of imported steps
             try:
                 assert "step_id" and "description" and "type" in s
-                if s['type']=='stimuli':
+                if s['type'] == 'stimuli':
                     assert "node" in s
                 self.sequence.append(Step(**s))
             except:
-                logger.error("Error found while trying to parse: %s" %str(s))
+                logger.error("Error found while trying to parse: %s" % str(s))
                 raise
         self._step_it = iter(self.sequence)
         self.current_step = None
@@ -374,10 +378,11 @@ class TestCase:
             s.reinit()
 
     def __repr__(self):
-        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, test_sequence=%s)" % (self.__class__.__name__, self.id ,
-         self.uri, self.objective, self.configuration_id,self.sequence)
+        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, test_sequence=%s)" % (
+        self.__class__.__name__, self.id,
+        self.uri, self.objective, self.configuration_id, self.sequence)
 
-    def to_dict(self,verbose=None):
+    def to_dict(self, verbose=None):
 
         d = OrderedDict()
         d['testcase_id'] = self.id
@@ -395,12 +400,12 @@ class TestCase:
             steps.append(step.to_dict())
         return steps
 
-    def change_state(self,state):
-        assert state in (None,'skipped', 'executing','ready_for_analysis','analyzing','finished')
+    def change_state(self, state):
+        assert state in (None, 'skipped', 'executing', 'ready_for_analysis', 'analyzing', 'finished')
         self.state = state
-        logger.info('Testcase %s changed state to %s'%(self.id, state))
+        logger.info('Testcase %s changed state to %s' % (self.id, state))
 
-    def check_all_steps_finished (self):
+    def check_all_steps_finished(self):
         it = iter(self.sequence)
         step = next(it)
 
@@ -416,7 +421,7 @@ class TestCase:
             logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis)")
             return True
 
-    def generate_final_verdict(self,tat_post_mortem_analysis_report=None):
+    def generate_final_verdict(self, tat_post_mortem_analysis_report=None):
         """
         Generates the final verdict of TC and report taking into account the CHECKs and VERIFYs of the testcase
         :return: tuple: (final_verdict, verdict_description, tc_report) ,
@@ -433,23 +438,24 @@ class TestCase:
         logger.debug("[VERDICT GENERATION] starting the verdict generation")
         for step in self.sequence:
             # for the verdict we use the info in the checks and verify steps
-            if step.type in ("check","verify"):
+            if step.type in ("check", "verify"):
 
-                logger.debug("[VERDICT GENERATION] Processing step %s" %step.id)
+                logger.debug("[VERDICT GENERATION] Processing step %s" % step.id)
 
                 if step.state == "postponed":
-                    tc_report.append((step.id, None, "%s postponed" %step.type.upper(), ""))
+                    tc_report.append((step.id, None, "%s postponed" % step.type.upper(), ""))
                 elif step.state == "finished":
-                    tc_report.append((step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(),""))
+                    tc_report.append(
+                            (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
                     # update global verdict
-                    final_verdict.update(step.partial_verdict.get_value(),step.partial_verdict.get_message())
+                    final_verdict.update(step.partial_verdict.get_value(), step.partial_verdict.get_message())
                 else:
-                    msg="step %s not ready for analysis"%(step.id)
+                    msg = "step %s not ready for analysis" % (step.id)
                     logger.error("[VERDICT GENERATION] " + msg)
                     raise CoordinatorError(msg)
 
         # append at the end of the report the analysis done a posteriori (if any)
-        if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report)!=0:
+        if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report) != 0:
             logger.warning('Processing TAT partial verdict: ' + str(tat_post_mortem_analysis_report))
             for item in tat_post_mortem_analysis_report:
                 # TODO process the items correctly
@@ -462,13 +468,14 @@ class TestCase:
 
         # hack to overwrite the final verdict MESSAGE in case of pass
         if final_verdict.get_value() == 'pass':
-            final_verdict.update('pass','No interoperability error was detected,')
+            final_verdict.update('pass', 'No interoperability error was detected,')
             logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
             logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
-            logger.debug("[VERDICT GENERATION] info: %s' "%final_verdict.get_value() )
+            logger.debug("[VERDICT GENERATION] info: %s' " % final_verdict.get_value())
 
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
+
 
 class Coordinator:
     """
@@ -483,17 +490,17 @@ class Coordinator:
         imported_configs = import_teds(ted_config_file)
         self.tc_configs = OrderedDict()
         for tc_config in imported_configs:
-            self.tc_configs[tc_config.id]=tc_config
+            self.tc_configs[tc_config.id] = tc_config
 
-        logger.info('Imports: %s TC_CONFIG imported'%len(self.tc_configs))
+        logger.info('Imports: %s TC_CONFIG imported' % len(self.tc_configs))
 
         # lets import TCs and make sure there's a tc config for each one of them
         imported_teds = import_teds(ted_tc_file)
         self.teds = OrderedDict()
         for ted in imported_teds:
-            self.teds[ted.id]=ted
+            self.teds[ted.id] = ted
             if ted.configuration_id not in self.tc_configs:
-                logger.error('Missing configuration:%s for test case:%s '%(ted.configuration_id,ted.id))
+                logger.error('Missing configuration:%s for test case:%s ' % (ted.configuration_id, ted.id))
             assert ted.configuration_id in self.tc_configs
 
         logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
@@ -506,46 +513,45 @@ class Coordinator:
         self.connection = amqp_connection
         self.channel = self.connection.channel()
 
-        self.services_q_name = 'services@%s' %COMPONENT_ID
-        self.events_q_name = 'events@%s' %COMPONENT_ID
+        self.services_q_name = 'services@%s' % COMPONENT_ID
+        self.events_q_name = 'events@%s' % COMPONENT_ID
 
-        result1 = self.channel.queue_declare(queue=self.services_q_name,auto_delete = True)
-        result2= self.channel.queue_declare(queue=self.events_q_name,auto_delete = True)
+        result1 = self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
+        result2 = self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
         # self.services_q = result1.method.queue
         # self.events_q = result2.method.queue
 
-        self.channel.queue_bind(exchange = AMQP_EXCHANGE,
-                           queue = self.services_q_name,
-                           routing_key = 'control.testcoordination.service')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=self.services_q_name,
+                                routing_key='control.testcoordination.service')
 
-        self.channel.queue_bind(exchange = AMQP_EXCHANGE,
-                           queue = self.events_q_name,
-                           routing_key = 'control.testcoordination')
-
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=self.events_q_name,
+                                routing_key='control.testcoordination')
 
         self.channel.basic_consume(self.handle_service,
-                              queue = self.services_q_name,
-                              no_ack = False)
+                                   queue=self.services_q_name,
+                                   no_ack=False)
 
         self.channel.basic_consume(self.handle_control,
-                              queue = self.events_q_name,
-                              no_ack = False)
+                                   queue=self.events_q_name,
+                                   no_ack=False)
 
-    def check_testsuite_finished (self):
-        #cyclic as user may not have started by the first TC
+    def check_testsuite_finished(self):
+        # cyclic as user may not have started by the first TC
         it = cycle(self.teds.values())
 
         # we need to check if we already did a cycle (cycle never raises StopIteration)
         iter_counts = len(self.teds)
         tc = next(it)
 
-        while iter_counts >=0 :
+        while iter_counts >= 0:
             # check that there's no steps in state = None or executing
-            if tc.state in (None,'executing','ready_for_analysis','analyzing'):
+            if tc.state in (None, 'executing', 'ready_for_analysis', 'analyzing'):
                 logger.debug("[TESTSUITE] - there is still unfinished & non-skipped test cases")
                 return False
-            else: # TC state is 'skipped' or 'finished'
+            else:  # TC state is 'skipped' or 'finished'
                 tc = next(it)
             iter_counts -= 1
         if iter_counts < 0:
@@ -573,15 +579,15 @@ class Coordinator:
 
         logger.debug("Let's start the bootstrap the agents")
 
-        for agent, assigned_ip in ((AGENT_NAMES[0],':1'),(AGENT_NAMES[1],':2'),(AGENT_TT_ID,':3')):
+        for agent, assigned_ip in ((AGENT_NAMES[0], ':1'), (AGENT_NAMES[1], ':2'), (AGENT_TT_ID, ':3')):
             d["ipv6_host"] = assigned_ip
             self.channel.basic_publish(
                     exchange=AMQP_EXCHANGE,
-                    routing_key='control.tun.toAgent.%s'%agent,
+                    routing_key='control.tun.toAgent.%s' % agent,
                     mandatory=True,
                     body=json.dumps(d),
                     properties=pika.BasicProperties(
-                        content_type='application/json',
+                            content_type='application/json',
                     )
             )
 
@@ -590,11 +596,11 @@ class Coordinator:
         r_key = 'control.testcoordination'
 
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'_type': _type})
 
         if self.current_tc:
             coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
-            coordinator_notif.update(self.current_tc.to_dict(verbose = True))
+            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
         else:
             coordinator_notif.update({'message': 'No test case selected, or no more available'})
 
@@ -612,18 +618,18 @@ class Coordinator:
         r_key = 'control.testcoordination'
 
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'_type': _type})
         coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
-        coordinator_notif.update(self.current_tc.current_step.to_dict(verbose = True))
-        #coordinator_notif={**coordinator_notif,**self.current_tc.current_step.to_dict(verbose=True)}
+        coordinator_notif.update(self.current_tc.current_step.to_dict(verbose=True))
+        # coordinator_notif={**coordinator_notif,**self.current_tc.current_step.to_dict(verbose=True)}
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
     def notify_testcase_finished(self):
@@ -635,14 +641,13 @@ class Coordinator:
         coordinator_notif.update({'message': 'Testcase %s finished' % self.current_tc.id})
         coordinator_notif.update(self.current_tc.to_dict(verbose=True))
 
-
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
     def notify_testcase_verdict(self):
@@ -650,19 +655,19 @@ class Coordinator:
         r_key = 'control.testcoordination'
 
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'_type': _type})
         # lets add the report info of the TC into the answer
         coordinator_notif.update(self.current_tc.report)
         # lets add basic info about the TC
         coordinator_notif.update(self.current_tc.to_dict(verbose=True))
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
         # Overwrite final verdict file with final details
@@ -675,66 +680,66 @@ class Coordinator:
 
     def notify_coordination_error(self, message, error_code):
         _type = 'testcoordination.error'
-        r_key =  'control.testcoordination.error'
+        r_key = 'control.testcoordination.error'
 
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
-        coordinator_notif.update({'message': message,})
-        coordinator_notif.update({'error_code' : error_code})
-        coordinator_notif.update({'testsuite_status': self.states_summary() })
+        coordinator_notif.update({'_type': _type})
+        coordinator_notif.update({'message': message, })
+        coordinator_notif.update({'error_code': error_code})
+        coordinator_notif.update({'testsuite_status': self.states_summary()})
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
     def notify_testsuite_finished(self):
         _type = 'testcoordination.testsuite.finished'
-        r_key =  'control.testcoordination'
+        r_key = 'control.testcoordination'
 
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'_type': _type})
         coordinator_notif.update(self.testsuite_report())
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
-    def notify_current_configuration(self,config_id,node,message):
+    def notify_current_configuration(self, config_id, node, message):
         _type = 'testcoordination.testcase.configuration'
-        r_key =  'control.testcoordination'
+        r_key = 'control.testcoordination'
 
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type':_type })
+        coordinator_notif.update({'_type': _type})
         coordinator_notif.update({'configuration_id': config_id})
         coordinator_notif.update({'node': node})
         coordinator_notif.update({'message': message})
 
         self.channel.basic_publish(
-            body=json.dumps(coordinator_notif, ensure_ascii=False),
-            routing_key=r_key,
-            exchange=AMQP_EXCHANGE,
-            properties=pika.BasicProperties(
-                content_type='application/json',
-            )
+                body=json.dumps(coordinator_notif, ensure_ascii=False),
+                routing_key=r_key,
+                exchange=AMQP_EXCHANGE,
+                properties=pika.BasicProperties(
+                        content_type='application/json',
+                )
         )
 
-    def call_service_sniffer_start(self,**kwargs):
+    def call_service_sniffer_start(self, **kwargs):
 
         try:
-            response = amqp_request(MsgSniffingStart(**kwargs),COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            response = amqp_request(MsgSniffingStart(**kwargs), COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except AmqpMessageError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -742,8 +747,8 @@ class Coordinator:
     def call_service_sniffer_stop(self):
 
         try:
-            response = amqp_request(MsgSniffingStop(),COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            response = amqp_request(MsgSniffingStop(), COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except AmqpMessageError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -751,12 +756,11 @@ class Coordinator:
     def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            response = amqp_request(MsgSniffingGetCapture(**kwargs),COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" %(response._type, repr(response)))
+            response = amqp_request(MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
+            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except AmqpMessageError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
-
 
     def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
         _type = 'analysis.interop.testcase.analyze'
@@ -778,8 +782,7 @@ class Coordinator:
 
         except AmqpMessageError as e:
             logger.error("TAT API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                                       % (str(ret), str(e)))
-
+                         % (str(ret), str(e)))
 
     ### API ENDPOINTS ###
 
@@ -790,10 +793,11 @@ class Coordinator:
         # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
         logger.debug('[services queue callback] service request received on the queue: %s || %s'
                      % (
-                     method.routing_key, json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
+                         method.routing_key,
+                         json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
 
         # TODO check malformed messages first
-        event = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
+        event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         event_type = event['_type']
 
         # prepare response
@@ -805,7 +809,7 @@ class Coordinator:
             response.update({'_type': event_type})
             response.update({'ok': True})
             response.update(testcases)
-            amqp_reply(self.channel, properties,response)
+            amqp_reply(self.channel, properties, response)
 
         elif event_type == "testcoordination.testsuite.getstatus":
             status = self.states_summary()
@@ -816,12 +820,11 @@ class Coordinator:
             amqp_reply(self.channel, properties, response)
 
         else:
-            logger.debug('Event received but not processed: \nrouting_key %s \nevent_type %s' % (method.routing_key,event_type))
+            logger.debug(
+                'Event received but not processed: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
             return
 
-
-        logger.info('Service request handled, response sent through the bus: %s'%(json.dumps(response)))
-
+        logger.info('Service request handled, response sent through the bus: %s' % (json.dumps(response)))
 
     def handle_control(self, ch, method, properties, body):
 
@@ -829,13 +832,14 @@ class Coordinator:
         # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
         logger.debug('[event queue callback] service request received on the queue: %s || %s'
                      % (
-                     method.routing_key, json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
+                         method.routing_key,
+                         json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
 
         # TODO check malformed messages first
         event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         event_type = event['_type']
 
-        #prepare response
+        # prepare response
         response = OrderedDict()
 
         if event_type == "testcoordination.testcase.skip":
@@ -884,7 +888,7 @@ class Coordinator:
                 error_msg = "Incorrect or empty testcase_id"
 
                 # send general notif
-                self.notify_coordination_error(message=error_msg,error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
 
             except CoordinatorError as e:
                 error_msg = e.message
@@ -901,7 +905,7 @@ class Coordinator:
                 error_msg = "No testcase selected"
 
                 # notify all
-                self.notify_coordination_error(message =error_msg, error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
                 return
 
             # TODO handle configuration phase before execution!
@@ -920,13 +924,13 @@ class Coordinator:
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message =error_msg, error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message =error_msg, error_code=None)
+                self.notify_coordination_error(message=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a STIMULI
@@ -977,7 +981,6 @@ class Coordinator:
                 # send general notif
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
-
             self.handle_verify_step_response(verify_response)
 
             # go to next step
@@ -1002,7 +1005,7 @@ class Coordinator:
 
         elif event_type == "testcoordination.step.check.response":
             # This is call is just used when we have step_by_step analysis mode
-            #assert ANALYSIS_MODE == 'step_by_step'
+            # assert ANALYSIS_MODE == 'step_by_step'
 
             # process event only if I current step is a check
             if self.current_tc.current_step.type != 'check':
@@ -1018,7 +1021,7 @@ class Coordinator:
             except KeyError:
                 self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
 
-            self.handle_check_step_response(verdict,description)
+            self.handle_check_step_response(verdict, description)
 
             # # go to next step
             # if self.next_step():
@@ -1061,13 +1064,11 @@ class Coordinator:
         else:
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
 
-        logger.info('Event handled, response sent through the bus: %s' %(json.dumps(response)))
-
-
+        logger.info('Event handled, response sent through the bus: %s' % (json.dumps(response)))
 
     ### TRANSITION METHODS for the Coordinator FSM ###
 
-    def get_testcases_basic(self, verbose = None):
+    def get_testcases_basic(self, verbose=None):
 
         resp = []
         for tc_v in self.teds.values():
@@ -1076,14 +1077,14 @@ class Coordinator:
         if len(resp) == 0:
             raise CoordinatorError("No test cases found")
 
-        return {'tc_list' : resp}
+        return {'tc_list': resp}
 
     def get_testcases_list(self):
         return list(self.teds.keys())
 
-    #def select_testcases(self, tc_id):
+    # def select_testcases(self, tc_id):
 
-    def select_testcase(self,params):
+    def select_testcase(self, params):
         """
         this is more like a jump to function rather than select
         :param params: test case id
@@ -1095,10 +1096,10 @@ class Coordinator:
             self.current_tc = self.teds[tc_id]
             # in case is was already executed once
             self.current_tc.reinit()
-            logger.debug("Test case selected to be executed: %s" %self.current_tc.id)
+            logger.debug("Test case selected to be executed: %s" % self.current_tc.id)
             return self.current_tc.to_dict(verbose=True)
         else:
-            logger.error( "%s not found in : %s "%(tc_id,self.teds))
+            logger.error("%s not found in : %s " % (tc_id, self.teds))
             raise CoordinatorError('Testcase not found')
 
     def start_test_suite(self):
@@ -1151,19 +1152,18 @@ class Coordinator:
         for desc in config.description:
             message = desc['message']
             node = desc['node']
-            self.notify_current_configuration(config_id,node,message)
+            self.notify_current_configuration(config_id, node, message)
 
         # start sniffing each link
         for link in config.topology:
             filter_proto = link['capture_filter']
-            link_id =  link['link_id']
-
+            link_id = link['link_id']
 
             sniff_params = {
                 'capture_id': self.current_tc.id[:-4],
                 'filter_proto': filter_proto,
                 'filter_if': SNIFFER_FILTER_IF,
-                'link_id' : link_id,
+                'link_id': link_id,
             }
 
             if self.call_service_sniffer_start(**sniff_params):
@@ -1185,19 +1185,19 @@ class Coordinator:
             self.current_tc.current_step.set_result("pass",
                                                     "VERIFY step: User informed that the information was displayed "
                                                     "correclty on his/her IUT")
-        elif verify_response == False :
+        elif verify_response == False:
             self.current_tc.current_step.set_result("fail",
                                                     "VERIFY step: User informed that the information was not displayed"
                                                     " correclty on his/her IUT")
         else:
-            self.current_tc.current_step.set_result("error",'Malformed verify response from GUI')
+            self.current_tc.current_step.set_result("error", 'Malformed verify response from GUI')
             raise CoordinatorError('Malformed VERIFY response')
 
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
-                      %(self.current_tc.current_step.id,
+                     % (self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
@@ -1218,7 +1218,7 @@ class Coordinator:
 
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
-                      %(self.current_tc.current_step.id,
+                     % (self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
@@ -1238,7 +1238,7 @@ class Coordinator:
 
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
-                      %(self.current_tc.current_step.id,
+                     % (self.current_tc.current_step.id,
                         self.current_tc.current_step.type,
                         self.current_tc.current_step.state))
 
@@ -1250,7 +1250,7 @@ class Coordinator:
         self.current_tc.current_step = None
 
         # get TC params
-        #tc_id = self.current_tc.id
+        # tc_id = self.current_tc.id
         tc_id = self.current_tc.id[:-4]
         tc_ref = self.current_tc.uri
 
@@ -1258,9 +1258,9 @@ class Coordinator:
         # Finish sniffer and get PCAP
         # TODO first tell sniffer to stop!
 
-        if ANALYSIS_MODE == 'post_mortem' :
+        if ANALYSIS_MODE == 'post_mortem':
 
-            sniffer_response = self.call_service_sniffer_get_capture( capture_id = tc_id)
+            sniffer_response = self.call_service_sniffer_get_capture(capture_id=tc_id)
 
             # let's try to save the file and then push it to results repo
 
@@ -1269,7 +1269,7 @@ class Coordinator:
                 filename = sniffer_response.filename
 
             except AttributeError as ae:
-                logger.error('Failed to process Sniffer response: %s' %repr(sniffer_response))
+                logger.error('Failed to process Sniffer response: %s' % repr(sniffer_response))
                 raise ae
 
             # save PCAP to file
@@ -1280,17 +1280,17 @@ class Coordinator:
             # Forwards PCAP to TAT API and get CHECKs info
             tat_response = self.call_service_testcase_analysis(tc_id,
                                                                tc_ref,
-                                                               file_enc = "pcap_base64",
-                                                               filename = tc_id+".pcap",
-                                                               value = pcap_file_base64)
+                                                               file_enc="pcap_base64",
+                                                               filename=tc_id + ".pcap",
+                                                               value=pcap_file_base64)
 
             logger.info("Response received from TAT: %s " % str(tat_response))
 
             if tat_response['ok'] == True:
                 # Save the json object received
                 json_file = os.path.join(
-                    TMPDIR,
-                    tc_id + '_analysis.json'
+                        TMPDIR,
+                        tc_id + '_analysis.json'
                 )
 
                 with open(json_file, 'w') as f:
@@ -1304,17 +1304,17 @@ class Coordinator:
                     # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
                     # info, so ill make a name up(this is just for visualization purposes)
                     step_count += 1
-                    p = ("CHECK_%d_post_mortem_analysis"%step_count, item[0] , item[1])
+                    p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
                     partial_verd.append(p)
-                    logger.debug("Processing partical verdict received from TAT: %s"%str(p))
+                    logger.debug("Processing partical verdict received from TAT: %s" % str(p))
 
                 # generates a general verdict considering other steps partial verdicts besides TAT's
                 gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
 
             else:
-                logger.error('Response from TAT not ok: %s'%(tat_response))
+                logger.error('Response from TAT not ok: %s' % (tat_response))
                 gen_verdict = 'error'
-                gen_description = 'Response from test analyzer: %s'%json.dumps(tat_response)
+                gen_description = 'Response from test analyzer: %s' % json.dumps(tat_response)
                 report = []
 
             # save sent message in RESULTS dir
@@ -1338,11 +1338,11 @@ class Coordinator:
 
             # change tc state
             self.current_tc.change_state('finished')
-            logger.info("General verdict generated: %s" %json.dumps(self.current_tc.report))
+            logger.info("General verdict generated: %s" % json.dumps(self.current_tc.report))
 
         else:
             logger.error("Error on TAT analysis reponse")
-            self.notify_coordination_error("Error on TAT analysis reponse",'')
+            self.notify_coordination_error("Error on TAT analysis reponse", '')
             return
 
         return self.current_tc.report
@@ -1399,7 +1399,7 @@ class Coordinator:
                 self.current_tc.current_step = next(self.current_tc._step_it)
 
         except StopIteration:
-            logger.info('Test case finished. No more steps to execute in testcase: %s' %self.current_tc.id)
+            logger.info('Test case finished. No more steps to execute in testcase: %s' % self.current_tc.id)
             # return None when TC finished
             return None
 
@@ -1414,8 +1414,8 @@ class Coordinator:
         summ = OrderedDict()
         if self.current_tc:
             summ['current_tc'] = {
-                'testcase_id' : self.current_tc.id,
-                'state' : self.current_tc.state,
+                'testcase_id': self.current_tc.id,
+                'state': self.current_tc.state,
             }
             if self.current_tc.current_step:
                 summ['current_step'] = self.current_tc.current_step.to_dict(verbose=True)
@@ -1425,7 +1425,7 @@ class Coordinator:
             summ['current_tc'] = "No current testcase. Testsuite not started yet"
         return summ
 
-    def get_testcase(self,testcase_id):
+    def get_testcase(self, testcase_id):
         """
         :return: testcase instance or None if non existent
         """
