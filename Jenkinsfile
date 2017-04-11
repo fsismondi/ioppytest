@@ -65,7 +65,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
             pwd
-            python3 -m pytest tests/test_core.py --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            python3 -m pytest tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }

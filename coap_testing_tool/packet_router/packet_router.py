@@ -31,7 +31,7 @@ class PacketRouter(threading.Thread):
     AGENT_2_ID = AGENT_NAMES[1]
     AGENT_TT_ID = AGENT_TT_ID
 
-    def __init__(self, conn, routing_table):
+    def __init__(self, conn, routing_table = None):
         threading.Thread.__init__(self)
 
         logger.info("Imported agent names of the test session: %s" %str(AGENT_NAMES))
