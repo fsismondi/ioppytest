@@ -200,7 +200,7 @@ def on_request(ch, method, props, body):
         publish_message(ch, response)
 
     else:
-        logger.debug('Ignoring unrecognised service request: %s' % repr(request))
+        logger.warning('Ignoring unrecognised service request: %s' % repr(request))
 
 
 ### IMPLEMENTATION OF SERVICES ###
