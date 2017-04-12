@@ -16,7 +16,7 @@ from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
-from coap_testing_tool.utils.amqp_synch_call import amqp_reply, AmqpSynchronousCallClient, amqp_request
+from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_reply, AmqpSynchronousCallClient, amqp_request
 from coap_testing_tool.utils.exceptions import SnifferError, CoordinatorError, AmqpMessageError
 from coap_testing_tool.utils.event_bus_messages import *
 
@@ -24,7 +24,6 @@ from coap_testing_tool.utils.event_bus_messages import *
 # TODO get filter from config of the TEDs
 COAP_CLIENT_IUT_MODE = 'user-assisted'
 COAP_SERVER_IUT_MODE = 'automated'
-
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 # if left empty => packet_sniffer chooses the loopback
@@ -227,7 +226,7 @@ class Iut:
     def __repr__(self):
         if self.mode:
             return "%s(node=%s, mode=%s)" % (
-            self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
+                self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
         return "%s(node=%s)" % (self.__class__.__name__, self.node)
 
 
@@ -379,8 +378,8 @@ class TestCase:
 
     def __repr__(self):
         return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, test_sequence=%s)" % (
-        self.__class__.__name__, self.id,
-        self.uri, self.objective, self.configuration_id, self.sequence)
+            self.__class__.__name__, self.id,
+            self.uri, self.objective, self.configuration_id, self.sequence)
 
     def to_dict(self, verbose=None):
 
@@ -516,11 +515,9 @@ class Coordinator:
         self.services_q_name = 'services@%s' % COMPONENT_ID
         self.events_q_name = 'events@%s' % COMPONENT_ID
 
-        result1 = self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
-        result2 = self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
-
-        # self.services_q = result1.method.queue
-        # self.events_q = result2.method.queue
+        # declare services and events queues
+        self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
+        self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=self.services_q_name,
@@ -591,84 +588,42 @@ class Coordinator:
                     )
             )
 
-    def notify_current_testcase(self):
-        _type = 'testcoordination.testcase.next'
-        r_key = 'control.testcoordination'
-
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-
+    def notify_testcase_is_ready(self):
         if self.current_tc:
-            coordinator_notif.update({'message': 'Next test case to be executed is %s' % self.current_tc.id})
-            coordinator_notif.update(self.current_tc.to_dict(verbose=True))
+            tc_info_dict = self.current_tc.to_dict(verbose=True)
+
+            event = MsgTestCaseReady(
+                    message='Next test case to be executed is %s' % self.current_tc.id,
+                    **tc_info_dict
+            )
         else:
-            coordinator_notif.update({'message': 'No test case selected, or no more available'})
+            event = MsgTestCaseReady(
+                    message='No test case selected, or no more available',
+            )
+        publish_message(self.channel, event)
 
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+    def notify_step_to_execute(self):
+        step_info_dict = self.current_tc.current_step.to_dict(verbose=True)
+        event = MsgStepExecute(
+                message='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                **step_info_dict
         )
-
-    def notify_current_step_execute(self):
-        _type = 'testcoordination.step.execute'
-        r_key = 'control.testcoordination'
-
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-        coordinator_notif.update({'message': 'Next test step to be executed is %s' % self.current_tc.current_step.id})
-        coordinator_notif.update(self.current_tc.current_step.to_dict(verbose=True))
-        # coordinator_notif={**coordinator_notif,**self.current_tc.current_step.to_dict(verbose=True)}
-
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
-        )
+        publish_message(self.channel, event)
 
     def notify_testcase_finished(self):
-        _type = 'testcoordination.testcase.finished'
-        r_key = 'control.testcoordination'
-        # testcoordination notification
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-        coordinator_notif.update({'message': 'Testcase %s finished' % self.current_tc.id})
-        coordinator_notif.update(self.current_tc.to_dict(verbose=True))
-
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+        tc_info_dict = self.current_tc.to_dict(verbose=True)
+        event = MsgTestCaseFinish(
+                message='Testcase %s finished' % self.current_tc.id,
+                **tc_info_dict
         )
+        publish_message(self.channel, event)
 
     def notify_testcase_verdict(self):
-        _type = 'testcoordination.testcase.verdict'
-        r_key = 'control.testcoordination'
-
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-        # lets add the report info of the TC into the answer
-        coordinator_notif.update(self.current_tc.report)
-        # lets add basic info about the TC
-        coordinator_notif.update(self.current_tc.to_dict(verbose=True))
-
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+        event = MsgTestCaseVerdict(
+                **self.current_tc.report,
+                **self.current_tc.to_dict(verbose=True)
         )
+        publish_message(self.channel, event)
 
         # Overwrite final verdict file with final details
         json_file = os.path.join(
@@ -676,64 +631,46 @@ class Coordinator:
                 self.current_tc.id + '_verdict.json'
         )
         with open(json_file, 'w') as f:
-            json.dump(json_file, f)
+            f.write(event.to_json())
 
     def notify_coordination_error(self, message, error_code):
-        _type = 'testcoordination.error'
-        r_key = 'control.testcoordination.error'
 
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
         coordinator_notif.update({'message': message, })
         coordinator_notif.update({'error_code': error_code})
         coordinator_notif.update({'testsuite_status': self.states_summary()})
+        err_json = json.dumps(coordinator_notif)
 
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+        logger.error('Test coordination encountered fatal error: ' % err_json)
+        json_file = os.path.join(
+                RESULTS_DIR,
+                self.current_tc.id + '_error.json'
         )
+        with open(json_file, 'w') as f:
+            f.write(err_json)
 
     def notify_testsuite_finished(self):
-        _type = 'testcoordination.testsuite.finished'
-        r_key = 'control.testcoordination'
-
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-        coordinator_notif.update(self.testsuite_report())
-
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+        event = MsgTestSuiteReport(
+                **self.testsuite_report()
         )
+        publish_message(self.channel, event)
+        json_file = os.path.join(
+                RESULTS_DIR,
+                'session_report.json'
+        )
+        with open(json_file, 'w') as f:
+            f.write(event.to_json())
 
     def notify_current_configuration(self, config_id, node, message):
-        _type = 'testcoordination.testcase.configuration'
-        r_key = 'control.testcoordination'
-
-        coordinator_notif = OrderedDict()
-        coordinator_notif.update({'_type': _type})
-        coordinator_notif.update({'configuration_id': config_id})
-        coordinator_notif.update({'node': node})
-        coordinator_notif.update({'message': message})
-
-        self.channel.basic_publish(
-                body=json.dumps(coordinator_notif, ensure_ascii=False),
-                routing_key=r_key,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+        # TODO get configuration id , node and message from self, and not as param
+        event = MsgTestCaseConfiguration(
+                configuration_id=config_id,
+                node=node,
+                message=message
         )
+        publish_message(self.channel, event)
 
     def call_service_sniffer_start(self, **kwargs):
 
@@ -790,45 +727,59 @@ class Coordinator:
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
-        logger.debug('[services queue callback] service request received on the queue: %s || %s'
-                     % (
-                         method.routing_key,
-                         json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
+        props_dict = {
+            'content_type': properties.content_type,
+            'delivery_mode': properties.delivery_mode,
+            'correlation_id': properties.correlation_id,
+            'reply_to': properties.reply_to,
+            'message_id': properties.message_id,
+            'timestamp': properties.timestamp,
+            'user_id': properties.user_id,
+            'app_id': properties.app_id,
+        }
+        request = Message.from_json(body)
+        request.update_properties(**props_dict)
 
-        # TODO check malformed messages first
-        event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
-        event_type = event['_type']
-
-        # prepare response
-        response = OrderedDict()
-
-        if event_type == "testcoordination.testsuite.gettestcases":
-            # this is a request so I answer directly on the message
+        if isinstance(request, MsgTestSuiteGetTestCases):
             testcases = self.get_testcases_basic(verbose=True)
-            response.update({'_type': event_type})
-            response.update({'ok': True})
-            response.update(testcases)
-            amqp_reply(self.channel, properties, response)
+            response = MsgTestSuiteGetTestCasesReply(
+                    request,
+                    ok=True,
+                    tc_list=testcases,
+            )
+            publish_message(self.channel, response)
 
-        elif event_type == "testcoordination.testsuite.getstatus":
+        elif isinstance(request, MsgTestSuiteGetStatus):
             status = self.states_summary()
-            # this is a request so I answer directly on the message
-            response.update({'_type': event_type})
-            response.update({'ok': True})
-            response.update({'status': status})
-            amqp_reply(self.channel, properties, response)
-
+            response = MsgTestSuiteGetStatusReply(
+                    request,
+                    ok=True,
+                    status=status,
+            )
+            publish_message(self.channel, response)
         else:
-            logger.debug(
-                'Event received but not processed: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
+            logger.warning('Ignoring unrecognised service request: %s' % repr(request))
             return
 
-        logger.info('Service request handled, response sent through the bus: %s' % (json.dumps(response)))
+        logger.info('Processing request: %s' % repr(request))
 
     def handle_control(self, ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        props_dict = {
+            'content_type': properties.content_type,
+            'delivery_mode': properties.delivery_mode,
+            'correlation_id': properties.correlation_id,
+            'reply_to': properties.reply_to,
+            'message_id': properties.message_id,
+            'timestamp': properties.timestamp,
+            'user_id': properties.user_id,
+            'app_id': properties.app_id,
+        }
+        request = Message.from_json(body)
+        request.update_properties(**props_dict)
+
         # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
         logger.debug('[event queue callback] service request received on the queue: %s || %s'
                      % (
@@ -842,12 +793,12 @@ class Coordinator:
         # prepare response
         response = OrderedDict()
 
-        if event_type == "testcoordination.testcase.skip":
+        if isinstance(request, MsgTestCaseSkip):
 
             # if no testcase_id was sent then I skip  the current one
             try:
-                testcase_skip = event['testcase_id']
-            except KeyError:
+                testcase_skip = request.testcase_id
+            except AttributeError:
                 testcase_skip = self.current_tc.id
 
             # change tc state to 'skipped'
@@ -857,7 +808,7 @@ class Coordinator:
             # if skipped tc is current test case then next tc
             if self.current_tc is not None and (testcase_skip == self.current_tc.id):
                 self.next_testcase()
-                self.notify_current_testcase()
+                self.notify_testcase_is_ready()
 
             if self.current_tc is None and self.check_testsuite_finished():
                 self.finish_testsuite()
@@ -875,7 +826,7 @@ class Coordinator:
             self.start_test_suite()
 
             # send general notif
-            self.notify_current_testcase()
+            self.notify_testcase_is_ready()
 
         elif event_type == "testcoordination.testcase.select":
 
@@ -896,7 +847,7 @@ class Coordinator:
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
             # send general notif
-            self.notify_current_testcase()
+            self.notify_testcase_is_ready()
 
 
         elif event_type == "testcoordination.testcase.start":
@@ -916,7 +867,7 @@ class Coordinator:
                 self.start_testcase()
 
                 # send general notif
-                self.notify_current_step_execute()
+                self.notify_step_to_execute()
 
 
         elif event_type == "testcoordination.step.stimuli.executed":
@@ -945,7 +896,7 @@ class Coordinator:
 
             # go to next step
             if self.next_step():
-                self.notify_current_step_execute()
+                self.notify_step_to_execute()
             else:
                 # im at the end of the TC:
                 self.finish_testcase()
@@ -955,7 +906,7 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
-                    self.notify_current_testcase()
+                    self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
                 else:
@@ -985,7 +936,7 @@ class Coordinator:
 
             # go to next step
             if self.next_step():
-                self.notify_current_step_execute()
+                self.notify_step_to_execute()
             else:
                 # im at the end of the TC:
                 self.finish_testcase()
@@ -995,7 +946,7 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
-                    self.notify_current_testcase()
+                    self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
                 else:
@@ -1025,7 +976,7 @@ class Coordinator:
 
             # # go to next step
             # if self.next_step():
-            #     self.notify_current_step_execute()
+            #     self.notify_step_to_execute()
             # elif not self.check_testsuite_finished():
             #     # im at the end of the TC:
             #     self.finish_testcase()
@@ -1037,7 +988,7 @@ class Coordinator:
 
             # go to next step
             if self.next_step():
-                self.notify_current_step_execute()
+                self.notify_step_to_execute()
             else:
                 # im at the end of the TC:
                 self.finish_testcase()
@@ -1047,7 +998,7 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
-                    self.notify_current_testcase()
+                    self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
                 else:
@@ -1059,7 +1010,7 @@ class Coordinator:
         #
         #
         #     # send general notif
-        #     self.notify_current_testcase()
+        #     self.notify_testcase_is_ready()
 
         else:
             logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
@@ -1070,14 +1021,14 @@ class Coordinator:
 
     def get_testcases_basic(self, verbose=None):
 
-        resp = []
+        tc_list = []
         for tc_v in self.teds.values():
-            resp.append(tc_v.to_dict(verbose))
+            tc_list.append(tc_v.to_dict(verbose))
         # If no test case found
-        if len(resp) == 0:
+        if len(tc_list) == 0:
             raise CoordinatorError("No test cases found")
 
-        return {'tc_list': resp}
+        return tc_list
 
     def get_testcases_list(self):
         return list(self.teds.keys())
@@ -1284,9 +1235,9 @@ class Coordinator:
                                                                filename=tc_id + ".pcap",
                                                                value=pcap_file_base64)
 
-            logger.info("Response received from TAT: %s " % str(tat_response))
+            logger.info("Response received from TAT: %s " % repr(tat_response))
 
-            if tat_response['ok'] == True:
+            if tat_response.ok:
                 # Save the json object received
                 json_file = os.path.join(
                         TMPDIR,
@@ -1294,13 +1245,13 @@ class Coordinator:
                 )
 
                 with open(json_file, 'w') as f:
-                    json.dump(tat_response, f)
+                    f.write(tat_response.to_json())
 
                 # let's process the partial verdicts from TAT's answer
                 # they come as [[str,str]] first string is partial verdict , second is description.
                 partial_verd = []
                 step_count = 0
-                for item in tat_response['partial_verdicts']:
+                for item in tat_response.partial_verdicts:
                     # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
                     # info, so ill make a name up(this is just for visualization purposes)
                     step_count += 1
