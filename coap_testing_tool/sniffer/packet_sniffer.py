@@ -122,8 +122,8 @@ def on_request(ch, method, props, body):
                 return
 
         except FileNotFoundError as fne:
-            logger.error('Coulnt retrieve file %s from dir' % file)
-            logger.error(str(fne))
+            logger.warning('Coulnt retrieve file %s from dir' % file)
+            logger.warning(str(fne))
             publish_message(
                     ch,
                     MsgErrorReply(
