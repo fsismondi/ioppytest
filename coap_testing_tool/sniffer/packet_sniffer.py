@@ -104,7 +104,7 @@ def on_request(ch, method, props, body):
             err_mess = 'No previous capture found.'
             m_resp = MsgErrorReply(request, error_message=err_mess)
             publish_message(ch, m_resp)
-            logger.error(err_mess)
+            logger.warning(err_mess)
             return
 
     elif isinstance(request, MsgSniffingGetCapture):
