@@ -56,7 +56,7 @@ if __name__ == '__main__':
         logger.info('Setting up AMQP connection..')
         # setup AMQP connection
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        channel = connection.channel()
+
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
         sys.exit(1)
