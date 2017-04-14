@@ -35,6 +35,7 @@ COMPONENT_ID = 'test_coordinator'
 
 logger = logging.getLogger()
 
+
 ### AUX functions ###
 
 def list_to_str(ls):
@@ -611,9 +612,9 @@ class Coordinator:
 
     def notify_testcase_finished(self):
         tc_info_dict = self.current_tc.to_dict(verbose=True)
-        event = MsgTestCaseFinish(
+        event = MsgTestCaseFinished(
+                testcase_id = self.current_tc.id,
                 message='Testcase %s finished' % self.current_tc.id,
-                **tc_info_dict
         )
         publish_message(self.channel, event)
 
@@ -643,9 +644,15 @@ class Coordinator:
         err_json = json.dumps(coordinator_notif)
 
         logger.error('Test coordination encountered critical error: %s' % err_json)
+        if self.current_tc:
+            filename = self.current_tc.id + '_error.json'
+        else:
+            filename = 'general_error.json'
+
         json_file = os.path.join(
                 RESULTS_DIR,
-                self.current_tc.id + '_error.json'
+                filename
+
         )
         with open(json_file, 'w') as f:
             f.write(err_json)
@@ -674,7 +681,7 @@ class Coordinator:
     def call_service_sniffer_start(self, **kwargs):
 
         try:
-            response = amqp_request(MsgSniffingStart(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.connection.channel(), MsgSniffingStart(**kwargs), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -683,7 +690,7 @@ class Coordinator:
     def call_service_sniffer_stop(self):
 
         try:
-            response = amqp_request(MsgSniffingStop(), COMPONENT_ID)
+            response = amqp_request(self.connection.channel(), MsgSniffingStop(), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -692,7 +699,7 @@ class Coordinator:
     def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            response = amqp_request(MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.connection.channel(), MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -701,7 +708,7 @@ class Coordinator:
     def call_service_testcase_analysis(self, **kwargs):
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
-        response = amqp_request(request, COMPONENT_ID)
+        response = amqp_request(self.connection.channel(), request, COMPONENT_ID)
         logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response
 
@@ -774,6 +781,12 @@ class Coordinator:
 
             # change tc state to 'skipped'
             testcase_t = self.get_testcase(testcase_skip)
+
+            if testcase_t is None:
+                error_msg = "Non existent testcase: %s" % testcase_skip
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
             testcase_t.change_state("skipped")
 
             # if skipped tc is current test case then next tc
@@ -816,7 +829,7 @@ class Coordinator:
             # send general notif
             self.notify_testcase_is_ready()
 
-        elif isinstance(event,MsgTestCaseStart):
+        elif isinstance(event, MsgTestCaseStart):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
@@ -833,7 +846,7 @@ class Coordinator:
                 # send general notif
                 self.notify_step_to_execute()
 
-        elif isinstance(event,MsgStimuliExecuted):
+        elif isinstance(event, MsgStimuliExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
@@ -843,6 +856,12 @@ class Coordinator:
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
+            if self.current_tc.current_step is None:
+                error_msg = "No step under execution."
                 # notify all
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
@@ -877,7 +896,7 @@ class Coordinator:
                     self.notify_testsuite_finished()
 
 
-        elif isinstance(event,MsgVerifyResponse):
+        elif isinstance(event, MsgVerifyResponse):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
@@ -887,6 +906,12 @@ class Coordinator:
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
+            if self.current_tc.current_step is None:
+                error_msg = "No step under execution."
                 # notify all
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
@@ -943,6 +968,12 @@ class Coordinator:
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
 
+            if self.current_tc.current_step is None:
+                error_msg = "No step under execution."
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
             # process event only if I current step is a check
             if self.current_tc.current_step.type != 'check':
                 message = 'Coordination was expecting message for step type: %s , but got type: CHECK' \
@@ -984,7 +1015,7 @@ class Coordinator:
             else:
                 logger.error('Malformed message')
 
-        logger.info('Event correctly handled: %s' % event._type )
+        logger.info('Event correctly handled: %s' % event._type)
 
     ### TRANSITION METHODS for the Coordinator FSM ###
 
@@ -1204,11 +1235,11 @@ class Coordinator:
             logger.debug("Sending PCAP file to TAT for analysis...")
             try:
                 # Forwards PCAP to TAT to get CHECKs results
-                tat_response = self.call_service_testcase_analysis(testcase_id = tc_id,
-                                                                   testcase_ref = tc_ref,
-                                                                   file_enc = "pcap_base64",
-                                                                   filename = tc_id + ".pcap",
-                                                                   value = pcap_file_base64)
+                tat_response = self.call_service_testcase_analysis(testcase_id=tc_id,
+                                                                   testcase_ref=tc_ref,
+                                                                   file_enc="pcap_base64",
+                                                                   filename=tc_id + ".pcap",
+                                                                   value=pcap_file_base64)
             except TimeoutError as e:
                 logger.error("Sniffer didnt answer to the analysis request")
 

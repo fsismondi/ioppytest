@@ -195,7 +195,7 @@ if __name__ == '__main__':
                 '_type': 'testcoordination.error',
             }),
             exchange = AMQP_EXCHANGE,
-            routing_key ='control.testcoordination.error',
+            routing_key ='session.error',
             properties=pika.BasicProperties(
                 content_type='application/json',
             )
