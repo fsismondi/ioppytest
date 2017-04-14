@@ -13,9 +13,8 @@ import os
 import threading
 import datetime
 
-
 COMPONENT_ID = 'fake_session'
-MESSAGES_WAIT_INTERVAL = 1 # in seconds
+MESSAGES_WAIT_INTERVAL = 1  # in seconds
 AMQP_EXCHANGE = ''
 AMQP_URL = ''
 message_count = 0
@@ -25,6 +24,12 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 logging.getLogger('pika').setLevel(logging.INFO)
+
+"""
+PRE-CONDITIONS:
+- Export AMQP_URL in the running environment
+- Have CoAP testing tool and listening to the bus
+"""
 
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
@@ -54,7 +59,7 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
-forced_errors_service_api_calls=[
+forced_errors_service_api_calls = [
     MsgInteropTestCaseAnalyze(),
     MsgInteropTestCaseAnalyze(
             testcase_id="TD_COAP_CORE_01",
@@ -122,8 +127,8 @@ service_api_calls = [
     )
 ]
 
-class ApiTests(unittest.TestCase):
 
+class ApiTests(unittest.TestCase):
     def setUp(self):
 
         global stop_generator_signal
@@ -134,22 +139,45 @@ class ApiTests(unittest.TestCase):
         self.conn = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.conn.channel()
 
+        # CONTROL EVENTS QUEUE
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
 
         # lets' first clean up the queue
         self.channel.queue_delete(queue=services_queue_name)
 
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='control.#')
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(validate_message, queue=services_queue_name)
+
+        # ERRORS LOGS AND OTHER ERROR EVENTS QUEUE
+        errors_queue_name = 'bus_errors_queue@%s' % COMPONENT_ID
+
+        # lets' first clean up the queue
+        self.channel.queue_delete(queue=errors_queue_name)
+
+        self.channel.queue_declare(queue=errors_queue_name, auto_delete=True)
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=errors_queue_name,
+                                routing_key='log.error.*')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=errors_queue_name,
+                                routing_key='session.error')
+
+        # for getting the terminate signal
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=errors_queue_name,
+                                routing_key=MsgSessionTerminate.routing_key)
+        self.channel.basic_qos(prefetch_count=1)
+        self.channel.basic_consume(check_for_bus_error, queue=errors_queue_name)
 
     def tearDown(self):
         self.conn.close()
 
     def test_user_emulation(self):
 
-        messages = [] # list of messages to send
+        # prepare the message generator
+        messages = []  # list of messages to send
         messages += user_sequence
         messages.append(MsgSessionTerminate())  # message that triggers stop_generator_signal
 
@@ -163,12 +191,11 @@ class ApiTests(unittest.TestCase):
             thread_msg_gen.stop()
             assert False, str(e)
 
-
+        except Exception as e:
+            thread_msg_gen.stop()
+            assert False, str(e)
 
     def test_testing_tool_internal_services(self):
-        messages = [] # list of messages to send
-        messages += service_api_calls
-        messages.append(MsgSessionTerminate())  # message that triggers stop_generator_signal
         services_queue_name = 'bus_errors_queue@%s' % COMPONENT_ID
 
         channel = self.conn.channel()
@@ -179,12 +206,22 @@ class ApiTests(unittest.TestCase):
         channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=services_queue_name,
                            routing_key='*.error.*')
+
+        channel.queue_bind(exchange=AMQP_EXCHANGE,
+                           queue=services_queue_name,
+                           routing_key='session.error')
+
         # for getting the terminate signal
         channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=services_queue_name,
                            routing_key=MsgSessionTerminate.routing_key)
         channel.basic_qos(prefetch_count=1)
-        channel.basic_consume( check_for_bus_error, queue=services_queue_name)
+        channel.basic_consume(check_for_bus_error, queue=services_queue_name)
+
+        # prepare the message generator
+        messages = []  # list of messages to send
+        messages += service_api_calls
+        messages.append(MsgSessionTerminate())  # message that triggers stop_generator_signal
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
@@ -196,10 +233,8 @@ class ApiTests(unittest.TestCase):
             thread_msg_gen.stop()
             assert False, str(e)
 
-
-
     def test_non_existent_types_in_message_library_dont_generate_validation_errors(self):
-        messages = [] # list of messages to send
+        messages = []  # list of messages to send
         m = MsgInteropTestCaseAnalyze()
         m._type = 'some.non.existent.message.type'
         messages += [m]
@@ -262,6 +297,7 @@ def publish_message(channel, message):
             body=message.to_json(),
     )
 
+
 def stop_generator():
     global stop_generator_signal
     logger.debug("The test is finished!")
@@ -269,10 +305,11 @@ def stop_generator():
 
 
 def check_for_bus_error(ch, method, props, body):
+    logger.info('Checking for error messages in the bus')
 
     try:
         m = Message.from_json(body)
-        if isinstance(m,MsgSessionTerminate):
+        if isinstance(m, MsgSessionTerminate):
             ch.stop_consuming()
             return
     except:
@@ -283,61 +320,64 @@ def check_for_bus_error(ch, method, props, body):
         'test_coordinator',
         'packer_router',
         'sniffer',
-        'dissector',
+        'dissector'
+        'session',
 
     ]
     r_key = method.routing_key
-    logger.info('Auditing: %s'%r_key)
+    logger.info('Auditing: %s' % r_key)
 
     for c in list_of_audited_components:
         if c in r_key:
-            assert False, 'audited component %s pushed an error into the bus' %c
+            logger.error('audited component %s pushed an error into the bus' % c)
+            raise Exception('audited component %s pushed an error into the bus' % c)
 
 
 def validate_message(ch, method, props, body):
-        global message_count
-        # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
-        req_body_dict = json.loads(body.decode('utf-8'),object_pairs_hook=OrderedDict)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-        message_count += 1
+    global message_count
+    # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
+    req_body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+    message_count += 1
 
-        print('\n* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *'%message_count)
-        print("TIME: %s"%datetime.datetime.time(datetime.datetime.now()))
-        print("ROUTING_KEY: %s" % method.routing_key)
-        print('EVENT %s' %(req_body_dict['_type']))
-        print('* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
+    print('\n* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
+    print("TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
+    print("ROUTING_KEY: %s" % method.routing_key)
+    print('EVENT %s' % (req_body_dict['_type']))
+    print('* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
 
-        if props.content_type != "application/json":
+    if props.content_type != "application/json":
+        print('* * * * * * API VALIDATION WARNING * * * * * * * ')
+        print("props.content_type : " + str(props.content_type))
+        print("application/json was expected")
+        print('* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+        raise Exception
+
+    if '_type' not in req_body_dict.keys():
+        print('* * * * * * API VALIDATION WARNING * * * * * * * ')
+        print("no < _type > field found")
+        print('* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+        raise Exception
+
+    # lets check messages against the messaging library
+    list_of_messages_to_check = list(message_types_dict.keys())
+    if req_body_dict['_type'] in list_of_messages_to_check:
+        m = Message.from_json(body)
+        try:
+            if isinstance(m, MsgSessionTerminate):
+                ch.stop_consuming()
+                stop_generator()
+            else:
+                logger.debug(repr(m))
+        except NonCompliantMessageFormatError as e:
             print('* * * * * * API VALIDATION WARNING * * * * * * * ')
-            print("props.content_type : " + str(props.content_type))
-            print("application/json was expected")
+            print("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
             print('* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-            raise Exception
-
-        if '_type' not in req_body_dict.keys():
-            print('* * * * * * API VALIDATION WARNING * * * * * * * ')
-            print("no < _type > field found")
-            print('* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-            raise Exception
-
-        # lets check messages against the messaging library
-        list_of_messages_to_check = list(message_types_dict.keys())
-        if req_body_dict['_type'] in list_of_messages_to_check:
-            m = Message.from_json(body)
-            try:
-                if isinstance(m,MsgSessionTerminate):
-                    ch.stop_consuming()
-                    stop_generator()
-                else:
-                    logger.debug(repr(m))
-            except NonCompliantMessageFormatError as e:
-                print('* * * * * * API VALIDATION WARNING * * * * * * * ')
-                print("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
-                print('* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-                raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
+            raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
 
 
 class MessageGenerator(threading.Thread):
+    keepOnRunning = True
 
     def __init__(self, amqp_url, amqp_exchange, messages_list):
         threading.Thread.__init__(self)
@@ -355,7 +395,7 @@ class MessageGenerator(threading.Thread):
         )
 
         try:
-            while not stop_generator_signal:
+            while self.keepOnRunning:
                 time.sleep(MESSAGES_WAIT_INTERVAL)
                 m = self.messages.pop(0)
                 publish_message(self.channel, m)
@@ -364,11 +404,9 @@ class MessageGenerator(threading.Thread):
             # list finished, lets wait so all messages are sent and processed
             time.sleep(5)
             pass
+        except pika.exceptions.ChannelClosed:
+            pass
 
     def stop(self):
+        self.keepOnRunning = False
         self.connection.close()
-
-
-
-
-
