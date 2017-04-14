@@ -16,8 +16,8 @@ from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
-from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_reply, AmqpSynchronousCallClient, amqp_request
-from coap_testing_tool.utils.exceptions import SnifferError, CoordinatorError, AmqpMessageError
+from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
+from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.utils.event_bus_messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
@@ -34,7 +34,6 @@ SNIFFER_FILTER_IF = 'tun0'
 COMPONENT_ID = 'test_coordinator'
 
 logger = logging.getLogger()
-
 
 ### AUX functions ###
 
@@ -643,7 +642,7 @@ class Coordinator:
         coordinator_notif.update({'testsuite_status': self.states_summary()})
         err_json = json.dumps(coordinator_notif)
 
-        logger.error('Test coordination encountered fatal error: ' % err_json)
+        logger.error('Test coordination encountered critical error: %s' % err_json)
         json_file = os.path.join(
                 RESULTS_DIR,
                 self.current_tc.id + '_error.json'
@@ -678,7 +677,7 @@ class Coordinator:
             response = amqp_request(MsgSniffingStart(**kwargs), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except AmqpMessageError as e:
+        except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_sniffer_stop(self):
@@ -687,7 +686,7 @@ class Coordinator:
             response = amqp_request(MsgSniffingStop(), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except AmqpMessageError as e:
+        except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_sniffer_get_capture(self, **kwargs):
@@ -696,30 +695,15 @@ class Coordinator:
             response = amqp_request(MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except AmqpMessageError as e:
+        except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
-    def call_service_testcase_analysis(self, testcase_id, testcase_ref, file_enc, filename, value):
-        _type = 'analysis.interop.testcase.analyze'
-        r_key = 'control.analysis.service'
-        body = OrderedDict()
-        body.update({'_type': _type})
-        body.update({'testcase_id': testcase_id})
-        body.update({'testcase_ref': testcase_ref})
-        body.update({'file_enc': file_enc})
-        body.update({'filename': filename})
-        body.update({'value': value})
+    def call_service_testcase_analysis(self, **kwargs):
 
-        try:
-            amqp_rpc_client = AmqpSynchronousCallClient(component_id=COMPONENT_ID)
-            ret = ''
-            ret = amqp_rpc_client.call(routing_key=r_key, body=body)
-            logger.info("Received answer from TAT: %s, answer: %s" % (_type, json.dumps(ret)))
-            return ret
-
-        except AmqpMessageError as e:
-            logger.error("TAT API doesn't respond on %s, maybe it isn't up yet \n Exception info%s"
-                         % (str(ret), str(e)))
+        request = MsgInteropTestCaseAnalyze(**kwargs)
+        response = amqp_request(request, COMPONENT_ID)
+        logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+        return response
 
     ### API ENDPOINTS ###
 
@@ -777,27 +761,14 @@ class Coordinator:
             'user_id': properties.user_id,
             'app_id': properties.app_id,
         }
-        request = Message.from_json(body)
-        request.update_properties(**props_dict)
+        event = Message.from_json(body)
+        event.update_properties(**props_dict)
 
-        # horribly long composition of methods,but  needed for keeping the order of fields of the received json object
-        logger.debug('[event queue callback] service request received on the queue: %s || %s'
-                     % (
-                         method.routing_key,
-                         json.dumps(json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict))))
-
-        # TODO check malformed messages first
-        event = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
-        event_type = event['_type']
-
-        # prepare response
-        response = OrderedDict()
-
-        if isinstance(request, MsgTestCaseSkip):
+        if isinstance(event, MsgTestCaseSkip):
 
             # if no testcase_id was sent then I skip  the current one
             try:
-                testcase_skip = request.testcase_id
+                testcase_skip = event.testcase_id
             except AttributeError:
                 testcase_skip = self.current_tc.id
 
@@ -814,12 +785,8 @@ class Coordinator:
                 self.finish_testsuite()
                 self.notify_testsuite_finished()
 
-        elif event_type == "testcoordination.testsuite.start":
-            # TODO in here maybe launch the enxt configuration of IUT
-            # TODO reboot automated IUTs
-
+        elif isinstance(event, MsgTestSuiteStart):
             # lets open tun interfaces
-            # TODO do it before the testsuite start signal, after opened send TESTGIN TOOL ready signal (for GUI)
             self.notify_tun_interfaces_start()
             time.sleep(2)
 
@@ -828,12 +795,12 @@ class Coordinator:
             # send general notif
             self.notify_testcase_is_ready()
 
-        elif event_type == "testcoordination.testcase.select":
+        elif isinstance(event, MsgTestCaseSelect):
 
             # assert and get testcase_id from message
             try:
                 # jump to selected tc
-                self.select_testcase(event['testcase_id'])
+                self.select_testcase(event.testcase_id)
 
             except KeyError:
                 error_msg = "Incorrect or empty testcase_id"
@@ -849,8 +816,7 @@ class Coordinator:
             # send general notif
             self.notify_testcase_is_ready()
 
-
-        elif event_type == "testcoordination.testcase.start":
+        elif isinstance(event,MsgTestCaseStart):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
@@ -858,8 +824,6 @@ class Coordinator:
                 # notify all
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
-
-            # TODO handle configuration phase before execution!
 
             if self.check_testsuite_finished():
                 self.notify_testsuite_finished()
@@ -869,8 +833,7 @@ class Coordinator:
                 # send general notif
                 self.notify_step_to_execute()
 
-
-        elif event_type == "testcoordination.step.stimuli.executed":
+        elif isinstance(event,MsgStimuliExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
@@ -913,7 +876,20 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-        elif event_type == "testcoordination.step.verify.response":
+
+        elif isinstance(event,MsgVerifyResponse):
+
+            if self.current_tc is None:
+                error_msg = "No testcase selected"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
+            if self.current_tc.state is None:
+                error_msg = "Test case not yet started"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
 
             # process event only if I current step is a verify
             if self.current_tc.current_step.type != 'verify':
@@ -925,7 +901,7 @@ class Coordinator:
 
             # assert and get testcase_id from message
             try:
-                verify_response = event['verify_response']
+                verify_response = event.verify_response
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
 
@@ -953,10 +929,19 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
+        elif isinstance(event, MsgCheckResponse):
 
-        elif event_type == "testcoordination.step.check.response":
-            # This is call is just used when we have step_by_step analysis mode
-            # assert ANALYSIS_MODE == 'step_by_step'
+            if self.current_tc is None:
+                error_msg = "No testcase selected"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
+            if self.current_tc.state is None:
+                error_msg = "Test case not yet started"
+                # notify all
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
 
             # process event only if I current step is a check
             if self.current_tc.current_step.type != 'check':
@@ -967,24 +952,12 @@ class Coordinator:
                 return
 
             try:
-                verdict = event['partial_verdict']
-                description = event['description']
+                verdict = event.partial_verdict
+                description = event.description
             except KeyError:
                 self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
 
             self.handle_check_step_response(verdict, description)
-
-            # # go to next step
-            # if self.next_step():
-            #     self.notify_step_to_execute()
-            # elif not self.check_testsuite_finished():
-            #     # im at the end of the TC:
-            #     self.finish_testcase()
-            #     self.notify_testcase_finished()
-            #     self.notify_testcase_verdict()
-            # else:
-            #     self.finish_testsuite()
-            #     self.notify_testsuite_finished()
 
             # go to next step
             if self.next_step():
@@ -1005,17 +978,13 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-        # elif event_type == "testcoordination.testcase.finish":
-        #     self.finish_testcase()
-        #
-        #
-        #     # send general notif
-        #     self.notify_testcase_is_ready()
-
         else:
-            logger.warning('Cannot dispatch event: \nrouting_key %s \nevent_type %s' % (method.routing_key, event_type))
+            if event._type:
+                logger.debug('Event dropped (either incorrect or "echo" event received). Event type: %s' % event._type)
+            else:
+                logger.error('Malformed message')
 
-        logger.info('Event handled, response sent through the bus: %s' % (json.dumps(response)))
+        logger.info('Event correctly handled: %s' % event._type )
 
     ### TRANSITION METHODS for the Coordinator FSM ###
 
@@ -1207,14 +1176,18 @@ class Coordinator:
 
         self.current_tc.change_state('analyzing')
         # Finish sniffer and get PCAP
-        # TODO first tell sniffer to stop!
+        logger.debug("Sending sniffer stop request...")
+        self.call_service_sniffer_stop()
+        time.sleep(0.2)
 
         if ANALYSIS_MODE == 'post_mortem':
 
+            tat_response = None
+
+            logger.debug("Sending get capture request to sniffer...")
             sniffer_response = self.call_service_sniffer_get_capture(capture_id=tc_id)
 
             # let's try to save the file and then push it to results repo
-
             try:
                 pcap_file_base64 = sniffer_response.value
                 filename = sniffer_response.filename
@@ -1228,16 +1201,20 @@ class Coordinator:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
                 logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
 
-            # Forwards PCAP to TAT API and get CHECKs info
-            tat_response = self.call_service_testcase_analysis(tc_id,
-                                                               tc_ref,
-                                                               file_enc="pcap_base64",
-                                                               filename=tc_id + ".pcap",
-                                                               value=pcap_file_base64)
+            logger.debug("Sending PCAP file to TAT for analysis...")
+            try:
+                # Forwards PCAP to TAT to get CHECKs results
+                tat_response = self.call_service_testcase_analysis(testcase_id = tc_id,
+                                                                   testcase_ref = tc_ref,
+                                                                   file_enc = "pcap_base64",
+                                                                   filename = tc_id + ".pcap",
+                                                                   value = pcap_file_base64)
+            except TimeoutError as e:
+                logger.error("Sniffer didnt answer to the analysis request")
 
-            logger.info("Response received from TAT: %s " % repr(tat_response))
+            if tat_response and tat_response.ok:
 
-            if tat_response.ok:
+                logger.info("Response received from TAT: %s " % repr(tat_response))
                 # Save the json object received
                 json_file = os.path.join(
                         TMPDIR,
@@ -1263,9 +1240,9 @@ class Coordinator:
                 gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
 
             else:
-                logger.error('Response from TAT not ok: %s' % (tat_response))
+                logger.error('Error ocurred while analysing. Response from TAT: %s' % repr(tat_response))
                 gen_verdict = 'error'
-                gen_description = 'Response from test analyzer: %s' % json.dumps(tat_response)
+                gen_description = 'Response from test analyzer: %s' % repr(tat_response)
                 report = []
 
             # save sent message in RESULTS dir
