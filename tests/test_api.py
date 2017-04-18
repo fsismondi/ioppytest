@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger('pika').setLevel(logging.INFO)
 
 # queue which tracks all non answered services requests
-services_backlog = []
+services_backlog = OrderedDict()
 
 # a very simple & rustic lock for handling the access to the backlog
 # TODO create a backlog class and put the lock in there
@@ -353,12 +353,13 @@ def validate_request_replies(ch, method, props, body):
     logging.info("[%s] got message: %s" %(sys._getframe().f_code.co_name, body_dict['_type']) )
     if '.service.reply' in method.routing_key:
         if props.correlation_id in services_backlog:
-            services_backlog.remove(props.correlation_id)
+            services_backlog.pop(props.correlation_id)
         else:
-            assert False,'got a reply but didnt see the request passing!'
+            assert False,'got a reply but theres no request in the backlog'
 
     elif '.service' in method.routing_key:
-        services_backlog.append(props.correlation_id)
+        services_backlog[props.correlation_id] = body_dict['_type']
+
     else:
         assert False, 'error! we shouldnt be here!'
 
