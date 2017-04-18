@@ -377,6 +377,9 @@ def validate_message(ch, method, props, body):
     print('\n* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
     print("TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
     print("ROUTING_KEY: %s" % method.routing_key)
+    print("MESSAGE ID: %s" % props.message_id)
+    if hasattr(props,'correlation_id'):
+        print("CORRELATION ID: %s" % props.correlation_id)
     print('EVENT %s' % (req_body_dict['_type']))
     print('* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
 
