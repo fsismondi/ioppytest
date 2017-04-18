@@ -25,6 +25,13 @@ logger = logging.getLogger(__name__)
 
 logging.getLogger('pika').setLevel(logging.INFO)
 
+# queue which tracks all non answered services requests
+services_backlog = []
+
+# a very simple & rustic lock for handling the access to the backlog
+# TODO create a backlog class and put the lock in there
+lock = threading.Lock()
+
 """
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment
@@ -57,17 +64,6 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
     MsgTestSuiteAbort(),
     MsgTestSuiteGetStatus(),
-]
-
-forced_errors_service_api_calls = [
-    MsgInteropTestCaseAnalyze(),
-    MsgInteropTestCaseAnalyze(
-            testcase_id="TD_COAP_CORE_01",
-            testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_empty_base64,
-    ),
 ]
 
 service_api_calls = [
@@ -140,15 +136,27 @@ class ApiTests(unittest.TestCase):
         self.channel = self.conn.channel()
 
         # CONTROL EVENTS QUEUE
+        control_queue_name = 'control_queue@%s' % COMPONENT_ID
+
+        # lets' first clean up the queue
+        self.channel.queue_delete(queue=control_queue_name)
+
+        self.channel.queue_declare(queue=control_queue_name, auto_delete=True)
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=control_queue_name, routing_key='control.#')
+        self.channel.basic_qos(prefetch_count=1)
+        self.channel.basic_consume(validate_message, queue=control_queue_name)
+
+        # SERVICES & REPLIES QUEUE
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
 
         # lets' first clean up the queue
         self.channel.queue_delete(queue=services_queue_name)
 
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='control.#')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service.reply')
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(validate_message, queue=services_queue_name)
+        self.channel.basic_consume(validate_request_replies, queue=services_queue_name)
 
         # ERRORS LOGS AND OTHER ERROR EVENTS QUEUE
         errors_queue_name = 'bus_errors_queue@%s' % COMPONENT_ID
@@ -229,6 +237,8 @@ class ApiTests(unittest.TestCase):
 
         try:
             channel.start_consuming()
+            if len(services_backlog)>0:
+                assert False, 'A least one of the services request was not answered. backlog: %s' % services_backlog
         except Exception as e:
             thread_msg_gen.stop()
             assert False, str(e)
@@ -332,6 +342,30 @@ def check_for_bus_error(ch, method, props, body):
             logger.error('audited component %s pushed an error into the bus' % c)
             raise Exception('audited component %s pushed an error into the bus' % c)
 
+def validate_request_replies(ch, method, props, body):
+    global lock
+    lock.acquire()
+    global services_backlog
+
+
+    body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+    logging.info("[%s] got message: %s" %(sys._getframe().f_code.co_name, body_dict['_type']) )
+    if '.service.reply' in method.routing_key:
+        if props.correlation_id in services_backlog:
+            services_backlog.remove(props.correlation_id)
+        else:
+            assert False,'got a reply but didnt see the request passing!'
+
+    elif '.service' in method.routing_key:
+        services_backlog.append(props.correlation_id)
+    else:
+        assert False, 'error! we shouldnt be here!'
+
+    lock.release()
+    logging.info("[%s] current backlog: %s" % (sys._getframe().f_code.co_name, services_backlog))
+
+
 
 def validate_message(ch, method, props, body):
     global message_count
@@ -388,7 +422,6 @@ class MessageGenerator(threading.Thread):
 
     def run(self):
         global MESSAGES_WAIT_INTERVAL
-        global stop_generator_signal
 
         logger.info(
                 "let's start 'blindly' generating the messages which take part on a coap session (for a coap client)"
