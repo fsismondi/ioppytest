@@ -75,7 +75,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             echo $AMQP_URL
             sudo -E supervisord -c supervisor.conf
-            sleep 5
+            sleep 15
             pwd
             python3 -m pytest tests/test_api.py -vv
             '''
