@@ -31,7 +31,7 @@ class PacketRouter(threading.Thread):
     AGENT_2_ID = AGENT_NAMES[1]
     AGENT_TT_ID = AGENT_TT_ID
 
-    def __init__(self, conn, routing_table):
+    def __init__(self, conn, routing_table = None):
         threading.Thread.__init__(self)
 
         logger.info("Imported agent names of the test session: %s" %str(AGENT_NAMES))
@@ -71,7 +71,7 @@ class PacketRouter(threading.Thread):
         self.channel = self.connection.channel()
 
         queue_name = 'data_packets_queue@%s' % COMPONENT_ID
-        self.channel.queue_declare(queue=queue_name)
+        self.channel.queue_declare(queue=queue_name, auto_delete = True )
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=queue_name,

@@ -8,6 +8,8 @@ RUN	apt-get -y install python3-pip
 RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN	apt-get -y install tcpdump
+# for CoAP Server Californium (delete this when we start supporting IUT resources selection)
+RUN apt-get -y install default-jre
 
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
@@ -27,8 +29,6 @@ RUN pip3 install -r coap_testing_tool/packet_router/requirements.txt
 RUN pip3 install -r coap_testing_tool/sniffer/requirements.txt
 RUN pip3 install -r coap_testing_tool/webserver/requirements.txt
 
-# for CoAP Server Californium (delete this when we start supporting IUT resources selection)
-RUN	apt-get -y install default-jre
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap

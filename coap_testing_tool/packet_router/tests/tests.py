@@ -25,7 +25,7 @@ class PacketRouterTestCase(unittest.TestCase):
         time.sleep(1)
 
         # create and bind queue
-        self.channel.queue_declare(queue=self.queue_name)
+        self.channel.queue_declare(queue=self.queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=self.queue_name,
                            routing_key='data.tun.#')

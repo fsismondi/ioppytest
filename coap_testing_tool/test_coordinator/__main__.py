@@ -10,6 +10,9 @@ from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'test_coordinator'
 
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,9 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
+
+# make pika logger less verbose
+logging.getLogger('pika').setLevel(logging.INFO)
 
 TT_check_list = [
     'dissection',
@@ -50,7 +56,7 @@ if __name__ == '__main__':
         logger.info('Setting up AMQP connection..')
         # setup AMQP connection
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        channel = connection.channel()
+
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP cannot be established, is message broker up? \n More: %s' %traceback.format_exc())
         sys.exit(1)
@@ -189,7 +195,7 @@ if __name__ == '__main__':
                 '_type': 'testcoordination.error',
             }),
             exchange = AMQP_EXCHANGE,
-            routing_key ='control.testcoordination.error',
+            routing_key ='session.error',
             properties=pika.BasicProperties(
                 content_type='application/json',
             )

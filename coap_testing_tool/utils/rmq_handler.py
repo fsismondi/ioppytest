@@ -23,6 +23,12 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+'''
+This library is provided to allow standard python logging
+to output log data as JSON formatted strings
+'''
+
 import logging
 import json
 import re
@@ -181,25 +187,39 @@ class RabbitMQHandler(logging.Handler):
     """
     def __init__(self, url, name, exchange="default"):
         logging.Handler.__init__(self)
-        self.connection = pika.BlockingConnection(pika.URLParameters(url))
+        self.url = url
+        self.connection = pika.BlockingConnection(pika.URLParameters(url+"?heartbeat=10"))
         self.channel = self.connection.channel()
         self.exchange = exchange
         self.name = name
 
     def emit(self, record):
         routing_key = ".".join(["log", record.levelname.lower(), self.name])
-        self.channel.basic_publish(
+
+        try:
+            self.channel.basic_publish(
                 exchange=self.exchange,
                 routing_key=routing_key,
                 body=self.format(record),
                 properties = pika.BasicProperties(
-                        content_type='application/json',
+                        content_type='application/json'
                 )
         )
+        except pika.exceptions.ConnectionClosed :
+            print("Log hanlder connection closed. Reconnecting..")
+            self.connection = pika.BlockingConnection(pika.URLParameters(self.url + "?heartbeat=10"))
+            self.channel = self.connection.channel()
+            self.channel.basic_publish(
+                    exchange=self.exchange,
+                    routing_key=routing_key,
+                    body=self.format(record),
+                    properties=pika.BasicProperties(
+                            content_type='application/json'
+                    )
+            )
 
     def close(self):
-        if self.channel:
-            self.channel.close()
+        self.channel.close()
 
 
 if __name__ == "__main__":
@@ -208,20 +228,20 @@ if __name__ == "__main__":
     json_formatter = JsonFormatter()
     rabbitmq_handler.setFormatter(json_formatter)
 
-    logger = logging.getLogger(__name__)
-    logger.addHandler(rabbitmq_handler)
-    logger.setLevel(logging.DEBUG)
+    log = logging.getLogger(__name__)
+    log.addHandler(rabbitmq_handler)
+    log.setLevel(logging.DEBUG)
 
     sh = logging.StreamHandler()
-    logger.addHandler(sh)
+    log.addHandler(sh)
 
     while True:
-        logger.critical("This is a critical message")
+        log.critical("This is a critical message")
         time.sleep(1)
-        logger.error("This is an error")
+        log.error("This is an error")
         time.sleep(1)
-        logger.warning("This is a warning")
+        log.warning("This is a warning")
         time.sleep(1)
-        logger.info("This is an info")
+        log.info("This is an info")
         time.sleep(1)
-        logger.debug("This is a debug")
+        log.debug("This is a debug")

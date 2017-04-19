@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
   "testing_tool":"CoAP Testing Tool",
-  "version":"0.0.4",
+  "version":"0.0.5",
   "tests_type": ["interoperability","conformance"],
   "protocols_under_test": ["CoAP", "CoAP_CORE", "CoAP_OBS"],
   "protocols_info": [
@@ -24,14 +24,14 @@
   "agent_names": ["coap_client_agent", "coap_server_agent"],
   "iut_roles": ["coap_client", "coap_server"],
   "available_location_models:": ["loc_mod_A_single_user", "loc_mod_F_single_user"],
-  "profile_conformance_test":[
+  "ui_profile_conformance_test":[
     {
       "field_name": "Testing Tool Description",
       "type": "text",
       "value": [
         "Reference-based interoperability (~conformance) Testing Tool for validating conformance to CoAP RFCs.",
         "The testing tool uses as reference implementation (golden image) Californium implementation (CoAP client and CoAP server).",
-        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf"
+        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)"
       ]
     },
     {
@@ -41,19 +41,9 @@
       "mandatory": true
     },
     {
-      "field_name": "User's IUT mode",
-      "type": "selection",
-      "selection_values":["automated_iut", "user_assisted"],
-      "user_info":[
-        "Automated IUT: Implementations under test which fully automated, bundled to F-Interop, and that are ready execute the tests without the need of a second user.",
-        "User Assisted (default): Implementations under test which needs to be driven by a User to perform the interoperability test. Particularly for handling certain the CONFIGs and executing the STIMULIs described in the test description"
-      ],
-      "mandatory": false
-    },
-    {
       "field_name": "Testing tool version",
       "type": "selection",
-      "selection_values":["0.0.3","0.0.2","0.0.1"],
+      "selection_values":["0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
       "mandatory": false
     },
     {
@@ -68,7 +58,7 @@
     }
   ],
 
-  "profile_interoperability_test":[
+  "ui_profile_interoperability_test":[
     {
       "field_name": "Testing Tool Description",
       "type": "text",
@@ -102,12 +92,22 @@
         "User Assisted: Implementations under test which needs to be driven by a User to perform the interoperability test. Particularly for handling certain the CONFIGs and executing the STIMULIs described in the test description"
       ],
       "mandatory": true,
-      "field_hook": ""
+      "conditional_trigger": "if automated_iut then trigger(automated_iut_selection)"
+    },
+    {
+      "hook":"automated_iut_selection",
+      "field_name": "Resource selection for IUT 2 (automated)",
+      "type": "selection",
+      "resource_repository_query":["sth like select all resources which are coap and available and automated  "],
+      "user_info":[
+        "Choose one automated IUT to test agains from the list of the available resources."
+      ],
+      "mandatory": true
     },
     {
       "field_name": "Testing tool version",
       "type": "selection",
-      "selection_values":["0.0.3","0.0.2","0.0.1"],
+      "selection_values":["0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
       "mandatory": false
     },
     {
