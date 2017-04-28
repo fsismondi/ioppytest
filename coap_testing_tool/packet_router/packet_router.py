@@ -10,6 +10,8 @@ import sys
 import logging
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+from coap_testing_tool.utils.event_bus_messages import *
 
 COMPONENT_ID = 'packet_router'
 # init logging to stnd output and log files
@@ -77,14 +79,12 @@ class PacketRouter(threading.Thread):
                            queue=queue_name,
                            routing_key='data.tun.fromAgent.#')
 
-        self.channel.basic_publish(
-                body=json.dumps({'message': '%s is up!' % COMPONENT_ID, "_type": 'packetrouting.ready'}),
-                exchange=AMQP_EXCHANGE,
-                routing_key='control.session.bootstrap',
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+
+        msg = MsgTestingToolComponentReady(
+                component='packetrouting'
         )
+        publish_message(channel, msg)
+
 
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=queue_name)
