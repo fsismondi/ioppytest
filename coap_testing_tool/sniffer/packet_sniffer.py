@@ -278,14 +278,11 @@ if __name__ == '__main__':
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
-    channel.basic_publish(
-            body=json.dumps({'message': '%s is up!' % COMPONENT_ID, "_type": 'sniffing.ready'}),
-            exchange=AMQP_EXCHANGE,
-            routing_key='control.session.bootstrap',
-            properties=pika.BasicProperties(
-                    content_type='application/json',
-            )
+    msg = MsgTestingToolComponentReady(
+        component = 'sniffing'
     )
+    publish_message(channel, msg )
+
 
     try:
         logger.info("Awaiting AMQP requests on topic: control.sniffing.service")
