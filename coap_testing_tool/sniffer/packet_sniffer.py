@@ -8,6 +8,7 @@ import sys
 import base64
 import traceback
 import pika
+import logging
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter

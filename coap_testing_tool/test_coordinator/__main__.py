@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import logging
 from threading import Timer
 from coap_testing_tool.test_coordinator.coordinator import *
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
