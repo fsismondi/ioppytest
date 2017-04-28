@@ -155,7 +155,7 @@ class ApiTests(unittest.TestCase):
                            routing_key='log.error.*')
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=errors_queue_name,
-                           routing_key='session.error')
+                           routing_key='control.session.error')
 
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,

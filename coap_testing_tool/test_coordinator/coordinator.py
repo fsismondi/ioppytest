@@ -389,6 +389,7 @@ class TestCase:
         if verbose:
             d['testcase_ref'] = self.uri
             d['objective'] = self.objective
+            d['pre_conditions'] = self.pre_conditions
             d['state'] = self.state
 
         return d
@@ -669,14 +670,22 @@ class Coordinator:
         with open(json_file, 'w') as f:
             f.write(event.to_json())
 
-    def notify_current_configuration(self, config_id, node, message):
-        # TODO get configuration id , node and message from self, and not as param
-        event = MsgTestCaseConfiguration(
-                configuration_id=config_id,
-                node=node,
-                message=message
-        )
-        publish_message(self.channel, event)
+    def notify_current_configuration(self):
+        config_id = self.current_tc.configuration_id
+        config = self.tc_configs[config_id] # Configuration object
+
+        for desc in config.description:
+            message = desc['message']
+            node = desc['node']
+
+            event = MsgTestCaseConfiguration(
+                    configuration_id=config_id,
+                    node=node,
+                    message=message,
+                    testcase_id=self.current_tc.id,
+                    testcase_ref=self.current_tc.uri
+            )
+            publish_message(self.channel, event)
 
     def call_service_sniffer_start(self, **kwargs):
 
@@ -1093,17 +1102,10 @@ class Coordinator:
 
         self.current_tc.change_state('executing')
 
-        # # # CONFIGURATION PHASE # # #
+        FINISH this!
+        self.notify_current_configuration()
         config_id = self.current_tc.configuration_id
         config = self.tc_configs[config_id]
-
-        # notify each IUT/user about the current config
-        # TODO do we need a confirmation for this?
-
-        for desc in config.description:
-            message = desc['message']
-            node = desc['node']
-            self.notify_current_configuration(config_id, node, message)
 
         # start sniffing each link
         for link in config.topology:
