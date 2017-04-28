@@ -676,7 +676,7 @@ class Coordinator:
     def notify_current_configuration(self):
         tc_info_dict = self.current_tc.to_dict(verbose=False)
         config_id = self.current_tc.configuration_id
-        config = self.tc_configs[config_id] # Configuration object
+        config = self.tc_configs[config_id]  # Configuration object
 
         for desc in config.description:
             message = desc['message']
@@ -1072,7 +1072,6 @@ class Coordinator:
             # resets all previously executed TC
             for tc in self.teds.values():
                 tc.reinit()
-
             # init testcase if None
             if self.current_tc is None:
                 # so that we start back from the first
