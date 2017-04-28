@@ -68,7 +68,7 @@ import json
 import uuid
 import logging
 
-API_VERSION = '0.1.15'
+API_VERSION = '0.1.17'
 
 
 # TODO use metaclasses instead?
@@ -241,7 +241,7 @@ class MsgErrorReply(MsgReply):
 
 ###### SESSION MESSAGES ######
 
-class MsgSessionTerminate(Message):
+class MsgTestingToolTerminate(Message):
     """
     Testing Tool MUST-implement API endpoint
     GUI, (or Orchestrator?) -> Testing Tool
@@ -250,7 +250,49 @@ class MsgSessionTerminate(Message):
     routing_key = 'control.session'
 
     _msg_data_template = {
-        '_type': 'session.terminate',
+        '_type': 'testingtool.terminate',
+    }
+
+class MsgTestingToolReady(Message):
+    """
+    Testing Tool MUST-implement notification.
+    Testing Tool -> GUI
+
+    Used to indicate to the GUI that testing is ready to start the test suite
+    """
+    routing_key = 'control.session'
+
+    _msg_data_template = {
+        '_type': 'testingtool.ready',
+        "message": "Testing tool ready to start test suite."
+    }
+
+class MsgTestingToolComponentReady(Message):
+    """
+    Testing Tools'internal call.
+    Component x -> Test Coordinator
+    Testing Tool SHOULD implement (design recommendation)
+    """
+    routing_key = 'control.session'
+
+    _msg_data_template = {
+        '_type': 'testingtool.component.ready',
+        'component': 'SomeComponent',
+        "message": "Component ready to start test suite."
+    }
+
+class MsgTestingToolComponentShutdown(Message):
+    """
+    Testing Tools'internal call.
+    Component x -> Test Coordinator
+    Testing Tool SHOULD implement (design recommendation)
+    """
+    routing_key = 'control.session'
+
+    _msg_data_template = {
+        '_type': 'testingtool.component.shutdown',
+        'component': 'SomeComponent',
+        "message": "Component is shutting down. Bye!"
     }
 
 
@@ -1133,7 +1175,10 @@ message_types_dict = {
     "dissection.dissectcapture": MsgDissectionDissectCapture,  # Testing Tool Internal
     "dissection.dissectcapture.reply": MsgDissectionDissectCaptureReply,  # Testing Tool Internal
     "dissection.autotriggered": MsgDissectionAutoDissect, # TestingTool -> GUI
-    "session.terminate": MsgSessionTerminate, # GUI (or Orchestrator?) -> TestingTool
+    "testingtool.component.ready": MsgTestingToolComponentReady, # Testing Tool internal
+    "testingtool.component.shutdown": MsgTestingToolComponentShutdown, # Testing Tool internal
+    "testingtool.ready": MsgTestingToolReady, # GUI Testing Tool -> GUI
+    "testingtool.terminate": MsgTestingToolTerminate, # GUI (or Orchestrator?) -> TestingTool
     # PRIVACY TESTING TOOL -> Reference: Luca Lamorte (UL)
     "privacy.analyze": MsgPrivacyAnalyze, # TestingTool internal
     "privacy.getstatus":  MsgPrivacyGetStatus, # GUI -> TestingTool
@@ -1141,7 +1186,6 @@ message_types_dict = {
     "privacy.verdict":  MsgPrivacyVerdict, # TestingTool -> GUI,
     "privacy.configuration.get":  MsgPrivacyGetConfiguration, # TestingTool -> GUI,
     "privacy.configuration.set":  MsgPrivacySetConfiguration, # GUI -> TestingTool,
-    # TODO add "testingtool.ready"
 }
 
 if __name__ == '__main__':
