@@ -1102,12 +1102,12 @@ class Coordinator:
 
         self.current_tc.change_state('executing')
 
-        FINISH this!
+        # send the configuration events to each node
         self.notify_current_configuration()
-        config_id = self.current_tc.configuration_id
-        config = self.tc_configs[config_id]
 
         # start sniffing each link
+        # TODO this is still not handled by sniffer, for the time being sniffer only supports sniffing the tun interface
+        config = self.tc_configs[self.current_tc.configuration_id]
         for link in config.topology:
             filter_proto = link['capture_filter']
             link_id = link['link_id']
