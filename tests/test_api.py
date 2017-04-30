@@ -4,6 +4,7 @@
 from coap_testing_tool.utils.event_bus_messages import *
 from tests.database_pcap_base64 import *
 from urllib.parse import urlparse
+import logging
 
 import unittest
 import pika
