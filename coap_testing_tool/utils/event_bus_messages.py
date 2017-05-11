@@ -68,7 +68,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.19'
+API_VERSION = '0.1.20'
 
 
 # TODO use metaclasses instead?
@@ -144,10 +144,10 @@ class Message:
     def __str__(self):
         str = ' - ' * 20 + '\n'
         str += 'Message routing key: %s' % self.routing_key
-        str += '\n'
-        str += 'Message properties: %s' % json.dumps(self.get_properties())
-        str += '\n'
-        str += 'Message body: %s' % self.to_json()
+        str += '\n -  -  - \n'
+        str += 'Message properties: %s' % json.dumps(self.get_properties(),indent=4,)
+        str += '\n -  -  - \n'
+        str += 'Message body: %s' % json.dumps(self.to_dict(),indent=4,)
         str += '\n' + ' - ' * 20
         return str
 
@@ -876,7 +876,14 @@ class MsgSniffingGetCaptureLastReply(MsgReply):
 class MsgInteropTestCaseAnalyze(Message):
     """
     Testing Tools'internal call.
+
+    Method to launch an analysis from a pcap file or a token if the pcap file has already been provided.
+    # TODO token support
+
+    The method need a token or a pcap_file but doesn't allow someone to provide both.
+
     Coordinator -> Analyzer
+
     Testing Tool SHOULD implement (design recommendation)
     """
 
@@ -1056,13 +1063,21 @@ class MsgPrivacyAnalyze(Message):
     routing_key = 'control.privacy.service'
 
     # TODO: This message should be update with a valuable privacy example
-    PCAP_COAP_GET_OVER_TUN_INTERFACE_base64 = "1MOyoQIABAAAAAAAAAAAAMgAAABlAAAAqgl9WK8aBgA7AAAAOwAAAGADPxUAExFAu7s" \
-                                              "AAAAAAAAAAAAAAAAAAbu7AAAAAAAAAAAAAAAAAALXvBYzABNZUEABcGO0dGVzdMECqg" \
-                                              "l9WMcaBgCQAAAAkAAAAGAAAAAAaDr//oAAAAAAAAAAAAAAAAAAA7u7AAAAAAAAAAAAA" \
-                                              "AAAAAGJAAcTAAAAALu7AAAAAAAAAAAAAAAAAAK7uwAAAAAAAAAAAAAAAAACBAgAAAAA" \
-                                              "AABgAz8VABMRQLu7AAAAAAAAAAAAAAAAAAG7uwAAAAAAAAAAAAAAAAAC17wWMwATWVB" \
-                                              "AAXBjtHRlc6oJfVjSGgYAOwAAADsAAABgAz8VABMRP7u7AAAAAAAAAAAAAAAAAAG7uw" \
-                                              "AAAAAAAAAAAAAAAAAC17wWMwATWVBAAXBjtHRlc3TBAg=="
+    # PCAP_COAP_GET_OVER_TUN_INTERFACE_base64 = "1MOyoQIABAAAAAAAAAAAAMgAAABlAAAAqgl9WK8aBgA7AAAAOwAAAGADPxUAExFAu7s" \
+    #                                           "AAAAAAAAAAAAAAAAAAbu7AAAAAAAAAAAAAAAAAALXvBYzABNZUEABcGO0dGVzdMECqg" \
+    #                                           "l9WMcaBgCQAAAAkAAAAGAAAAAAaDr//oAAAAAAAAAAAAAAAAAAA7u7AAAAAAAAAAAAA" \
+    #                                           "AAAAAGJAAcTAAAAALu7AAAAAAAAAAAAAAAAAAK7uwAAAAAAAAAAAAAAAAACBAgAAAAA" \
+    #                                           "AABgAz8VABMRQLu7AAAAAAAAAAAAAAAAAAG7uwAAAAAAAAAAAAAAAAAC17wWMwATWVB" \
+    #                                           "AAXBjtHRlc6oJfVjSGgYAOwAAADsAAABgAz8VABMRP7u7AAAAAAAAAAAAAAAAAAG7uw" \
+    #                                           "AAAAAAAAAAAAAAAAAC17wWMwATWVBAAXBjtHRlc3TBAg=="
+
+    PCAP_COAP_GET_OVER_TUN_INTERFACE_base64 = "Cg0NCpgAAABNPCsaAQAAAP//////////AwAuAE1hYyBPUyBYIDEwLjEyLjQsIGJ1aWxk" \
+                                              "IDE2RTE5NSAoRGFyd2luIDE2LjUuMCkAAAQAPQBEdW1wY2FwIChXaXJlc2hhcmspIDIu" \
+                                              "Mi4wICh2Mi4yLjAtMC1nNTM2OGM1MCBmcm9tIG1hc3Rlci0yLjIpAAAAAAAAAJgAAAAB" \
+                                              "AAAAXAAAAAAAAAAAAAQAAgAEAHR1bjAJAAEABgAAAAwALgBNYWMgT1MgWCAxMC4xMi40" \
+                                              "LCBidWlsZCAxNkUxOTUgKERhcndpbiAxNi41LjApAAAAAAAAXAAAAAUAAABsAAAAAAAA" \
+                                              "AIdOBQCsif6eAQAcAENvdW50ZXJzIHByb3ZpZGVkIGJ5IGR1bXBjYXACAAgAh04FAN2Z" \
+                                              "ip4DAAgAh04FAKGJ/p4EAAgAAAAAAAAAAAAFAAgAAAAAAAAAAAAAAAAAbAAAAA=="
 
     _msg_data_template = {
         "_type": "privacy.analyze",
@@ -1071,6 +1086,31 @@ class MsgPrivacyAnalyze(Message):
         "filename": "TD_PRIVACY_DEMO_01.pcap",
     }
 
+
+class MsgPrivacyAnalyzeReply(MsgReply):
+    """
+            Testing Tool's MUST-implement.
+            Response of Analyze request from GUI
+    """
+
+    _privacy_empty_report = {'type': 'Anomalies Report',
+                             'protocols': ['coap'],
+                             'conversation': [],
+                             'status': 'none',
+                             'testing_tool': 'Privacy Testing Tool',
+                             'byte_exchanged': 0,
+                             'timestamp': 1493798811.53124,
+                             'is_final': True,
+                             'packets': {},
+                             'version': '0.0.1'}
+
+
+    _msg_data_template = {
+        '_type': 'privacy.analyze.reply',
+        'ok': True,
+        'verdict': _privacy_empty_report,
+        'testcase_id': 'TBD',
+    }
 
 class MsgPrivacyGetConfiguration(Message):
     """
@@ -1083,6 +1123,19 @@ class MsgPrivacyGetConfiguration(Message):
         "_type": "privacy.configuration.get",
     }
 
+class MsgPrivacyGetConfigurationReply(MsgReply):
+    """
+           Read Privacy configuration.
+           GUI MUST display this info during setup
+    """
+    routing_key = 'control.privacy.service.reply'
+
+    _msg_data_template = {
+        "_type": "privacy.configuration.get.reply",
+        "configuration" : {},
+        "ok": True,
+    }
+
 
 class MsgPrivacySetConfiguration(Message):
     """
@@ -1091,11 +1144,24 @@ class MsgPrivacySetConfiguration(Message):
     """
     routing_key = 'control.privacy.service'
 
-    CFG_EXAMPLE = {}
+    CFG_EXAMPLE = dict()
 
     _msg_data_template = {
         "_type": "privacy.configuration.set",
         "configuration": CFG_EXAMPLE,
+    }
+
+
+class MsgPrivacySetConfigurationReply(MsgReply):
+    """
+        Write Privacy configuration.
+        GUI MUST display this info during setup
+    """
+    routing_key = 'control.privacy.service.reply'
+
+    _msg_data_template = {
+        "_type": "privacy.configuration.set.reply",
+        "ok": True,
     }
 
 
@@ -1114,7 +1180,7 @@ class MsgPrivacyGetStatus(Message):
     }
 
 
-class MsgPrivacyGetStatusReply(Message):
+class MsgPrivacyGetStatusReply(MsgReply):
     """
     Testing Tool's MUST-implement.
     GUI -> Testing Tool
@@ -1124,7 +1190,7 @@ class MsgPrivacyGetStatusReply(Message):
     """
 
     REPORT_EXAMPLE = dict()
-    routing_key = 'control.privacy.service'
+    routing_key = 'control.privacy.service.reply'
 
     _msg_data_template = {
         "_type": "privacy.getstatus.reply",
@@ -1134,16 +1200,19 @@ class MsgPrivacyGetStatusReply(Message):
 
     }
 
+class MsgPrivacyIssue(Message):
+    """
+        Testing Tool's MUST-implement.
+        Testing tools -> GUI
+        GUI MUST display this info during execution:
+         - privacy
 
-class MsgPrivacyVerdict(Message):
-    routing_key = 'control.privacy.service'
-
-    REPORT_EXAMPLE = dict()
+        """
+    routing_key = 'control.privacy'
 
     _msg_data_template = {
-        "_type": "privacy.verdict.reply",
-        "verdict": REPORT_EXAMPLE,
-
+        "_type": "privacy.issue",
+        "verdict":  json.dumps(MsgPrivacyAnalyzeReply._privacy_empty_report),
     }
 
 
@@ -1184,12 +1253,15 @@ message_types_dict = {
     "testingtool.ready": MsgTestingToolReady,  # GUI Testing Tool -> GUI
     "testingtool.terminate": MsgTestingToolTerminate,  # GUI (or Orchestrator?) -> TestingTool
     # PRIVACY TESTING TOOL -> Reference: Luca Lamorte (UL)
-    "privacy.analyze": MsgPrivacyAnalyze,  # TestingTool internal
-    "privacy.getstatus": MsgPrivacyGetStatus,  # GUI -> TestingTool
-    "privacy.getstatus.reply": MsgPrivacyGetStatusReply,  # GUI -> TestingTool (reply)
-    "privacy.verdict": MsgPrivacyVerdict,  # TestingTool -> GUI,
-    "privacy.configuration.get": MsgPrivacyGetConfiguration,  # TestingTool -> GUI,
-    "privacy.configuration.set": MsgPrivacySetConfiguration,  # GUI -> TestingTool,
+    "privacy.analyze": MsgPrivacyAnalyze, # TestingTool internal
+    "privacy.analyze.reply": MsgPrivacyAnalyzeReply, # TestingTool internal (reply)
+    "privacy.getstatus":  MsgPrivacyGetStatus, # GUI -> TestingTool
+    "privacy.getstatus.reply":  MsgPrivacyGetStatusReply, # GUI -> TestingTool (reply)
+    "privacy.issue":  MsgPrivacyIssue, # TestingTool -> GUI,
+    "privacy.configuration.get":  MsgPrivacyGetConfiguration, # TestingTool -> GUI,
+    "privacy.configuration.get.reply":  MsgPrivacyGetConfigurationReply, # TestingTool -> GUI (reply),
+    "privacy.configuration.set":  MsgPrivacySetConfiguration, # GUI -> TestingTool,
+    "privacy.configuration.set.reply":  MsgPrivacySetConfigurationReply, # GUI -> TestingTool (reply),
 }
 
 if __name__ == '__main__':
