@@ -385,10 +385,11 @@ class TestCase:
 
         d = OrderedDict()
         d['testcase_id'] = self.id
+        d['testcase_ref'] = self.uri
 
         if verbose:
-            d['testcase_ref'] = self.uri
             d['objective'] = self.objective
+            d['pre_conditions'] = self.pre_conditions
             d['state'] = self.state
 
         return d
@@ -604,24 +605,27 @@ class Coordinator:
 
     def notify_step_to_execute(self):
         step_info_dict = self.current_tc.current_step.to_dict(verbose=True)
+        tc_info_dict = self.current_tc.to_dict(verbose=False)
         event = MsgStepExecute(
                 message='Next test step to be executed is %s' % self.current_tc.current_step.id,
-                **step_info_dict
+                **step_info_dict,
+                **tc_info_dict,
+
         )
         publish_message(self.channel, event)
 
     def notify_testcase_finished(self):
-        tc_info_dict = self.current_tc.to_dict(verbose=True)
+        tc_info_dict = self.current_tc.to_dict(verbose=False)
         event = MsgTestCaseFinished(
-                testcase_id = self.current_tc.id,
-                message='Testcase %s finished' % self.current_tc.id,
+                message='Testcase %s finished' % tc_info_dict['testcase_id'],
+                **tc_info_dict
         )
         publish_message(self.channel, event)
 
     def notify_testcase_verdict(self):
         event = MsgTestCaseVerdict(
                 **self.current_tc.report,
-                **self.current_tc.to_dict(verbose=True)
+                **self.current_tc.to_dict(verbose=False)
         )
         publish_message(self.channel, event)
 
@@ -669,14 +673,22 @@ class Coordinator:
         with open(json_file, 'w') as f:
             f.write(event.to_json())
 
-    def notify_current_configuration(self, config_id, node, message):
-        # TODO get configuration id , node and message from self, and not as param
-        event = MsgTestCaseConfiguration(
-                configuration_id=config_id,
-                node=node,
-                message=message
-        )
-        publish_message(self.channel, event)
+    def notify_current_configuration(self):
+        tc_info_dict = self.current_tc.to_dict(verbose=False)
+        config_id = self.current_tc.configuration_id
+        config = self.tc_configs[config_id]  # Configuration object
+
+        for desc in config.description:
+            message = desc['message']
+            node = desc['node']
+
+            event = MsgTestCaseConfiguration(
+                    configuration_id=config_id,
+                    node=node,
+                    message=message,
+                    **tc_info_dict,
+            )
+            publish_message(self.channel, event)
 
     def call_service_sniffer_start(self, **kwargs):
 
@@ -1033,13 +1045,11 @@ class Coordinator:
     def get_testcases_list(self):
         return list(self.teds.keys())
 
-    # def select_testcases(self, tc_id):
-
     def select_testcase(self, params):
         """
         this is more like a jump to function rather than select
         :param params: test case id
-        :return: dict repr of the selected testcase if found
+        :return: current testcase object
         :raises: CoordinatorError when test case not found
         """
         tc_id = params
@@ -1048,7 +1058,7 @@ class Coordinator:
             # in case is was already executed once
             self.current_tc.reinit()
             logger.debug("Test case selected to be executed: %s" % self.current_tc.id)
-            return self.current_tc.to_dict(verbose=True)
+            return self.current_tc
         else:
             logger.error("%s not found in : %s " % (tc_id, self.teds))
             raise CoordinatorError('Testcase not found')
@@ -1062,7 +1072,6 @@ class Coordinator:
             # resets all previously executed TC
             for tc in self.teds.values():
                 tc.reinit()
-
             # init testcase if None
             if self.current_tc is None:
                 # so that we start back from the first
@@ -1093,19 +1102,12 @@ class Coordinator:
 
         self.current_tc.change_state('executing')
 
-        # # # CONFIGURATION PHASE # # #
-        config_id = self.current_tc.configuration_id
-        config = self.tc_configs[config_id]
-
-        # notify each IUT/user about the current config
-        # TODO do we need a confirmation for this?
-
-        for desc in config.description:
-            message = desc['message']
-            node = desc['node']
-            self.notify_current_configuration(config_id, node, message)
+        # send the configuration events to each node
+        self.notify_current_configuration()
 
         # start sniffing each link
+        # TODO this is still not handled by sniffer, for the time being sniffer only supports sniffing the tun interface
+        config = self.tc_configs[self.current_tc.configuration_id]
         for link in config.topology:
             filter_proto = link['capture_filter']
             link_id = link['link_id']

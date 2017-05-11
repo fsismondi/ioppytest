@@ -10,7 +10,7 @@ python3 -m  pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
 
 class PacketRouterTestCase(unittest.TestCase):
 
-    def test_yaml_testcase_sintax(self):
+    def test_yaml_testcase_syntax(self):
 
         imported_tcs = import_teds(TD_COAP)
         for tc in imported_tcs:
@@ -29,7 +29,7 @@ class PacketRouterTestCase(unittest.TestCase):
                 assert step.type
                 assert step.description
 
-    def test_yaml_testcase_configuration_sintax(self):
+    def test_yaml_testcase_configuration_syntax(self):
         imported_configs = import_teds(TD_COAP_CFG)
         for tc_config in imported_configs:
             print(tc_config)
@@ -43,4 +43,4 @@ class PacketRouterTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     c = PacketRouterTestCase()
-    c.test_yaml_testcase_sintax()
+    c.test_yaml_testcase_syntax()
