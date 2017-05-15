@@ -70,12 +70,16 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         }
       }
 
-      stage("API smoke tests"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
+      stage("Functional API smoke tests"){
+        gitlabCommitStatus("Functional API smoke tests"){
             sh '''
             echo $AMQP_URL
+            sudo -E supervisord -c supervisor.conf
+            sleep 15
             pwd
             python3 -m pytest tests/test_api.py -vv
+            sleep 5
+            sudo -E supervisorctl -c supervisor.conf stop all
             '''
         }
       }

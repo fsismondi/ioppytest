@@ -1,8 +1,8 @@
 {
   "_type": "testsuite.manifest",
   "testing_tool":"CoAP Testing Tool",
-  "version":"0.0.4",
-  "tests_type": ["interoperability","conformance"],
+  "version":"0.0.5",
+  "test_types": ["interoperability","conformance"],
   "protocols_under_test": ["CoAP", "CoAP_CORE", "CoAP_OBS"],
   "protocols_info": [
     {
@@ -43,7 +43,7 @@
     {
       "field_name": "Testing tool version",
       "type": "selection",
-      "selection_values":["0.0.3","0.0.2","0.0.1"],
+      "selection_values":["0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
       "mandatory": false
     },
     {
@@ -107,7 +107,7 @@
     {
       "field_name": "Testing tool version",
       "type": "selection",
-      "selection_values":["0.0.3","0.0.2","0.0.1"],
+      "selection_values":["0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
       "mandatory": false
     },
     {
