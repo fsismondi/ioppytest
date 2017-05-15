@@ -7,11 +7,13 @@ import logging
 import subprocess
 import datetime
 import os
+import sys
 import signal
 from coap_testing_tool.utils.event_bus_messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 
+logger = logging.getLogger(__name__)
 
 COMPONENT_ID = 'automated_iut'
 
@@ -30,6 +32,24 @@ stimuli_cmd_dict = {
 'TD_COAP_CORE_01_v01_step_02' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
 }
 
+
+def signal_int_handler(signal, frame):
+    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+    channel = connection.channel()
+
+    publish_message(
+            channel,
+            MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+    )
+
+    logger.info('got SIGINT. Bye bye!')
+
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_int_handler)
+
+
 class AutomatedIUT(threading.Thread):
 
     def __init__(self, conn):
@@ -47,25 +67,14 @@ class AutomatedIUT(threading.Thread):
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=services_queue_name,
                            routing_key='control.testcoordination')
-        # Hello world message
-        self.channel.basic_publish(
-                routing_key='control.%s.info' % COMPONENT_ID,
-                exchange=AMQP_EXCHANGE,
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                ),
-                body=json.dumps(
-                    {
-                        '_type': '%s.info' %(COMPONENT_ID),
-                        'value': '%s is up!'%(COMPONENT_ID),
-                    }
-                ),
-        )
+
+        publish_message(self.channel, MsgTestingToolComponentReady(component=COMPONENT_ID))
 
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
     def stop(self):
+
         self.channel.stop_consuming()
 
     def on_request(self, ch, method, props, body):
@@ -136,10 +145,10 @@ if __name__ == '__main__':
 
 
     # start amqp listener thread
-    amqp_listener = AutomatedIUT(connection)
-    amqp_listener.start()
+    iut = AutomatedIUT(connection)
+    iut.start()
 
-    amqp_listener.join()
+    iut.join()
     connection.close()
 
 
