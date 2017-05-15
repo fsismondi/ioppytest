@@ -78,6 +78,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sleep 15
             pwd
             python3 -m pytest tests/test_api.py -vv
+            sleep 5
+            sudo -E supervisorctl -c supervisor.conf stop all
             '''
         }
       }

@@ -4,6 +4,7 @@
 from coap_testing_tool.utils.event_bus_messages import *
 from tests.database_pcap_base64 import *
 from urllib.parse import urlparse
+import logging
 
 import unittest
 import pika
@@ -155,12 +156,12 @@ class ApiTests(unittest.TestCase):
                            routing_key='log.error.*')
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=errors_queue_name,
-                           routing_key='session.error')
+                           routing_key='control.session.error')
 
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=errors_queue_name,
-                           routing_key=MsgSessionTerminate.routing_key)
+                           routing_key=MsgTestingToolTerminate.routing_key)
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_bus_error, queue=errors_queue_name)
 
@@ -179,7 +180,7 @@ class ApiTests(unittest.TestCase):
         # prepare the message generator
         messages = []  # list of messages to send
         messages += user_sequence
-        messages.append(MsgSessionTerminate())  # message that triggers stop_generator_signal
+        messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
@@ -215,7 +216,7 @@ class ApiTests(unittest.TestCase):
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-            if msg_type == 'session.terminate':
+            if msg_type == 'testingtool.terminate':
                 ch.stop_consuming()
                 return
 
@@ -246,7 +247,7 @@ class ApiTests(unittest.TestCase):
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=services_queue_name,
-                           routing_key=MsgSessionTerminate.routing_key)
+                           routing_key=MsgTestingToolTerminate.routing_key)
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
 
@@ -254,7 +255,7 @@ class ApiTests(unittest.TestCase):
         # prepare the message generator
         messages = []  # list of messages to send
         messages += service_api_calls
-        messages.append(MsgSessionTerminate())  # message that triggers stop_generator_signal
+        messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
@@ -326,7 +327,7 @@ def check_for_bus_error(ch, method, props, body):
 
     try:
         m = Message.from_json(body)
-        if isinstance(m, MsgSessionTerminate):
+        if isinstance(m, MsgTestingToolTerminate):
             ch.stop_consuming()
             return
     except:
@@ -387,7 +388,7 @@ def validate_message(ch, method, props, body):
     if req_body_dict['_type'] in list_of_messages_to_check:
         m = Message.from_json(body)
         try:
-            if isinstance(m, MsgSessionTerminate):
+            if isinstance(m, MsgTestingToolTerminate):
                 ch.stop_consuming()
                 stop_generator()
             else:
