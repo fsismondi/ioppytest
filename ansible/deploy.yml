@@ -17,6 +17,10 @@
     - python3-pip
     - python3-setuptools
     - tcpdump
+    - python
+    - python-dev
+    - pip
+    - python-setuptools
 
 - name: Install python requirements for coordinator
   tags: coap_test_suite
