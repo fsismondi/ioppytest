@@ -19,7 +19,7 @@
     - tcpdump
     - python
     - python-dev
-    - pip
+    - python-pip
     - python-setuptools
 
 - name: Install python requirements for coordinator
@@ -69,6 +69,6 @@
   become: True
   command: mvn package
   args:
-    chdir: "{{ testing_tool_dir }}/coap_testing_tool/automated_implementations/coap_server_californium"
-    creates: "{{ testing_tool_dir }}/coap_testing_tool/automated_implementations/coap_server_californium/target"
+    chdir: "{{ testing_tool_dir }}/automated_IUTs/coap_server_californium"
+    creates: "{{ testing_tool_dir }}/automated_IUTs/coap_server_californium/target"
 
