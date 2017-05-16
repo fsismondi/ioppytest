@@ -97,6 +97,8 @@ then:
 docker build -t finterop-coap . --no-cache
 ```
 
+Go to FAQ, for known errors.
+
 Finally, **run** it, from inside coap_testing_tool run:
 ```
 docker run -it --env AMQP_EXCHANGE='default' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
@@ -159,3 +161,15 @@ Run the CLI & Agent and you are ready to launch CoAP tests from your PC!
 **for Opt 3 (remote install)**:
 
 TDB
+
+FAQ
+---
+
+- I have my own CoAP implementation, how can I add it as an
+automated-IUT into CoAP Testing Tool
+
+    **TBD**
+
+- Docker build returns a "cannot fetch package" or a "cannot resolve .."
+
+    http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
