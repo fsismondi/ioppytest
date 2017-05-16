@@ -24,7 +24,7 @@ STIMULI_HANDLER_TOUT = 10
 
 # IUT_CMD = [
 #     'python',
-#     'coap_testing_tool/automated_implementations/coap_client_coapthon/CoAPthon/coapclient.py'
+#     'automated_IUTs/coap_client_coapthon/CoAPthon/coapclient.py'
 # ]
 #
 #
@@ -36,7 +36,7 @@ STIMULI_HANDLER_TOUT = 10
 
 IUT_CMD = [
     'python',
-    'coap_testing_tool/automated_implementations/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
+    'automated_IUTs/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
     '-t',
 ]
 
