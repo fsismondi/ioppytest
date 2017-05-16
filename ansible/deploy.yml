@@ -19,7 +19,7 @@
     - tcpdump
     - python
     - python-dev
-    - pip
+    - python-pip
     - python-setuptools
 
 - name: Install python requirements for coordinator
