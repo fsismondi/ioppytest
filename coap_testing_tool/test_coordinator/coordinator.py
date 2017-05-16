@@ -1134,11 +1134,11 @@ class Coordinator:
         assert self.current_tc.current_step.state == 'executing'
         assert verify_response is not None
 
-        if verify_response == True:
+        if verify_response is True:
             self.current_tc.current_step.set_result("pass",
                                                     "VERIFY step: User informed that the information was displayed "
                                                     "correclty on his/her IUT")
-        elif verify_response == False:
+        elif verify_response is False:
             self.current_tc.current_step.set_result("fail",
                                                     "VERIFY step: User informed that the information was not displayed"
                                                     " correclty on his/her IUT")
