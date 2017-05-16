@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
+"""
+Example of python code for implementing an automated IUT.
+This is basically a component listening to the AMQP events, and wrapping the IUT in order to execute the right commands.
+"""
 
 import pika
 import threading
 import logging
 import subprocess
-import datetime
-import os
 import sys
 import signal
 from coap_testing_tool.utils.event_bus_messages import *
@@ -20,16 +22,29 @@ COMPONENT_ID = 'automated_iut'
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
 
+# IUT_CMD = [
+#     'python',
+#     'coap_testing_tool/automated_implementations/coap_client_coapthon/CoAPthon/coapclient.py'
+# ]
+#
+#
+# # mapping message's stimuli id -> CoAPthon (coap client) commands
+# stimuli_cmd_dict = {
+# 'TD_COAP_CORE_01_v01_step_01' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
+# 'TD_COAP_CORE_01_v01_step_02' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
+# }
+
 IUT_CMD = [
     'python',
-    'coap_testing_tool/automated_implementations/coap_client_coapthon/CoAPthon/coapclient.py'
+    'coap_testing_tool/automated_implementations/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
+    '-t',
 ]
-
 
 # mapping message's stimuli id -> CoAPthon (coap client) commands
 stimuli_cmd_dict = {
-'TD_COAP_CORE_01_v01_step_01' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
-'TD_COAP_CORE_01_v01_step_02' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
+    'TD_COAP_CORE_01_v01_step_01': IUT_CMD + ['test_td_coap_core_01'],
+    'TD_COAP_CORE_02_v01_step_01': IUT_CMD + ['test_td_coap_core_02'],
+    'TD_COAP_CORE_03_v01_step_01': IUT_CMD + ['test_td_coap_core_03'],
 }
 
 
@@ -46,12 +61,10 @@ def signal_int_handler(signal, frame):
 
     sys.exit(0)
 
-
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
 class AutomatedIUT(threading.Thread):
-
     def __init__(self, conn):
         threading.Thread.__init__(self)
         # queues & default exchange declaration
@@ -65,8 +78,8 @@ class AutomatedIUT(threading.Thread):
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                           queue=services_queue_name,
-                           routing_key='control.testcoordination')
+                                queue=services_queue_name,
+                                routing_key='control.testcoordination')
 
         publish_message(self.channel, MsgTestingToolComponentReady(component=COMPONENT_ID))
 
@@ -78,7 +91,6 @@ class AutomatedIUT(threading.Thread):
         self.channel.stop_consuming()
 
     def on_request(self, ch, method, props, body):
-
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -99,26 +111,45 @@ class AutomatedIUT(threading.Thread):
 
         if event is None:
             return
+        elif isinstance(event, MsgStepExecute):
+            if event.node == 'coap_client' and event.step_type == 'stimuli' and event.step_id in stimuli_cmd_dict:
+                self._execute_stimuli(event.step_id, stimuli_cmd_dict[event.step_id])
+            elif event.node == 'coap_client' and event.step_type == 'verify':
+                self._execute_verify(event.step_id)
+            else:
+                logging.info('Event received and ignored: %s' % event.to_json())
+        elif isinstance(event, MsgTestSuiteReport):
+            logging.info('Test suite finished, final report: %s' % event.to_json())
+            self._exit
+        else:
+            logging.info('Event received and ignored: %s' % event._type)
 
-        elif isinstance(event,MsgStepExecute):
-            if event.step_id in stimuli_cmd_dict:
-                self._execute_stimuli( event.step_id , stimuli_cmd_dict[event.step_id] )
+    def _exit(self):
+        # TODO do stuff
+        time.sleep(2)
+        self.connection.close()
+        sys.exit(0)
 
+    def _execute_verify(self, verify_step_id, ):
+        logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
+        publish_message(self.channel, MsgVerifyResponse(verify_response=True))
 
     def _execute_stimuli(self, stimuli_step_id, cmd):
-        logging.info('spawning process with : %s' %cmd)
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        proc.wait(timeout = STIMULI_HANDLER_TOUT)
-        output=''
-        while proc.poll() is None:
-            output += str(proc.stdout.readline())
-        output += str(proc.stdout.read())
-        logging.info('%s executed' % stimuli_step_id)
-        logging.info('process stdout: %s' % output)
+        try:
+            logging.info('spawning process with : %s' % cmd)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            proc.wait(timeout=STIMULI_HANDLER_TOUT)
+            output = ''
+            while proc.poll() is None:
+                output += str(proc.stdout.readline())
+            output += str(proc.stdout.read())
+            logging.info('%s executed' % stimuli_step_id)
+            logging.info('process stdout: %s' % output)
+
+        except subprocess.TimeoutExpired as tout:
+            logging.warning('Process timeout. info: %s' % str(tout))
 
         publish_message(self.channel, MsgStimuliExecuted())
-
-
 
     def run(self):
         print("Starting thread listening on the event bus")
@@ -127,7 +158,6 @@ class AutomatedIUT(threading.Thread):
 
 
 if __name__ == '__main__':
-
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     # lets create connection
@@ -141,16 +171,7 @@ if __name__ == '__main__':
                                           durable=True,
                                           )
 
-
-
-
-    # start amqp listener thread
     iut = AutomatedIUT(connection)
     iut.start()
-
     iut.join()
     connection.close()
-
-
-    # tests:
-    #amqp_listener._handle_TD_COAP_CORE_01_stimuli()
