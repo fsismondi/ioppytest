@@ -235,8 +235,9 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "echo $AUTOMATED_IUT"
                 sh "echo cloning.."
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git coap_tt_${env.BUILD_ID}"
+                sh "cd coap_tt_${env.BUILD_ID}"
                 sh "echo buiding.."
-                sh "sudo docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile coap_tt_${env.BUILD_ID}"
+                sh "sudo docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
                 sh "sudo docker images"
             }
         }
