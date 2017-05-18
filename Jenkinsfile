@@ -87,8 +87,49 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 }
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
+if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
     node('sudo'){
+
+        stage("Install Ansible"){
+            sh '''
+            sudo apt-get install --fix-missing -y  python-pip
+            sudo apt-get install --fix-missing -y  ansible
+            '''
+        }
+
+        stage("Build w/ Ansible Playbook"){
+            checkout scm
+            sh "git submodule update --init"
+            sh "git submodule sync --recursive"
+            gitlabCommitStatus("ansible-container") {
+                sh "sudo ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass"
+            }
+        }
+    }
+}
+
+if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
+    node('docker'){
+        stage("Build ansible-containers"){
+            sh "sudo apt-get install -y python-pip"
+            sh "sudo pip install ansible-container"
+            checkout scm
+            sh "git submodule update --init"
+            sh "git submodule sync --recursive"
+            sh "pwd"
+            gitlabCommitStatus("ansible-container") {
+                env.DOCKER_CLIENT_TIMEOUT=3000
+                env.COMPOSE_HTTP_TIMEOUT=3000
+                ansiColor('xterm'){
+                    sh "sudo -E ansible-container --debug build"
+                }
+            }
+        }
+    }
+}
+
+if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
+    node('docker'){
 
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
         env.AMQP_EXCHANGE="default"
@@ -154,50 +195,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
     }
 }
 
-if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
-    node('sudo'){
-
-        stage("Install Ansible"){
-            sh '''
-            sudo apt-get install --fix-missing -y  python-pip
-            sudo apt-get install --fix-missing -y  ansible
-            '''
-        }
-
-        stage("Build w/ Ansible Playbook"){
-            checkout scm
-            sh "git submodule update --init"
-            sh "git submodule sync --recursive"
-            gitlabCommitStatus("ansible-container") {
-                sh "sudo ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass"
-            }
-        }
-    }
-}
-
-if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
-    node('docker'){
-        stage("Build ansible-containers"){
-            sh "sudo apt-get install -y python-pip"
-            sh "sudo pip install ansible-container"
-            checkout scm
-            sh "git submodule update --init"
-            sh "git submodule sync --recursive"
-            sh "pwd"
-            gitlabCommitStatus("ansible-container") {
-                env.DOCKER_CLIENT_TIMEOUT=3000
-                env.COMPOSE_HTTP_TIMEOUT=3000
-                ansiColor('xterm'){
-                    sh "sudo -E ansible-container --debug build"
-                }
-            }
-        }
-    }
-}
-
-
 if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
-    node('sudo'){
+    node('docker'){
 
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_automated_iuts"
         env.AMQP_EXCHANGE="default"
