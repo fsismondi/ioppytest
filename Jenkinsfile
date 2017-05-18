@@ -252,7 +252,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                     sh "echo $AMQP_URL"
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} supervisord --nodaemon --configuration automated_IUTs/${env.AUTOMATED_IUT}/supervisor.conf"
+                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} "
                         }
                     } catch (err) {
                         long timePassed = System.currentTimeMillis() - startTime
