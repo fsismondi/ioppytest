@@ -135,7 +135,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
 
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
         env.AMQP_EXCHANGE="default"
-        env.DIR='${env.BUILD_ID}'
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
@@ -150,9 +149,9 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
 
                 sh "echo $BUILD_ID"
                 sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
+                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git temp_${env.BUILD_ID}"
                 sh "echo buiding.."
-                sh "docker build -t finterop-coap ${env.DIR}"
+                sh "docker build -t finterop-coap temp_${env.BUILD_ID}"
                 sh "docker images"
             }
         }
@@ -189,7 +188,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
         env.AMQP_EXCHANGE="default"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
-        env.DIR='${env.BUILD_ID}'
+
 
         stage("Clone repo and submodules"){
             checkout scm
@@ -205,8 +204,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "echo $BUILD_ID"
                 sh "echo $AUTOMATED_IUT"
                 sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
-                sh "cd ${env.DIR}"
+                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git temp_${env.BUILD_ID}"
+                sh "cd temp_${env.BUILD_ID}"
                 sh "echo buiding.."
                 sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
                 sh "docker images"
@@ -248,8 +247,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "echo $BUILD_ID"
                 sh "echo $AUTOMATED_IUT"
                 sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
-                sh "cd ${env.DIR}"
+                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git temp_${env.BUILD_ID}"
+                sh "cd temp_${env.BUILD_ID}"
                 sh "echo buiding.."
                 sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
                 sh "docker images"
