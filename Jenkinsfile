@@ -189,6 +189,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
         env.AMQP_EXCHANGE="default"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
+        env.TEMP_DIR="temp_${env.BUILD_ID}"
 
 
         stage("Clone repo and submodules"){
