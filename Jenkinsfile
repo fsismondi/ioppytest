@@ -152,8 +152,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
                 sh "echo cloning.."
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
                 sh "echo buiding.."
-                sh "docker build -t finterop-coap ${env.TEMP_DIR}"
-                sh "docker images"
+                sh "sudo -E docker build -t finterop-coap ${env.TEMP_DIR}"
+                sh "sudo -E docker images"
             }
         }
 
@@ -208,8 +208,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
                 sh "cd ${env.TEMP_DIR}"
                 sh "echo buiding.."
-                sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "docker images"
+                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "sudo -E docker images"
             }
         }
 
@@ -251,8 +251,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
                 sh "cd ${env.TEMP_DIR}"
                 sh "echo buiding.."
-                sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "docker images"
+                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "sudo -E docker images"
             }
         }
 
