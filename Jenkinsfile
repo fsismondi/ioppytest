@@ -152,8 +152,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
                 sh "echo cloning.."
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
                 sh "echo buiding.."
-                sh "sudo docker build -t finterop-coap ${env.DIR}"
-                sh "sudo docker images"
+                sh "docker build -t finterop-coap ${env.DIR}"
+                sh "docker images"
             }
         }
 
@@ -198,9 +198,9 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
         }
 
         stage("automated_iut-coap_server-califronium: docker image BUILD"){
-            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image BUILD") {
+            env.AUTOMATED_IUT='coap_server_californium'
 
-                env.AUTOMATED_IUT='coap_server_californium'
+            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image BUILD") {
 
                 sh "echo $BUILD_ID"
                 sh "echo $AUTOMATED_IUT"
@@ -208,8 +208,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
                 sh "cd ${env.DIR}"
                 sh "echo buiding.."
-                sh "sudo docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "sudo docker images"
+                sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "docker images"
             }
         }
 
@@ -251,8 +251,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
                 sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.DIR}"
                 sh "cd ${env.DIR}"
                 sh "echo buiding.."
-                sh "sudo docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "sudo docker images"
+                sh "docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "docker images"
             }
         }
 
