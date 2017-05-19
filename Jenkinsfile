@@ -134,23 +134,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
         env.AMQP_EXCHANGE="default"
 
-        stage ("Install docker"){
-            withEnv(["DEBIAN_FRONTEND=noninteractive"]){
-                sh '''
-                sudo apt-get clean
-                sudo apt-get update
-                sudo apt-get upgrade -y
-                sudo apt-get install --fix-missing -y curl tree netcat
-
-                curl -sSL https://get.docker.com/ | sudo sh
-                sudo service docker start
-                '''
-
-                /* Show deployed code */
-                sh "tree ."
-            }
-        }
-
         stage("Clone repo and submodules"){
             checkout scm
             sh "git submodule update --init"
