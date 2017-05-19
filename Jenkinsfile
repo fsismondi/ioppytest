@@ -137,7 +137,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
         env.AMQP_EXCHANGE="default"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
-        env.TEMP_DIR="temp_${env.BUILD_ID}""
+        env.TEMP_DIR="temp_${env.BUILD_ID}"
 
         stage("Clone repo and submodules"){
             checkout scm
