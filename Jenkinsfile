@@ -203,12 +203,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
 
             gitlabCommitStatus("automated_iut-coap_server-califronium: docker image BUILD") {
 
-                sh "echo $BUILD_ID"
-                sh "echo $AUTOMATED_IUT"
-                sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
-                sh "cd ${env.TEMP_DIR}"
-                sh "echo buiding.."
+                sh "echo buiding $AUTOMATED_IUT"
                 sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
                 sh "sudo -E docker images"
             }
@@ -246,12 +241,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
             gitlabCommitStatus("automated_iut-coap_client-coapthon: docker image BUILD") {
                 env.AUTOMATED_IUT='coap_client_coapthon'
 
-                sh "echo $BUILD_ID"
-                sh "echo $AUTOMATED_IUT"
-                sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
-                sh "cd ${env.TEMP_DIR}"
-                sh "echo buiding.."
+                sh "echo buiding $AUTOMATED_IUT"
                 sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
                 sh "sudo -E docker images"
             }
