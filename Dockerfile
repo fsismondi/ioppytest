@@ -9,15 +9,9 @@ RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN	apt-get -y install tcpdump
 RUN apt-get -y install net-tools
-# for CoAP Server Californium (delete this when we start supporting IUT resources selection)
-RUN apt-get -y install default-jre
 
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
-#RUN echo $LANG
-#ENV LANG=en_US.utf8
-#RUN echo $PATH
-#RUN ls /coap_testing_tool
 WORKDIR /coap_testing_tool
 
 #py2 requirements

@@ -3,6 +3,9 @@ MAINTAINER federico.sismondi@inria.fr
 
 RUN apt-get update -y -qq && apt-get -y -qq install python-dev
 RUN	apt-get -y install python-pip
+RUN apt-get -y -qq install python3-dev
+RUN apt-get -y install python3-setuptools
+RUN	apt-get -y install python3-pip
 RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
 RUN apt-get -y install net-tools
@@ -17,9 +20,8 @@ WORKDIR /coap_testing_tool
 #py2 requirements
 RUN pip install -r coap_testing_tool/agent/requirements.txt
 
-
-#RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
-#USER coap
+#py3 requierements
+RUN pip3 install pika
 
 EXPOSE 5671 5672
 
