@@ -149,7 +149,7 @@ class PacketRouter(threading.Thread):
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
 
         else:
-            logger.error('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+            logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
     def run(self):
