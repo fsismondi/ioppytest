@@ -8,6 +8,7 @@ RUN	apt-get -y install python3-pip
 RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN	apt-get -y install tcpdump
+RUN apt-get -y install net-tools
 # for CoAP Server Californium (delete this when we start supporting IUT resources selection)
 RUN apt-get -y install default-jre
 

@@ -5,6 +5,7 @@ RUN apt-get update -y -qq && apt-get -y -qq install python-dev
 RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
+RUN apt-get -y install net-tools
 
 # requirement for californium
 RUN apt-get -y install default-jre

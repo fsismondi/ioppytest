@@ -9,6 +9,7 @@ RUN	apt-get -y install python3-pip
 RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
+RUN apt-get -y install net-tools
 
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
