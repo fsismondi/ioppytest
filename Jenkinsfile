@@ -137,7 +137,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
         env.AMQP_EXCHANGE="default"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
-        env.TEMP_DIR="temp_${env.BUILD_ID}"
+        env.TT_DOCKER_IMAGE_NAME="testing_tool-coap"
 
         stage("Clone repo and submodules"){
             checkout scm
@@ -148,11 +148,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
         stage("Creating CoAP testing tool docker image from Dockerfile"){
             gitlabCommitStatus("coap testing tool docker image") {
 
-                sh "echo $BUILD_ID"
-                sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git ${env.TEMP_DIR}"
-                sh "echo buiding.."
-                sh "sudo -E docker build -t finterop-coap ${env.TEMP_DIR}"
+                sh "echo buiding coap_testing_tool docker image"
+                sh "sudo -E docker build -t ${env.TT_DOCKER_IMAGE_NAME} ."
                 sh "sudo -E docker images"
             }
         }
@@ -164,7 +161,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
                 sh "echo $AMQP_URL"
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf"
+                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.TT_DOCKER_IMAGE_NAME} "
                     }
                 } catch (err) {
                     long timePassed = System.currentTimeMillis() - startTime
@@ -189,8 +186,6 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
         env.AMQP_EXCHANGE="default"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
-        env.TEMP_DIR="temp_${env.BUILD_ID}"
-
 
         stage("Clone repo and submodules"){
             checkout scm
