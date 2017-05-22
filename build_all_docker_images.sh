@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-"""
+echo """
 docker images naming must follow the following conventions:
 
 resource_type-sub_type-resource_name-version
