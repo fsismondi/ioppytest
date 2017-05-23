@@ -61,8 +61,8 @@ print(json.dumps(
 ))
 
 try:
-    # read config information from manifest file (index.json)
-    with open('index.json') as index_file:
+    # read config information from manifest file (interoperability_manifest.json)
+    with open('interoperability_manifest.json') as index_file:
         AGENT_NAMES = json.load(index_file)['agent_names']
 
 except:
