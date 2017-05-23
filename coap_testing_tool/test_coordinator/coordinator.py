@@ -403,9 +403,18 @@ class TestCase:
     def change_state(self, state):
         assert state in (None, 'skipped', 'executing', 'ready_for_analysis', 'analyzing', 'finished')
         self.state = state
+
+        if state == 'skipped':
+            for step in self.sequence:
+                step.change_state('finished')
+
         logger.info('Testcase %s changed state to %s' % (self.id, state))
 
     def check_all_steps_finished(self):
+        """
+        Check that there are no steps in states: 'None' or 'executing'
+        :return:
+        """
         it = iter(self.sequence)
         step = next(it)
 
@@ -418,14 +427,14 @@ class TestCase:
                 else:
                     step = it.__next__()
         except StopIteration:
-            logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis)")
+            logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis")
             return True
 
-    def generate_final_verdict(self, tat_post_mortem_analysis_report=None):
+    def generate_testcases_verdict(self, tat_post_mortem_analysis_report=None):
         """
         Generates the final verdict of TC and report taking into account the CHECKs and VERIFYs of the testcase
         :return: tuple: (final_verdict, verdict_description, tc_report) ,
-                 where final_verdict in ("None", "error", "inconclusive","pass","fail")
+                 where final_verdict in ("None", "error", "inconclusive", "pass" , "fail")
                  where description is String type
                  where tc report is a list :
                                 [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
@@ -435,6 +444,10 @@ class TestCase:
 
         final_verdict = Verdict()
         tc_report = []
+
+        if self.state == 'skipped':
+            return ('None', 'Testcase: %s was skipped.' % self.id, [])
+
         logger.debug("[VERDICT GENERATION] starting the verdict generation")
         for step in self.sequence:
             # for the verdict we use the info in the checks and verify steps
@@ -783,26 +796,40 @@ class Coordinator:
         event = Message.from_json(body)
         event.update_properties(**props_dict)
 
+        logger.info('Event received: %s' % event._type)
+
         if isinstance(event, MsgTestCaseSkip):
 
-            # if no testcase_id was sent then I skip  the current one
-            try:
-                testcase_skip = event.testcase_id
-            except AttributeError:
-                testcase_skip = self.current_tc.id
-
-            # change tc state to 'skipped'
-            testcase_t = self.get_testcase(testcase_skip)
-
-            if testcase_t is None:
-                error_msg = "Non existent testcase: %s" % testcase_skip
+            if self.current_tc is None:
+                error_msg = "No current testcase. Please provide a testcase_id to skip."
+                # notify all
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
+
+            try:
+                testcase_id_skip = event.testcase_id
+                if testcase_id_skip is None: # if {'testcase_id' : null} was sent then I skip  the current one
+                    testcase_t = self.current_tc
+                else:
+                    testcase_t = self.get_testcase(testcase_id_skip)
+
+            except: # if no testcase_id was sent then I skip  the current one
+                testcase_t = self.current_tc
+
+
+            # change tc state to 'skipped'
+
+            if testcase_t is None:
+                error_msg = "Non existent testcase: %s" % testcase_id_skip
+                self.notify_coordination_error(message=error_msg, error_code=None)
+                return
+
+            logger.info("Skipping testcase: %s" % testcase_t.id)
 
             testcase_t.change_state("skipped")
 
             # if skipped tc is current test case then next tc
-            if self.current_tc is not None and (testcase_skip == self.current_tc.id):
+            if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
                 self.next_testcase()
                 self.notify_testcase_is_ready()
 
@@ -1027,7 +1054,7 @@ class Coordinator:
             else:
                 logger.error('Malformed message')
 
-        logger.info('Event correctly handled: %s' % event._type)
+
 
     ### TRANSITION METHODS for the Coordinator FSM ###
 
@@ -1066,20 +1093,14 @@ class Coordinator:
     def start_test_suite(self):
         """
         :return: test case to start with
-        """
-
-        try:
-            # resets all previously executed TC
-            for tc in self.teds.values():
-                tc.reinit()
-            # init testcase if None
-            if self.current_tc is None:
-                # so that we start back from the first
-                self._ted_it = cycle(self.teds.values())
-                self.next_testcase()
-            return self.current_tc
-        except:
-            raise
+        """  # resets all previously executed TC
+        for tc in self.teds.values():
+            tc.reinit()
+        # init testcase if None
+        if self.current_tc is None:
+            self._ted_it = cycle(self.teds.values()) # so that we start back from the first
+            self.next_testcase()
+        return self.current_tc
 
     def finish_testsuite(self):
         # TODO copy json and PCAPs to results repo
@@ -1270,7 +1291,7 @@ class Coordinator:
                     logger.debug("Processing partical verdict received from TAT: %s" % str(p))
 
                 # generates a general verdict considering other steps partial verdicts besides TAT's
-                gen_verdict, gen_description, report = self.current_tc.generate_final_verdict(partial_verd)
+                gen_verdict, gen_description, report = self.current_tc.generate_testcases_verdict(partial_verd)
 
             else:
                 logger.error('Error ocurred while analysing. Response from TAT: %s' % repr(tat_response))
@@ -1310,16 +1331,16 @@ class Coordinator:
 
     def next_testcase(self):
         """
-        Circularly itererates over the testcases and returns only those which are not yet executed
+        Circularly iterates over the testcases and returns only those which are not yet executed
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
         # _ted_it is acircular iterator
         # testcase can eventually be executed out of order due tu user selection-
         self.current_tc = next(self._ted_it)
-        max_iters = len(self.teds)
 
-        # get next not executed nor skipped testcase
+        # get next not executed nor skipped testcase:
+        max_iters = len(self.teds)
         while self.current_tc.state is not None:
             self.current_tc = self._ted_it.__next__()
             max_iters -= 1
@@ -1331,11 +1352,13 @@ class Coordinator:
 
     def testsuite_report(self):
         """
-
         :return: list of reports
         """
         report = OrderedDict()
         for tc in self.teds.values():
+            if tc.report is None:
+                logger.debug("Generating dummy report for skipped testcase : %s" % tc.id)
+                tc.generate_testcases_verdict(None)
             report[tc.id] = tc.report
         return report
 
