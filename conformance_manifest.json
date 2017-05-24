@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
   "testing_tool":"CoAP Testing Tool",
-  "version":"0.0.5",
+  "version":"0.0.6",
   "test_type": "conformance",
   "protocols_under_test": ["CoAP", "CoAP_CORE", "CoAP_OBS"],
   "protocols_info": [
@@ -34,11 +34,10 @@
         "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)"
       ]
     },
-
     {
       "field_name": "Testing tool version",
       "type": "selection",
-      "values":["0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
+      "values":["0.0.6","0.0.5","0.0.4","0.0.3","0.0.2","0.0.1"],
       "mandatory": false
     },
     {

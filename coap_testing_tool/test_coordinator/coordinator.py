@@ -1093,7 +1093,8 @@ class Coordinator:
     def start_test_suite(self):
         """
         :return: test case to start with
-        """  # resets all previously executed TC
+        """
+        # resets all previously executed TC
         for tc in self.teds.values():
             tc.reinit()
         # init testcase if None
@@ -1109,8 +1110,8 @@ class Coordinator:
 
     def start_testcase(self):
         """
-        Method to start current tc (the previously selected tc). In the case current TC is none then next_testcase()
-        is run.
+        Method to start current tc (the previously selected tc).
+        In the case current TC is none then next_testcase() is run.
 
         :return:
         """
