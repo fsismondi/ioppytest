@@ -26,7 +26,7 @@ class CoordinatorTestCase(unittest.TestCase):
     def test_get_testcases_as_list(self):
         print("LIST OF TEST CASES: ")
         ls = self.coord.get_testcases_list()
-        assert len(ls)==3
+        assert len(ls)==11
         print(ls)
 
     def test_select_testcase(self):
@@ -49,7 +49,7 @@ class CoordinatorTestCase(unittest.TestCase):
 
     def test_stepping_over_the_testcases(self):
         c = self.coord
-        for i in range(4):
+        for i in range(12):
             tc = c.next_testcase()
             if tc:
                 tc.change_state('skipped')
