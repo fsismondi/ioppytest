@@ -22,7 +22,9 @@ RUN pip install -r coap_testing_tool/agent/requirements.txt
 RUN pip3 install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
 RUN pip3 install -r automated_IUTs/coap_client_coapthon/requirements.txt
 
+RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
+
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration automated_IUTs/coap_client_coapthon/supervisor.conf
+CMD supervisord --nodaemon --configuration supervisor.conf
