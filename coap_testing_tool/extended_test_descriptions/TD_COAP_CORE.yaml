@@ -479,7 +479,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_COAP_CORE_11_v01
-uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_09_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_11_v01
 objective: Perform GET transaction containing non-empty Token with a separate response (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
@@ -515,23 +515,148 @@ sequence:
     type : check
     description:
       - 'Server sends response containing:'
-      - - Code=0 (ACK)
+      - - Type=0 (CON)
+        - Code=2.05 (Content)
         - Server-generated Message ID (➔ SMID)
         - Token = CTOK
-        - Content-format option
         - Non-empty Payload
 
   - step_id : TD_COAP_CORE_11_v01_step_05
     type : check
     description:
+      - 'Client sends response containing:'
+      - - Type=2 (ACK)
+        - Code=0
+        - Message ID = SMID
+        - Empty Payload
+
+  - step_id : TD_COAP_CORE_11_v01_step_06
+    type : verify
+    node : coap_client
+    description:
+      - 'Client displays the response'
+
+--- !testcase
+
+testcase_id : TD_COAP_CORE_12_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_12_v01
+objective: Perform GET transaction using empty Token (CON mode)
+configuration: COAP_CFG_01_v01
+references: "[COAP] 2.2, 5.10.1, 5.8.1"
+pre_conditions: Server offers a resource /test with resource content is not empty that handles GEt with an arbitrary payload
+sequence:
+
+  - step_id : TD_COAP_CORE_12_v01_step_01
+    type : stimuli
+    node : coap_client
+    description:
+      - "Client is requested to send a confirmable GET request using zero-length Token to server's resource"
+
+  - step_id : TD_COAP_CORE_12_v01_step_02
+    type : check
+    description:
+      - 'The request sent by the client contains:'
+      - - Type=0 (CON)
+        - Code=1 (GET)
+        - Zero-Length Token ➔ CTOK
+
+  - step_id : TD_COAP_CORE_12_v01_step_03
+    type : check
+    description:
       - 'Server sends response containing:'
       - - Code=2.05 (Content)
-        - Message ID = CMID
-        - Token = CTOK
+        - Message ID = CMID, Token = CTOK
         - Content-format option
         - Non-empty Payload
 
-  - step_id : TD_COAP_CORE_11_v01_step_06
+  - step_id : TD_COAP_CORE_12_v01_step_04
+    type : verify
+    node : coap_client
+    description:
+      - 'Client displays the response'
+
+--- !testcase
+
+testcase_id : TD_COAP_CORE_13_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_13_v01
+objective: Perform GET transaction containing several URI-Path options (CON mode)
+configuration: COAP_CFG_01_v01
+references: "[COAP] 5.4.5, 5.10.2, 6.5"
+pre_conditions: Server offers a /seg1/seg2/seg3 resource with resource content is not empty
+sequence:
+
+  - step_id : TD_COAP_CORE_13_v01_step_01
+    type : stimuli
+    node : coap_client
+    description:
+      - "Client is requested to send a confirmable GET request to server's resource"
+
+  - step_id : TD_COAP_CORE_13_v01_step_02
+    type : check
+    description:
+      - 'The request sent by the client contains:'
+      - - Type=0 (CON)
+        - Code=1 (GET)
+        - Client-generated Message ID (➔ CMID)
+        - Client-generated Token (➔ CTOK)
+      - 'and three options of type Uri-Path, with the values:'
+      - - seg1
+        - seg2
+        - seg3
+
+  - step_id : TD_COAP_CORE_13_v01_step_03
+    type : check
+    description:
+      - 'Server sends response containing:'
+      - - Code=2.05 (Content)
+        - Message ID = CMID, Token = CTOK
+        - Content-format option
+        - Non-empty Payload
+
+  - step_id : TD_COAP_CORE_13_v01_step_04
+    type : verify
+    node : coap_client
+    description:
+      - 'Client displays the response'
+
+--- !testcase
+
+testcase_id : TD_COAP_CORE_14_v01
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_14_v01
+objective: Perform GET transaction containing several URI-Query options (CON mode)
+configuration: COAP_CFG_01_v01
+references: "[COAP] 5.4.5, 5.10.2, 6.5"
+pre_conditions: Server offers a /query resource with resource content is not empty
+sequence:
+
+  - step_id : TD_COAP_CORE_14_v01_step_01
+    type : stimuli
+    node : coap_client
+    description:
+      - "Client is requested to send a confirmable GET request with three Query parameters (e.g. ?first=1&second=2&third=3) to the server's resource"
+
+  - step_id : TD_COAP_CORE_14_v01_step_02
+    type : check
+    description:
+      - 'The request sent by the client contains:'
+      - - Type=0 (CON)
+        - Code=1 (GET)
+        - Client-generated Message ID (➔ CMID)
+        - Client-generated Token (➔ CTOK)
+      - 'and two options of Uri-Query, with values such as:'
+      - - first=1
+        - second=2
+
+  - step_id : TD_COAP_CORE_14_v01_step_03
+    type : check
+    description:
+      - 'Server sends response containing:'
+      - - Code=2.05 (Content)
+        - Message ID = CMID, Token = CTOK
+        - Content-format option
+        - Non-empty Payload
+
+  - step_id : TD_COAP_CORE_14_v01_step_04
     type : verify
     node : coap_client
     description:
