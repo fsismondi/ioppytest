@@ -582,25 +582,23 @@ class Coordinator:
         Returns:
 
         """
-        d = {
-            "_type": "tun.start",
-            "ipv6_host": ":1",
-            "ipv6_prefix": "bbbb"
-        }
+        agent_bootstrap_msg = MsgAgentTunStart()
 
         logger.debug("Let's start the bootstrap the agents")
 
-        for agent, assigned_ip in ((AGENT_NAMES[0], ':1'), (AGENT_NAMES[1], ':2'), (AGENT_TT_ID, ':3')):
-            d["ipv6_host"] = assigned_ip
-            self.channel.basic_publish(
-                    exchange=AMQP_EXCHANGE,
-                    routing_key='control.tun.toAgent.%s' % agent,
-                    mandatory=True,
-                    body=json.dumps(d),
-                    properties=pika.BasicProperties(
-                            content_type='application/json',
-                    )
-            )
+        # TODO get params from index.json
+        for agent, assigned_ip in (
+                (AGENT_NAMES[0], ':1'),
+                (AGENT_NAMES[1], ':2'),
+                (AGENT_TT_ID, ':3')):
+
+            agent_bootstrap_msg.routing_key = 'control.tun.toAgent.%s' % agent
+            agent_bootstrap_msg.ipv6_host = assigned_ip
+
+            if agent == AGENT_TT_ID:
+                agent_bootstrap_msg.ipv6_no_forwarding = True
+
+            publish_message(self.channel, agent_bootstrap_msg)
 
     def notify_testcase_is_ready(self):
         if self.current_tc:
