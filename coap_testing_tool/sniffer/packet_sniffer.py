@@ -83,19 +83,33 @@ def on_request(ch, method, props, body):
                 logger.error(str(fne))
                 return
 
+            except Exception as e:
+                publish_message(
+                        ch,
+                        MsgErrorReply(request, error_message=str(e))
+                )
+                logger.error(str(e))
+                return
+
             logger.info("Encoding PCAP file into base64 ...")
 
-            # do not dump into PCAP_DIR, coordinator puts the PCAPS there
-            with open(TMPDIR + "/%s.pcap" % capture_id, "rb") as file:
-                enc = base64.b64encode(file.read())
+            try:
+                # do not dump into PCAP_DIR, coordinator puts the PCAPS there
+                with open(TMPDIR + "/%s.pcap" % capture_id, "rb") as file:
+                    enc = base64.b64encode(file.read())
 
-            response = MsgSniffingGetCaptureLastReply(
-                    request,
-                    ok=True,
-                    filename='%s.pcap' % capture_id,
-                    value=enc.decode("utf-8")
-
-            )
+                response = MsgSniffingGetCaptureLastReply(
+                        request,
+                        ok=True,
+                        filename='%s.pcap' % capture_id,
+                        value=enc.decode("utf-8")
+                )
+            except Exception as e:
+                err_mess = str(e)
+                m_resp = MsgErrorReply(request, error_message=err_mess)
+                publish_message(ch, m_resp)
+                logger.warning(err_mess)
+                return
 
             logger.info("Response ready, PCAP bytes: \n" + repr(response))
             logger.info("Sending response through AMQP interface ...")
@@ -182,9 +196,9 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed starting the capture')
 
-        # lets keep track of the undergoing capture name
-        last_capture = capture_id
 
+        last_capture = capture_id # keep track of the undergoing capture name
+        time.sleep(1) # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
         publish_message(ch, response)
 
