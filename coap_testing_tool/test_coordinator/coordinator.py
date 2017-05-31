@@ -620,8 +620,7 @@ class Coordinator:
         event = MsgStepExecute(
                 message='Next test step to be executed is %s' % self.current_tc.current_step.id,
                 **step_info_dict,
-                **tc_info_dict,
-
+                **tc_info_dict
         )
         publish_message(self.channel, event)
 
