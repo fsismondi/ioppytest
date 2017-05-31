@@ -615,12 +615,12 @@ class Coordinator:
         publish_message(self.channel, event)
 
     def notify_step_to_execute(self):
-        step_info_dict = self.current_tc.current_step.to_dict(verbose=True)
-        tc_info_dict = self.current_tc.to_dict(verbose=False)
+        msg_fields = {}
+        msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
+        msg_fields.update(self.current_tc.to_dict(verbose=False))
         event = MsgStepExecute(
                 message='Next test step to be executed is %s' % self.current_tc.current_step.id,
-                **step_info_dict,
-                **tc_info_dict
+                **msg_fields
         )
         publish_message(self.channel, event)
 
@@ -633,10 +633,10 @@ class Coordinator:
         publish_message(self.channel, event)
 
     def notify_testcase_verdict(self):
-        event = MsgTestCaseVerdict(
-                **self.current_tc.report,
-                **self.current_tc.to_dict(verbose=False)
-        )
+        msg_fields = {}
+        msg_fields.update(self.current_tc.report)
+        msg_fields.update(self.current_tc.to_dict(verbose=False))
+        event = MsgTestCaseVerdict( **msg_fields)
         publish_message(self.channel, event)
 
         # Overwrite final verdict file with final details
@@ -805,14 +805,13 @@ class Coordinator:
 
             try:
                 testcase_id_skip = event.testcase_id
-                if testcase_id_skip is None: # if {'testcase_id' : null} was sent then I skip  the current one
+                if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
                     testcase_t = self.current_tc
                 else:
                     testcase_t = self.get_testcase(testcase_id_skip)
 
-            except: # if no testcase_id was sent then I skip  the current one
+            except:  # if no testcase_id was sent then I skip  the current one
                 testcase_t = self.current_tc
-
 
             # change tc state to 'skipped'
 
@@ -1051,8 +1050,6 @@ class Coordinator:
             else:
                 logger.error('Malformed message')
 
-
-
     ### TRANSITION METHODS for the Coordinator FSM ###
 
     def get_testcases_basic(self, verbose=None):
@@ -1096,7 +1093,7 @@ class Coordinator:
             tc.reinit()
         # init testcase if None
         if self.current_tc is None:
-            self._ted_it = cycle(self.teds.values()) # so that we start back from the first
+            self._ted_it = cycle(self.teds.values())  # so that we start back from the first
             self.next_testcase()
         return self.current_tc
 
@@ -1183,7 +1180,7 @@ class Coordinator:
         # sanity checks on the passed params
         assert verdict is not None
         assert description is not None
-        assert verdict.lower() in Verdict.__values
+        assert verdict.lower() in Verdict.values
 
         self.current_tc.current_step.set_result(verdict.lower(), "CHECK step: %s" % description)
         self.current_tc.current_step.change_state('finished')
