@@ -696,7 +696,7 @@ class Coordinator:
                     configuration_id=config_id,
                     node=node,
                     message=message,
-                    **tc_info_dict,
+                    **tc_info_dict
             )
             publish_message(self.channel, event)
 
@@ -1238,8 +1238,12 @@ class Coordinator:
 
             # let's try to save the file and then push it to results repo
             try:
-                pcap_file_base64 = sniffer_response.value
-                filename = sniffer_response.filename
+                if sniffer_response.ok is True:
+                    pcap_file_base64 = sniffer_response.value
+                    filename = sniffer_response.filename
+                else:
+                    logger.error('Error encountered with packet sniffer: %s' % repr(sniffer_response))
+                    return
 
             except AttributeError as ae:
                 logger.error('Failed to process Sniffer response: %s' % repr(sniffer_response))
