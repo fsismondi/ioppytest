@@ -37,6 +37,14 @@ logger.setLevel(logging.DEBUG)
 
 
 def on_request(ch, method, props, body):
+    """
+
+    :param ch:
+    :param method:
+    :param props:
+    :param body:
+    :return:
+    """
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -59,7 +67,6 @@ def on_request(ch, method, props, body):
     except Exception as e:
         logger.error(str(e))
         return
-
 
     if isinstance(request, MsgSniffingGetCaptureLast):
         logger.info('Processing request: %s' % repr(request))
@@ -196,9 +203,8 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed starting the capture')
 
-
-        last_capture = capture_id # keep track of the undergoing capture name
-        time.sleep(3) # to avoid race conditions
+        last_capture = capture_id  # keep track of the undergoing capture name
+        time.sleep(3)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
         publish_message(ch, response)
 
@@ -221,6 +227,13 @@ def on_request(ch, method, props, body):
 ### IMPLEMENTATION OF SERVICES ###
 
 def _launch_sniffer(filename, filter_if, filter_proto):
+    """
+
+    :param filename:
+    :param filter_if:
+    :param filter_proto:
+    :return:
+    """
     logger.info('Launching packet capture..')
 
     if filter_proto is None:
@@ -234,17 +247,21 @@ def _launch_sniffer(filename, filter_if, filter_proto):
             filter_if = 'lo'
             # TODO windows?
 
-    # lets try to remove the filemame in case there's a previous execution of the TC
+    # lets try to remove the file in case there's a previous execution of the TC
     try:
-        params = 'rm ' + filename
-        os.system(params)
+        cmd = 'rm ' + filename
+        proc_rm = subprocess.Popen(cmd, stderr=subprocess.PIPE, shell=True)
+        # output = str(proc_rm.stderr.readline())
+        # logging.info('process stdout: %s' % output)
     except:
         pass
 
-    params = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + '&'
-    os.system(params)
-    logger.info('creating process tcpdump with: %s' % params)
-    # TODO we need to catch tcpdump: <<tun0: No such device exists>> from stderr
+    cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename
+    logger.info('spawning process with : %s' % str(cmd))
+
+    proc_sniff = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    logger.info('process stderr: %s' % str(proc_sniff.stderr.readline()))
+    # logger.info('process stdout: %s' % str(proc_sniff.stdout.readline()))
 
     return True
 
@@ -256,8 +273,7 @@ def _stop_sniffer():
     return True
 
 
-if __name__ == '__main__':
-
+def main():
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR:
         try:
@@ -269,14 +285,12 @@ if __name__ == '__main__':
     ### SETUPING UP CONNECTION ###
 
     connection = None
-
     try:
 
         logger.info('Setting up AMQP connection..')
 
         # setup AMQP connection
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        channel = connection.channel()
 
         channel = connection.channel()
 
@@ -294,10 +308,9 @@ if __name__ == '__main__':
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
     msg = MsgTestingToolComponentReady(
-        component = 'sniffing'
+            component='sniffing'
     )
-    publish_message(channel, msg )
-
+    publish_message(channel, msg)
 
     try:
         logger.info("Awaiting AMQP requests on topic: control.sniffing.service")
@@ -314,3 +327,9 @@ if __name__ == '__main__':
         # close AMQP connection
         if connection:
             connection.close()
+
+
+if __name__ == '__main__':
+    # _launch_sniffer(filename='test.pcap',filter_if='NonExistentInterface',filter_proto='')
+    # _launch_sniffer(filename='test.pcap', filter_if='tun0', filter_proto='')
+    main()
