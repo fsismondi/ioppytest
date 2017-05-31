@@ -4,7 +4,8 @@ testcase_id: TD_COAP_CORE_01_v01
 uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01
 configuration: COAP_CFG_01_v01
 objective: Perform GET transaction(CON mode)
-pre_conditions: Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
+pre_conditions:
+  - Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
 references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
 sequence:
   - step_id: 'TD_COAP_CORE_01_v01_step_01'
@@ -46,7 +47,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01
 objective: Perform DELETE transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
-pre_conditions: Server offers a /test resource that handles DELETE
+pre_conditions:
+  - Server offers a /test resource that handles DELETE
 sequence:
 
   - step_id : TD_COAP_CORE_02_v01_step_01
@@ -88,8 +90,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01
 objective: Perform PUT transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"
-pre_conditions: Server offers already available resource /test or accepts creation of new
-  resource on /test that handles PUT
+pre_conditions:
+  - Server offers already available resource /test or accepts creation of new resource on /test that handles PUT
 sequence:
 
 - step_id : TD_COAP_CORE_03_v01_step_01
@@ -142,7 +144,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_04_v01
 objective: Perform POST transaction (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 1.2, 2.1, 2.2, 3.1"
-pre_conditions: Server accepts POST requet on /test
+pre_conditions:
+  - Server accepts POST requet on /test
 sequence:
 
   - step_id : TD_COAP_CORE_04_v01_step_01
@@ -192,7 +195,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_05_v01
 objective: Perform GET transaction (NON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.1, 5.2.3"
-pre_conditions: Server offers a /test resource with resource content is not empty that handles GET
+pre_conditions:
+  - Server offers a /test resource with resource content is not empty that handles GET
 sequence:
 
   - step_id : TD_COAP_CORE_05_v01_step_01
@@ -234,7 +238,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_06_v01
 objective: Perform DELETE transaction (NON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 5.2.3"
-pre_conditions: Server offers a /test resource that handles DELETE
+pre_conditions:
+  - Server offers a /test resource that handles DELETE
 sequence:
 
   - step_id : TD_COAP_CORE_06_v01_step_01
@@ -277,7 +282,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_07_v01
 objective: Perform PUT transaction (NON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.3, 5.2.3"
-pre_conditions: Server offers a /test resource that handles PUT
+pre_conditions:
+  - Server offers a /test resource that handles PUT
 sequence:
 
   - step_id : TD_COAP_CORE_07_v01_step_01
@@ -328,7 +334,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_08_v01
 objective: Perform POST transaction (NON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 5.2.3"
-pre_conditions: Server accepts POST request on /test
+pre_conditions:
+  - Server accepts POST request on /test
 sequence:
 
   - step_id : TD_COAP_CORE_08_v01_step_01
@@ -382,7 +389,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_09_v01
 objective: Perform GET transaction with separate response(CON mode, no piggyback)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.1, 5.2.2"
-pre_conditions: Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
+pre_conditions:
+  - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
 sequence:
 
   - step_id : TD_COAP_CORE_09_v01_step_01
@@ -441,7 +449,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_09_v01
 objective: Perform GET transaction containing non-empty Token (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.8.1, 5.10.1"
-pre_conditions: Server offers a /test resource with content is not empty that handles GET
+pre_conditions:
+  - Server offers a /test resource with content is not empty that handles GET
 sequence:
 
   - step_id : TD_COAP_CORE_10_v01_step_01
@@ -483,7 +492,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_11_v01
 objective: Perform GET transaction containing non-empty Token with a separate response (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
-pre_conditions: Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
+pre_conditions:
+  - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
 sequence:
 
   - step_id : TD_COAP_CORE_11_v01_step_01
@@ -543,7 +553,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_12_v01
 objective: Perform GET transaction using empty Token (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.10.1, 5.8.1"
-pre_conditions: Server offers a resource /test with resource content is not empty that handles GEt with an arbitrary payload
+pre_conditions:
+  - Server offers a resource /test with resource content is not empty that handles GEt with an arbitrary payload
 sequence:
 
   - step_id : TD_COAP_CORE_12_v01_step_01
@@ -582,7 +593,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_13_v01
 objective: Perform GET transaction containing several URI-Path options (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.4.5, 5.10.2, 6.5"
-pre_conditions: Server offers a /seg1/seg2/seg3 resource with resource content is not empty
+pre_conditions:
+  - Server offers a /seg1/seg2/seg3 resource with resource content is not empty
 sequence:
 
   - step_id : TD_COAP_CORE_13_v01_step_01
@@ -626,7 +638,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_14_v01
 objective: Perform GET transaction containing several URI-Query options (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.4.5, 5.10.2, 6.5"
-pre_conditions: Server offers a /query resource with resource content is not empty
+pre_conditions:
+  - Server offers a /query resource with resource content is not empty
 sequence:
 
   - step_id : TD_COAP_CORE_14_v01_step_01
@@ -669,7 +682,9 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_15_v01
 objective: Perform GET transaction (CON mode, piggybacked response) in a lossy context
 configuration: COAP_CFG_01_v01
 references: "[COAP] 4.4.1, 5.2.1, 5.8.1"
-pre_conditions: Gateway is introduced and configured to produce packet losses Server offers a /test resource with resource content is not empty that can handle GET
+pre_conditions:
+  - Gateway is introduced and configured to produce packet losses
+  - Server offers a /test resource with resource content is not empty that can handle GET
 sequence:
 
   - step_id : TD_COAP_CORE_15_v01_step_01
@@ -724,7 +739,9 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_16_v01
 objective: Perform GET transaction (CON mode, delayed response) in a lossy context
 configuration: COAP_CFG_01_v01
 references: "[COAP] 4.4.1, 5.2.2, 5.8.1"
-pre_conditions: Gateway is introduced and configured to produce packet losses Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
+pre_conditions:
+  - Gateway is introduced and configured to produce packet losses
+  - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
 sequence:
 
   - step_id : TD_COAP_CORE_16_v01_step_01
@@ -799,7 +816,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_17_v01
 objective: Perform GET transaction with a separate response(NON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
-pre_conditions: Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
+pre_conditions:
+  - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
 sequence:
 
   - step_id : TD_COAP_CORE_17_v01_step_01
@@ -847,7 +865,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_18_v01
 objective: Perform POST transaction with responses containing several Location-Path option(CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
-pre_conditions: Server accepts creation of new resource on /test and the created resource is located at /location1/location2:location3 (resource does not exist yet)
+pre_conditions:
+  - Server accepts creation of new resource on /test and the created resource is located at /location1/location2:location3 (resource does not exist yet)
 sequence:
 
   - step_id : TD_COAP_CORE_18_v01_step_01
@@ -888,7 +907,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_19_v01
 objective: Perform POST transaction with responses containing several Location-Query option(CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 5.10.7, 5.9.1.1"
-pre_conditions: Server accepts creation of new resource on uri /location-query, the location of the created resource contains two query parameters ?first=1&second=2
+pre_conditions:
+  - Server accepts creation of new resource on uri /location-query, the location of the created resource contains two query parameters ?first=1&second=2
 sequence:
 
   - step_id : TD_COAP_CORE_19_v01_step_01
@@ -934,7 +954,10 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_20_v01
 objective: Perform GET transaction containing the Accept option (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.1, 5.10.5, 5.10.4"
-pre_conditions: Server should provide a resource /multi-format which exists in two formats: text/plain;charset=utf-8 application/xml
+pre_conditions:
+  - Server should provide a resource /multi-format which exists in two formats
+  - text/plain;charset=utf-8
+  - application/xml
 sequence:
 
   - step_id : TD_COAP_CORE_20_v01_step_01
@@ -1337,7 +1360,8 @@ uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_31_v01
 objective: Perform CoAP Ping (CON mode)
 configuration: COAP_CFG_01_v01
 references: "[COAP] 4.3"
-pre_conditions: (Should work with any CoAP server)
+pre_conditions:
+  - (Should work with any CoAP server)
 sequence:
   - step_id : TD_COAP_CORE_31_v01_step_01
     type : stimuli
