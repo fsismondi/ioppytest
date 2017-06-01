@@ -45,7 +45,18 @@ stimuli_cmd_dict = {
     'TD_COAP_CORE_01_v01_step_01': IUT_CMD + ['test_td_coap_core_01'],
     'TD_COAP_CORE_02_v01_step_01': IUT_CMD + ['test_td_coap_core_02'],
     'TD_COAP_CORE_03_v01_step_01': IUT_CMD + ['test_td_coap_core_03'],
+    'TD_COAP_CORE_04_v01_step_01': IUT_CMD + ['test_td_coap_core_04'],
+    'TD_COAP_CORE_05_v01_step_01': IUT_CMD + ['test_td_coap_core_05'],
+    'TD_COAP_CORE_06_v01_step_01': IUT_CMD + ['test_td_coap_core_06'],
+    'TD_COAP_CORE_07_v01_step_01': IUT_CMD + ['test_td_coap_core_07'],
+    'TD_COAP_CORE_08_v01_step_01': IUT_CMD + ['test_td_coap_core_08'],
+    'TD_COAP_CORE_09_v01_step_01': IUT_CMD + ['test_td_coap_core_09'],
+    'TD_COAP_CORE_10_v01_step_01': IUT_CMD + ['test_td_coap_core_10'],
 }
+skip_list = [
+    'TD_COAP_CORE_11_v01'
+    'TD_COAP_CORE_11_v01'
+]
 
 
 def signal_int_handler(signal, frame):
@@ -61,28 +72,23 @@ def signal_int_handler(signal, frame):
 
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
 class AutomatedIUT(threading.Thread):
     def __init__(self, conn):
         threading.Thread.__init__(self)
-        # queues & default exchange declaration
         self.message_count = 0
-
+        # queues & default exchange declaration
         self.connection = conn
-
         self.channel = connection.channel()
-
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key='control.testcoordination')
-
         publish_message(self.channel, MsgTestingToolComponentReady(component=COMPONENT_ID))
-
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
@@ -111,21 +117,33 @@ class AutomatedIUT(threading.Thread):
 
         if event is None:
             return
+
+        elif isinstance(event, MsgTestCaseReady) and event.testcase_id in skip_list:
+            publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
+
         elif isinstance(event, MsgStepExecute):
+
             if event.node == 'coap_client' and event.step_type == 'stimuli' and event.step_id in stimuli_cmd_dict:
-                self._execute_stimuli(event.step_id, stimuli_cmd_dict[event.step_id])
+                cmd = stimuli_cmd_dict[event.step_id]
+                step = event.step_id
+
+                self._execute_stimuli(step, cmd )
+
             elif event.node == 'coap_client' and event.step_type == 'verify':
-                self._execute_verify(event.step_id)
+                step = event.step_id
+                self._execute_verify(step)
+
             else:
                 logging.info('Event received and ignored: %s' % event.to_json())
+
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
             self._exit
+
         else:
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
-        # TODO do stuff
         time.sleep(2)
         self.connection.close()
         sys.exit(0)
