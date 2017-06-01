@@ -204,7 +204,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed starting the capture')
 
         last_capture = capture_id  # keep track of the undergoing capture name
-        time.sleep(3)  # to avoid race conditions
+        time.sleep(5)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
         publish_message(ch, response)
 
