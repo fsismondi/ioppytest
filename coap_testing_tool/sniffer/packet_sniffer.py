@@ -237,7 +237,7 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     logger.info('Launching packet capture..')
 
     if filter_proto is None:
-        filter_proto = ''
+        filter_proto = 'udp' # for CoAP over TCP not yet supported
 
     if (filter_if is None) or (filter_if == ''):
         sys_type = platform.system()
@@ -256,7 +256,7 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     except:
         pass
 
-    cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename
+    cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
     logger.info('spawning process with : %s' % str(cmd))
 
     proc_sniff = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
