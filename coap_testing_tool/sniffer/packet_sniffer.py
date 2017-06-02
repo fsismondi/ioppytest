@@ -35,6 +35,9 @@ rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
 
+# in seconds
+TIME_WAIT_FOR_TCPDUMP_ON = 5
+TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 
 def on_request(ch, method, props, body):
     """
@@ -204,7 +207,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed starting the capture')
 
         last_capture = capture_id  # keep track of the undergoing capture name
-        time.sleep(5)  # to avoid race conditions
+        time.sleep(TIME_WAIT_FOR_TCPDUMP_ON)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
         publish_message(ch, response)
 
@@ -213,6 +216,7 @@ def on_request(ch, method, props, body):
         logger.info('Processing request: %s' % repr(request))
 
         try:
+            time.sleep(TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION)  # to avoid race conditions
             _stop_sniffer()
         except:
             logger.error('Didnt succeed stopping the sniffer')
