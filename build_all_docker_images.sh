@@ -26,8 +26,14 @@ docker build -t automated_iut-coap_server-californium-v0.1 -f automated_IUTs/coa
 docker build -t automated_iut-coap_client-coapthon-v0.1 -f automated_IUTs/coap_client_coapthon/Dockerfile .
 docker build -t testing_tool-interoperability-coap-v-0.5 .
 
-# the testing tool for interop and conformance is the same
+# tag "HEAD" for INTEROP TESTING TOOL
+docker tag testing_tool-interoperability-coap-v-0.5:latest testing_tool-interoperability-coap
+
+# the testing tool for interop and conformance are the same
 docker tag testing_tool-interoperability-coap-v-0.5:latest testing_tool-conformance-coap-v-0.5
+
+# tag "HEAD" for CONFORMANCE TESTING TOOL
+docker tag testing_tool-conformance-coap-v-0.5:latest testing_tool-conformance-coap
 
 # reference iut for coap server is automated_iut-coap_server-californium-v0.1
 docker tag automated_iut-coap_server-californium-v0.1:latest reference_iut-coap_server-californium-v0.1
@@ -38,5 +44,6 @@ docker tag automated_iut-coap_server-californium-v0.1:latest reference_iut-coap_
 docker tag automated_iut-coap_client-coapthon-v0.1:latest reference_iut-coap_client-coapthon-v0.1
 # which can be run also by the name of reference_iut-coap_client
 docker tag automated_iut-coap_client-coapthon-v0.1:latest reference_iut-coap_client
+
 
 
