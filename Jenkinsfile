@@ -87,73 +87,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 }
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
-    node('sudo'){
-
-        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
-        env.AMQP_EXCHANGE="default"
-
-        stage ("Install docker"){
-            withEnv(["DEBIAN_FRONTEND=noninteractive"]){
-                sh '''
-                sudo apt-get clean
-                sudo apt-get update
-                sudo apt-get upgrade -y
-                sudo apt-get install --fix-missing -y curl tree netcat
-
-                curl -sSL https://get.docker.com/ | sudo sh
-                sudo service docker start
-                '''
-
-                /* Show deployed code */
-                sh "tree ."
-            }
-        }
-
-        stage("Clone repo and submodules"){
-            checkout scm
-            sh "git submodule update --init"
-            sh "tree ."
-        }
-
-        stage("Creating CoAP testing tool docker image from Dockerfile"){
-            gitlabCommitStatus("coap testing tool docker image") {
-                env.DOCKER_CLIENT_TIMEOUT=3000
-                env.COMPOSE_HTTP_TIMEOUT=3000
-                sh "echo $BUILD_ID"
-                sh "echo cloning.."
-                sh "git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.git coap_tt_${env.BUILD_ID}"
-                sh "echo buiding.."
-                sh "sudo docker build -t finterop-coap coap_tt_${env.BUILD_ID}"
-                sh "sudo docker images"
-            }
-        }
-
-         stage("Testing Tool run"){
-             long startTime = System.currentTimeMillis()
-             long timeoutInSeconds = 30
-             gitlabCommitStatus("Docker run") {
-                sh "echo $AMQP_URL"
-                try {
-                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf"
-                    }
-                } catch (err) {
-                    long timePassed = System.currentTimeMillis() - startTime
-                    if (timePassed >= timeoutInSeconds * 1000) {
-                        echo 'Docker container kept on running!'
-                        currentBuild.result = 'SUCCESS'
-                    } else {
-                        currentBuild.result = 'FAILURE'
-                    }
-                }
-
-             }
-
-         }
-    }
-}
-
 if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
     node('sudo'){
 
@@ -176,7 +109,11 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
 }
 
 if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
+
     node('docker'){
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
         stage("Build ansible-containers"){
             sh "sudo apt-get install -y python-pip"
             sh "sudo pip install ansible-container"
@@ -185,8 +122,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
             sh "git submodule sync --recursive"
             sh "pwd"
             gitlabCommitStatus("ansible-container") {
-                env.DOCKER_CLIENT_TIMEOUT=3000
-                env.COMPOSE_HTTP_TIMEOUT=3000
                 ansiColor('xterm'){
                     sh "sudo -E ansible-container --debug build"
                 }
@@ -195,3 +130,144 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
     }
 }
 
+if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
+    node('docker'){
+
+        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
+        env.AMQP_EXCHANGE="default"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+        env.TT_DOCKER_IMAGE_NAME="testing_tool-coap"
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh "git submodule update --init"
+            sh "tree ."
+        }
+
+        stage("Creating CoAP testing tool docker image from Dockerfile"){
+            gitlabCommitStatus("coap testing tool docker image") {
+
+                sh "echo buiding coap_testing_tool docker image"
+                sh "sudo -E docker build -t ${env.TT_DOCKER_IMAGE_NAME} ."
+                sh "sudo -E docker images"
+            }
+        }
+
+         stage("Testing Tool run"){
+             long startTime = System.currentTimeMillis()
+             long timeoutInSeconds = 30
+             gitlabCommitStatus("Docker run") {
+                sh "echo $AMQP_URL"
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.TT_DOCKER_IMAGE_NAME} "
+                    }
+                } catch (err) {
+                    long timePassed = System.currentTimeMillis() - startTime
+                    if (timePassed >= timeoutInSeconds * 1000) {
+                        echo 'Docker container kept on running!'
+                        currentBuild.result = 'SUCCESS'
+                    } else {
+                        currentBuild.result = 'FAILURE'
+                    }
+                }
+
+             }
+
+         }
+    }
+}
+
+if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
+    node('docker'){
+
+        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_automated_iuts"
+        env.AMQP_EXCHANGE="default"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh "git submodule update --init"
+            sh "tree ."
+        }
+
+        stage("automated_iut-coap_server-califronium: docker image BUILD"){
+            env.AUTOMATED_IUT='coap_server_californium'
+
+            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image BUILD") {
+
+                sh "echo buiding $AUTOMATED_IUT"
+                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "sudo -E docker images"
+            }
+        }
+
+         stage("automated_iut-coap_server-califronium: docker image RUN"){
+
+            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image RUN") {
+                long startTime = System.currentTimeMillis()
+                long timeoutInSeconds = 30
+                gitlabCommitStatus("Docker run") {
+                    sh "echo $AUTOMATED_IUT"
+                    sh "echo $AMQP_URL"
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} "
+                        }
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+
+                }
+
+            }
+
+         }
+
+         stage("automated_iut-coap_client-coapthon: docker image BUILD"){
+            gitlabCommitStatus("automated_iut-coap_client-coapthon: docker image BUILD") {
+                env.AUTOMATED_IUT='coap_client_coapthon'
+
+                sh "echo buiding $AUTOMATED_IUT"
+                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
+                sh "sudo -E docker images"
+            }
+        }
+
+         stage("automated_iut-coap_client-coapthon: docker image RUN"){
+
+            gitlabCommitStatus("automated_iut-coap_client-coapthon:: docker image RUN") {
+                long startTime = System.currentTimeMillis()
+                long timeoutInSeconds = 30
+                gitlabCommitStatus("Docker run") {
+                    sh "echo $AUTOMATED_IUT"
+                    sh "echo $AMQP_URL"
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} "
+                        }
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+
+                }
+
+            }
+
+         }
+    }
+}

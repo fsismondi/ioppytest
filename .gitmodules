@@ -4,3 +4,7 @@
 [submodule "coap_testing_tool/agent"]
 	path = coap_testing_tool/agent
 	url = https://gitlab.distantaccess.com/f-interop-contributors/agent.git
+[submodule "automated_IUTs/coap_client_coapthon/CoAPthon"]
+	path = automated_IUTs/coap_client_coapthon/CoAPthon
+	url = https://github.com/fsismondi/CoAPthon.git
+	branch = finterop

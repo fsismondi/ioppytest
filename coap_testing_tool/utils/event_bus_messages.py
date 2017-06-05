@@ -68,7 +68,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.20'
+API_VERSION = '0.1.21'
 
 
 # TODO use metaclasses instead?
@@ -239,6 +239,41 @@ class MsgErrorReply(MsgReply):
         'error_code': 'Some error code TBD'
     }
 
+###### AGENT MESSAGES ######
+
+class MsgAgentTunStart(Message):
+    """
+    Message for triggering start IP tun interface in OS where the agent is running
+    """
+    routing_key = 'control.tun.toAgent.agent_TT'
+
+    _msg_data_template = {
+        '_type': 'tun.start',
+        'name': 'agent_TT',
+        'ipv6_prefix': 'bbbb',
+        'ipv6_host': ':3',
+        'ipv6_no_forwarding': False,
+        'ipv4_host': None,
+        'ipv4_network': None,
+        'ipv4_netmask': None,
+    }
+
+
+class MsgAgentTunStarted(Message):
+    """
+    Message for indicating that agent tun has been started
+    """
+    routing_key = 'control.tun.from.agent_TT'
+
+    _msg_data_template = {
+        '_type': 'tun.started',
+        'name': 'agent_TT',
+        'ipv6_prefix': 'bbbb',
+        'ipv6_host': ':3',
+        'ipv4_host': None,
+        'ipv4_network': None,
+        'ipv4_netmask': None,
+    }
 
 ###### SESSION MESSAGES ######
 
@@ -1217,6 +1252,8 @@ class MsgPrivacyIssue(Message):
 
 
 message_types_dict = {
+    "tun.start" : MsgAgentTunStart, # TestingTool -> Agent
+    "tun.started" : MsgAgentTunStarted, # Agent -> TestingTool
     "testcoordination.testsuite.start": MsgTestSuiteStart,  # GUI -> TestingTool
     "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
     "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI

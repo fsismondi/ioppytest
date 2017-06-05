@@ -56,12 +56,6 @@ class PacketRouter(threading.Thread):
                         'data.tun.toAgent.%s' % PacketRouter.AGENT_1_ID,
                         'data.tun.toAgent.%s' % PacketRouter.AGENT_TT_ID
                     ],
-
-                # entry for a user to automated iut setup (doesnt create any conflict with the previous ones)
-                'data.tun.fromAgent.%s' % PacketRouter.AGENT_TT_ID:
-                    [
-                        'data.tun.toAgent.%s' % PacketRouter.AGENT_1_ID
-                    ],
             }
 
         logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
@@ -155,7 +149,7 @@ class PacketRouter(threading.Thread):
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
 
         else:
-            logger.error('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+            logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
     def run(self):
