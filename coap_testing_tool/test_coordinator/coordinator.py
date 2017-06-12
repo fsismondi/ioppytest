@@ -306,9 +306,9 @@ class Step():
             step_dict['step_type'] = self.type
             step_dict['step_info'] = self.description
             step_dict['step_state'] = self.state
-            # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
-            if self.type == 'stimuli' or self.type == 'verify':
-                step_dict.update(self.iut.to_dict())
+            # # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
+            # if self.type == 'stimuli' or self.type == 'verify':
+            #     step_dict.update(self.iut.to_dict())
         return step_dict
 
     def change_state(self, state):
@@ -767,7 +767,7 @@ class Coordinator:
             response = MsgTestSuiteGetStatusReply(
                     request,
                     ok=True,
-                    status=status,
+                    **status
             )
             publish_message(self.channel, response)
         else:
@@ -1394,19 +1394,32 @@ class Coordinator:
         return self.current_tc.current_step
 
     def states_summary(self):
-        summ = OrderedDict()
+        summary = OrderedDict()
+        summary.update(
+                {
+                    'started': False,
+                }
+        )
         if self.current_tc:
-            summ['current_tc'] = {
-                'testcase_id': self.current_tc.id,
-                'state': self.current_tc.state,
-            }
+            summary.update(
+                    {
+                        'started' : True,
+                        'testcase_id': self.current_tc.id,
+                        'testcase_state': self.current_tc.state,
+                    }
+            )
             if self.current_tc.current_step:
-                summ['current_step'] = self.current_tc.current_step.to_dict(verbose=True)
-            else:
-                summ['current_step'] = "No step under execution"
+                summary.update( self.current_tc.current_step.to_dict())
         else:
-            summ['current_tc'] = "No current testcase. Testsuite not started yet"
-        return summ
+            summary.update(
+                    {
+
+                        'testcase_id': None,
+                        'testcase_state': None,
+                    }
+            )
+
+        return summary
 
     def get_testcase(self, testcase_id):
         """
