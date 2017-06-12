@@ -17,22 +17,10 @@ from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 
 logger = logging.getLogger(__name__)
 
-COMPONENT_ID = 'automated_iut'
+COMPONENT_ID = 'automated_iut-coap_client'
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
-
-# IUT_CMD = [
-#     'python',
-#     'automated_IUTs/coap_client_coapthon/CoAPthon/coapclient.py'
-# ]
-#
-#
-# # mapping message's stimuli id -> CoAPthon (coap client) commands
-# stimuli_cmd_dict = {
-# 'TD_COAP_CORE_01_v01_step_01' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
-# 'TD_COAP_CORE_01_v01_step_02' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
-# }
 
 IUT_CMD = [
     'python',
@@ -53,9 +41,12 @@ stimuli_cmd_dict = {
     'TD_COAP_CORE_09_v01_step_01': IUT_CMD + ['test_td_coap_core_09'],
     'TD_COAP_CORE_10_v01_step_01': IUT_CMD + ['test_td_coap_core_10'],
 }
-skip_list = [
-    'TD_COAP_CORE_11_v01'
-    'TD_COAP_CORE_11_v01'
+
+testcases_to_execute = [
+    'TD_COAP_CORE_01_v01',
+    'TD_COAP_CORE_02_v01',
+    'TD_COAP_CORE_03_v01',
+    'TD_COAP_CORE_04_v01',
 ]
 
 
@@ -118,7 +109,7 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        elif isinstance(event, MsgTestCaseReady) and event.testcase_id in skip_list:
+        elif isinstance(event, MsgTestCaseReady) and event.testcase_id not in testcases_to_execute:
             publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
 
         elif isinstance(event, MsgStepExecute):
@@ -138,7 +129,6 @@ class AutomatedIUT(threading.Thread):
 
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
-            self._exit
 
         else:
             logging.info('Event received and ignored: %s' % event._type)
