@@ -23,6 +23,7 @@ reference_iut-coap_server (alias)
 
 # let's build the three 3 images used by F-Interop platform
 docker build -t automated_iut-coap_server-californium-v0.1 -f automated_IUTs/coap_server_californium/Dockerfile .
+docker build -t automated_iut-coap_server-coapthon-v0.1 -f automated_IUTs/coap_server_coapthon/Dockerfile .
 docker build -t automated_iut-coap_client-coapthon-v0.1 -f automated_IUTs/coap_client_coapthon/Dockerfile .
 docker build -t testing_tool-interoperability-coap-v-0.5 .
 
