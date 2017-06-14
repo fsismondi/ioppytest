@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # lets start the test suite coordination phase
 
     try:
-        logger.info('Instantiating coordinator..')
+        logger.info('Starting test-coordinator..')
         coordinator = Coordinator(connection, TD_COAP, TD_COAP_CFG)
 
     except Exception as e:

@@ -15,7 +15,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip()
 >>> m
-MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.2, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.28, testcase_id = TD_COAP_CORE_02_v01, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -26,22 +26,22 @@ MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.2, te
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
 >>> m
-MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.2, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.28, testcase_id = TD_COAP_CORE_03_v01, )
 >>> m.testcase_id
 'TD_COAP_CORE_03_v01'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_type": "testcoordination.testcase.skip", "_api_version": "0.1.2", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_type": "testcoordination.testcase.skip", "_api_version": "0.1.28", "testcase_id": "TD_COAP_CORE_03_v01"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_type": "testcoordination.testsuite.start", "_api_version": "0.1.2"}'
+'{"_type": "testcoordination.testsuite.start", "_api_version": "0.1.28"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
-<class '__main__.MsgTestSuiteStart'>
+<class 'messages.MsgTestSuiteStart'>
 
 # We can use the library for generating error responses to the requests:
 # the request:
@@ -50,7 +50,8 @@ MsgTestCaseSkip(_type = testcoordination.testcase.skip, _api_version = 0.1.2, te
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_type = sniffing.start, _api_version = 0.1.2, ok = False, error_code = Some error code TBD, error_message = Some error message TBD, )
+MsgErrorReply(_type = sniffing.start, _api_version = 0.1.28, ok = False, error_code = Some error code TBD,
+error_message = Some error message TBD, )
 >>> m.reply_to
 'control.sniffing.service.reply'
 >>> err.routing_key
@@ -68,7 +69,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.25'
+API_VERSION = '0.1.28'
 
 
 # TODO use metaclasses instead?
@@ -90,15 +91,15 @@ class Message:
 
         # init properties
         self._properties = dict(
-                content_type='application/json',
+                content_type="application/json",
                 message_id=str(uuid.uuid4()),
                 timestamp=int(time.time())
         )
 
         try:
-            if self.routing_key.endswith('.service'):
-                self._properties['reply_to'] = '%s.%s' % (self.routing_key, 'reply')
-                self._properties['correlation_id'] = self._properties['message_id']
+            if self.routing_key.endswith(".service"):
+                self._properties["reply_to"] = "%s.%s" % (self.routing_key, "reply")
+                self._properties["correlation_id"] = self._properties["message_id"]
         except AttributeError:
             pass
 
@@ -106,7 +107,7 @@ class Message:
         self._msg_data.update(kwargs)
 
         # add API's version
-        self._msg_data['_api_version'] = API_VERSION
+        self._msg_data["_api_version"] = API_VERSION
 
         # add values as objects attributes
         for key in self._msg_data:
@@ -116,40 +117,32 @@ class Message:
         for key in self._properties:
             setattr(self, key, self._properties[key])
 
-    def to_dict(self) -> OrderedDict:
-        resp = OrderedDict()
+    def to_dict(self):
+        resp = {}
         # let's use sorted so API returns items inside always in the same order
         for field in sorted(self._msg_data.keys()):
             resp[field] = getattr(self, field)
 
-        # for readability
-        if 'ok' in resp:
-            resp.move_to_end('ok', False)
-        if '_api_version' in resp:
-            resp.move_to_end('_api_version', False)
-        if '_type' in resp:
-            resp.move_to_end('_type', False)
-
-        return resp
+        return OrderedDict(sorted(resp.items(), key=lambda t: t[0]))  # sorted by key
 
     def to_json(self):
         return json.dumps(self.to_dict())
 
-    def get_properties(self) -> dict:
+    def get_properties(self):
         resp = OrderedDict()
         for field in self._properties:
             resp[field] = getattr(self, field)
         return resp
 
     def __str__(self):
-        str = ' - ' * 20 + '\n'
-        str += 'Message routing key: %s' % self.routing_key
-        str += '\n -  -  - \n'
-        str += 'Message properties: %s' % json.dumps(self.get_properties(),indent=4,)
-        str += '\n -  -  - \n'
-        str += 'Message body: %s' % json.dumps(self.to_dict(),indent=4,)
-        str += '\n' + ' - ' * 20
-        return str
+        s = " - " * 20 + "\n"
+        s += "Message routing key: %s" % self.routing_key
+        s += "\n -  -  - \n"
+        s += "Message properties: %s" % json.dumps(self.get_properties(), indent=4, )
+        s += "\n -  -  - \n"
+        s += "Message body: %s" % json.dumps(self.to_dict(), indent=4, )
+        s += "\n" + " - " * 20
+        return s
 
     def update_properties(self, **kwargs):
         for key, value in kwargs.items():
@@ -168,26 +161,26 @@ class Message:
             message_dict = json.loads(body)
         # Note: pika re-encodes json.dumps strings as utf-8 for some reason, the following line undoes this
         elif type(body) is bytes:
-            message_dict = json.loads(body.decode('utf-8'))
+            message_dict = json.loads(body.decode("utf-8"))
         else:
-            raise NonCompliantMessageFormatError('Not a Json')
+            raise NonCompliantMessageFormatError("Not a Json")
 
         # check fist if it's a response
-        if 'ok' in message_dict:
+        if "ok" in message_dict:
             # cannot build a complete reply message just from the json representation
             return
 
-        message_type = message_dict['_type']
+        message_type = message_dict["_type"]
         if message_type in message_types_dict:
             return message_types_dict[message_type](**message_dict)
         else:
-            raise NonCompliantMessageFormatError('Cannot load json message: %s' % str(body))
+            raise NonCompliantMessageFormatError("Cannot load json message: %s" % str(body))
 
     def __repr__(self):
-        ret = '%s(' % self.__class__.__name__
+        ret = "%s(" % self.__class__.__name__
         for key, value in self.to_dict().items():
-            ret += '%s = %s, ' % (key, value)
-        ret += ')'
+            ret += "%s = %s, " % (key, value)
+        ret += ")"
         return ret
 
 
@@ -204,16 +197,16 @@ class MsgReply(Message):
 
         # if not data template, then let's build one for a reply
         # (possible when creating a MsgReply directly and not by using subclass)
-        if not hasattr(self, '_msg_data_template'):
+        if not hasattr(self, "_msg_data_template"):
             self._msg_data_template = {
-                '_type': request_message._type,
-                'ok': True,
+                "_type": request_message._type,
+                "ok":    True,
             }
 
-        super().__init__(**kwargs)
+        super(MsgReply, self).__init__(**kwargs)
 
         # overwrite correlation id template and attribute
-        self._properties['correlation_id'] = request_message.correlation_id
+        self._properties["correlation_id"] = request_message.correlation_id
         self.correlation_id = request_message.correlation_id
 
 
@@ -230,32 +223,33 @@ class MsgErrorReply(MsgReply):
         assert request_message
         # msg_data_template doesnt include _type cause this class is generic, we can only get this at init from request
         # so, let's copy the _type from request and let the MsgReply handle the rest of the fields
-        self._msg_data_template['_type'] = request_message._type
-        super().__init__(request_message, **kwargs)
+        self._msg_data_template["_type"] = request_message._type
+        super(MsgErrorReply, self).__init__(request_message, **kwargs)
 
     _msg_data_template = {
-        'ok': False,
-        'error_message': 'Some error message TBD',
-        'error_code': 'Some error code TBD'
+        "ok":            False,
+        "error_message": "Some error message TBD",
+        "error_code":    "Some error code TBD"
     }
 
-###### AGENT MESSAGES ######
+
+# # # # # # AGENT MESSAGES # # # # # #
 
 class MsgAgentTunStart(Message):
     """
     Message for triggering start IP tun interface in OS where the agent is running
     """
-    routing_key = 'control.tun.toAgent.agent_TT'
+    routing_key = "control.tun.toAgent.agent_TT"
 
     _msg_data_template = {
-        '_type': 'tun.start',
-        'name': 'agent_TT',
-        'ipv6_prefix': 'bbbb',
-        'ipv6_host': ':3',
-        'ipv6_no_forwarding': False,
-        'ipv4_host': None,
-        'ipv4_network': None,
-        'ipv4_netmask': None,
+        "_type":              "tun.start",
+        "name":               "agent_TT",
+        "ipv6_prefix":        "bbbb",
+        "ipv6_host":          ":3",
+        "ipv6_no_forwarding": False,
+        "ipv4_host":          None,
+        "ipv4_network":       None,
+        "ipv4_netmask":       None,
     }
 
 
@@ -263,18 +257,19 @@ class MsgAgentTunStarted(Message):
     """
     Message for indicating that agent tun has been started
     """
-    routing_key = 'control.tun.from.agent_TT'
+    routing_key = "control.tun.from.agent_TT"
 
     _msg_data_template = {
-        '_type': 'tun.started',
-        'name': 'agent_TT',
-        'ipv6_prefix': 'bbbb',
-        'ipv6_host': ':3',
-        'ipv4_host': None,
-        'ipv4_network': None,
-        'ipv4_netmask': None,
-        'ipv6_no_forwarding': False,
+        "_type":              "tun.started",
+        "name":               "agent_TT",
+        "ipv6_prefix":        "bbbb",
+        "ipv6_host":          ":3",
+        "ipv4_host":          None,
+        "ipv4_network":       None,
+        "ipv4_netmask":       None,
+        "ipv6_no_forwarding": False,
     }
+
 
 '''
 TODO add packet.sniffed.raw
@@ -285,7 +280,8 @@ PROPS: {"delivery_mode": 2, "content_type": "application/json", "headers": {}, "
 BODY {"timestamp": "1488586183.45", "_type": "packet.sniffed.raw", "interface_name": "tun0", "data": [96, 0, 0, 0, 0, 36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
 '''
 
-###### SESSION MESSAGES ######
+
+# # # # # # SESSION MESSAGES # # # # # #
 
 class MsgTestingToolTerminate(Message):
     """
@@ -293,10 +289,10 @@ class MsgTestingToolTerminate(Message):
     GUI, (or Orchestrator?) -> Testing Tool
     Testing tool should stop all it's processes gracefully.
     """
-    routing_key = 'control.session'
+    routing_key = "control.session"
 
     _msg_data_template = {
-        '_type': 'testingtool.terminate',
+        "_type": "testingtool.terminate",
     }
 
 
@@ -307,10 +303,10 @@ class MsgTestingToolReady(Message):
 
     Used to indicate to the GUI that testing is ready to start the test suite
     """
-    routing_key = 'control.session'
+    routing_key = "control.session"
 
     _msg_data_template = {
-        '_type': 'testingtool.ready',
+        "_type":   "testingtool.ready",
         "message": "Testing tool ready to start test suite."
     }
 
@@ -321,31 +317,93 @@ class MsgTestingToolComponentReady(Message):
     Component x -> Test Coordinator
     Testing Tool SHOULD implement (design recommendation)
     """
-    routing_key = 'control.session'
+    routing_key = "control.session"
 
     _msg_data_template = {
-        '_type': 'testingtool.component.ready',
-        'component': 'SomeComponent',
-        "message": "Component ready to start test suite."
+        "_type":     "testingtool.component.ready",
+        "component": "SomeComponent",
+        "message":   "Component ready to start test suite."
     }
 
+
+class MsgInteropSessionConfiguration(Message):
+    """
+    Testing Tool MUST-implement API endpoint
+    Orchestrator -> Testing Tool
+    Testing tool should listen to this message and configure the testsuite correspondingly
+    """
+    routing_key = "control.session"
+
+    _msg_data_template = {
+        "_type":         "session.interop.configuration",
+        "session_id":    "8ea6b6d5-ffcc-4a0e-ba93-92ee1befea23",
+        "testing_tools": "f-interop/interoperability-coap",
+        "users":         [
+            "u1",
+            "f-interop"
+        ],
+        "iuts":          [
+            {
+                "id":             "someImplementationFromAUser",
+                "role":           "coap_server",
+                "execution_mode": "user-assisted",
+                "location":       "user-facilities",
+                "owner":          "someUserName",
+                "version":        "0.1"
+            },
+            {
+                "id":             "automated_iut-coap_client-coapthon-v0.1",
+                "role":           "coap_client",
+                "execution_mode": "automated-iut",
+                "location":       "central-server-docker",
+                "owner":          "f-interop",
+                "version":        "0.1"
+            }
+        ],
+        "tests":         [
+            {
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+                "settings":    {}
+            },
+            {
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+                "settings":    {}
+            }
+        ]
+    }
+
+
+class MsgTestingToolConfigured(Message):
+    """
+    Testing Tool MUST-implement notification.
+    Testing Tool -> Orchestrator, GUI
+    Notify orchestrator and other components that the testing tool has been configured
+    """
+
+    routing_key = "control.session"
+
+    _msg_data_template = {
+        "_type":         "testingtool.configured",
+        "session_id":    "8ea6b6d5-ffcc-4a0e-ba93-92ee1befea23",
+        "testing_tools": "f-interop/interoperability-coap",
+    }
 
 class MsgTestingToolComponentShutdown(Message):
     """
-    Testing Tools'internal call.
-    Component x -> Test Coordinator
-    Testing Tool SHOULD implement (design recommendation)
-    """
-    routing_key = 'control.session'
+        Testing Tools'internal call.
+        Component x -> Test Coordinator
+        Testing Tool SHOULD implement (design recommendation)
+        """
+    routing_key = "control.session"
 
     _msg_data_template = {
-        '_type': 'testingtool.component.shutdown',
-        'component': 'SomeComponent',
-        "message": "Component is shutting down. Bye!"
+        "_type":     "testingtool.component.shutdown",
+        "component": "SomeComponent",
+        "message":   "Component is shutting down. Bye!"
     }
 
+    # # # # # # TEST COORDINATION MESSAGES # # # # # #
 
-###### TEST COORDINATION MESSAGES ######
 
 class MsgTestSuiteStart(Message):
     """
@@ -356,7 +414,7 @@ class MsgTestSuiteStart(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': "testcoordination.testsuite.start",
+        "_type": "testcoordination.testsuite.start",
     }
 
 
@@ -369,7 +427,7 @@ class MsgTestSuiteFinish(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': "testcoordination.testsuite.finish",
+        "_type": "testcoordination.testsuite.finish",
     }
 
 
@@ -382,15 +440,15 @@ class MsgTestCaseReady(Message):
     This message is normally followed by a MsgTestCaseStart (from GUI-> Testing Tool)
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.testcase.ready",
-        "message": "Next test case to be executed is TD_COAP_CORE_01_v01",
-        "testcase_id": "TD_COAP_CORE_01_v01",
+        "_type":        "testcoordination.testcase.ready",
+        "message":      "Next test case to be executed is TD_COAP_CORE_01_v01",
+        "testcase_id":  "TD_COAP_CORE_01_v01",
         "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
-        "objective": "Perform GET transaction(CON mode)",
-        "state": None
+        "objective":    "Perform GET transaction(CON mode)",
+        "state":        None
     }
 
 
@@ -403,7 +461,7 @@ class MsgTestCaseStart(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': "testcoordination.testcase.start",
+        "_type": "testcoordination.testcase.start",
     }
 
 
@@ -416,28 +474,30 @@ class MsgTestCaseConfiguration(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.testcase.configuration",
+        "_type":            "testcoordination.testcase.configuration",
         "configuration_id": "COAP_CFG_01_v01",
-        "node": "coap_server",
-        "testcase_id": "TBD",
-        "testcase_ref": "TBD",
+        "node":             "coap_server",
+        "testcase_id":      "TBD",
+        "testcase_ref":     "TBD",
         "message":
-            ["CoAP servers running service at [bbbb::2]:5683",
-             "CoAP servers are requested to offer the following resources",
-             ["/test", "Default test resource", "Should not exceed 64bytes"],
-             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
-             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
-             ["/separate",
-              "Ressource which cannot be served immediately and which cannot be acknowledged in a piggy-backed way",
-              "Should not exceed 64bytes"],
-             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
-             ["/large_update", "Large resource that can be updated using PUT method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/large_create", "Large resource that can be  created using POST method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/obs", "Observable resource which changes every 5 seconds", "shall not exceed 2048bytes"],
-             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
-             ]
+                            ["CoAP servers running service at [bbbb::2]:5683",
+                             "CoAP servers are requested to offer the following resources",
+                             ["/test", "Default test resource", "Should not exceed 64bytes"],
+                             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+                             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+                             ["/separate",
+                              "Ressource which cannot be served immediately and which cannot be acknowledged in a piggy-backed way",
+                              "Should not exceed 64bytes"],
+                             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+                             ["/large_update", "Large resource that can be updated using PUT method (>1024 bytes)",
+                              "shall not exceed 2048bytes"],
+                             ["/large_create",
+                              "Large resource that can be  created using POST method (>1024 bytes)",
+                              "shall not exceed 2048bytes"],
+                             ["/obs", "Observable resource which changes every 5 seconds",
+                              "shall not exceed 2048bytes"],
+                             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+                             ]
     }
 
 
@@ -448,10 +508,10 @@ class MsgTestCaseStop(Message):
     Message used for indicating the testing tool to stop the test case (the one running)
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.stop',
+        "_type": "testcoordination.testcase.stop",
     }
 
 
@@ -461,10 +521,10 @@ class MsgTestCaseRestart(Message):
     GUI -> Testing Tool
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.restart',
+        "_type": "testcoordination.testcase.restart",
     }
 
 
@@ -476,23 +536,23 @@ class MsgStepExecute(Message):
     Used to indicate to the GUI (or automated-iut) which is the step to be executed by the user (or automated-IUT)
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.step.execute",
-        "message": "Next test step to be executed is TD_COAP_CORE_01_v01_step_01",
-        "step_id": "TD_COAP_CORE_01_v01_step_01",
-        "step_type": "stimuli",
-        "step_info": [
+        "_type":               "testcoordination.step.execute",
+        "message":             "Next test step to be executed is TD_COAP_CORE_01_v01_step_01",
+        "step_id":             "TD_COAP_CORE_01_v01_step_01",
+        "step_type":           "stimuli",
+        "step_info":           [
             "Client is requested to send a GET request with",
             "Type = 0(CON)",
             "Code = 1(GET)"
         ],
-        "step_state": "executing",
-        "node": "coap_client",
+        "step_state":          "executing",
+        "node":                "coap_client",
         "node_execution_mode": "user_assisted",
-        "testcase_id": "TBD",
-        "testcase_ref": "TBD"
+        "testcase_id":         "TBD",
+        "testcase_ref":        "TBD"
     }
 
 
@@ -502,10 +562,10 @@ class MsgStimuliExecuted(Message):
     GUI (or automated-IUT)-> Testing Tool
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.step.stimuli.executed',
+        "_type": "testcoordination.step.stimuli.executed",
     }
 
 
@@ -518,12 +578,12 @@ class MsgCheckResponse(Message):
     Not used in CoAP testing Tool (analysis of traces is done post mortem)
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.step.check.response',
-        'partial_verdict': 'pass',
-        'description': 'TAT says: step complies (checks) with specification'
+        "_type":           "testcoordination.step.check.response",
+        "partial_verdict": "pass",
+        "description":     "TAT says: step complies (checks) with specification"
     }
 
 
@@ -535,12 +595,12 @@ class MsgVerifyResponse(Message):
     GUI (or automated-IUT)-> Testing Tool
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.step.verify.response',
-        'verify_response': True,
-        'response_type': 'bool'
+        "_type":           "testcoordination.step.verify.response",
+        "verify_response": True,
+        "response_type":   "bool"
     }
 
 
@@ -551,10 +611,10 @@ class MsgTestCaseFinish(Message):
     Not used in CoAP Testing Tool (test coordinator deduces it automatically by using the testcase's step sequence)
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.finish',
+        "_type": "testcoordination.testcase.finish",
     }
 
 
@@ -566,13 +626,13 @@ class MsgTestCaseFinished(Message):
     This message is followed by a verdict
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.finished',
-        'testcase_id': 'TD_COAP_CORE_01',
+        "_type":        "testcoordination.testcase.finished",
+        "testcase_id":  "TD_COAP_CORE_01",
         "testcase_ref": "TBD",
-        'message': 'Testcase finished'
+        "message":      "Testcase finished"
     }
 
 
@@ -584,11 +644,11 @@ class MsgTestCaseSkip(Message):
     - testcase_id (optional) : if not provided then current tc is skipped
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.skip',
-        'testcase_id': 'TD_COAP_CORE_02_v01',
+        "_type":       "testcoordination.testcase.skip",
+        "testcase_id": "TD_COAP_CORE_02_v01",
     }
 
 
@@ -598,11 +658,11 @@ class MsgTestCaseSelect(Message):
     GUI (or automated-IUT)-> Testing Tool
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testcase.select',
-        'testcase_id': 'TD_COAP_CORE_03_v01',
+        "_type":       "testcoordination.testcase.select",
+        "testcase_id": "TD_COAP_CORE_03_v01",
     }
 
 
@@ -612,10 +672,10 @@ class MsgTestSuiteAbort(Message):
     GUI (or automated-IUT)-> Testing Tool
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testsuite.abort',
+        "_type": "testcoordination.testsuite.abort",
     }
 
 
@@ -628,10 +688,10 @@ class MsgTestSuiteGetStatus(Message):
     GUI -> Testing Tool
     """
 
-    routing_key = 'control.testcoordination.service'
+    routing_key = "control.testcoordination.service"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testsuite.getstatus',
+        "_type": "testcoordination.testsuite.getstatus",
     }
 
 
@@ -645,15 +705,15 @@ class MsgTestSuiteGetStatusReply(MsgReply):
 
     """
 
-    routing_key = 'control.testcoordination.service.reply'
+    routing_key = "control.testcoordination.service.reply"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testsuite.getstatus.reply',
-        'ok': True,
-        "started": True,
-        "testcase_id": "TD_COAP_CORE_01_v01",
+        "_type":          "testcoordination.testsuite.getstatus.reply",
+        "ok":             True,
+        "started":        True,
+        "testcase_id":    "TD_COAP_CORE_01_v01",
         "testcase_state": "executing",
-        "step_id": "TD_COAP_CORE_01_v01_step_01"
+        "step_id":        "TD_COAP_CORE_01_v01_step_01"
 
     }
 
@@ -665,10 +725,10 @@ class MsgTestSuiteGetTestCases(Message):
     GUI MUST implement
     """
 
-    routing_key = 'control.testcoordination.service'
+    routing_key = "control.testcoordination.service"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testsuite.gettestcases',
+        "_type": "testcoordination.testsuite.gettestcases",
     }
 
 
@@ -678,29 +738,29 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
     Testing Tool -> GUI
     """
 
-    routing_key = 'control.testcoordination.service.reply'
+    routing_key = "control.testcoordination.service.reply"
 
     _msg_data_template = {
-        '_type': 'testcoordination.testsuite.gettestcases.reply',
-        'ok': True,
+        "_type":   "testcoordination.testsuite.gettestcases.reply",
+        "ok":      True,
         "tc_list": [
             {
-                "testcase_id": "TD_COAP_CORE_01_v01",
+                "testcase_id":  "TD_COAP_CORE_01_v01",
                 "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
-                "objective": "Perform GET transaction(CON mode)",
-                "state": None
+                "objective":    "Perform GET transaction(CON mode)",
+                "state":        None
             },
             {
-                "testcase_id": "TD_COAP_CORE_02_v01",
+                "testcase_id":  "TD_COAP_CORE_02_v01",
                 "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
-                "objective": "Perform DELETE transaction (CON mode)",
-                "state": None
+                "objective":    "Perform DELETE transaction (CON mode)",
+                "state":        None
             },
             {
-                "testcase_id": "TD_COAP_CORE_03_v01",
+                "testcase_id":  "TD_COAP_CORE_03_v01",
                 "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
-                "objective": "Perform PUT transaction (CON mode)",
-                "state": None
+                "objective":    "Perform PUT transaction (CON mode)",
+                "state":        None
             }
         ]
     }
@@ -714,12 +774,12 @@ class MsgTestCaseVerdict(Message):
     Used to indicate to the GUI (or automated-iut) which is the final verdict of the testcase.
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.testcase.verdict",
-        "verdict": "pass",
-        "description": "No interoperability error was detected,",
+        "_type":            "testcoordination.testcase.verdict",
+        "verdict":          "pass",
+        "description":      "No interoperability error was detected,",
         "partial_verdicts": [
             ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
@@ -731,9 +791,9 @@ class MsgTestCaseVerdict(Message):
              "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
             ["CHECK_3_post_mortem_analysis", "pass",
              "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"]],
-        "testcase_id": "TD_COAP_CORE_01_v01",
-        "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
-        "objective": "Perform GET transaction(CON mode)", "state": "finished"
+        "testcase_id":      "TD_COAP_CORE_01_v01",
+        "testcase_ref":     "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
+        "objective":        "Perform GET transaction(CON mode)", "state": "finished"
     }
 
 
@@ -745,49 +805,50 @@ class MsgTestSuiteReport(Message):
     Used to indicate to the GUI (or automated-iut) the final results of the test session.
     """
 
-    routing_key = 'control.testcoordination'
+    routing_key = "control.testcoordination"
 
     _msg_data_template = {
         "_type": "testcoordination.testsuite.report",
         "TD_COAP_CORE_01_v01":
-            {
-                "verdict": "pass",
-                "description": "No interoperability error was detected,",
-                "partial_verdicts":
-                    [
-                        ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_04", "pass",
-                         "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
-                        ["CHECK_1_post_mortem_analysis", "pass",
-                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
-                        ["CHECK_2_post_mortem_analysis", "pass",
-                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
-                        [
-                            "CHECK_3_post_mortem_analysis",
-                            "pass",
-                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"]
-                    ]
-            },
+                 {
+                     "verdict":     "pass",
+                     "description": "No interoperability error was detected,",
+                     "partial_verdicts":
+                                    [
+                                        ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
+                                        ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
+                                        ["TD_COAP_CORE_01_v01_step_04", "pass",
+                                         "VERIFY step: User informed that the information was displayed correclty on his/her IUT",
+                                         ""],
+                                        ["CHECK_1_post_mortem_analysis", "pass",
+                                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
+                                        ["CHECK_2_post_mortem_analysis", "pass",
+                                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                                        [
+                                            "CHECK_3_post_mortem_analysis",
+                                            "pass",
+                                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"]
+                                    ]
+                 },
 
         "TD_COAP_CORE_02_v01":
-            {
-                "verdict": "pass",
-                "description": "No interoperability error was detected,",
-                "partial_verdicts": [
-                    ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_04", "pass",
-                     "VERIFY step: User informed that the information was displayed correclty on his/her IUT",
-                     ""], ["CHECK_1_post_mortem_analysis", "pass",
-                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, code=4)"],
-                    ["CHECK_2_post_mortem_analysis", "pass",
-                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP(code=66, mid=0xa8cd, tok=b'')"]]
-            }
+                 {
+                     "verdict":          "pass",
+                     "description":      "No interoperability error was detected,",
+                     "partial_verdicts": [
+                         ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
+                         ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
+                         ["TD_COAP_CORE_02_v01_step_04", "pass",
+                          "VERIFY step: User informed that the information was displayed correclty on his/her IUT",
+                          ""], ["CHECK_1_post_mortem_analysis", "pass",
+                                "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, code=4)"],
+                         ["CHECK_2_post_mortem_analysis", "pass",
+                          "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP(code=66, mid=0xa8cd, tok=b'')"]]
+                 }
     }
 
+    # # # # # # SNIFFING SERVICES REQUEST MESSAGES # # # # # #
 
-###### SNIFFING SERVICES REQUEST MESSAGES ######
 
 class MsgSniffingStart(Message):
     """
@@ -796,13 +857,13 @@ class MsgSniffingStart(Message):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service'
+    routing_key = "control.sniffing.service"
 
     _msg_data_template = {
-        '_type': 'sniffing.start',
-        'capture_id': 'TD_COAP_CORE_01',
-        'filter_if': 'tun0',
-        'filter_proto': 'udp port 5683'
+        "_type":        "sniffing.start",
+        "capture_id":   "TD_COAP_CORE_01",
+        "filter_if":    "tun0",
+        "filter_proto": "udp port 5683"
     }
 
 
@@ -813,11 +874,11 @@ class MsgSniffingStartReply(MsgReply):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service.reply'
+    routing_key = "control.sniffing.service.reply"
 
     _msg_data_template = {
-        '_type': 'sniffing.start.reply',
-        'ok': True
+        "_type": "sniffing.start.reply",
+        "ok":    True
     }
 
 
@@ -828,10 +889,10 @@ class MsgSniffingStop(Message):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service'
+    routing_key = "control.sniffing.service"
 
     _msg_data_template = {
-        '_type': 'sniffing.stop',
+        "_type": "sniffing.stop",
     }
 
 
@@ -842,11 +903,11 @@ class MsgSniffingStoptReply(MsgReply):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service.reply'
+    routing_key = "control.sniffing.service.reply"
 
     _msg_data_template = {
-        '_type': 'sniffing.stop.reply',
-        'ok': True
+        "_type": "sniffing.stop.reply",
+        "ok":    True
     }
 
 
@@ -857,24 +918,24 @@ class MsgSniffingGetCapture(Message):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service'
+    routing_key = "control.sniffing.service"
 
     _msg_data_template = {
-        '_type': 'sniffing.getcapture',
+        "_type":      "sniffing.getcapture",
         "capture_id": "TD_COAP_CORE_01",
 
     }
 
 
 class MsgSniffingGetCaptureReply(MsgReply):
-    routing_key = 'control.sniffing.service.reply'
+    routing_key = "control.sniffing.service.reply"
 
     _msg_data_template = {
-        '_type': 'sniffing.getcapture.reply',
-        'ok': True,
-        'file_enc': 'pcap_base64',
-        'filename': 'TD_COAP_CORE_01.pcap',
-        'value': '1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA',  # empty PCAP
+        "_type":    "sniffing.getcapture.reply",
+        "ok":       True,
+        "file_enc": "pcap_base64",
+        "filename": "TD_COAP_CORE_01.pcap",
+        "value":    "1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA",  # empty PCAP
     }
 
 
@@ -885,26 +946,26 @@ class MsgSniffingGetCaptureLast(Message):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    routing_key = 'control.sniffing.service'
+    routing_key = "control.sniffing.service"
 
     _msg_data_template = {
-        '_type': 'sniffing.getlastcapture',
+        "_type": "sniffing.getlastcapture",
     }
 
 
 class MsgSniffingGetCaptureLastReply(MsgReply):
-    routing_key = 'control.sniffing.service.reply'
+    routing_key = "control.sniffing.service.reply"
 
     _msg_data_template = {
-        '_type': 'sniffing.getlastcapture.reply',
-        'ok': True,
-        'file_enc': 'pcap_base64',
-        'filename': 'TD_COAP_CORE_01.pcap',
-        'value': '1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA',  # empty PCAP
+        "_type":    "sniffing.getlastcapture.reply",
+        "ok":       True,
+        "file_enc": "pcap_base64",
+        "filename": "TD_COAP_CORE_01.pcap",
+        "value":    "1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA",  # empty PCAP
     }
 
+    # # # # # # ANALYSIS MESSAGES # # # # # #
 
-###### ANALYSIS MESSAGES ######
 
 class MsgInteropTestCaseAnalyze(Message):
     """
@@ -920,17 +981,17 @@ class MsgInteropTestCaseAnalyze(Message):
     Testing Tool SHOULD implement (design recommendation)
     """
 
-    PCAP_empty_base64 = '1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA'
+    PCAP_empty_base64 = "1MOyoQIABAAAAAAAAAAAAMgAAAAAAAAA"
 
-    routing_key = 'control.analysis.service'
+    routing_key = "control.analysis.service"
 
     _msg_data_template = {
-        '_type': 'analysis.interop.testcase.analyze',
-        "testcase_id": "TD_COAP_CORE_01",
+        "_type":        "analysis.interop.testcase.analyze",
+        "testcase_id":  "TD_COAP_CORE_01",
         "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
-        "file_enc": "pcap_base64",
-        "filename": "TD_COAP_CORE_01.pcap",
-        "value": PCAP_empty_base64,
+        "file_enc":     "pcap_base64",
+        "filename":     "TD_COAP_CORE_01.pcap",
+        "value":        PCAP_empty_base64,
     }
 
 
@@ -950,16 +1011,17 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
     """
 
     _msg_data_template = {
-        '_type': 'analysis.interop.testcase.analyze.reply',
-        'ok': True,
-        'verdict': 'pass',
-        'analysis_type': 'postmortem',
-        'description': 'The test purpose has been verified without any fault detected',
-        'review_frames': [],
-        'token': '0lzzb_Bx30u8Gu-xkt1DFE1GmB4',
+        "_type":            "analysis.interop.testcase.analyze.reply",
+        "ok":               True,
+        "verdict":          "pass",
+        "analysis_type":    "postmortem",
+        "description":      "The test purpose has been verified without any fault detected",
+        "review_frames":    [],
+        "token":            "0lzzb_Bx30u8Gu-xkt1DFE1GmB4",
         "partial_verdicts": [
             [
-                "pass", "<Frame   1: [127.0.0.1 -> 127.0.0.1] CoAP [CON 43521] GET /test> Match: CoAP(type=0, code=1)"
+                "pass",
+                "<Frame   1: [127.0.0.1 -> 127.0.0.1] CoAP [CON 43521] GET /test> Match: CoAP(type=0, code=1)"
             ],
 
             [
@@ -973,12 +1035,12 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
                 Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"
             ]
         ],
-        "testcase_id": "TD_COAP_CORE_01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "testcase_id":      "TD_COAP_CORE_01",
+        "testcase_ref":     "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
     }
 
+    # # # # # # DISSECTION MESSAGES # # # # # #
 
-###### DISSECTION MESSAGES ######
 
 class MsgDissectionDissectCapture(Message):
     """
@@ -997,14 +1059,14 @@ class MsgDissectionDissectCapture(Message):
                                               "AAXBjtHRlc6oJfVjSGgYAOwAAADsAAABgAz8VABMRP7u7AAAAAAAAAAAAAAAAAAG7uw" \
                                               "AAAAAAAAAAAAAAAAAC17wWMwATWVBAAXBjtHRlc3TBAg=="
 
-    routing_key = 'control.dissection.service'
+    routing_key = "control.dissection.service"
 
     _msg_data_template = {
-        '_type': 'dissection.dissectcapture',
-        "file_enc": "pcap_base64",
-        "filename": "TD_COAP_CORE_01.pcap",
-        "value": PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
-        "protocol_selection": 'coap',
+        "_type":              "dissection.dissectcapture",
+        "file_enc":           "pcap_base64",
+        "filename":           "TD_COAP_CORE_01.pcap",
+        "value":              PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
+        "protocol_selection": "coap",
     }
 
 
@@ -1019,45 +1081,45 @@ class MsgDissectionDissectCaptureReply(MsgReply):
 
     _frames_example = [
         {
-            "_type": "frame",
-            "id": 1,
-            "timestamp": 1464858393.547275,
-            "error": None,
+            "_type":          "frame",
+            "id":             1,
+            "timestamp":      1464858393.547275,
+            "error":          None,
             "protocol_stack": [
                 {
-                    "_type": "protocol",
-                    "_protocol": "NullLoopback",
-                    "AddressFamily": "2",
+                    "_type":          "protocol",
+                    "_protocol":      "NullLoopback",
+                    "AddressFamily":  "2",
                     "ProtocolFamily": "0"
                 },
                 {
-                    "_type": "protocol",
-                    "_protocol": "IPv4",
-                    "Version": "4",
-                    "HeaderLength": "5",
-                    "TypeOfService": "0x00",
-                    "TotalLength": "41",
-                    "Identification": "0x71ac",
-                    "Reserved": "0",
-                    "DontFragment": "0",
-                    "MoreFragments": "0",
-                    "FragmentOffset": "0",
-                    "TimeToLive": "64",
-                    "Protocol": "17",
-                    "HeaderChecksum": "0x0000",
-                    "SourceAddress": "127.0.0.1",
+                    "_type":              "protocol",
+                    "_protocol":          "IPv4",
+                    "Version":            "4",
+                    "HeaderLength":       "5",
+                    "TypeOfService":      "0x00",
+                    "TotalLength":        "41",
+                    "Identification":     "0x71ac",
+                    "Reserved":           "0",
+                    "DontFragment":       "0",
+                    "MoreFragments":      "0",
+                    "FragmentOffset":     "0",
+                    "TimeToLive":         "64",
+                    "Protocol":           "17",
+                    "HeaderChecksum":     "0x0000",
+                    "SourceAddress":      "127.0.0.1",
                     "DestinationAddress": "127.0.0.1",
-                    "Options": "b''"
+                    "Options":            "b''"
                 }
             ]
         },
     ]
 
     _msg_data_template = {
-        '_type': 'dissection.dissectcapture.reply',
-        'ok': True,
-        'token': '0lzzb_Bx30u8Gu-xkt1DFE1GmB4',
-        'frames': _frames_example
+        "_type":  "dissection.dissectcapture.reply",
+        "ok":     True,
+        "token":  "0lzzb_Bx30u8Gu-xkt1DFE1GmB4",
+        "frames": _frames_example
     }
 
 
@@ -1072,20 +1134,19 @@ class MsgDissectionAutoDissect(Message):
      - privacy?
 
     """
-    routing_key = 'control.dissection'
+    routing_key = "control.dissection"
 
     _frames_example = MsgDissectionDissectCaptureReply._frames_example
 
     _msg_data_template = {
-        '_type': 'dissection.autotriggered',
-        'token': '0lzzb_Bx30u8Gu-xkt1DFE1GmB4',
-        'frames': _frames_example,
-        "testcase_id": "TBD",
+        "_type":        "dissection.autotriggered",
+        "token":        "0lzzb_Bx30u8Gu-xkt1DFE1GmB4",
+        "frames":       _frames_example,
+        "testcase_id":  "TBD",
         "testcase_ref": "TBD"
     }
 
-
-###### PRIVACY TESTING TOOL MESSAGES ######
+    # # # # # # PRIVACY TESTING TOOL MESSAGES # # # # # #
 
 
 class MsgPrivacyAnalyze(Message):
@@ -1093,7 +1154,7 @@ class MsgPrivacyAnalyze(Message):
         Testing Tool's MUST-implement.
         Analyze PCAP File for Privacy checks.
     """
-    routing_key = 'control.privacy.service'
+    routing_key = "control.privacy.service"
 
     # TODO: This message should be update with a valuable privacy example
     # PCAP_COAP_GET_OVER_TUN_INTERFACE_base64 = "1MOyoQIABAAAAAAAAAAAAMgAAABlAAAAqgl9WK8aBgA7AAAAOwAAAGADPxUAExFAu7s" \
@@ -1113,8 +1174,8 @@ class MsgPrivacyAnalyze(Message):
                                               "ip4DAAgAh04FAKGJ/p4EAAgAAAAAAAAAAAAFAAgAAAAAAAAAAAAAAAAAbAAAAA=="
 
     _msg_data_template = {
-        "_type": "privacy.analyze",
-        "value": PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
+        "_type":    "privacy.analyze",
+        "value":    PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
         "file_enc": "pcap_base64",
         "filename": "TD_PRIVACY_DEMO_01.pcap",
     }
@@ -1126,47 +1187,48 @@ class MsgPrivacyAnalyzeReply(MsgReply):
             Response of Analyze request from GUI
     """
 
-    _privacy_empty_report = {'type': 'Anomalies Report',
-                             'protocols': ['coap'],
-                             'conversation': [],
-                             'status': 'none',
-                             'testing_tool': 'Privacy Testing Tool',
-                             'byte_exchanged': 0,
-                             'timestamp': 1493798811.53124,
-                             'is_final': True,
-                             'packets': {},
-                             'version': '0.0.1'}
-
+    _privacy_empty_report = {"type":           "Anomalies Report",
+                             "protocols":      ["coap"],
+                             "conversation":   [],
+                             "status":         "none",
+                             "testing_tool":   "Privacy Testing Tool",
+                             "byte_exchanged": 0,
+                             "timestamp":      1493798811.53124,
+                             "is_final":       True,
+                             "packets":        {},
+                             "version":        "0.0.1"}
 
     _msg_data_template = {
-        '_type': 'privacy.analyze.reply',
-        'ok': True,
-        'verdict': _privacy_empty_report,
-        'testcase_id': 'TBD',
+        "_type":       "privacy.analyze.reply",
+        "ok":          True,
+        "verdict":     _privacy_empty_report,
+        "testcase_id": "TBD",
     }
+
 
 class MsgPrivacyGetConfiguration(Message):
     """
            Read Privacy configuration.
            GUI MUST display this info during setup
     """
-    routing_key = 'control.privacy.service'
+    routing_key = "control.privacy.service"
 
     _msg_data_template = {
         "_type": "privacy.configuration.get",
     }
+
 
 class MsgPrivacyGetConfigurationReply(MsgReply):
     """
            Read Privacy configuration.
            GUI MUST display this info during setup
     """
-    routing_key = 'control.privacy.service.reply'
+    routing_key = "control.privacy.service.reply"
 
     _msg_data_template = {
-        "_type": "privacy.configuration.get.reply",
-        "configuration" : {},
-        "ok": True,
+        "_type":         "privacy.configuration.get.reply",
+        "configuration": {},
+        "ok":            True,
     }
 
 
@@ -1175,12 +1237,12 @@ class MsgPrivacySetConfiguration(Message):
         Write Privacy configuration.
         GUI MUST display this info during setup
     """
-    routing_key = 'control.privacy.service'
+    routing_key = "control.privacy.service"
 
     CFG_EXAMPLE = dict()
 
     _msg_data_template = {
-        "_type": "privacy.configuration.set",
+        "_type":         "privacy.configuration.set",
         "configuration": CFG_EXAMPLE,
     }
 
@@ -1190,11 +1252,11 @@ class MsgPrivacySetConfigurationReply(MsgReply):
         Write Privacy configuration.
         GUI MUST display this info during setup
     """
-    routing_key = 'control.privacy.service.reply'
+    routing_key = "control.privacy.service.reply"
 
     _msg_data_template = {
         "_type": "privacy.configuration.set.reply",
-        "ok": True,
+        "ok":    True,
     }
 
 
@@ -1206,7 +1268,7 @@ class MsgPrivacyGetStatus(Message):
      - privacy?
 
     """
-    routing_key = 'control.privacy.service'
+    routing_key = "control.privacy.service"
 
     _msg_data_template = {
         "_type": "privacy.getstatus",
@@ -1223,15 +1285,16 @@ class MsgPrivacyGetStatusReply(MsgReply):
     """
 
     REPORT_EXAMPLE = dict()
-    routing_key = 'control.privacy.service.reply'
+    routing_key = "control.privacy.service.reply"
 
     _msg_data_template = {
-        "_type": "privacy.getstatus.reply",
+        "_type":   "privacy.getstatus.reply",
         "verdict": REPORT_EXAMPLE,
-        "status": "TBD",
-        "ok": True,
+        "status":  "TBD",
+        "ok":      True,
 
     }
+
 
 class MsgPrivacyIssue(Message):
     """
@@ -1241,62 +1304,65 @@ class MsgPrivacyIssue(Message):
          - privacy
 
         """
-    routing_key = 'control.privacy'
+    routing_key = "control.privacy"
 
     _msg_data_template = {
-        "_type": "privacy.issue",
-        "verdict":  json.dumps(MsgPrivacyAnalyzeReply._privacy_empty_report),
+        "_type":   "privacy.issue",
+        "verdict": json.dumps(MsgPrivacyAnalyzeReply._privacy_empty_report),
     }
 
 
 message_types_dict = {
-    "tun.start" : MsgAgentTunStart, # TestingTool -> Agent
-    "tun.started" : MsgAgentTunStarted, # Agent -> TestingTool
-    "testcoordination.testsuite.start": MsgTestSuiteStart,  # GUI -> TestingTool
-    "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
-    "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI
-    "testcoordination.testcase.start": MsgTestCaseStart,  # GUI -> TestingTool
-    "testcoordination.step.execute": MsgStepExecute,  # TestingTool -> GUI
-    "testcoordination.testcase.configuration": MsgTestCaseConfiguration,  # TestingTool -> GUI
-    "testcoordination.testcase.stop": MsgTestCaseStop,  # GUI -> TestingTool
-    "testcoordination.testcase.restart": MsgTestCaseRestart,  # GUI -> TestingTool
-    "testcoordination.step.stimuli.executed": MsgStimuliExecuted,  # GUI -> TestingTool
-    "testcoordination.step.check.response": MsgCheckResponse,  # GUI -> TestingTool
-    "testcoordination.step.verify.response": MsgVerifyResponse,  # GUI -> TestingTool
-    "testcoordination.testcase.skip": MsgTestCaseSkip,  # GUI -> TestingTool
-    "testcoordination.testcase.select": MsgTestCaseSelect,  # GUI -> TestingTool
-    "testcoordination.testcase.finish": MsgTestCaseFinish,  # GUI -> TestingTool
-    "testcoordination.testcase.finished": MsgTestCaseFinished,  # TestingTool -> GUI
-    "testcoordination.testcase.verdict": MsgTestCaseVerdict,  # TestingTool -> GUI
-    "testcoordination.testsuite.abort": MsgTestSuiteAbort,  # GUI -> TestingTool
-    "testcoordination.testsuite.getstatus": MsgTestSuiteGetStatus,  # GUI -> TestingTool
-    "testcoordination.testsuite.getstatus.reply": MsgTestSuiteGetStatusReply,  # TestingTool -> GUI (reply)
-    "testcoordination.testsuite.gettestcases": MsgTestSuiteGetTestCases,  # GUI -> TestingTool
+    "tun.start":                                     MsgAgentTunStart,  # TestingTool -> Agent
+    "tun.started":                                   MsgAgentTunStarted,  # Agent -> TestingTool
+    "session.interop.configuration":                 MsgInteropSessionConfiguration,  # Orchestrator -> TestingTool
+    "testingtool.configured":                        MsgTestingToolConfigured,  # TestingTool -> Orchestrator, GUI
+    "testingtool.component.ready":                   MsgTestingToolComponentReady,  # Testing Tool internal
+    "testingtool.component.shutdown":                MsgTestingToolComponentShutdown,  # Testing Tool internal
+    "testingtool.ready":                             MsgTestingToolReady,  # GUI Testing Tool -> GUI
+    "testingtool.terminate":                         MsgTestingToolTerminate,
+    "testcoordination.testsuite.start":              MsgTestSuiteStart,  # GUI -> TestingTool
+    "testcoordination.testsuite.finish":             MsgTestSuiteFinish,  # GUI -> TestingTool
+    "testcoordination.testcase.ready":               MsgTestCaseReady,  # TestingTool -> GUI
+    "testcoordination.testcase.start":               MsgTestCaseStart,  # GUI -> TestingTool
+    "testcoordination.step.execute":                 MsgStepExecute,  # TestingTool -> GUI
+    "testcoordination.testcase.configuration":       MsgTestCaseConfiguration,  # TestingTool -> GUI
+    "testcoordination.testcase.stop":                MsgTestCaseStop,  # GUI -> TestingTool
+    "testcoordination.testcase.restart":             MsgTestCaseRestart,  # GUI -> TestingTool
+    "testcoordination.step.stimuli.executed":        MsgStimuliExecuted,  # GUI -> TestingTool
+    "testcoordination.step.check.response":          MsgCheckResponse,  # GUI -> TestingTool
+    "testcoordination.step.verify.response":         MsgVerifyResponse,  # GUI -> TestingTool
+    "testcoordination.testcase.skip":                MsgTestCaseSkip,  # GUI -> TestingTool
+    "testcoordination.testcase.select":              MsgTestCaseSelect,  # GUI -> TestingTool
+    "testcoordination.testcase.finish":              MsgTestCaseFinish,  # GUI -> TestingTool
+    "testcoordination.testcase.finished":            MsgTestCaseFinished,  # TestingTool -> GUI
+    "testcoordination.testcase.verdict":             MsgTestCaseVerdict,  # TestingTool -> GUI
+    "testcoordination.testsuite.abort":              MsgTestSuiteAbort,  # GUI -> TestingTool
+    "testcoordination.testsuite.getstatus":          MsgTestSuiteGetStatus,  # GUI -> TestingTool
+    "testcoordination.testsuite.getstatus.reply":    MsgTestSuiteGetStatusReply,  # TestingTool -> GUI (reply)
+    "testcoordination.testsuite.gettestcases":       MsgTestSuiteGetTestCases,  # GUI -> TestingTool
     "testcoordination.testsuite.gettestcases.reply": MsgTestSuiteGetTestCasesReply,  # TestingTool -> GUI (reply)
-    "testcoordination.testsuite.report": MsgTestSuiteReport,  # TestingTool -> GUI
-    "sniffing.start": MsgSniffingStart,  # Testing Tool Internal
-    "sniffing.stop": MsgSniffingStop,  # Testing Tool Internal
-    "sniffing.getcapture": MsgSniffingGetCapture,  # Testing Tool Internal
-    "sniffing.getlastcapture": MsgSniffingGetCaptureLast,  # Testing Tool Internal
-    "analysis.interop.testcase.analyze": MsgInteropTestCaseAnalyze,  # Testing Tool Internal
-    "analysis.interop.testcase.analyze.reply": MsgInteropTestCaseAnalyzeReply,  # Testing Tool Internal
-    "dissection.dissectcapture": MsgDissectionDissectCapture,  # Testing Tool Internal
-    "dissection.dissectcapture.reply": MsgDissectionDissectCaptureReply,  # Testing Tool Internal
-    "dissection.autotriggered": MsgDissectionAutoDissect,  # TestingTool -> GUI
-    "testingtool.component.ready": MsgTestingToolComponentReady,  # Testing Tool internal
-    "testingtool.component.shutdown": MsgTestingToolComponentShutdown,  # Testing Tool internal
-    "testingtool.ready": MsgTestingToolReady,  # GUI Testing Tool -> GUI
-    "testingtool.terminate": MsgTestingToolTerminate,  # GUI (or Orchestrator?) -> TestingTool
+    "testcoordination.testsuite.report":             MsgTestSuiteReport,  # TestingTool -> GUI
+    "sniffing.start":                                MsgSniffingStart,  # Testing Tool Internal
+    "sniffing.stop":                                 MsgSniffingStop,  # Testing Tool Internal
+    "sniffing.getcapture":                           MsgSniffingGetCapture,  # Testing Tool Internal
+    "sniffing.getlastcapture":                       MsgSniffingGetCaptureLast,  # Testing Tool Internal
+    "analysis.interop.testcase.analyze":             MsgInteropTestCaseAnalyze,  # Testing Tool Internal
+    "analysis.interop.testcase.analyze.reply":       MsgInteropTestCaseAnalyzeReply,  # Testing Tool Internal
+    "dissection.dissectcapture":                     MsgDissectionDissectCapture,  # Testing Tool Internal
+    "dissection.dissectcapture.reply":               MsgDissectionDissectCaptureReply,  # Testing Tool Internal
+    "dissection.autotriggered":                      MsgDissectionAutoDissect,  # TestingTool -> GUI
+    # GUI (or Orchestrator?) -> TestingTool
     # PRIVACY TESTING TOOL -> Reference: Luca Lamorte (UL)
-    "privacy.analyze": MsgPrivacyAnalyze, # TestingTool internal
-    "privacy.analyze.reply": MsgPrivacyAnalyzeReply, # TestingTool internal (reply)
-    "privacy.getstatus":  MsgPrivacyGetStatus, # GUI -> TestingTool
-    "privacy.getstatus.reply":  MsgPrivacyGetStatusReply, # GUI -> TestingTool (reply)
-    "privacy.issue":  MsgPrivacyIssue, # TestingTool -> GUI,
-    "privacy.configuration.get":  MsgPrivacyGetConfiguration, # TestingTool -> GUI,
-    "privacy.configuration.get.reply":  MsgPrivacyGetConfigurationReply, # TestingTool -> GUI (reply),
-    "privacy.configuration.set":  MsgPrivacySetConfiguration, # GUI -> TestingTool,
-    "privacy.configuration.set.reply":  MsgPrivacySetConfigurationReply, # GUI -> TestingTool (reply),
+    "privacy.analyze":                               MsgPrivacyAnalyze,  # TestingTool internal
+    "privacy.analyze.reply":                         MsgPrivacyAnalyzeReply,  # TestingTool internal (reply)
+    "privacy.getstatus":                             MsgPrivacyGetStatus,  # GUI -> TestingTool
+    "privacy.getstatus.reply":                       MsgPrivacyGetStatusReply,  # GUI -> TestingTool (reply)
+    "privacy.issue":                                 MsgPrivacyIssue,  # TestingTool -> GUI,
+    "privacy.configuration.get":                     MsgPrivacyGetConfiguration,  # TestingTool -> GUI,
+    "privacy.configuration.get.reply":               MsgPrivacyGetConfigurationReply,  # TestingTool -> GUI (reply),
+    "privacy.configuration.set":                     MsgPrivacySetConfiguration,  # GUI -> TestingTool,
+    "privacy.configuration.set.reply":               MsgPrivacySetConfigurationReply,  # GUI -> TestingTool (reply),
 }
 
 if __name__ == '__main__':
@@ -1308,7 +1374,7 @@ if __name__ == '__main__':
 
     m1 = MsgTestCaseStart(hola='verano')
     m2 = MsgTestCaseStart()
-    # m2 = MsgTestCaseStart(routing_key = 'lolo', hola='verano')
+    # m2 = MsgTestCaseStart(routing_key = "lolo', hola='verano')
 
     print(m1)
     print(m1._msg_data)
@@ -1334,10 +1400,10 @@ if __name__ == '__main__':
     print(m3)
 
     j = json.dumps({
-        '_type': 'dissection.dissectcapture',
-        "file_enc": "pcap_base64",
-        "filename": "TD_COAP_CORE_01.pcap",
-        "protocol_selection": 'coap',
+        "_type":              "dissection.dissectcapture",
+        "file_enc":           "pcap_base64",
+        "filename":           "TD_COAP_CORE_01.pcap",
+        "protocol_selection": "coap",
     })
     r = Message.from_json(j)
     print(type(r))

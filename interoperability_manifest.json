@@ -28,7 +28,7 @@
     {
       "field_name": "Testing Tool Description",
       "type": "text",
-      "value": [
+      "values": [
         "Interoperability Testing Tool for testing CoAP interoperability between two IUTs (CoAP client and CoAP server).",
         "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf"
         ]

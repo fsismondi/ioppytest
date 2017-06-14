@@ -1,11 +1,12 @@
 import unittest, logging, os, pika, json
 from collections import OrderedDict
 from coap_testing_tool import AMQP_URL
-from coap_testing_tool.test_coordinator.coordinator import Coordinator, TD_COAP_CFG,TD_COAP, import_teds
+from coap_testing_tool.test_coordinator.coordinator import Coordinator, TD_COAP_CFG, TD_COAP, import_teds
+
 
 class CoordinatorTestCase(unittest.TestCase):
-
     number_of_implemented_TCs = 24
+
     def setUp(self):
 
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -18,7 +19,7 @@ class CoordinatorTestCase(unittest.TestCase):
         it_docs = import_teds(TD_COAP)
         for d in self.coord.teds:
             print(d)
-        print( it_docs)
+        print(it_docs)
         for item in it_docs:
             print(str(type(item)))
             print(str(type(item)))
@@ -34,7 +35,6 @@ class CoordinatorTestCase(unittest.TestCase):
         self.coord.select_testcase('TD_COAP_CORE_02_v01')
         assert self.coord.current_tc.id == 'TD_COAP_CORE_02_v01'
 
-
     def test_check_all_steps_finished(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!
         c = self.coord
@@ -44,7 +44,7 @@ class CoordinatorTestCase(unittest.TestCase):
         for p in tc.sequence:
             assert tc.check_all_steps_finished() is False
             p.change_state('postponed')
-            print('step state: '+ str(p.state))
+            print('step state: ' + str(p.state))
         assert tc.check_all_steps_finished() is True
         print("TD finished!")
 
@@ -57,7 +57,6 @@ class CoordinatorTestCase(unittest.TestCase):
             print("iter over TCs: \n" + str(tc))
         assert tc == None
 
-
     def test_stepping_over_the_steps_and_the_TCs(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!
         c = self.coord
@@ -68,7 +67,7 @@ class CoordinatorTestCase(unittest.TestCase):
         print("starting with: " + tc.id)
 
         while tc is not None:
-            print("running TC: "+ str(tc.id))
+            print("running TC: " + str(tc.id))
             s = c.next_step()
 
             while s is not None:
@@ -80,7 +79,6 @@ class CoordinatorTestCase(unittest.TestCase):
             tc = c.next_testcase()
         print("TD finished!")
 
-
     def test_testsuite_report(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!
         c = self.coord
@@ -91,7 +89,7 @@ class CoordinatorTestCase(unittest.TestCase):
         print("starting with: " + tc.id)
 
         while tc is not None:
-            print("running TC: "+ str(tc.id))
+            print("running TC: " + str(tc.id))
             s = c.next_step()
 
             while s is not None:
@@ -111,8 +109,6 @@ class CoordinatorTestCase(unittest.TestCase):
         print("TD finished!")
 
         print(json.dumps(c.testsuite_report()))
-
-
 
     def test_stepping_over_TC_config_atributes_chech_not_None(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!

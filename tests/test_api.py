@@ -32,12 +32,13 @@ services_backlog = []
 """
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment
-- Have CoAP testing tool and listening to the bus
+- Have CoAP testing tool running & listening to the bus
 """
 
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
+    MsgTestCaseConfiguration(),
     MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02_v01'),
