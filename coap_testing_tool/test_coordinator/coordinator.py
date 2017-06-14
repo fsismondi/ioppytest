@@ -12,6 +12,7 @@ import pika
 import time
 import logging
 
+from urllib.parse import urlparse
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE
@@ -33,10 +34,11 @@ SNIFFER_FILTER_IF = 'tun0'
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
 
+session_config = None
 logger = logging.getLogger()
 
 
-### AUX functions ###
+# # # AUX functions # # #
 
 def list_to_str(ls):
     """
@@ -60,7 +62,7 @@ def list_to_str(ls):
     return ret
 
 
-### YAML parser aux classes and methods ###
+# # # YAML parser aux classes and methods # # #
 def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
@@ -386,11 +388,11 @@ class TestCase:
         d = OrderedDict()
         d['testcase_id'] = self.id
         d['testcase_ref'] = self.uri
+        d['state'] = self.state
 
         if verbose:
             d['objective'] = self.objective
             d['pre_conditions'] = self.pre_conditions
-            d['state'] = self.state
 
         return d
 
@@ -541,6 +543,10 @@ class Coordinator:
                                 queue=self.events_q_name,
                                 routing_key='control.testcoordination')
 
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=self.events_q_name,
+                                routing_key='control.session')
+
         self.channel.basic_consume(self.handle_service,
                                    queue=self.services_q_name,
                                    no_ack=False)
@@ -573,7 +579,7 @@ class Coordinator:
         logger.info('start consuming..')
         self.channel.start_consuming()
 
-    ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
+    # # # AUXILIARY AMQP MESSAGING FUNCTIONS # # #
 
     def notify_tun_interfaces_start(self):
         """
@@ -636,7 +642,7 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.report)
         msg_fields.update(self.current_tc.to_dict(verbose=False))
-        event = MsgTestCaseVerdict( **msg_fields)
+        event = MsgTestCaseVerdict(**msg_fields)
         publish_message(self.channel, event)
 
         # Overwrite final verdict file with final details
@@ -734,21 +740,21 @@ class Coordinator:
         logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response
 
-    ### API ENDPOINTS ###
+    # # # API ENDPOINTS # # #
 
     def handle_service(self, ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
+            'content_type':   properties.content_type,
+            'delivery_mode':  properties.delivery_mode,
             'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
+            'reply_to':       properties.reply_to,
+            'message_id':     properties.message_id,
+            'timestamp':      properties.timestamp,
+            'user_id':        properties.user_id,
+            'app_id':         properties.app_id,
         }
         request = Message.from_json(body)
         request.update_properties(**props_dict)
@@ -781,14 +787,14 @@ class Coordinator:
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
+            'content_type':   properties.content_type,
+            'delivery_mode':  properties.delivery_mode,
             'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
+            'reply_to':       properties.reply_to,
+            'message_id':     properties.message_id,
+            'timestamp':      properties.timestamp,
+            'user_id':        properties.user_id,
+            'app_id':         properties.app_id,
         }
         event = Message.from_json(body)
         event.update_properties(**props_dict)
@@ -796,42 +802,29 @@ class Coordinator:
         logger.info('Event received: %s' % event._type)
 
         if isinstance(event, MsgTestCaseSkip):
-
-            if self.current_tc is None:
+            # operation health check
+            if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
-                # notify all
                 self.notify_coordination_error(message=error_msg, error_code=None)
                 return
 
             try:
                 testcase_id_skip = event.testcase_id
                 if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
-                    testcase_t = self.current_tc
-                else:
-                    testcase_t = self.get_testcase(testcase_id_skip)
-
+                    testcase_id_skip = self.current_tc.id
             except:  # if no testcase_id was sent then I skip  the current one
-                testcase_t = self.current_tc
+                testcase_id_skip = self.current_tc.id
 
-            # change tc state to 'skipped'
+            try:
+                if self.skip_testcase(testcase_id_skip):  # if there's more TCs
+                    self.notify_testcase_is_ready()
+                elif self.check_testsuite_finished():  # no more TCs to execute
+                    self.finish_testsuite()
+                    self.notify_testsuite_finished()
 
-            if testcase_t is None:
-                error_msg = "Non existent testcase: %s" % testcase_id_skip
-                self.notify_coordination_error(message=error_msg, error_code=None)
+            except Exception as e:
+                self.notify_coordination_error(message=str(e), error_code=None)
                 return
-
-            logger.info("Skipping testcase: %s" % testcase_t.id)
-
-            testcase_t.change_state("skipped")
-
-            # if skipped tc is current test case then next tc
-            if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
-                self.next_testcase()
-                self.notify_testcase_is_ready()
-
-            if self.current_tc is None and self.check_testsuite_finished():
-                self.finish_testsuite()
-                self.notify_testsuite_finished()
 
         elif isinstance(event, MsgTestSuiteStart):
             # lets open tun interfaces
@@ -930,7 +923,6 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-
         elif isinstance(event, MsgVerifyResponse):
 
             if self.current_tc is None:
@@ -988,6 +980,52 @@ class Coordinator:
                 else:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
+
+        elif isinstance(event, MsgInteropSessionConfiguration):
+            global session_config
+            session_config = event.to_dict()
+
+            tc_list_requested = []
+
+            for test in event.tests:
+                test_url = urlparse(test['testcase_ref'])
+                tc_id = str(test_url.path).lstrip("/tests/")
+                tc_list_requested.append(tc_id)
+
+            tc_list_available = self.get_testcases_list()
+
+            # check selected test cases available in testing tool
+            tc_non_existent = list(set(tc_list_requested) - set(tc_list_available))
+            tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
+
+            if len(tc_list_requested) == 0:
+                self.notify_coordination_error(
+                        message='No testcases selected. Using default selection: ALL',
+                        error_code='TBD'
+                )
+                return
+
+            if len(tc_non_existent) != 0:
+                self.notify_coordination_error(
+                        message='The following testcases are not available in the testing tool: %s'
+                                % str(tc_non_existent),
+                        error_code='TBD'
+                )
+                return
+
+            if len(tc_to_skip) != 0:
+                for item in tc_to_skip:
+                    self.skip_testcase(item)
+
+            testcases = self.get_testcases_basic(verbose=False)
+
+            event = MsgTestingToolConfigured(
+                    session_id=event.session_id,
+                    testing_tools=event.testing_tools,
+                    tc_list=testcases,
+            )
+
+            publish_message(self.channel, event)
 
         elif isinstance(event, MsgCheckResponse):
 
@@ -1050,7 +1088,7 @@ class Coordinator:
             else:
                 logger.error('Malformed message')
 
-    ### TRANSITION METHODS for the Coordinator FSM ###
+    # # # TRANSITION METHODS for the Coordinator FSM # # #
 
     def get_testcases_basic(self, verbose=None):
 
@@ -1130,9 +1168,9 @@ class Coordinator:
 
             sniff_params = {
                 'capture_id': self.current_tc.id[:-4],
-                'filter_proto': filter_proto,
-                'filter_if': SNIFFER_FILTER_IF,
-                'link_id': link_id,
+                'filter_proto':                 filter_proto,
+                'filter_if':                    SNIFFER_FILTER_IF,
+                'link_id':                      link_id,
             }
 
             if self.call_service_sniffer_start(**sniff_params):
@@ -1141,6 +1179,27 @@ class Coordinator:
                 logger.error('Sniffer couldnt be started')
 
         return self.current_tc.current_step
+
+    def skip_testcase(self, testcase_id):
+        """
+
+        :param testcase_id: testcase id to skip
+        :return: next test case (Testcase type) to execute, None if no more testcases to execute
+        """
+        testcase_t = self.get_testcase(testcase_id)
+
+        if testcase_t is None:
+            error_msg = "Non existent testcase: %s" % testcase_id
+            raise Exception(error_msg)
+
+        logger.info("Skipping testcase: %s" % testcase_t.id)
+        testcase_t.change_state("skipped")
+
+        # if skipped tc is current test case then next tc
+        if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
+            self.next_testcase()
+
+        return self.current_tc
 
     def handle_verify_step_response(self, verify_response):
         # some sanity checks on the states
@@ -1398,7 +1457,7 @@ class Coordinator:
         if self.current_tc:
             summ['current_tc'] = {
                 'testcase_id': self.current_tc.id,
-                'state': self.current_tc.state,
+                'state':       self.current_tc.state,
             }
             if self.current_tc.current_step:
                 summ['current_step'] = self.current_tc.current_step.to_dict(verbose=True)
