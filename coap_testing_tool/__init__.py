@@ -4,14 +4,26 @@ import os
 import json
 from urllib.parse import urlparse
 
-__version__ = (0, 0, 5)
+__version__ = (0, 0, 6)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
-
 if '/coap_testing_tool' in project_dir:
      project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
-
 print('Project dir: %s'%project_dir)
+
+
+def get_from_environment(variable, default):
+    if variable in os.environ:
+        v = os.environ.get(variable)
+        print("Using environment variable %s=%s" % (variable, default))
+    else:
+        v = default
+        print("Using default variable %s=%s" % (variable, default))
+    return v
+
+
+
+# # # # # # hard variables # # # # # # # # # #
 
 TMPDIR = os.path.join( project_dir,'tmp')
 DATADIR = os.path.join( project_dir,'data')
@@ -22,9 +34,12 @@ TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptio
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
 
-# lets get the AMQP params from the ENV
+# # # # # # ENV variables # # # # # # # # # #
 
+# INTERACTIVE_SESSION: if not an interactive session then user input is emulated
+INTERACTIVE_SESSION = get_from_environment("INTERACTIVE_SESSION", True)
 
+# AMQP ENV variables (either get them all from ENV or set them all as default)
 try:
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
 except KeyError as e:
@@ -60,6 +75,9 @@ print(json.dumps(
                 }
 ))
 
+
+# # # # # # variables coming from index.json # # # # # # # # # #
+
 try:
     # read config information from manifest file (interoperability_manifest.json)
     with open('interoperability_manifest.json') as index_file:
@@ -81,5 +99,7 @@ __all__ = [
     TD_DIR,
     AMQP_URL,
     AGENT_NAMES,
-    AGENT_TT_ID
+    AGENT_TT_ID,
+    INTERACTIVE_SESSION
 ]
+
