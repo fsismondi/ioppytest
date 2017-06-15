@@ -14,6 +14,7 @@ import signal
 from coap_testing_tool.utils.event_bus_messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
+from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 
 logger = logging.getLogger(__name__)
 
@@ -35,27 +36,70 @@ STIMULI_HANDLER_TOUT = 10
 # }
 
 IUT_CMD = [
-    'python',
-    'automated_IUTs/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
+    'java -jar',
+    'automated_IUTs/coap_client_californium/target/coap_plugtest_client-1.1.0-SNAPSHOT.jar',
     '-t',
 ]
 
 # mapping message's stimuli id -> CoAPthon (coap client) commands
 stimuli_cmd_dict = {
-    'TD_COAP_CORE_01_v01_step_01': IUT_CMD + ['test_td_coap_core_01'],
-    'TD_COAP_CORE_02_v01_step_01': IUT_CMD + ['test_td_coap_core_02'],
-    'TD_COAP_CORE_03_v01_step_01': IUT_CMD + ['test_td_coap_core_03'],
-    'TD_COAP_CORE_04_v01_step_01': IUT_CMD + ['test_td_coap_core_04'],
-    'TD_COAP_CORE_05_v01_step_01': IUT_CMD + ['test_td_coap_core_05'],
-    'TD_COAP_CORE_06_v01_step_01': IUT_CMD + ['test_td_coap_core_06'],
-    'TD_COAP_CORE_07_v01_step_01': IUT_CMD + ['test_td_coap_core_07'],
-    'TD_COAP_CORE_08_v01_step_01': IUT_CMD + ['test_td_coap_core_08'],
-    'TD_COAP_CORE_09_v01_step_01': IUT_CMD + ['test_td_coap_core_09'],
-    'TD_COAP_CORE_10_v01_step_01': IUT_CMD + ['test_td_coap_core_10'],
+    'TD_COAP_CORE_01_v01_step_01': IUT_CMD + ['TD_COAP_CORE_01'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_02_v01_step_01': IUT_CMD + ['TD_COAP_CORE_02'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_03_v01_step_01': IUT_CMD + ['TD_COAP_CORE_03'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_04_v01_step_01': IUT_CMD + ['TD_COAP_CORE_04'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_05_v01_step_01': IUT_CMD + ['TD_COAP_CORE_05'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_06_v01_step_01': IUT_CMD + ['TD_COAP_CORE_06'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_07_v01_step_01': IUT_CMD + ['TD_COAP_CORE_07'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_08_v01_step_01': IUT_CMD + ['TD_COAP_CORE_08'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_09_v01_step_01': IUT_CMD + ['TD_COAP_CORE_09'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_10_v01_step_01': IUT_CMD + ['TD_COAP_CORE_10'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_11_v01_step_01': IUT_CMD + ['TD_COAP_CORE_11'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_12_v01_step_01': IUT_CMD + ['TD_COAP_CORE_12'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_13_v01_step_01': IUT_CMD + ['TD_COAP_CORE_13'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_14_v01_step_01': IUT_CMD + ['TD_COAP_CORE_14'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_17_v01_step_01': IUT_CMD + ['TD_COAP_CORE_17'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_18_v01_step_01': IUT_CMD + ['TD_COAP_CORE_18'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_19_v01_step_01': IUT_CMD + ['TD_COAP_CORE_19'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_20_v01_step_01': IUT_CMD + ['TD_COAP_CORE_20'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_20_v01_step_05': None,
+    'TD_COAP_CORE_21_v01_step_01': IUT_CMD + ['TD_COAP_CORE_21'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_21_v01_step_05': None,
+    'TD_COAP_CORE_21_v01_step_09': None,
+    'TD_COAP_CORE_21_v01_step_10': None,
+    'TD_COAP_CORE_22_v01_step_01': IUT_CMD + ['TD_COAP_CORE_22'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_22_v01_step_04': None,
+    'TD_COAP_CORE_22_v01_step_08': None,
+    'TD_COAP_CORE_22_v01_step_12': None,
+    'TD_COAP_CORE_22_v01_step_13': None,
+    'TD_COAP_CORE_23_v01_step_01': IUT_CMD + ['TD_COAP_CORE_23'] + ['-u coap://['] + COAP_SERVER_HOST + [
+        ']:'] + COAP_SERVER_PORT,
+    'TD_COAP_CORE_23_v01_step_05': None,
+
 }
 skip_list = [
-    'TD_COAP_CORE_11_v01'
-    'TD_COAP_CORE_11_v01'
+    'TD_COAP_CORE_15_v01'
+    'TD_COAP_CORE_16_v01'
+    'TD_COAP_CORE_31_v01'
 ]
 
 
@@ -64,8 +108,8 @@ def signal_int_handler(signal, frame):
     channel = connection.channel()
 
     publish_message(
-            channel,
-            MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        channel,
+        MsgTestingToolComponentShutdown(component=COMPONENT_ID)
     )
 
     logger.info('got SIGINT. Bye bye!')
@@ -121,17 +165,20 @@ class AutomatedIUT(threading.Thread):
         elif isinstance(event, MsgTestCaseReady) and event.testcase_id in skip_list:
             publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
 
+
         elif isinstance(event, MsgStepExecute):
 
             if event.node == 'coap_client' and event.step_type == 'stimuli' and event.step_id in stimuli_cmd_dict:
                 cmd = stimuli_cmd_dict[event.step_id]
                 step = event.step_id
-
-                self._execute_stimuli(step, cmd )
+                if cmd:
+                    self._execute_stimuli(step, cmd)
+                publish_message(self.channel, MsgStimuliExecuted())
 
             elif event.node == 'coap_client' and event.step_type == 'verify':
                 step = event.step_id
                 self._execute_verify(step)
+                publish_message(self.channel, MsgVerifyResponse(verify_response=True))
 
             else:
                 logging.info('Event received and ignored: %s' % event.to_json())
@@ -150,7 +197,6 @@ class AutomatedIUT(threading.Thread):
 
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
-        publish_message(self.channel, MsgVerifyResponse(verify_response=True))
 
     def _execute_stimuli(self, stimuli_step_id, cmd):
         try:
@@ -166,8 +212,6 @@ class AutomatedIUT(threading.Thread):
 
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
-
-        publish_message(self.channel, MsgStimuliExecuted())
 
     def run(self):
         print("Starting thread listening on the event bus")
