@@ -15,9 +15,10 @@ import logging
 from urllib.parse import urlparse
 from itertools import cycle
 from collections import OrderedDict
-from coap_testing_tool import AMQP_EXCHANGE
+from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler,JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.utils.event_bus_messages import *
 
@@ -35,7 +36,23 @@ SNIFFER_FILTER_IF = 'tun0'
 COMPONENT_ID = 'test_coordinator'
 
 session_config = None
-logger = logging.getLogger()
+
+# init logging to stnd output and log files
+logger = logging.getLogger(__name__)
+
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
+
+# make pika logger less verbose
+logging.getLogger('pika').setLevel(logging.INFO)
 
 
 # # # AUX functions # # #
