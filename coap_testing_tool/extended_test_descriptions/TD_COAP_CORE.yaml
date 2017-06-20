@@ -116,7 +116,7 @@ sequence:
 
 - step_id : TD_COAP_CORE_03_v01_step_03
   type : verify
-  node : coap_client
+  node : coap_server
   description:
     - Server displays received information
 
@@ -168,7 +168,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_04_v01_step_03
     type : verify
-    node : coap_client
+    node : coap_server
     description:
       - Server displays received information
 
@@ -306,7 +306,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_07_v01_step_03
     type : verify
-    node : coap_client
+    node : coap_server
     description:
       - 'Server displays the received response'
 
@@ -360,7 +360,7 @@ sequence:
 
   - step_id : TD_COAP_CORE_08_v01_step_03
     type : verify
-    node : coap_client
+    node : coap_server
     description:
       - 'Server displays the received response'
 
