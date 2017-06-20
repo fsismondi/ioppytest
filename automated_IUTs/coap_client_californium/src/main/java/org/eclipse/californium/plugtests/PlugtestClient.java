@@ -102,7 +102,7 @@ public class PlugtestClient {
  			uriFilePath = uriFilePath.substring(-1);
  		}
 
- 		if (cmd.hasOption("skip")) {
+ 		if (!(cmd.hasOption("skip"))) {
  			CoapClient clientPing = new CoapClient(uriFilePath);
  			System.out.println("===============\nCC31\n---------------");
  			if (!clientPing.ping(2000)) {
