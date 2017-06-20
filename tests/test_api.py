@@ -28,7 +28,7 @@ logging.getLogger('pika').setLevel(logging.INFO)
 
 # queue which tracks all non answered services requests
 services_mid_backlog = []
-services_events_backlog = []
+services_events_tracelog = []
 
 """
 PRE-CONDITIONS:
@@ -208,7 +208,7 @@ class ApiTests(unittest.TestCase):
         def check_for_correlated_request_reply(ch, method, props, body):
 
             global services_mid_backlog
-            global services_events_backlog
+            global services_events_tracelog
 
             body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
             msg_type = body_dict['_type']
@@ -227,22 +227,22 @@ class ApiTests(unittest.TestCase):
 
                 if props.correlation_id in services_mid_backlog:
                     services_mid_backlog.remove(props.correlation_id)
-                    services_events_backlog.remove(msg_type)
+                    services_events_tracelog.append(msg_type)
                 else:
                     assert False, 'got a reply but theres no request in the backlog'
 
             elif '.service' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
-                services_events_backlog.append(msg_type)
+                services_events_tracelog.append(msg_type)
 
             else:
                 assert False, 'error! we shouldnt be here!'
 
-            logging.info("[%s] current backlog: %s - %s"
+            logging.info("[%s] current backlog: %s . history: %s"
                          % (
                              sys._getframe().f_code.co_name,
                              services_mid_backlog,
-                             services_events_backlog
+                             services_events_tracelog
                          )
                          )
 
@@ -275,10 +275,10 @@ class ApiTests(unittest.TestCase):
             thread_msg_gen.start()
             self.channel.start_consuming()
             if len(services_mid_backlog) > 0:
-                assert False, 'A least one of the services request was not answered. backlog: %s - %s' \
-                              %(
+                assert False, 'A least one of the services request was not answered. backlog: %s. History: %s' \
+                              % (
                                   services_mid_backlog,
-                                  services_events_backlog
+                                  services_events_tracelog
                               )
         except Exception as e:
             thread_msg_gen.stop()
