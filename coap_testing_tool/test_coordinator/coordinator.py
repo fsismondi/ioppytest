@@ -956,7 +956,6 @@ class Coordinator:
                 verify_response = event.verify_response
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
-
                 # send general notif
                 self.notify_coordination_error(message=error_msg, error_code=None)
 
@@ -987,10 +986,15 @@ class Coordinator:
 
             tc_list_requested = []
 
-            for test in event.tests:
-                test_url = urlparse(test['testcase_ref'])
-                tc_id = str(test_url.path).lstrip("/tests/")
-                tc_list_requested.append(tc_id)
+            try:
+                for test in event.tests:
+                    test_url = urlparse(test['testcase_ref'])
+                    tc_id = str(test_url.path).lstrip("/tests/")
+                    tc_list_requested.append(tc_id)
+
+            except Exception as e:
+                error_msg = "Wrong message format sent for session configuration."
+                self.notify_coordination_error(message=error_msg, error_code=None)
 
             tc_list_available = self.get_testcases_list()
 
