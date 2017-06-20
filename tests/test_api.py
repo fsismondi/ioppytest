@@ -154,16 +154,16 @@ class ApiTests(unittest.TestCase):
         self.channel.queue_delete(queue=errors_queue_name)
         self.channel.queue_declare(queue=errors_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                           queue=errors_queue_name,
-                           routing_key='log.error.*')
+                                queue=errors_queue_name,
+                                routing_key='log.error.*')
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                           queue=errors_queue_name,
-                           routing_key='control.session.error')
+                                queue=errors_queue_name,
+                                routing_key='control.session.error')
 
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                           queue=errors_queue_name,
-                           routing_key=MsgTestingToolTerminate.routing_key)
+                                queue=errors_queue_name,
+                                routing_key=MsgTestingToolTerminate.routing_key)
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_bus_error, queue=errors_queue_name)
 
@@ -214,8 +214,8 @@ class ApiTests(unittest.TestCase):
             msg_type = body_dict['_type']
 
             logger.info(
-                '[%s] Checking correlated request/response for message %s'
-                % (sys._getframe().f_code.co_name, props.message_id))
+                    '[%s] Checking correlated request/response for message %s'
+                    % (sys._getframe().f_code.co_name, props.message_id))
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -246,7 +246,6 @@ class ApiTests(unittest.TestCase):
                          )
                          )
 
-
         # CORRELATION VALIDATOR BOUND TO SERVICES & REPLIES QUEUE
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
         self.channel.queue_delete(queue=services_queue_name)
@@ -257,11 +256,10 @@ class ApiTests(unittest.TestCase):
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                           queue=services_queue_name,
-                           routing_key=MsgTestingToolTerminate.routing_key)
+                                queue=services_queue_name,
+                                routing_key=MsgTestingToolTerminate.routing_key)
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
-
 
         # prepare the message generator
         messages = []  # list of messages to send
@@ -338,10 +336,12 @@ def stop_generator():
 
 
 def check_for_bus_error(ch, method, props, body):
-    logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id) )
+    logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
+
+    msg = None
 
     try:
-        m = Message.from_json(body)
+        msg = Message.from_json(body)
         if isinstance(m, MsgTestingToolTerminate):
             ch.stop_consuming()
             return
@@ -362,8 +362,9 @@ def check_for_bus_error(ch, method, props, body):
 
     for c in list_of_audited_components:
         if c in r_key:
-            logger.error('audited component %s pushed an error into the bus' % c)
-            raise Exception('audited component %s pushed an error into the bus' % c)
+            err = 'audited component %s pushed an error into the bus. messsage: %s' % (c, msg)
+            logger.error(err)
+            raise Exception(err)
 
 
 def validate_message(ch, method, props, body):
@@ -376,26 +377,26 @@ def validate_message(ch, method, props, body):
 
     logger.info('[%s] Checking valid format for message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
-    print( '\n' + tab + '* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
-    print( tab + "TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
-    print( tab + "ROUTING_KEY: %s" % method.routing_key)
-    print( tab + "MESSAGE ID: %s" % props.message_id)
+    print('\n' + tab + '* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
+    print(tab + "TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
+    print(tab + "ROUTING_KEY: %s" % method.routing_key)
+    print(tab + "MESSAGE ID: %s" % props.message_id)
     if hasattr(props, 'correlation_id'):
-        print( tab + "CORRELATION ID: %s" % props.correlation_id)
-    print( tab + 'EVENT %s' % (req_body_dict['_type']))
-    print( tab + '* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
+        print(tab + "CORRELATION ID: %s" % props.correlation_id)
+    print(tab + 'EVENT %s' % (req_body_dict['_type']))
+    print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
 
     if props.content_type != "application/json":
-        print( tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-        print( tab + "props.content_type : " + str(props.content_type))
-        print( tab + "application/json was expected")
-        print( tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+        print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
+        print(tab + "props.content_type : " + str(props.content_type))
+        print(tab + "application/json was expected")
+        print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
         raise Exception
 
     if '_type' not in req_body_dict.keys():
-        print( tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-        print( tab + "no < _type > field found")
-        print( tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+        print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
+        print(tab + "no < _type > field found")
+        print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
         raise Exception
 
     # lets check messages against the messaging library
@@ -409,9 +410,9 @@ def validate_message(ch, method, props, body):
             else:
                 logger.debug(repr(m))
         except NonCompliantMessageFormatError as e:
-            print( tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-            print( tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
-            print( tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+            print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
+            print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
+            print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
             raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
 
 
