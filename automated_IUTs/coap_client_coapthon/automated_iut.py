@@ -83,6 +83,11 @@ class AutomatedIUT(threading.Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
+    def run(self):
+        print("Starting thread listening on the event bus")
+        self.channel.start_consuming()
+        print('Bye byes!')
+
     def stop(self):
 
         self.channel.stop_consuming()
@@ -159,10 +164,7 @@ class AutomatedIUT(threading.Thread):
 
         publish_message(self.channel, MsgStimuliExecuted())
 
-    def run(self):
-        print("Starting thread listening on the event bus")
-        self.channel.start_consuming()
-        print('Bye byes!')
+
 
 
 if __name__ == '__main__':
