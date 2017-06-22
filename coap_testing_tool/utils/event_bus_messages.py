@@ -402,6 +402,10 @@ class MsgInteropSessionConfiguration(Message):
             {
                 "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
                 "settings":     {}
+            },
+            {
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+                "settings":     {}
             }
         ]
     }

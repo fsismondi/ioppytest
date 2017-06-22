@@ -39,16 +39,14 @@ PRE-CONDITIONS:
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
-    MsgTestCaseConfiguration(),
+    MsgInteropSessionConfiguration(),  # from TC1 to TC3
     MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02_v01'),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03_v01'),
     MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_04_v01'),
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseStart(),
+    MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
     MsgTestSuiteGetStatus(),
     MsgStimuliExecuted(),
     MsgTestSuiteGetStatus(),
@@ -57,8 +55,7 @@ user_sequence = [
     MsgVerifyResponse(
             verify_response=False,
             description='User indicates that IUT didnt behave as expected '),
-    MsgTestSuiteGetStatus(),
-    # at this point we should see a TC verdict
+    MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
     MsgTestCaseRestart(),
     MsgTestSuiteGetStatus(),
     MsgTestSuiteAbort(),
