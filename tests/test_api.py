@@ -361,7 +361,7 @@ def check_for_bus_error(ch, method, props, body):
 
     for c in list_of_audited_components:
         if c in r_key:
-            err = 'audited component %s pushed an error into the bus. messsage: %s' % (c, msg)
+            err = 'audited component %s pushed an error into the bus. messsage: %s' % (c, body)
             logger.error(err)
             raise Exception(err)
 
