@@ -355,7 +355,6 @@ def check_for_bus_error(ch, method, props, body):
         'sniffer',
         'dissector'
         'session',
-
     ]
     r_key = method.routing_key
     logger.info('[%s] Auditing: %s' % (sys._getframe().f_code.co_name, r_key))

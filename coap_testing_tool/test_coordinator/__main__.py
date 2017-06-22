@@ -128,15 +128,15 @@ if __name__ == '__main__':
         logger.error("Some components havent sent READY signal: %s" % str(TT_check_list))
         sys.exit(1)
 
-    logger.info('All components ready')
-    assert len(TT_check_list) == 0
-    publish_message(channel, MsgTestingToolReady())
 
-    # lets start the test suite coordination phase
-
+    # lets start the test coordination
     try:
         logger.info('Starting test-coordinator..')
         coordinator = Coordinator(connection, TD_COAP, TD_COAP_CFG)
+
+        logger.info('All components ready')
+        assert len(TT_check_list) == 0
+        publish_message(channel, MsgTestingToolReady())
 
     except Exception as e:
         # cannot emit AMQP messages for the fail
@@ -148,10 +148,10 @@ if __name__ == '__main__':
     ### RUN TEST COORDINATION COMPONENT ###
 
     try:
-        logger.info('Starting coordinator execution ..')
+        logger.info('Starting coordinator..')
         # start consuming messages
         coordinator.run()
-        logger.info('Finishing...')
+        logger.info('Finishing coordinator..')
 
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP connection closed: %s' % str(cc))
