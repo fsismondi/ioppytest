@@ -1322,8 +1322,7 @@ class Coordinator:
                     pcap_file_base64 = sniffer_response.value
                     filename = sniffer_response.filename
                 else:
-                    logger.error('Error encountered with packet sniffer: %s' % repr(sniffer_response))
-                    return
+                    logger.warning('Error encountered with packet sniffer: %s' % repr(sniffer_response))
 
             except AttributeError as ae:
                 logger.error('Failed to process Sniffer response: %s' % repr(sniffer_response))
@@ -1343,7 +1342,7 @@ class Coordinator:
                                                                    filename=tc_id + ".pcap",
                                                                    value=pcap_file_base64)
             except TimeoutError as e:
-                logger.error("Sniffer didnt answer to the analysis request")
+                logger.error("TAT didnt answer to the analysis request")
 
             if tat_response and tat_response.ok:
 
