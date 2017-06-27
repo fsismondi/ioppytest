@@ -151,12 +151,12 @@ class AutomatedIUT(threading.Thread):
                 step = event.step_id
                 if cmd:
                     self._execute_stimuli(step, cmd)
-                publish_message(self.channel, MsgStimuliExecuted())
+                publish_message(self.channel, MsgStepStimuliExecuted())
 
             elif event.node == 'coap_client' and event.step_type == 'verify':
                 step = event.step_id
                 self._execute_verify(step)
-                publish_message(self.channel, MsgVerifyResponse(verify_response=True))
+                publish_message(self.channel, MsgStepVerifyExecuted(verify_response=True))
 
             else:
                 logging.info('Event received and ignored: %s' % event.to_json())

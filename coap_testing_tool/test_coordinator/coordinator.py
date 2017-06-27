@@ -49,7 +49,7 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -628,12 +628,12 @@ class Coordinator:
             tc_info_dict = self.current_tc.to_dict(verbose=True)
 
             event = MsgTestCaseReady(
-                message='Next test case to be executed is %s' % self.current_tc.id,
+                description='Next test case to be executed is %s' % self.current_tc.id,
                 **tc_info_dict
             )
         else:
             event = MsgTestCaseReady(
-                message='No test case selected, or no more available',
+                description='No test case selected, or no more available',
             )
         publish_message(self.channel, event)
 
@@ -641,16 +641,26 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
         msg_fields.update(self.current_tc.to_dict(verbose=False))
-        event = MsgStepExecute(
-            message='Next test step to be executed is %s' % self.current_tc.current_step.id,
-            **msg_fields
-        )
+
+        if self.current_tc.current_step.type == "stimuli":
+            event = MsgStepStimuliExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                **msg_fields
+            )
+        elif self.current_tc.current_step.type == "verify":
+            event = MsgStepVerifyExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                **msg_fields
+            )
+        elif self.current_tc.current_step.type == "check":
+            raise NotImplementedError()
+
         publish_message(self.channel, event)
 
     def notify_testcase_finished(self):
         tc_info_dict = self.current_tc.to_dict(verbose=False)
         event = MsgTestCaseFinished(
-            message='Testcase %s finished' % tc_info_dict['testcase_id'],
+            description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
         publish_message(self.channel, event)
@@ -670,12 +680,12 @@ class Coordinator:
         with open(json_file, 'w') as f:
             f.write(event.to_json())
 
-    def notify_coordination_error(self, message, error_code):
+    def notify_coordination_error(self, description, error_code):
 
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'message': message, })
+        coordinator_notif.update({'description': description, })
         coordinator_notif.update({'error_code': error_code})
         coordinator_notif.update({'testsuite_status': self.states_summary()})
         err_json = json.dumps(coordinator_notif)
@@ -712,13 +722,13 @@ class Coordinator:
         config = self.tc_configs[config_id]  # Configuration object
 
         for desc in config.description:
-            message = desc['message']
+            description = desc['description']
             node = desc['node']
 
             event = MsgTestCaseConfiguration(
                 configuration_id=config_id,
                 node=node,
-                message=message,
+                description=description,
                 **tc_info_dict
             )
             publish_message(self.channel, event)
@@ -822,7 +832,7 @@ class Coordinator:
             # operation health check
             if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             try:
@@ -840,7 +850,7 @@ class Coordinator:
                     self.notify_testsuite_finished()
 
             except Exception as e:
-                self.notify_coordination_error(message=str(e), error_code=None)
+                self.notify_coordination_error(description=str(e), error_code=None)
                 return
 
         elif isinstance(event, MsgTestSuiteStart):
@@ -864,12 +874,12 @@ class Coordinator:
                 error_msg = "Incorrect or empty testcase_id"
 
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             except CoordinatorError as e:
-                error_msg = e.message
+                error_msg = e.description
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             # send general notif
             self.notify_testcase_is_ready()
@@ -880,7 +890,7 @@ class Coordinator:
                 error_msg = "No testcase selected"
 
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.check_testsuite_finished():
@@ -891,24 +901,24 @@ class Coordinator:
                 # send general notif
                 self.notify_step_to_execute()
 
-        elif isinstance(event, MsgStimuliExecuted):
+        elif isinstance(event, MsgStepStimuliExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a STIMULI
@@ -940,24 +950,24 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-        elif isinstance(event, MsgVerifyResponse):
+        elif isinstance(event, MsgStepVerifyExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a verify
@@ -974,7 +984,7 @@ class Coordinator:
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             self.handle_verify_step_response(verify_response)
 
@@ -1011,7 +1021,7 @@ class Coordinator:
 
             except Exception as e:
                 error_msg = "Wrong message format sent for session configuration."
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             tc_list_available = self.get_testcases_list()
 
@@ -1021,15 +1031,15 @@ class Coordinator:
 
             if len(tc_list_requested) == 0:
                 self.notify_coordination_error(
-                    message='No testcases selected. Using default selection: ALL',
+                    description='No testcases selected. Using default selection: ALL',
                     error_code='TBD'
                 )
                 return
 
             if len(tc_non_existent) != 0:
                 self.notify_coordination_error(
-                    message='The following testcases are not available in the testing tool: %s'
-                            % str(tc_non_existent),
+                    description='The following testcases are not available in the testing tool: %s'
+                                % str(tc_non_existent),
                     error_code='TBD'
                 )
                 return
@@ -1048,24 +1058,24 @@ class Coordinator:
 
             publish_message(self.channel, event)
 
-        elif isinstance(event, MsgCheckResponse):
+        elif isinstance(event, MsgStepCheckExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a check
@@ -1080,7 +1090,7 @@ class Coordinator:
                 verdict = event.partial_verdict
                 description = event.description
             except KeyError:
-                self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
+                self.notify_coordination_error(description='Malformed CHECK response', error_code=None)
 
             self.handle_check_step_response(verdict, description)
 
