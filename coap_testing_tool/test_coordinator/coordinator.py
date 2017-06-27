@@ -722,7 +722,7 @@ class Coordinator:
         config = self.tc_configs[config_id]  # Configuration object
 
         for desc in config.description:
-            description = desc['description']
+            description = desc['message']
             node = desc['node']
 
             event = MsgTestCaseConfiguration(

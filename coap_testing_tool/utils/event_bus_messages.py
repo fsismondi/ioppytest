@@ -691,7 +691,7 @@ class MsgStepCheckExecuted(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.step.check.response",
+        "_type": "testcoordination.step.check.executed",
         "partial_verdict": "pass",
         "description": "TAT says: step complies (checks) with specification",
     }
@@ -739,7 +739,7 @@ class MsgStepVerifyExecuted(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.step.verify.response",
+        "_type": "testcoordination.step.verify.executed",
         "description": "Event step (verify) EXECUTED",
         "response_type": "bool",
         "verify_response": True,
