@@ -48,11 +48,11 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
     MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
     MsgTestSuiteGetStatus(),
-    MsgStimuliExecuted(),
+    MsgStepStimuliExecuted(),
     MsgTestSuiteGetStatus(),
-    MsgVerifyResponse(),
+    MsgStepVerifyExecuted(),
     MsgTestSuiteGetStatus(),
-    MsgVerifyResponse(
+    MsgStepVerifyExecuted(
             verify_response=False,
             description='User indicates that IUT didnt behave as expected '),
     MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
