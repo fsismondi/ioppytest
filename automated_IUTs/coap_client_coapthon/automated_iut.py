@@ -145,7 +145,7 @@ class AutomatedIUT(threading.Thread):
 
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
-        publish_message(self.channel, MsgVerifyResponse(verify_response=True))
+        publish_message(self.channel, MsgStepVerifyExecute(verify_response=True))
 
     def _execute_stimuli(self, stimuli_step_id, cmd):
         try:
@@ -162,7 +162,7 @@ class AutomatedIUT(threading.Thread):
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
 
-        publish_message(self.channel, MsgStimuliExecuted())
+        publish_message(self.channel, MsgStepStimuliExecuted())
 
 
 

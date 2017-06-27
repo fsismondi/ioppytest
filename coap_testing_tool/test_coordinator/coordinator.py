@@ -18,7 +18,7 @@ from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler,JsonFormatter
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.utils.event_bus_messages import *
 
@@ -49,7 +49,7 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -478,7 +478,7 @@ class TestCase:
                     tc_report.append((step.id, None, "%s postponed" % step.type.upper(), ""))
                 elif step.state == "finished":
                     tc_report.append(
-                            (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
+                        (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
                     # update global verdict
                     final_verdict.update(step.partial_verdict.get_value(), step.partial_verdict.get_message())
                 else:
@@ -628,12 +628,12 @@ class Coordinator:
             tc_info_dict = self.current_tc.to_dict(verbose=True)
 
             event = MsgTestCaseReady(
-                    message='Next test case to be executed is %s' % self.current_tc.id,
-                    **tc_info_dict
+                description='Next test case to be executed is %s' % self.current_tc.id,
+                **tc_info_dict
             )
         else:
             event = MsgTestCaseReady(
-                    message='No test case selected, or no more available',
+                description='No test case selected, or no more available',
             )
         publish_message(self.channel, event)
 
@@ -641,17 +641,27 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
         msg_fields.update(self.current_tc.to_dict(verbose=False))
-        event = MsgStepExecute(
-                message='Next test step to be executed is %s' % self.current_tc.current_step.id,
+
+        if self.current_tc.current_step.type == "stimuli":
+            event = MsgStepStimuliExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
                 **msg_fields
-        )
+            )
+        elif self.current_tc.current_step.type == "verify":
+            event = MsgStepVerifyExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                **msg_fields
+            )
+        elif self.current_tc.current_step.type == "check":
+            raise NotImplementedError()
+
         publish_message(self.channel, event)
 
     def notify_testcase_finished(self):
         tc_info_dict = self.current_tc.to_dict(verbose=False)
         event = MsgTestCaseFinished(
-                message='Testcase %s finished' % tc_info_dict['testcase_id'],
-                **tc_info_dict
+            description='Testcase %s finished' % tc_info_dict['testcase_id'],
+            **tc_info_dict
         )
         publish_message(self.channel, event)
 
@@ -664,18 +674,18 @@ class Coordinator:
 
         # Overwrite final verdict file with final details
         json_file = os.path.join(
-                RESULTS_DIR,
-                self.current_tc.id + '_verdict.json'
+            RESULTS_DIR,
+            self.current_tc.id + '_verdict.json'
         )
         with open(json_file, 'w') as f:
             f.write(event.to_json())
 
-    def notify_coordination_error(self, message, error_code):
+    def notify_coordination_error(self, description, error_code):
 
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'message': message, })
+        coordinator_notif.update({'description': description, })
         coordinator_notif.update({'error_code': error_code})
         coordinator_notif.update({'testsuite_status': self.states_summary()})
         err_json = json.dumps(coordinator_notif)
@@ -687,8 +697,8 @@ class Coordinator:
             filename = 'general_error.json'
 
         json_file = os.path.join(
-                RESULTS_DIR,
-                filename
+            RESULTS_DIR,
+            filename
 
         )
         with open(json_file, 'w') as f:
@@ -696,12 +706,12 @@ class Coordinator:
 
     def notify_testsuite_finished(self):
         event = MsgTestSuiteReport(
-                **self.testsuite_report()
+            **self.testsuite_report()
         )
         publish_message(self.channel, event)
         json_file = os.path.join(
-                RESULTS_DIR,
-                'session_report.json'
+            RESULTS_DIR,
+            'session_report.json'
         )
         with open(json_file, 'w') as f:
             f.write(event.to_json())
@@ -712,14 +722,14 @@ class Coordinator:
         config = self.tc_configs[config_id]  # Configuration object
 
         for desc in config.description:
-            message = desc['message']
+            description = desc['message']
             node = desc['node']
 
             event = MsgTestCaseConfiguration(
-                    configuration_id=config_id,
-                    node=node,
-                    message=message,
-                    **tc_info_dict
+                configuration_id=config_id,
+                node=node,
+                description=description,
+                **tc_info_dict
             )
             publish_message(self.channel, event)
 
@@ -764,14 +774,14 @@ class Coordinator:
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         props_dict = {
-            'content_type':   properties.content_type,
-            'delivery_mode':  properties.delivery_mode,
+            'content_type': properties.content_type,
+            'delivery_mode': properties.delivery_mode,
             'correlation_id': properties.correlation_id,
-            'reply_to':       properties.reply_to,
-            'message_id':     properties.message_id,
-            'timestamp':      properties.timestamp,
-            'user_id':        properties.user_id,
-            'app_id':         properties.app_id,
+            'reply_to': properties.reply_to,
+            'message_id': properties.message_id,
+            'timestamp': properties.timestamp,
+            'user_id': properties.user_id,
+            'app_id': properties.app_id,
         }
         request = Message.from_json(body)
         request.update_properties(**props_dict)
@@ -779,18 +789,18 @@ class Coordinator:
         if isinstance(request, MsgTestSuiteGetTestCases):
             testcases = self.get_testcases_basic(verbose=True)
             response = MsgTestSuiteGetTestCasesReply(
-                    request,
-                    ok=True,
-                    tc_list=testcases,
+                request,
+                ok=True,
+                tc_list=testcases,
             )
             publish_message(self.channel, response)
 
         elif isinstance(request, MsgTestSuiteGetStatus):
             status = self.states_summary()
             response = MsgTestSuiteGetStatusReply(
-                    request,
-                    ok=True,
-                    **status
+                request,
+                ok=True,
+                **status
             )
             publish_message(self.channel, response)
         else:
@@ -804,14 +814,14 @@ class Coordinator:
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         props_dict = {
-            'content_type':   properties.content_type,
-            'delivery_mode':  properties.delivery_mode,
+            'content_type': properties.content_type,
+            'delivery_mode': properties.delivery_mode,
             'correlation_id': properties.correlation_id,
-            'reply_to':       properties.reply_to,
-            'message_id':     properties.message_id,
-            'timestamp':      properties.timestamp,
-            'user_id':        properties.user_id,
-            'app_id':         properties.app_id,
+            'reply_to': properties.reply_to,
+            'message_id': properties.message_id,
+            'timestamp': properties.timestamp,
+            'user_id': properties.user_id,
+            'app_id': properties.app_id,
         }
         event = Message.from_json(body)
         event.update_properties(**props_dict)
@@ -822,7 +832,7 @@ class Coordinator:
             # operation health check
             if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             try:
@@ -840,7 +850,7 @@ class Coordinator:
                     self.notify_testsuite_finished()
 
             except Exception as e:
-                self.notify_coordination_error(message=str(e), error_code=None)
+                self.notify_coordination_error(description=str(e), error_code=None)
                 return
 
         elif isinstance(event, MsgTestSuiteStart):
@@ -864,12 +874,12 @@ class Coordinator:
                 error_msg = "Incorrect or empty testcase_id"
 
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             except CoordinatorError as e:
-                error_msg = e.message
+                error_msg = e.description
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             # send general notif
             self.notify_testcase_is_ready()
@@ -880,7 +890,7 @@ class Coordinator:
                 error_msg = "No testcase selected"
 
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.check_testsuite_finished():
@@ -891,24 +901,24 @@ class Coordinator:
                 # send general notif
                 self.notify_step_to_execute()
 
-        elif isinstance(event, MsgStimuliExecuted):
+        elif isinstance(event, MsgStepStimuliExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a STIMULI
@@ -940,24 +950,24 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-        elif isinstance(event, MsgVerifyResponse):
+        elif isinstance(event, MsgStepVerifyExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a verify
@@ -974,7 +984,7 @@ class Coordinator:
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             self.handle_verify_step_response(verify_response)
 
@@ -1011,7 +1021,7 @@ class Coordinator:
 
             except Exception as e:
                 error_msg = "Wrong message format sent for session configuration."
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             tc_list_available = self.get_testcases_list()
 
@@ -1021,16 +1031,16 @@ class Coordinator:
 
             if len(tc_list_requested) == 0:
                 self.notify_coordination_error(
-                        message='No testcases selected. Using default selection: ALL',
-                        error_code='TBD'
+                    description='No testcases selected. Using default selection: ALL',
+                    error_code='TBD'
                 )
                 return
 
             if len(tc_non_existent) != 0:
                 self.notify_coordination_error(
-                        message='The following testcases are not available in the testing tool: %s'
+                    description='The following testcases are not available in the testing tool: %s'
                                 % str(tc_non_existent),
-                        error_code='TBD'
+                    error_code='TBD'
                 )
                 return
 
@@ -1041,31 +1051,31 @@ class Coordinator:
             testcases = self.get_testcases_basic(verbose=False)
 
             event = MsgTestingToolConfigured(
-                    session_id=event.session_id,
-                    testing_tools=event.testing_tools,
-                    tc_list=testcases,
+                session_id=event.session_id,
+                testing_tools=event.testing_tools,
+                tc_list=testcases,
             )
 
             publish_message(self.channel, event)
 
-        elif isinstance(event, MsgCheckResponse):
+        elif isinstance(event, MsgStepCheckExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a check
@@ -1080,7 +1090,7 @@ class Coordinator:
                 verdict = event.partial_verdict
                 description = event.description
             except KeyError:
-                self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
+                self.notify_coordination_error(description='Malformed CHECK response', error_code=None)
 
             self.handle_check_step_response(verdict, description)
 
@@ -1189,9 +1199,9 @@ class Coordinator:
 
             sniff_params = {
                 'capture_id': self.current_tc.id[:-4],
-                'filter_proto':                 filter_proto,
-                'filter_if':                    SNIFFER_FILTER_IF,
-                'link_id':                      link_id,
+                'filter_proto': filter_proto,
+                'filter_if': SNIFFER_FILTER_IF,
+                'link_id': link_id,
             }
 
             if self.call_service_sniffer_start(**sniff_params):
@@ -1247,8 +1257,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def handle_check_step_response(self, verdict, description):
         # some sanity checks on the states
@@ -1268,8 +1278,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def handle_stimuli_step_executed(self):
         """
@@ -1288,8 +1298,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def finish_testcase(self):
         """
@@ -1349,8 +1359,8 @@ class Coordinator:
                 logger.info("Response received from TAT: %s " % repr(tat_response))
                 # Save the json object received
                 json_file = os.path.join(
-                        TMPDIR,
-                        tc_id + '_analysis.json'
+                    TMPDIR,
+                    tc_id + '_analysis.json'
                 )
 
                 with open(json_file, 'w') as f:
@@ -1361,7 +1371,8 @@ class Coordinator:
                 partial_verd = []
                 step_count = 0
                 for item in tat_response.partial_verdicts:
-                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
+                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me
+                    # with this
                     # info, so ill make a name up(this is just for visualization purposes)
                     step_count += 1
                     p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
@@ -1372,7 +1383,7 @@ class Coordinator:
                 gen_verdict, gen_description, report = self.current_tc.generate_testcases_verdict(partial_verd)
 
             else:
-                logger.error('Error ocurred while analysing. Response from TAT: %s' % repr(tat_response))
+                logger.warning('Response from Test Analyzer NOK: %s' % repr(tat_response))
                 gen_verdict = 'error'
                 gen_description = 'Response from test analyzer: %s' % repr(tat_response)
                 report = []
@@ -1390,8 +1401,8 @@ class Coordinator:
 
             # Save the final verdict as json
             json_file = os.path.join(
-                    TMPDIR,
-                    tc_id + '_verdict.json'
+                TMPDIR,
+                tc_id + '_verdict.json'
             )
             with open(json_file, 'w') as f:
                 json.dump(final_report, f)
@@ -1400,10 +1411,8 @@ class Coordinator:
             self.current_tc.change_state('finished')
             logger.info("General verdict generated: %s" % json.dumps(self.current_tc.report))
 
-        else:
-            logger.error("Error on TAT analysis reponse")
-            self.notify_coordination_error("Error on TAT analysis reponse", '')
-            return
+        else:  # TODO implement step-by-step analysis
+            raise NotImplementedError()
 
         return self.current_tc.report
 
@@ -1475,27 +1484,27 @@ class Coordinator:
     def states_summary(self):
         summary = OrderedDict()
         summary.update(
-                {
-                    'started': False,
-                }
+            {
+                'started': False,
+            }
         )
         if self.current_tc:
             summary.update(
-                    {
-                        'started' : True,
-                        'testcase_id': self.current_tc.id,
-                        'testcase_state': self.current_tc.state,
-                    }
+                {
+                    'started': True,
+                    'testcase_id': self.current_tc.id,
+                    'testcase_state': self.current_tc.state,
+                }
             )
             if self.current_tc.current_step:
-                summary.update( self.current_tc.current_step.to_dict())
+                summary.update(self.current_tc.current_step.to_dict())
         else:
             summary.update(
-                    {
+                {
 
-                        'testcase_id': None,
-                        'testcase_state': None,
-                    }
+                    'testcase_id': None,
+                    'testcase_state': None,
+                }
             )
 
         return summary

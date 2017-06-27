@@ -133,7 +133,7 @@ class AutomatedIUT(threading.Thread):
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
 
-        publish_message(self.channel, MsgStimuliExecuted())
+        publish_message(self.channel, MsgStepVerifyExecuted())
 
     def run(self):
         print("Starting thread listening on the event bus")
