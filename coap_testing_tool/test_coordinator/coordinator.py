@@ -378,9 +378,6 @@ class TestCase:
         self.current_step = None
         self.report = None
 
-        # TODO session_config should be handled from outer scope
-        self.session_config = None
-
         # TODO if ANALYSIS is post mortem change all check step states to postponed at init!
 
     def reinit(self):
@@ -518,6 +515,10 @@ class Coordinator:
     """
 
     def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
+
+        # configurations received after testing tool started
+        self.session_config = None
+        self.tc_list_requested = None
 
         # first let's import the TC configurations
         imported_configs = import_teds(ted_config_file)
@@ -1012,7 +1013,7 @@ class Coordinator:
             tc_list_requested = []
             session_config = event.to_dict()
 
-            logging.info(" Interop session configuration received :%" % session_config)
+            logging.info(" Interop session configuration received : %s" % session_config)
 
             try:
                 for test in event.tests:
@@ -1160,6 +1161,8 @@ class Coordinator:
             for item in tc_to_skip:
                 self.skip_testcase(item)
 
+        self.tc_list_requested = tc_list_requested
+
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -1167,7 +1170,11 @@ class Coordinator:
         # resets all previously executed TC
         for tc in self.teds.values():
             tc.reinit()
-        # init testcase if None
+
+        # reconfigure test suite
+        if self.tc_list_requested:
+            self.configure_test_suite(self.tc_list_requested)
+
         if self.current_tc is None:
             self._ted_it = cycle(self.teds.values())  # so that we start back from the first
             self.next_testcase()
