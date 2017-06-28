@@ -1032,7 +1032,7 @@ class Coordinator:
             event = MsgTestingToolConfigured(
                 session_id=event.session_id,
                 testing_tools=event.testing_tools,
-                tc_list=testcases,
+                tc_list=self.get_testcases_basic(verbose=False),
             )
 
             publish_message(self.channel, event)
@@ -1159,8 +1159,6 @@ class Coordinator:
         if len(tc_to_skip) != 0:
             for item in tc_to_skip:
                 self.skip_testcase(item)
-
-
 
     def start_test_suite(self):
         """
