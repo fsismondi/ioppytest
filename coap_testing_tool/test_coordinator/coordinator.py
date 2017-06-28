@@ -35,8 +35,6 @@ SNIFFER_FILTER_IF = 'tun0'
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
 
-session_config = None
-
 # init logging to stnd output and log files
 logger = logging.getLogger(__name__)
 
@@ -334,7 +332,7 @@ class Step():
         # postponed state used when checks are postponed for the end of the TC execution
         assert state in (None, 'executing', 'finished', 'postponed')
         self.state = state
-        logger.info('Step %s state changed to: %s' % (self.id, self.state))
+        logger.debug('Step %s state changed to: %s' % (self.id, self.state))
 
     def set_result(self, result, result_info):
         # Only check and verify steps can have a result
@@ -427,7 +425,7 @@ class TestCase:
             for step in self.sequence:
                 step.change_state('finished')
 
-        logger.info('Testcase %s changed state to %s' % (self.id, state))
+        logger.debug('Testcase %s changed state to %s' % (self.id, state))
 
     def check_all_steps_finished(self):
         """
@@ -517,6 +515,10 @@ class Coordinator:
     """
 
     def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
+
+        # configurations received after testing tool started
+        self.session_config = None
+        self.tc_list_requested = None
 
         # first let's import the TC configurations
         imported_configs = import_teds(ted_config_file)
@@ -737,7 +739,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingStart(**kwargs), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -746,7 +748,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingStop(), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -755,7 +757,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -764,7 +766,7 @@ class Coordinator:
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
         response = amqp_request(self.connection.channel(), request, COMPONENT_ID)
-        logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+        logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response
 
     # # # API ENDPOINTS # # #
@@ -807,7 +809,7 @@ class Coordinator:
             logger.warning('Ignoring unrecognised service request: %s' % repr(request))
             return
 
-        logger.info('Processing request: %s' % repr(request))
+        logger.info('Processing request: %s' % request._type)
 
     def handle_control(self, ch, method, properties, body):
 
@@ -1008,10 +1010,10 @@ class Coordinator:
                     self.notify_testsuite_finished()
 
         elif isinstance(event, MsgInteropSessionConfiguration):
-            global session_config
+            tc_list_requested = []
             session_config = event.to_dict()
 
-            tc_list_requested = []
+            logging.info(" Interop session configuration received : %s" % session_config)
 
             try:
                 for test in event.tests:
@@ -1022,38 +1024,16 @@ class Coordinator:
             except Exception as e:
                 error_msg = "Wrong message format sent for session configuration."
                 self.notify_coordination_error(description=error_msg, error_code=None)
-
-            tc_list_available = self.get_testcases_list()
-
-            # check selected test cases available in testing tool
-            tc_non_existent = list(set(tc_list_requested) - set(tc_list_available))
-            tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
-
-            if len(tc_list_requested) == 0:
-                self.notify_coordination_error(
-                    description='No testcases selected. Using default selection: ALL',
-                    error_code='TBD'
-                )
                 return
 
-            if len(tc_non_existent) != 0:
-                self.notify_coordination_error(
-                    description='The following testcases are not available in the testing tool: %s'
-                                % str(tc_non_existent),
-                    error_code='TBD'
-                )
-                return
+            self.configure_test_suite(tc_list_requested)
 
-            if len(tc_to_skip) != 0:
-                for item in tc_to_skip:
-                    self.skip_testcase(item)
-
-            testcases = self.get_testcases_basic(verbose=False)
+            self.session_config = session_config
 
             event = MsgTestingToolConfigured(
                 session_id=event.session_id,
                 testing_tools=event.testing_tools,
-                tc_list=testcases,
+                tc_list=self.get_testcases_basic(verbose=False),
             )
 
             publish_message(self.channel, event)
@@ -1153,6 +1133,36 @@ class Coordinator:
             logger.error("%s not found in : %s " % (tc_id, self.teds))
             raise CoordinatorError('Testcase not found')
 
+    def configure_test_suite(self, tc_list_requested):
+        assert tc_list_requested is not None
+
+        # get all TCs
+        tc_list_available = self.get_testcases_list()
+
+        # verify if selected TCs are available
+        tc_non_existent = list(set(tc_list_requested) - set(tc_list_available))
+        tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
+
+        if len(tc_list_requested) == 0:
+            self.notify_coordination_error(
+                description='No testcases selected. Using default selection: ALL',
+                error_code='TBD'
+            )
+            return
+
+        if len(tc_non_existent) != 0:
+            self.notify_coordination_error(
+                description='The following testcases are not available in the testing tool: %s'
+                            % str(tc_non_existent),
+                error_code='TBD'
+            )
+
+        if len(tc_to_skip) != 0:
+            for item in tc_to_skip:
+                self.skip_testcase(item)
+
+        self.tc_list_requested = tc_list_requested
+
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -1160,7 +1170,11 @@ class Coordinator:
         # resets all previously executed TC
         for tc in self.teds.values():
             tc.reinit()
-        # init testcase if None
+
+        # reconfigure test suite
+        if self.tc_list_requested:
+            self.configure_test_suite(self.tc_list_requested)
+
         if self.current_tc is None:
             self._ted_it = cycle(self.teds.values())  # so that we start back from the first
             self.next_testcase()
@@ -1205,7 +1219,7 @@ class Coordinator:
             }
 
             if self.call_service_sniffer_start(**sniff_params):
-                logger.info('Sniffer succesfully started')
+                logger.debug('Sniffer succesfully started')
             else:
                 logger.error('Sniffer couldnt be started')
 
@@ -1223,7 +1237,7 @@ class Coordinator:
             error_msg = "Non existent testcase: %s" % testcase_id
             raise Exception(error_msg)
 
-        logger.info("Skipping testcase: %s" % testcase_t.id)
+        logger.debug("Skipping testcase: %s" % testcase_t.id)
         testcase_t.change_state("skipped")
 
         # if skipped tc is current test case then next tc
@@ -1341,7 +1355,7 @@ class Coordinator:
             # save PCAP to file
             with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
+                logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
 
             logger.debug("Sending PCAP file to TAT for analysis...")
             try:
@@ -1477,7 +1491,7 @@ class Coordinator:
         # update step state to executing
         self.current_tc.current_step.change_state('executing')
 
-        logger.info('Next step to execute: %s' % self.current_tc.current_step.id)
+        logger.debug('Next step to execute: %s' % self.current_tc.current_step.id)
 
         return self.current_tc.current_step
 
