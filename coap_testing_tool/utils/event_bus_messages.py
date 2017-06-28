@@ -263,8 +263,11 @@ class MsgErrorReply(MsgReply):
 class MsgAgentTunStart(Message):
     """
     Requirements: Testing Tool MAY implement (if IP tun needed)
+
     Type: Event
+
     Typical_use: Testing Tool -> Agent
+
     Description: Message for triggering start IP tun interface in OS where the agent is running
     """
     routing_key = "control.tun.toAgent.agent_TT"
@@ -284,8 +287,11 @@ class MsgAgentTunStart(Message):
 class MsgAgentTunStarted(Message):
     """
     Description: Message for indicating that agent tun has been started
+
     Type: Event
+
     Typical_use: Testing Tool -> Agent
+
     Description: TBD
     """
     routing_key = "control.tun.from.agent_TT"
@@ -320,8 +326,11 @@ BODY {"timestamp": "1488586183.45", "_type": "packet.sniffed.raw", "interface_na
 class MsgTestingToolTerminate(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI, (or Orchestrator) -> Testing Tool
+
     Description: Testing tool should stop all it's processes gracefully.
     """
     routing_key = "control.session"
@@ -335,8 +344,11 @@ class MsgTestingToolTerminate(Message):
 class MsgTestingToolReady(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typcal_use: Testing Tool -> GUI
+
     Description: Used to indicate to the GUI that testing is ready to start the test suite
     """
     routing_key = "control.session"
@@ -350,8 +362,11 @@ class MsgTestingToolReady(Message):
 class MsgTestingToolComponentReady(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Event
+
     Typical_use: Any Testing tool's component -> Test Coordinator
+
     Description: Once a testing tool's component is ready, it should publish a compoennt ready message
     """
     routing_key = "control.session"
@@ -366,8 +381,11 @@ class MsgTestingToolComponentReady(Message):
 class MsgInteropSessionConfiguration(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: Orchestrator -> Testing Tool
+
     Description: Testing tool MUST listen to this message and configure the testsuite correspondingly
     """
     routing_key = "control.session"
@@ -418,8 +436,11 @@ class MsgInteropSessionConfiguration(Message):
 class MsgTestingToolConfigured(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> Orchestrator, GUI
+
     Description: The goal is to notify orchestrator and other components that the testing tool has been configured
     """
 
@@ -436,8 +457,11 @@ class MsgTestingToolConfigured(Message):
 class MsgTestingToolComponentShutdown(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Event
+
     Typical_use: Any Testing tool's component -> Test Coordinator
+
     Description: tbd
     """
     routing_key = "control.session"
@@ -454,8 +478,11 @@ class MsgTestingToolComponentShutdown(Message):
 class MsgTestSuiteStart(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI -> Testing Tool
+
     Description: tbd
     """
 
@@ -470,8 +497,11 @@ class MsgTestSuiteStart(Message):
 class MsgTestSuiteFinish(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI -> Testing Tool
+
     Description: tbd
     """
 
@@ -486,8 +516,11 @@ class MsgTestSuiteFinish(Message):
 class MsgTestCaseReady(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: GUI -> Testing Tool
+
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the next test case to be executed.
         - This message is normally followed by a MsgTestCaseStart (from GUI-> Testing Tool)
@@ -508,8 +541,11 @@ class MsgTestCaseReady(Message):
 class MsgTestCaseStart(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI -> Testing Tool
+
     Description:
         - Message used for indicating the testing tool to start the test case (the one previously selected)
     """
@@ -524,8 +560,11 @@ class MsgTestCaseStart(Message):
 class MsgTestCaseConfiguration(Message):
     """
     Requirements: Testing Tool MAY publish event (if needed for executing the test case)
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI & automated-iut
+
     Description:
         - Message used to indicate GUI and/or automated-iut which configuration to use.
     """
@@ -539,33 +578,36 @@ class MsgTestCaseConfiguration(Message):
         "testcase_ref": "TBD",
         "description":
             ["CoAP servers running service at [bbbb::2]:5683",
-             "CoAP servers are requested to offer the following resources",
-             ["/test", "Default test resource", "Should not exceed 64bytes"],
-             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
-             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
-             ["/separate",
-              "Ressource which cannot be served immediately and which cannot be "
-              "acknowledged in a piggy-backed way",
-              "Should not exceed 64bytes"],
-             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
-             ["/large_update",
-              "Large resource that can be updated using PUT method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/large_create",
-              "Large resource that can be  created using POST method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/obs", "Observable resource which changes every 5 seconds",
-              "shall not exceed 2048bytes"],
-             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
-             ]
+                "CoAP servers are requested to offer the following resources",
+                ["/test", "Default test resource", "Should not exceed 64bytes"],
+                ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+                ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+                ["/separate",
+                    "Ressource which cannot be served immediately and which cannot be "
+                    "acknowledged in a piggy-backed way",
+                    "Should not exceed 64bytes"],
+                ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+                ["/large_update",
+                    "Large resource that can be updated using PUT method (>1024 bytes)",
+                    "shall not exceed 2048bytes"],
+                ["/large_create",
+                    "Large resource that can be  created using POST method (>1024 bytes)",
+                    "shall not exceed 2048bytes"],
+                ["/obs", "Observable resource which changes every 5 seconds",
+                    "shall not exceed 2048bytes"],
+                ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+            ]
     }
 
 
 class MsgTestCaseStop(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI & automated-iut -> Testing Tool
+
     Description:
         - Message used for indicating the testing tool to stop the test case (the one running).
     """
@@ -581,8 +623,11 @@ class MsgTestCaseStop(Message):
 class MsgTestCaseRestart(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI -> Testing Tool
+
     Description: Restart the running test cases.
     """
 
@@ -630,8 +675,11 @@ class MsgStepStimuliExecute(Message):
 class MsgStepStimuliExecuted(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI (or automated-IUT)-> Testing Tool
+
     Description:
         - Used to indicate stimuli has been executed by user (and it's user-assisted iut) or by automated-iut
     """
@@ -649,8 +697,11 @@ class MsgStepStimuliExecuted(Message):
 class MsgStepCheckExecute(Message):
     """
     Requirements: Testing Tool SHOULD publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> Analysis
+
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the stimuli step to be executed by the user (or
         automated-IUT).
@@ -679,8 +730,11 @@ class MsgStepCheckExecute(Message):
 class MsgStepCheckExecuted(Message):
     """
     Requirements: Testing Tool SHOULD implement
+
     Type: Event
+
     Typical_use: test coordination -> test analysis
+
     Description:
         - In the context of IUT to IUT test execution, this message is used for indicating that the previously
         executed
@@ -700,8 +754,11 @@ class MsgStepCheckExecuted(Message):
 class MsgStepVerifyExecute(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI (or automated-IUT)
+
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the verify step to be executed by the user (or
         automated-IUT).
@@ -730,8 +787,11 @@ class MsgStepVerifyExecute(Message):
 class MsgStepVerifyExecuted(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI (or automated-IUT)-> Testing Tool
+
     Description:
         - Message generated by user (GUI or automated-IUT) declaring if the IUT VERIFY verifies the expected behaviour.
     """
@@ -770,8 +830,11 @@ class MsgStepVerifyExecuted(Message):
 class MsgTestCaseFinished(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI
+
     Description:
         - Used for indicating to subscribers that the test cases has finished.
         - This message is followed by a verdict.
@@ -790,8 +853,11 @@ class MsgTestCaseFinished(Message):
 class MsgTestCaseSkip(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI (or automated-IUT)-> Testing Tool
+
     Description:
         - Used for skipping a test cases event when was previusly selected to be executed.
         - testcase_id (optional) : if not provided then current tc is skipped
@@ -810,8 +876,11 @@ class MsgTestCaseSkip(Message):
 class MsgTestCaseSelect(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI (or automated-IUT)-> Testing Tool
+
     Description: tbd
 
     """
@@ -827,8 +896,11 @@ class MsgTestCaseSelect(Message):
 class MsgTestSuiteAbort(Message):
     """
     Requirements: Testing Tool MUST listen to event
+
     Type: Event
+
     Typical_use: GUI (or automated-IUT)-> Testing Tool
+
     Description: Event test suite ABORT
     """
 
@@ -843,8 +915,11 @@ class MsgTestSuiteAbort(Message):
 class MsgTestSuiteGetStatus(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: GUI -> Testing Tool
+
     Description:
         - Describes current state of the test suite.
         - Format for the response not standardised.
@@ -860,8 +935,11 @@ class MsgTestSuiteGetStatus(Message):
 class MsgTestSuiteGetStatusReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: Testing Tool -> GUI
+
     Description:
         - Describes current state of the test suite.
         - Format for the response not standardised.
@@ -883,8 +961,11 @@ class MsgTestSuiteGetStatusReply(MsgReply):
 class MsgTestSuiteGetTestCases(Message):
     """
     Requirements: Testing Tool SHOULD (MUST?) implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: GUI -> Testing Tool
+
     Description: TBD
     """
 
@@ -898,8 +979,11 @@ class MsgTestSuiteGetTestCases(Message):
 class MsgTestSuiteGetTestCasesReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD (MUST?) implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: Testing Tool -> GUI
+
     Description: TBD
     """
 
@@ -934,8 +1018,11 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
 class MsgTestCaseVerdict(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI
+
     Description: Used to indicate to the GUI (or automated-iut) which is the final verdict of the testcase.
     """
 
@@ -949,15 +1036,15 @@ class MsgTestCaseVerdict(Message):
             ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_04", "pass",
-             "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
+                "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
             ["CHECK_1_post_mortem_analysis", "pass",
-             "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
+                "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
             ["CHECK_2_post_mortem_analysis", "pass",
-             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
-             "mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
+                "mid=0xa8cb, tok=b'', pl=Not(b''))"],
             ["CHECK_3_post_mortem_analysis", "pass",
-             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
-             "CoAPOptionContentFormat()))"]],
+                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
+                "CoAPOptionContentFormat()))"]],
         "testcase_id": "TD_COAP_CORE_01_v01",
         "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
         "objective": "Perform GET transaction(CON mode)", "state": "finished"
@@ -967,8 +1054,11 @@ class MsgTestCaseVerdict(Message):
 class MsgTestSuiteReport(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI
+
     Description: Used to indicate to the GUI (or automated-iut) the final results of the test session.
     """
 
@@ -985,15 +1075,15 @@ class MsgTestSuiteReport(Message):
                         ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_04", "pass",
-                         "VERIFY step: User informed that the information was displayed "
-                         "correclty on his/her IUT",
-                         ""],
+                            "VERIFY step: User informed that the information was displayed "
+                            "correclty on his/her IUT",
+                            ""],
                         ["CHECK_1_post_mortem_analysis", "pass",
-                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
-                         "CoAP(type=0, code=1)"],
+                            "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
+                            "CoAP(type=0, code=1)"],
                         ["CHECK_2_post_mortem_analysis", "pass",
-                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                         "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                            "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
                         [
                             "CHECK_3_post_mortem_analysis",
                             "pass",
@@ -1010,14 +1100,14 @@ class MsgTestSuiteReport(Message):
                     ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_04", "pass",
-                     "VERIFY step: User informed that the information was displayed correclty on his/her "
-                     "IUT",
-                     ""], ["CHECK_1_post_mortem_analysis", "pass",
-                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
-                           "code=4)"],
+                        "VERIFY step: User informed that the information was displayed correclty on his/her "
+                        "IUT",
+                        ""], ["CHECK_1_post_mortem_analysis", "pass",
+                        "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
+                        "code=4)"],
                     ["CHECK_2_post_mortem_analysis", "pass",
-                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
-                     "code=66, mid=0xa8cd, tok=b'')"]]
+                        "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
+                        "code=66, mid=0xa8cd, tok=b'')"]]
             }
     }
 
@@ -1027,8 +1117,11 @@ class MsgTestSuiteReport(Message):
 class MsgSniffingStart(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> sniffing
+
     Description: tbd
     """
 
@@ -1061,8 +1154,11 @@ class MsgSniffingStartReply(MsgReply):
 class MsgSniffingStop(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> sniffing
+
     Description: tbd
     """
 
@@ -1076,8 +1172,11 @@ class MsgSniffingStop(Message):
 class MsgSniffingStoptReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: sniffing -> coordination
+
     Description: tbd
     """
 
@@ -1092,8 +1191,11 @@ class MsgSniffingStoptReply(MsgReply):
 class MsgSniffingGetCapture(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> sniffing
+
     Description: tbd
     """
 
@@ -1109,8 +1211,11 @@ class MsgSniffingGetCapture(Message):
 class MsgSniffingGetCaptureReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: sniffing -> coordination
+
     Description: tbd
     """
     routing_key = "control.sniffing.service.reply"
@@ -1127,8 +1232,11 @@ class MsgSniffingGetCaptureReply(MsgReply):
 class MsgSniffingGetCaptureLast(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> sniffing
+
     Description: tbd
     """
 
@@ -1142,8 +1250,11 @@ class MsgSniffingGetCaptureLast(Message):
 class MsgSniffingGetCaptureLastReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: sniffing -> coordination
+
     Description: tbd
     """
     routing_key = "control.sniffing.service.reply"
@@ -1162,8 +1273,11 @@ class MsgSniffingGetCaptureLastReply(MsgReply):
 class MsgInteropTestCaseAnalyze(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> analysis
+
     Description:
         - Method to launch an analysis from a pcap file or a token if the pcap file has already been provided.
         - The method need a token or a pcap_file but doesn't allow someone to provide both.
@@ -1187,16 +1301,19 @@ class MsgInteropTestCaseAnalyze(Message):
 class MsgInteropTestCaseAnalyzeReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
-    Analyzer -> Coordinator
-    Testing Tool SHOULD implement (design recommendation)
 
-    The recommended structure for the partial_verdicts field is a list of partial verdicts with the following
-    requirements:
-     - each one of those elements of the list correspond to one CHECK or VERIFY steps of the test description
-     - first value of the list MUST be a "pass", "fail", "inconclusive" or eventually "error" partial verdict (
-     string)
-     - the second value MUST be a string with a description of partial verdict (intended for the user)
-     - more values elements MAY be added to the list
+    Type: Reply (service)
+
+    Typical_use: analysis -> coordination
+
+    Description:
+        - The recommended structure for the partial_verdicts field is a list of partial verdicts with the following
+        requirements:
+           - each one of those elements of the list correspond to one CHECK or VERIFY steps of the test description
+            - first value of the list MUST be a "pass", "fail", "inconclusive" or eventually "error" partial verdict (
+            string)
+            - the second value MUST be a string with a description of partial verdict (intended for the user)
+            - more values elements MAY be added to the list
 
     """
 
@@ -1236,8 +1353,11 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
 class MsgDissectionDissectCapture(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Request (service)
+
     Typical_use: coordination -> dissection, analysis -> dissection
+
     Description: TBD
     """
 
@@ -1264,8 +1384,11 @@ class MsgDissectionDissectCapture(Message):
 class MsgDissectionDissectCaptureReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
+
     Type: Reply (service)
+
     Typical_use: Dissector -> Coordinator, Dissector -> Analyzer
+
     Description: TBD
     """
 
@@ -1316,8 +1439,11 @@ class MsgDissectionDissectCaptureReply(MsgReply):
 class MsgDissectionAutoDissect(Message):
     """
     Requirements: Testing Tool MUST publish event
+
     Type: Event
+
     Typical_use: Testing Tool -> GUI
+
     Description: Used to indicate to the GUI the dissection of the exchanged packets.
         - GUI MUST display this info during execution:
             - interop session
@@ -1387,15 +1513,15 @@ class MsgPrivacyAnalyzeReply(MsgReply):
     """
 
     _privacy_empty_report = {"type": "Anomalies Report",
-                             "protocols": ["coap"],
-                             "conversation": [],
-                             "status": "none",
-                             "testing_tool": "Privacy Testing Tool",
-                             "byte_exchanged": 0,
-                             "timestamp": 1493798811.53124,
-                             "is_final": True,
-                             "packets": {},
-                             "version": "0.0.1"}
+        "protocols": ["coap"],
+        "conversation": [],
+        "status": "none",
+        "testing_tool": "Privacy Testing Tool",
+        "byte_exchanged": 0,
+        "timestamp": 1493798811.53124,
+        "is_final": True,
+        "packets": {},
+        "version": "0.0.1"}
 
     _msg_data_template = {
         "_type": "privacy.analyze.reply",
@@ -1528,8 +1654,8 @@ message_types_dict = {
     "testcoordination.step.stimuli.executed": MsgStepStimuliExecuted,  # GUI -> TestingTool
     "testcoordination.step.check.execute": MsgStepCheckExecute,  # TestingTool -> GUI
     "testcoordination.step.check.executed": MsgStepCheckExecuted,  # GUI -> TestingTool
-    "testcoordination.step.verify.execute": MsgStepCheckExecute,  # Testing Tool Internal
-    "testcoordination.step.verify.executed": MsgStepCheckExecuted,  # Testing Tool Internal
+    "testcoordination.step.verify.execute": MsgStepVerifyExecute,  # Testing Tool Internal
+    "testcoordination.step.verify.executed": MsgStepVerifyExecuted,  # Testing Tool Internal
     "testcoordination.testcase.configuration": MsgTestCaseConfiguration,  # TestingTool -> GUI
     "testcoordination.testcase.stop": MsgTestCaseStop,  # GUI -> TestingTool
     "testcoordination.testcase.restart": MsgTestCaseRestart,  # GUI -> TestingTool
