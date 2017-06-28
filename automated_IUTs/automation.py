@@ -44,7 +44,6 @@ signal.signal(signal.SIGINT, signal_int_handler)
 
 
 class AutomatedIUT(threading.Thread):
-
     # attributes to be provided by subclass
     implemented_testcases_list = NotImplementedField
     stimuli_cmd_dict = NotImplementedField
@@ -107,8 +106,11 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        elif isinstance(event, MsgTestCaseReady) and event.testcase_id not in self.implemented_testcases_list:
-            publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
+        elif isinstance(event, MsgTestCaseReady):
+            if event.testcase_id not in self.implemented_testcases_list:
+                publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
+            else:
+                logging.info('IUT %s ready to execute testcase' % self.component_id)
 
         elif isinstance(event, MsgStepStimuliExecute):
 
@@ -118,6 +120,13 @@ class AutomatedIUT(threading.Thread):
                 if cmd:
                     self._execute_stimuli(step, cmd)
                 publish_message(self.channel, MsgStepStimuliExecuted(node=self.node))
+            else:
+                logging.info('Event received and ignored: %s (node: %s - step: %s)' %
+                             (
+                                 event._type,
+                                 event.node,
+                                 event.step_id,
+                             ))
 
         elif isinstance(event, MsgStepVerifyExecute):
 
@@ -128,7 +137,12 @@ class AutomatedIUT(threading.Thread):
                                                                     node=self.node
                                                                     ))
             else:
-                logging.info('Event received and ignored: %s' % event.to_json())
+                logging.info('Event received and ignored: %s (node: %s - step: %s)' %
+                             (
+                                 event._type,
+                                 event.node,
+                                 event.step_id,
+                             ))
 
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
@@ -237,6 +251,7 @@ class UserEmulator(threading.Thread):
             self._exit
 
         else:
+
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):

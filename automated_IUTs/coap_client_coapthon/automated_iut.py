@@ -11,9 +11,12 @@ STIMULI_HANDLER_TOUT = 10
 
 signal.signal(signal.SIGINT, signal_int_handler)
 
+
 class CoapthonCoapClient(AutomatedIUT):
     component_id = 'automated_iut-coap_client'
+
     node = 'coap_client'
+
     iut_cmd = [
         'python',
         'automated_IUTs/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
@@ -64,6 +67,7 @@ class CoapthonCoapClient(AutomatedIUT):
 
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
+
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
