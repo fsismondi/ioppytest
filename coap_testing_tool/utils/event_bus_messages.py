@@ -27,7 +27,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip()
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.31, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -38,18 +38,18 @@ MsgTestCaseSkip(_api_version = 0.1.31, _type = testcoordination.testcase.skip, t
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.31, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
 >>> m.testcase_id
 'TD_COAP_CORE_03_v01'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.31", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.32", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.31", "_type": "testcoordination.testsuite.start"}'
+'{"_api_version": "0.1.32", "_type": "testcoordination.testsuite.start"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.31, _type = testcoordination.testcase.skip, t
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.31, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
+MsgErrorReply(_api_version = 0.1.32, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
 error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
@@ -81,7 +81,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.31'
+API_VERSION = '0.1.32'
 
 
 # TODO use metaclasses instead?
@@ -548,12 +548,15 @@ class MsgTestCaseStart(Message):
 
     Description:
         - Message used for indicating the testing tool to start the test case (the one previously selected)
+        - if testcase_id is Null then testing tool starts previously announced testcase in message
+        "testcoordination.testcase.ready",
     """
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.start",
-        "description": "Event test case START"
+        "description": "Event test case START",
+        "testcase_id": "TBD",
     }
 
 
@@ -578,25 +581,25 @@ class MsgTestCaseConfiguration(Message):
         "testcase_ref": "TBD",
         "description":
             ["CoAP servers running service at [bbbb::2]:5683",
-             "CoAP servers are requested to offer the following resources",
-             ["/test", "Default test resource", "Should not exceed 64bytes"],
-             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
-             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
-             ["/separate",
-              "Ressource which cannot be served immediately and which cannot be "
-              "acknowledged in a piggy-backed way",
-              "Should not exceed 64bytes"],
-             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
-             ["/large_update",
-              "Large resource that can be updated using PUT method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/large_create",
-              "Large resource that can be  created using POST method (>1024 bytes)",
-              "shall not exceed 2048bytes"],
-             ["/obs", "Observable resource which changes every 5 seconds",
-              "shall not exceed 2048bytes"],
-             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
-             ]
+                "CoAP servers are requested to offer the following resources",
+                ["/test", "Default test resource", "Should not exceed 64bytes"],
+                ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+                ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+                ["/separate",
+                    "Ressource which cannot be served immediately and which cannot be "
+                    "acknowledged in a piggy-backed way",
+                    "Should not exceed 64bytes"],
+                ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+                ["/large_update",
+                    "Large resource that can be updated using PUT method (>1024 bytes)",
+                    "shall not exceed 2048bytes"],
+                ["/large_create",
+                    "Large resource that can be  created using POST method (>1024 bytes)",
+                    "shall not exceed 2048bytes"],
+                ["/obs", "Observable resource which changes every 5 seconds",
+                    "shall not exceed 2048bytes"],
+                ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+            ]
     }
 
 
@@ -1036,15 +1039,15 @@ class MsgTestCaseVerdict(Message):
             ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_04", "pass",
-             "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
+                "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
             ["CHECK_1_post_mortem_analysis", "pass",
-             "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
+                "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
             ["CHECK_2_post_mortem_analysis", "pass",
-             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
-             "mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
+                "mid=0xa8cb, tok=b'', pl=Not(b''))"],
             ["CHECK_3_post_mortem_analysis", "pass",
-             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
-             "CoAPOptionContentFormat()))"]],
+                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
+                "CoAPOptionContentFormat()))"]],
         "testcase_id": "TD_COAP_CORE_01_v01",
         "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
         "objective": "Perform GET transaction(CON mode)", "state": "finished"
@@ -1075,15 +1078,15 @@ class MsgTestSuiteReport(Message):
                         ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_04", "pass",
-                         "VERIFY step: User informed that the information was displayed "
-                         "correclty on his/her IUT",
-                         ""],
+                            "VERIFY step: User informed that the information was displayed "
+                            "correclty on his/her IUT",
+                            ""],
                         ["CHECK_1_post_mortem_analysis", "pass",
-                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
-                         "CoAP(type=0, code=1)"],
+                            "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
+                            "CoAP(type=0, code=1)"],
                         ["CHECK_2_post_mortem_analysis", "pass",
-                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                         "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                            "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
                         [
                             "CHECK_3_post_mortem_analysis",
                             "pass",
@@ -1100,14 +1103,14 @@ class MsgTestSuiteReport(Message):
                     ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_04", "pass",
-                     "VERIFY step: User informed that the information was displayed correclty on his/her "
-                     "IUT",
-                     ""], ["CHECK_1_post_mortem_analysis", "pass",
-                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
-                           "code=4)"],
+                        "VERIFY step: User informed that the information was displayed correclty on his/her "
+                        "IUT",
+                        ""], ["CHECK_1_post_mortem_analysis", "pass",
+                        "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
+                        "code=4)"],
                     ["CHECK_2_post_mortem_analysis", "pass",
-                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
-                     "code=66, mid=0xa8cd, tok=b'')"]]
+                        "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
+                        "code=66, mid=0xa8cd, tok=b'')"]]
             }
     }
 
@@ -1513,15 +1516,15 @@ class MsgPrivacyAnalyzeReply(MsgReply):
     """
 
     _privacy_empty_report = {"type": "Anomalies Report",
-                             "protocols": ["coap"],
-                             "conversation": [],
-                             "status": "none",
-                             "testing_tool": "Privacy Testing Tool",
-                             "byte_exchanged": 0,
-                             "timestamp": 1493798811.53124,
-                             "is_final": True,
-                             "packets": {},
-                             "version": "0.0.1"}
+        "protocols": ["coap"],
+        "conversation": [],
+        "status": "none",
+        "testing_tool": "Privacy Testing Tool",
+        "byte_exchanged": 0,
+        "timestamp": 1493798811.53124,
+        "is_final": True,
+        "packets": {},
+        "version": "0.0.1"}
 
     _msg_data_template = {
         "_type": "privacy.analyze.reply",
