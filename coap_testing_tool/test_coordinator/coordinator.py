@@ -643,6 +643,8 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
         msg_fields.update(self.current_tc.to_dict(verbose=False))
+        if self.current_tc.current_step.iut:
+            msg_fields.update(self.current_tc.current_step.iut.to_dict())
 
         if self.current_tc.current_step.type == "stimuli":
             event = MsgStepStimuliExecute(

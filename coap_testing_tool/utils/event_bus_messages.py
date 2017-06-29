@@ -660,16 +660,16 @@ class MsgStepStimuliExecute(Message):
     _msg_data_template = {
         "_type": "testcoordination.step.stimuli.execute",
         "description": "Please execute TD_COAP_CORE_01_v01_step_01",
-        "step_id": "TD_COAP_CORE_01_v01_step_01",
-        "step_type": "stimuli",
+        "step_id": "TBD",
+        "step_type": "TBD",
         "step_info": [
             "Client is requested to send a GET request with",
             "Type = 0(CON)",
             "Code = 1(GET)"
         ],
-        "step_state": "executing",
-        "node": "coap_client",
-        "node_execution_mode": "user_assisted",
+        "step_state": "TBD",
+        "node": "TBD",
+        "node_execution_mode": "TBD",
         "testcase_id": "TBD",
         "testcase_ref": "TBD"
     }
