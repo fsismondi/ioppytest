@@ -53,8 +53,8 @@ user_sequence = [
     MsgStepVerifyExecuted(),
     MsgTestSuiteGetStatus(),
     MsgStepVerifyExecuted(
-            verify_response=False,
-            description='User indicates that IUT didnt behave as expected '),
+        verify_response=False,
+        description='User indicates that IUT didnt behave as expected '),
     MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
     MsgTestCaseRestart(),
     MsgTestSuiteGetStatus(),
@@ -67,18 +67,18 @@ service_api_calls = [
     MsgTestSuiteGetStatus(),
     MsgTestSuiteGetTestCases(),
     MsgInteropTestCaseAnalyze(
-            testcase_id="TD_COAP_CORE_01",
-            testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_base64,
+        testcase_id="TD_COAP_CORE_01",
+        testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_base64,
     ),
 
     # Sniffer calls (order matters!)
     MsgSniffingStart(
-            capture_id='TD_COAP_CORE_01',
-            filter_if='tun0',
-            filter_proto='udp port 5683'
+        capture_id='TD_COAP_CORE_01',
+        filter_if='tun0',
+        filter_proto='udp port 5683'
     ),
     MsgSniffingStop(),
     MsgSniffingGetCapture(tescase_id='TD_COAP_CORE_01'),
@@ -87,29 +87,29 @@ service_api_calls = [
     # Dissector calls
     MsgDissectionDissectCapture(),
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            protocol_selection='coap',
-            value=PCAP_TC_COAP_01_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        protocol_selection='coap',
+        value=PCAP_TC_COAP_01_base64,
     ),
     # complete dissection of pcap
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_base64,
     ),
     # complete dissection of pcap with extra TCP traffic
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
     ),
     # same as dis4 but filtering coap messages
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            protocol_selection='coap',
-            value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        protocol_selection='coap',
+        value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
     ),
 
     # this should generate an error
@@ -117,9 +117,9 @@ service_api_calls = [
 
     # pcap sniffed using AMQP based packet sniffer
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
     )
 ]
 
@@ -138,6 +138,7 @@ class ApiTests(unittest.TestCase):
 
         # MESSAGE VALIDATOR BOUND TO THE CONTROL EVENTS QUEUE
         control_queue_name = 'control_queue@%s' % COMPONENT_ID
+
         # lets' first clean up the queue
         self.channel.queue_delete(queue=control_queue_name)
         self.channel.queue_declare(queue=control_queue_name, auto_delete=True)
@@ -149,10 +150,12 @@ class ApiTests(unittest.TestCase):
         errors_queue_name = 'bus_errors_queue@%s' % COMPONENT_ID
         # lets' first clean up the queue
         self.channel.queue_delete(queue=errors_queue_name)
+
         self.channel.queue_declare(queue=errors_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=errors_queue_name,
                                 routing_key='log.error.*')
+
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=errors_queue_name,
                                 routing_key='control.session.error')
@@ -211,8 +214,8 @@ class ApiTests(unittest.TestCase):
             msg_type = body_dict['_type']
 
             logger.info(
-                    '[%s] Checking correlated request/response for message %s'
-                    % (sys._getframe().f_code.co_name, props.message_id))
+                '[%s] Checking correlated request/response for message %s'
+                % (sys._getframe().f_code.co_name, props.message_id))
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -220,8 +223,11 @@ class ApiTests(unittest.TestCase):
                 ch.stop_consuming()
                 return
 
-            if '.service.reply' in method.routing_key:
+            if msg_type in ('testingtool.ready', 'testingtool.compoent.ready'):
+                # forget about these.. we are checking services and services reply only
+                return
 
+            if '.service.reply' in method.routing_key:
                 if props.correlation_id in services_mid_backlog:
                     services_mid_backlog.remove(props.correlation_id)
                     services_events_tracelog.append(msg_type)
@@ -247,15 +253,18 @@ class ApiTests(unittest.TestCase):
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
         self.channel.queue_delete(queue=services_queue_name)
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+
+        # get all services messages and their replies
         self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service')
         self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service.reply')
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
+
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key=MsgTestingToolTerminate.routing_key)
-        self.channel.basic_qos(prefetch_count=1)
+
+        # for checking that for every request we get a reply
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
 
         # prepare the message generator
@@ -298,7 +307,7 @@ def import_env_vars():
         AMQP_USER = p.username
         AMQP_SERVER = p.hostname
         logger.info(
-                "Env variables imported for AMQP connection, User: {0} @ Server: {1} ".format(AMQP_USER, AMQP_SERVER)
+            "Env variables imported for AMQP connection, User: {0} @ Server: {1} ".format(AMQP_USER, AMQP_SERVER)
         )
     except KeyError as e:
         logger.error('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
@@ -319,10 +328,10 @@ def publish_message(channel, message):
     properties = pika.BasicProperties(**message.get_properties())
 
     channel.basic_publish(
-            exchange=AMQP_EXCHANGE,
-            routing_key=message.routing_key,
-            properties=properties,
-            body=message.to_json(),
+        exchange=AMQP_EXCHANGE,
+        routing_key=message.routing_key,
+        properties=properties,
+        body=message.to_json(),
     )
 
 
@@ -352,6 +361,7 @@ def check_for_bus_error(ch, method, props, body):
         'sniffer',
         'dissector'
         'session',
+        # TODO add agent_TT messages
     ]
     r_key = method.routing_key
     logger.info('[%s] Auditing: %s' % (sys._getframe().f_code.co_name, r_key))
