@@ -8,9 +8,7 @@ This can be run as standalone software and also integrated to f-interop
 architecture.
 
 ### TODO
-- add coap client automated IUT
 - add feat for handling step by step analysis
-- add more unit testing of coordinator component
 - document isntallation of requirements and dependencies
 
 ### CoAP Testing tools components

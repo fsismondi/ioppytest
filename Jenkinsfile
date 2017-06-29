@@ -33,7 +33,6 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             sudo apt-get -y install supervisor
             sudo apt-get -y install tcpdump
-            sudo -H pip install pytest --ignore-installed
             sudo -H pip3 install pytest --ignore-installed
             sudo -H pip install -r coap_testing_tool/agent/requirements.txt --upgrade
             sudo -H pip3 install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade

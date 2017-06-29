@@ -55,7 +55,7 @@ def amqp_request(channel, request_message: Message, component_id: str):
     )
 
     time.sleep(0.2)
-    retries_left = 5
+    retries_left = 10
 
     while retries_left > 0:
         time.sleep(0.5)

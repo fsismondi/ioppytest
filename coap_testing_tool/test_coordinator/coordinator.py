@@ -12,11 +12,13 @@ import pika
 import time
 import logging
 
+from urllib.parse import urlparse
 from itertools import cycle
 from collections import OrderedDict
-from coap_testing_tool import AMQP_EXCHANGE
+from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
+from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.utils.event_bus_messages import *
 
@@ -33,10 +35,25 @@ SNIFFER_FILTER_IF = 'tun0'
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
 
-logger = logging.getLogger()
+# init logging to stnd output and log files
+logger = logging.getLogger(__name__)
+
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
+
+# make pika logger less verbose
+logging.getLogger('pika').setLevel(logging.INFO)
 
 
-### AUX functions ###
+# # # AUX functions # # #
 
 def list_to_str(ls):
     """
@@ -60,7 +77,7 @@ def list_to_str(ls):
     return ret
 
 
-### YAML parser aux classes and methods ###
+# # # YAML parser aux classes and methods # # #
 def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
@@ -306,16 +323,16 @@ class Step():
             step_dict['step_type'] = self.type
             step_dict['step_info'] = self.description
             step_dict['step_state'] = self.state
-            # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
-            if self.type == 'stimuli' or self.type == 'verify':
-                step_dict.update(self.iut.to_dict())
+            # # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
+            # if self.type == 'stimuli' or self.type == 'verify':
+            #     step_dict.update(self.iut.to_dict())
         return step_dict
 
     def change_state(self, state):
         # postponed state used when checks are postponed for the end of the TC execution
         assert state in (None, 'executing', 'finished', 'postponed')
         self.state = state
-        logger.info('Step %s state changed to: %s' % (self.id, self.state))
+        logger.debug('Step %s state changed to: %s' % (self.id, self.state))
 
     def set_result(self, result, result_info):
         # Only check and verify steps can have a result
@@ -386,11 +403,11 @@ class TestCase:
         d = OrderedDict()
         d['testcase_id'] = self.id
         d['testcase_ref'] = self.uri
+        d['state'] = self.state
 
         if verbose:
             d['objective'] = self.objective
             d['pre_conditions'] = self.pre_conditions
-            d['state'] = self.state
 
         return d
 
@@ -408,7 +425,7 @@ class TestCase:
             for step in self.sequence:
                 step.change_state('finished')
 
-        logger.info('Testcase %s changed state to %s' % (self.id, state))
+        logger.debug('Testcase %s changed state to %s' % (self.id, state))
 
     def check_all_steps_finished(self):
         """
@@ -459,7 +476,7 @@ class TestCase:
                     tc_report.append((step.id, None, "%s postponed" % step.type.upper(), ""))
                 elif step.state == "finished":
                     tc_report.append(
-                            (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
+                        (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
                     # update global verdict
                     final_verdict.update(step.partial_verdict.get_value(), step.partial_verdict.get_message())
                 else:
@@ -498,6 +515,10 @@ class Coordinator:
     """
 
     def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
+
+        # configurations received after testing tool started
+        self.session_config = None
+        self.tc_list_requested = None
 
         # first let's import the TC configurations
         imported_configs = import_teds(ted_config_file)
@@ -541,6 +562,10 @@ class Coordinator:
                                 queue=self.events_q_name,
                                 routing_key='control.testcoordination')
 
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=self.events_q_name,
+                                routing_key='control.session')
+
         self.channel.basic_consume(self.handle_service,
                                    queue=self.services_q_name,
                                    no_ack=False)
@@ -573,7 +598,7 @@ class Coordinator:
         logger.info('start consuming..')
         self.channel.start_consuming()
 
-    ### AUXILIARY AMQP MESSAGING FUNCTIONS ###
+    # # # AUXILIARY AMQP MESSAGING FUNCTIONS # # #
 
     def notify_tun_interfaces_start(self):
         """
@@ -605,12 +630,12 @@ class Coordinator:
             tc_info_dict = self.current_tc.to_dict(verbose=True)
 
             event = MsgTestCaseReady(
-                    message='Next test case to be executed is %s' % self.current_tc.id,
-                    **tc_info_dict
+                description='Next test case to be executed is %s' % self.current_tc.id,
+                **tc_info_dict
             )
         else:
             event = MsgTestCaseReady(
-                    message='No test case selected, or no more available',
+                description='No test case selected, or no more available',
             )
         publish_message(self.channel, event)
 
@@ -618,17 +643,29 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
         msg_fields.update(self.current_tc.to_dict(verbose=False))
-        event = MsgStepExecute(
-                message='Next test step to be executed is %s' % self.current_tc.current_step.id,
+        if self.current_tc.current_step.iut:
+            msg_fields.update(self.current_tc.current_step.iut.to_dict())
+
+        if self.current_tc.current_step.type == "stimuli":
+            event = MsgStepStimuliExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
                 **msg_fields
-        )
+            )
+        elif self.current_tc.current_step.type == "verify":
+            event = MsgStepVerifyExecute(
+                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                **msg_fields
+            )
+        elif self.current_tc.current_step.type == "check":
+            raise NotImplementedError()
+
         publish_message(self.channel, event)
 
     def notify_testcase_finished(self):
         tc_info_dict = self.current_tc.to_dict(verbose=False)
         event = MsgTestCaseFinished(
-                message='Testcase %s finished' % tc_info_dict['testcase_id'],
-                **tc_info_dict
+            description='Testcase %s finished' % tc_info_dict['testcase_id'],
+            **tc_info_dict
         )
         publish_message(self.channel, event)
 
@@ -636,23 +673,23 @@ class Coordinator:
         msg_fields = {}
         msg_fields.update(self.current_tc.report)
         msg_fields.update(self.current_tc.to_dict(verbose=False))
-        event = MsgTestCaseVerdict( **msg_fields)
+        event = MsgTestCaseVerdict(**msg_fields)
         publish_message(self.channel, event)
 
         # Overwrite final verdict file with final details
         json_file = os.path.join(
-                RESULTS_DIR,
-                self.current_tc.id + '_verdict.json'
+            RESULTS_DIR,
+            self.current_tc.id + '_verdict.json'
         )
         with open(json_file, 'w') as f:
             f.write(event.to_json())
 
-    def notify_coordination_error(self, message, error_code):
+    def notify_coordination_error(self, description, error_code):
 
         # testcoordination.error notification
         # TODO error codes?
         coordinator_notif = OrderedDict()
-        coordinator_notif.update({'message': message, })
+        coordinator_notif.update({'description': description, })
         coordinator_notif.update({'error_code': error_code})
         coordinator_notif.update({'testsuite_status': self.states_summary()})
         err_json = json.dumps(coordinator_notif)
@@ -664,8 +701,8 @@ class Coordinator:
             filename = 'general_error.json'
 
         json_file = os.path.join(
-                RESULTS_DIR,
-                filename
+            RESULTS_DIR,
+            filename
 
         )
         with open(json_file, 'w') as f:
@@ -673,12 +710,12 @@ class Coordinator:
 
     def notify_testsuite_finished(self):
         event = MsgTestSuiteReport(
-                **self.testsuite_report()
+            **self.testsuite_report()
         )
         publish_message(self.channel, event)
         json_file = os.path.join(
-                RESULTS_DIR,
-                'session_report.json'
+            RESULTS_DIR,
+            'session_report.json'
         )
         with open(json_file, 'w') as f:
             f.write(event.to_json())
@@ -689,14 +726,14 @@ class Coordinator:
         config = self.tc_configs[config_id]  # Configuration object
 
         for desc in config.description:
-            message = desc['message']
+            description = desc['message']
             node = desc['node']
 
             event = MsgTestCaseConfiguration(
-                    configuration_id=config_id,
-                    node=node,
-                    message=message,
-                    **tc_info_dict
+                configuration_id=config_id,
+                node=node,
+                description=description,
+                **tc_info_dict
             )
             publish_message(self.channel, event)
 
@@ -704,7 +741,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingStart(**kwargs), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -713,7 +750,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingStop(), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -722,7 +759,7 @@ class Coordinator:
 
         try:
             response = amqp_request(self.connection.channel(), MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
-            logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -731,10 +768,10 @@ class Coordinator:
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
         response = amqp_request(self.connection.channel(), request, COMPONENT_ID)
-        logger.info("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+        logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response
 
-    ### API ENDPOINTS ###
+    # # # API ENDPOINTS # # #
 
     def handle_service(self, ch, method, properties, body):
 
@@ -756,25 +793,25 @@ class Coordinator:
         if isinstance(request, MsgTestSuiteGetTestCases):
             testcases = self.get_testcases_basic(verbose=True)
             response = MsgTestSuiteGetTestCasesReply(
-                    request,
-                    ok=True,
-                    tc_list=testcases,
+                request,
+                ok=True,
+                tc_list=testcases,
             )
             publish_message(self.channel, response)
 
         elif isinstance(request, MsgTestSuiteGetStatus):
             status = self.states_summary()
             response = MsgTestSuiteGetStatusReply(
-                    request,
-                    ok=True,
-                    status=status,
+                request,
+                ok=True,
+                **status
             )
             publish_message(self.channel, response)
         else:
             logger.warning('Ignoring unrecognised service request: %s' % repr(request))
             return
 
-        logger.info('Processing request: %s' % repr(request))
+        logger.info('Processing request: %s' % request._type)
 
     def handle_control(self, ch, method, properties, body):
 
@@ -796,42 +833,29 @@ class Coordinator:
         logger.info('Event received: %s' % event._type)
 
         if isinstance(event, MsgTestCaseSkip):
-
-            if self.current_tc is None:
+            # operation health check
+            if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
-                # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             try:
                 testcase_id_skip = event.testcase_id
                 if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
-                    testcase_t = self.current_tc
-                else:
-                    testcase_t = self.get_testcase(testcase_id_skip)
-
+                    testcase_id_skip = self.current_tc.id
             except:  # if no testcase_id was sent then I skip  the current one
-                testcase_t = self.current_tc
+                testcase_id_skip = self.current_tc.id
 
-            # change tc state to 'skipped'
+            try:
+                if self.skip_testcase(testcase_id_skip):  # if there's more TCs
+                    self.notify_testcase_is_ready()
+                elif self.check_testsuite_finished():  # no more TCs to execute
+                    self.finish_testsuite()
+                    self.notify_testsuite_finished()
 
-            if testcase_t is None:
-                error_msg = "Non existent testcase: %s" % testcase_id_skip
-                self.notify_coordination_error(message=error_msg, error_code=None)
+            except Exception as e:
+                self.notify_coordination_error(description=str(e), error_code=None)
                 return
-
-            logger.info("Skipping testcase: %s" % testcase_t.id)
-
-            testcase_t.change_state("skipped")
-
-            # if skipped tc is current test case then next tc
-            if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
-                self.next_testcase()
-                self.notify_testcase_is_ready()
-
-            if self.current_tc is None and self.check_testsuite_finished():
-                self.finish_testsuite()
-                self.notify_testsuite_finished()
 
         elif isinstance(event, MsgTestSuiteStart):
             # lets open tun interfaces
@@ -854,12 +878,12 @@ class Coordinator:
                 error_msg = "Incorrect or empty testcase_id"
 
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             except CoordinatorError as e:
-                error_msg = e.message
+                error_msg = e.description
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             # send general notif
             self.notify_testcase_is_ready()
@@ -870,7 +894,7 @@ class Coordinator:
                 error_msg = "No testcase selected"
 
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.check_testsuite_finished():
@@ -881,24 +905,24 @@ class Coordinator:
                 # send general notif
                 self.notify_step_to_execute()
 
-        elif isinstance(event, MsgStimuliExecuted):
+        elif isinstance(event, MsgStepStimuliExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a STIMULI
@@ -930,25 +954,24 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-
-        elif isinstance(event, MsgVerifyResponse):
+        elif isinstance(event, MsgStepVerifyExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a verify
@@ -964,9 +987,8 @@ class Coordinator:
                 verify_response = event.verify_response
             except KeyError:
                 error_msg = "Verify_response field needs to be provided"
-
                 # send general notif
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
 
             self.handle_verify_step_response(verify_response)
 
@@ -989,24 +1011,53 @@ class Coordinator:
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
 
-        elif isinstance(event, MsgCheckResponse):
+        elif isinstance(event, MsgInteropSessionConfiguration):
+            tc_list_requested = []
+            session_config = event.to_dict()
+
+            logging.info(" Interop session configuration received : %s" % session_config)
+
+            try:
+                for test in event.tests:
+                    test_url = urlparse(test['testcase_ref'])
+                    tc_id = str(test_url.path).lstrip("/tests/")
+                    tc_list_requested.append(tc_id)
+
+            except Exception as e:
+                error_msg = "Wrong message format sent for session configuration."
+                self.notify_coordination_error(description=error_msg, error_code=None)
+                return
+
+            self.configure_test_suite(tc_list_requested)
+
+            self.session_config = session_config
+
+            event = MsgTestingToolConfigured(
+                session_id=event.session_id,
+                testing_tools=event.testing_tools,
+                tc_list=self.get_testcases_basic(verbose=False),
+            )
+
+            publish_message(self.channel, event)
+
+        elif isinstance(event, MsgStepCheckExecuted):
 
             if self.current_tc is None:
                 error_msg = "No testcase selected"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.state is None:
                 error_msg = "Test case not yet started"
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             if self.current_tc.current_step is None:
                 error_msg = "No step under execution."
                 # notify all
-                self.notify_coordination_error(message=error_msg, error_code=None)
+                self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
             # process event only if I current step is a check
@@ -1021,7 +1072,7 @@ class Coordinator:
                 verdict = event.partial_verdict
                 description = event.description
             except KeyError:
-                self.notify_coordination_error(message='Malformed CHECK response', error_code=None)
+                self.notify_coordination_error(description='Malformed CHECK response', error_code=None)
 
             self.handle_check_step_response(verdict, description)
 
@@ -1050,7 +1101,7 @@ class Coordinator:
             else:
                 logger.error('Malformed message')
 
-    ### TRANSITION METHODS for the Coordinator FSM ###
+    # # # TRANSITION METHODS for the Coordinator FSM # # #
 
     def get_testcases_basic(self, verbose=None):
 
@@ -1084,6 +1135,36 @@ class Coordinator:
             logger.error("%s not found in : %s " % (tc_id, self.teds))
             raise CoordinatorError('Testcase not found')
 
+    def configure_test_suite(self, tc_list_requested):
+        assert tc_list_requested is not None
+
+        # get all TCs
+        tc_list_available = self.get_testcases_list()
+
+        # verify if selected TCs are available
+        tc_non_existent = list(set(tc_list_requested) - set(tc_list_available))
+        tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
+
+        if len(tc_list_requested) == 0:
+            self.notify_coordination_error(
+                description='No testcases selected. Using default selection: ALL',
+                error_code='TBD'
+            )
+            return
+
+        if len(tc_non_existent) != 0:
+            self.notify_coordination_error(
+                description='The following testcases are not available in the testing tool: %s'
+                            % str(tc_non_existent),
+                error_code='TBD'
+            )
+
+        if len(tc_to_skip) != 0:
+            for item in tc_to_skip:
+                self.skip_testcase(item)
+
+        self.tc_list_requested = tc_list_requested
+
     def start_test_suite(self):
         """
         :return: test case to start with
@@ -1091,7 +1172,11 @@ class Coordinator:
         # resets all previously executed TC
         for tc in self.teds.values():
             tc.reinit()
-        # init testcase if None
+
+        # reconfigure test suite
+        if self.tc_list_requested:
+            self.configure_test_suite(self.tc_list_requested)
+
         if self.current_tc is None:
             self._ted_it = cycle(self.teds.values())  # so that we start back from the first
             self.next_testcase()
@@ -1136,11 +1221,32 @@ class Coordinator:
             }
 
             if self.call_service_sniffer_start(**sniff_params):
-                logger.info('Sniffer succesfully started')
+                logger.debug('Sniffer succesfully started')
             else:
                 logger.error('Sniffer couldnt be started')
 
         return self.current_tc.current_step
+
+    def skip_testcase(self, testcase_id):
+        """
+
+        :param testcase_id: testcase id to skip
+        :return: next test case (Testcase type) to execute, None if no more testcases to execute
+        """
+        testcase_t = self.get_testcase(testcase_id)
+
+        if testcase_t is None:
+            error_msg = "Non existent testcase: %s" % testcase_id
+            raise Exception(error_msg)
+
+        logger.debug("Skipping testcase: %s" % testcase_t.id)
+        testcase_t.change_state("skipped")
+
+        # if skipped tc is current test case then next tc
+        if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
+            self.next_testcase()
+
+        return self.current_tc
 
     def handle_verify_step_response(self, verify_response):
         # some sanity checks on the states
@@ -1167,8 +1273,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def handle_check_step_response(self, verdict, description):
         # some sanity checks on the states
@@ -1188,8 +1294,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def handle_stimuli_step_executed(self):
         """
@@ -1208,8 +1314,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-                        self.current_tc.current_step.type,
-                        self.current_tc.current_step.state))
+        self.current_tc.current_step.type,
+        self.current_tc.current_step.state))
 
     def finish_testcase(self):
         """
@@ -1242,8 +1348,7 @@ class Coordinator:
                     pcap_file_base64 = sniffer_response.value
                     filename = sniffer_response.filename
                 else:
-                    logger.error('Error encountered with packet sniffer: %s' % repr(sniffer_response))
-                    return
+                    logger.warning('Error encountered with packet sniffer: %s' % repr(sniffer_response))
 
             except AttributeError as ae:
                 logger.error('Failed to process Sniffer response: %s' % repr(sniffer_response))
@@ -1252,7 +1357,7 @@ class Coordinator:
             # save PCAP to file
             with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
                 nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                logger.info("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
+                logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
 
             logger.debug("Sending PCAP file to TAT for analysis...")
             try:
@@ -1263,15 +1368,15 @@ class Coordinator:
                                                                    filename=tc_id + ".pcap",
                                                                    value=pcap_file_base64)
             except TimeoutError as e:
-                logger.error("Sniffer didnt answer to the analysis request")
+                logger.error("TAT didnt answer to the analysis request")
 
             if tat_response and tat_response.ok:
 
                 logger.info("Response received from TAT: %s " % repr(tat_response))
                 # Save the json object received
                 json_file = os.path.join(
-                        TMPDIR,
-                        tc_id + '_analysis.json'
+                    TMPDIR,
+                    tc_id + '_analysis.json'
                 )
 
                 with open(json_file, 'w') as f:
@@ -1282,7 +1387,8 @@ class Coordinator:
                 partial_verd = []
                 step_count = 0
                 for item in tat_response.partial_verdicts:
-                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me with this
+                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me
+                    # with this
                     # info, so ill make a name up(this is just for visualization purposes)
                     step_count += 1
                     p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
@@ -1293,7 +1399,7 @@ class Coordinator:
                 gen_verdict, gen_description, report = self.current_tc.generate_testcases_verdict(partial_verd)
 
             else:
-                logger.error('Error ocurred while analysing. Response from TAT: %s' % repr(tat_response))
+                logger.warning('Response from Test Analyzer NOK: %s' % repr(tat_response))
                 gen_verdict = 'error'
                 gen_description = 'Response from test analyzer: %s' % repr(tat_response)
                 report = []
@@ -1311,8 +1417,8 @@ class Coordinator:
 
             # Save the final verdict as json
             json_file = os.path.join(
-                    TMPDIR,
-                    tc_id + '_verdict.json'
+                TMPDIR,
+                tc_id + '_verdict.json'
             )
             with open(json_file, 'w') as f:
                 json.dump(final_report, f)
@@ -1321,10 +1427,8 @@ class Coordinator:
             self.current_tc.change_state('finished')
             logger.info("General verdict generated: %s" % json.dumps(self.current_tc.report))
 
-        else:
-            logger.error("Error on TAT analysis reponse")
-            self.notify_coordination_error("Error on TAT analysis reponse", '')
-            return
+        else:  # TODO implement step-by-step analysis
+            raise NotImplementedError()
 
         return self.current_tc.report
 
@@ -1389,24 +1493,37 @@ class Coordinator:
         # update step state to executing
         self.current_tc.current_step.change_state('executing')
 
-        logger.info('Next step to execute: %s' % self.current_tc.current_step.id)
+        logger.debug('Next step to execute: %s' % self.current_tc.current_step.id)
 
         return self.current_tc.current_step
 
     def states_summary(self):
-        summ = OrderedDict()
-        if self.current_tc:
-            summ['current_tc'] = {
-                'testcase_id': self.current_tc.id,
-                'state': self.current_tc.state,
+        summary = OrderedDict()
+        summary.update(
+            {
+                'started': False,
             }
+        )
+        if self.current_tc:
+            summary.update(
+                {
+                    'started': True,
+                    'testcase_id': self.current_tc.id,
+                    'testcase_state': self.current_tc.state,
+                }
+            )
             if self.current_tc.current_step:
-                summ['current_step'] = self.current_tc.current_step.to_dict(verbose=True)
-            else:
-                summ['current_step'] = "No step under execution"
+                summary.update(self.current_tc.current_step.to_dict())
         else:
-            summ['current_tc'] = "No current testcase. Testsuite not started yet"
-        return summ
+            summary.update(
+                {
+
+                    'testcase_id': None,
+                    'testcase_state': None,
+                }
+            )
+
+        return summary
 
     def get_testcase(self, testcase_id):
         """
