@@ -27,7 +27,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip()
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -38,18 +38,18 @@ MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, t
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
 >>> m.testcase_id
 'TD_COAP_CORE_03_v01'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.32", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.34", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.32", "_type": "testcoordination.testsuite.start"}'
+'{"_api_version": "0.1.34", "_type": "testcoordination.testsuite.start"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, t
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.32, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
+MsgErrorReply(_api_version = 0.1.34, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
 error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
@@ -81,7 +81,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.32'
+API_VERSION = '0.1.33'
 
 
 # TODO use metaclasses instead?
@@ -266,7 +266,7 @@ class MsgAgentTunStart(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Agent
+    Pub/Sub: Testing Tool -> Agent
 
     Description: Message for triggering start IP tun interface in OS where the agent is running
     """
@@ -290,7 +290,7 @@ class MsgAgentTunStarted(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Agent
+    Pub/Sub: Testing Tool -> Agent
 
     Description: TBD
     """
@@ -329,7 +329,7 @@ class MsgTestingToolTerminate(Message):
 
     Type: Event
 
-    Typical_use: GUI, (or Orchestrator) -> Testing Tool
+    Pub/Sub: GUI, (or Orchestrator) -> Testing Tool
 
     Description: Testing tool should stop all it's processes gracefully.
     """
@@ -365,7 +365,7 @@ class MsgTestingToolComponentReady(Message):
 
     Type: Event
 
-    Typical_use: Any Testing tool's component -> Test Coordinator
+    Pub/Sub: Any Testing tool's component -> Test Coordinator
 
     Description: Once a testing tool's component is ready, it should publish a compoennt ready message
     """
@@ -384,7 +384,7 @@ class MsgInteropSessionConfiguration(Message):
 
     Type: Event
 
-    Typical_use: Orchestrator -> Testing Tool
+    Pub/Sub: Orchestrator -> Testing Tool
 
     Description: Testing tool MUST listen to this message and configure the testsuite correspondingly
     """
@@ -433,13 +433,33 @@ class MsgInteropSessionConfiguration(Message):
     }
 
 
+class MsgAgentConfigured(Message):
+    """
+    Requirements: Testing Tool SHOULD publish event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description: The goal is to notify GUI when agents are ready to start the session
+    """
+
+    routing_key = "control.session"
+
+    _msg_data_template = {
+        "_type": "agent.configured",
+        "description": "Event agent successfully CONFIGURED",
+        'name': 'agent_TT'
+    }
+
+
 class MsgTestingToolConfigured(Message):
     """
     Requirements: Testing Tool MUST publish event
 
     Type: Event
 
-    Typical_use: Testing Tool -> Orchestrator, GUI
+    Pub/Sub: Testing Tool -> Orchestrator, GUI
 
     Description: The goal is to notify orchestrator and other components that the testing tool has been configured
     """
@@ -460,7 +480,7 @@ class MsgTestingToolComponentShutdown(Message):
 
     Type: Event
 
-    Typical_use: Any Testing tool's component -> Test Coordinator
+    Pub/Sub: Any Testing tool's component -> Test Coordinator
 
     Description: tbd
     """
@@ -481,7 +501,7 @@ class MsgTestSuiteStart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: tbd
     """
@@ -500,7 +520,7 @@ class MsgTestSuiteFinish(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: tbd
     """
@@ -519,7 +539,7 @@ class MsgTestCaseReady(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the next test case to be executed.
@@ -544,7 +564,7 @@ class MsgTestCaseStart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description:
         - Message used for indicating the testing tool to start the test case (the one previously selected)
@@ -566,7 +586,7 @@ class MsgTestCaseConfiguration(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI & automated-iut
+    Pub/Sub: Testing Tool -> GUI & automated-iut
 
     Description:
         - Message used to indicate GUI and/or automated-iut which configuration to use.
@@ -609,7 +629,7 @@ class MsgTestCaseStop(Message):
 
     Type: Event
 
-    Typical_use: GUI & automated-iut -> Testing Tool
+    Pub/Sub: GUI & automated-iut -> Testing Tool
 
     Description:
         - Message used for indicating the testing tool to stop the test case (the one running).
@@ -629,7 +649,7 @@ class MsgTestCaseRestart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: Restart the running test cases.
     """
@@ -648,7 +668,7 @@ class MsgStepStimuliExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the stimuli step to be executed by the user (or
@@ -660,16 +680,16 @@ class MsgStepStimuliExecute(Message):
     _msg_data_template = {
         "_type": "testcoordination.step.stimuli.execute",
         "description": "Please execute TD_COAP_CORE_01_v01_step_01",
-        "step_id": "TBD",
-        "step_type": "TBD",
+        "step_id": "TD_COAP_CORE_01_v01_step_01",
+        "step_type": "stimuli",
         "step_info": [
             "Client is requested to send a GET request with",
             "Type = 0(CON)",
             "Code = 1(GET)"
         ],
-        "step_state": "TBD",
-        "node": "TBD",
-        "node_execution_mode": "TBD",
+        "step_state": "executing",
+        "node": "coap_client",
+        "node_execution_mode": "user_assisted",
         "testcase_id": "TBD",
         "testcase_ref": "TBD"
     }
@@ -681,7 +701,7 @@ class MsgStepStimuliExecuted(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Used to indicate stimuli has been executed by user (and it's user-assisted iut) or by automated-iut
@@ -703,7 +723,7 @@ class MsgStepCheckExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Analysis
+    Pub/Sub: Testing Tool -> Analysis
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the stimuli step to be executed by the user (or
@@ -736,7 +756,7 @@ class MsgStepCheckExecuted(Message):
 
     Type: Event
 
-    Typical_use: test coordination -> test analysis
+    Pub/Sub: test coordination -> test analysis
 
     Description:
         - In the context of IUT to IUT test execution, this message is used for indicating that the previously
@@ -760,7 +780,7 @@ class MsgStepVerifyExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI (or automated-IUT)
+    Pub/Sub: Testing Tool -> GUI (or automated-IUT)
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the verify step to be executed by the user (or
@@ -793,7 +813,7 @@ class MsgStepVerifyExecuted(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Message generated by user (GUI or automated-IUT) declaring if the IUT VERIFY verifies the expected behaviour.
@@ -816,7 +836,7 @@ class MsgStepVerifyExecuted(Message):
     #
     #     Requirements: Testing Tool MAY listen to event
     #     Type: Event
-    #     Typical_use: GUI (or automated-IUT)-> Testing Tool
+    #     Pub/Sub: GUI (or automated-IUT)-> Testing Tool
     #     Description:
     #         - Used for indicating that the test case has finished.
     #         - Test coordinator deduces it automatically by using the testcase's step sequence
@@ -836,7 +856,7 @@ class MsgTestCaseFinished(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Used for indicating to subscribers that the test cases has finished.
@@ -859,7 +879,7 @@ class MsgTestCaseSkip(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Used for skipping a test cases event when was previusly selected to be executed.
@@ -882,7 +902,7 @@ class MsgTestCaseSelect(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description: tbd
 
@@ -902,7 +922,7 @@ class MsgTestSuiteAbort(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description: Event test suite ABORT
     """
@@ -921,7 +941,7 @@ class MsgTestSuiteGetStatus(Message):
 
     Type: Request (service)
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description:
         - Describes current state of the test suite.
@@ -941,7 +961,7 @@ class MsgTestSuiteGetStatusReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Describes current state of the test suite.
@@ -967,7 +987,7 @@ class MsgTestSuiteGetTestCases(Message):
 
     Type: Request (service)
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: TBD
     """
@@ -985,7 +1005,7 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: TBD
     """
@@ -1024,7 +1044,7 @@ class MsgTestCaseVerdict(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI (or automated-iut) which is the final verdict of the testcase.
     """
@@ -1060,7 +1080,7 @@ class MsgTestSuiteReport(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI (or automated-iut) the final results of the test session.
     """
@@ -1123,7 +1143,7 @@ class MsgSniffingStart(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1142,7 +1162,7 @@ class MsgSniffingStartReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
     Type: Reply (service)
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
     Description: tbd
     """
 
@@ -1160,7 +1180,7 @@ class MsgSniffingStop(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1178,7 +1198,7 @@ class MsgSniffingStoptReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1197,7 +1217,7 @@ class MsgSniffingGetCapture(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1217,7 +1237,7 @@ class MsgSniffingGetCaptureReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1238,7 +1258,7 @@ class MsgSniffingGetCaptureLast(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1256,7 +1276,7 @@ class MsgSniffingGetCaptureLastReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1279,7 +1299,7 @@ class MsgInteropTestCaseAnalyze(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> analysis
+    Pub/Sub: coordination -> analysis
 
     Description:
         - Method to launch an analysis from a pcap file or a token if the pcap file has already been provided.
@@ -1307,11 +1327,10 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: analysis -> coordination
+    Pub/Sub: analysis -> coordination
 
     Description:
-        - The recommended structure for the partial_verdicts field is a list of partial verdicts with the following
-        requirements:
+        - The recommended structure for the partial_verdicts field is a list of partial verdicts which complies to:
            - each one of those elements of the list correspond to one CHECK or VERIFY steps of the test description
             - first value of the list MUST be a "pass", "fail", "inconclusive" or eventually "error" partial verdict (
             string)
@@ -1359,7 +1378,7 @@ class MsgDissectionDissectCapture(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> dissection, analysis -> dissection
+    Pub/Sub: coordination -> dissection, analysis -> dissection
 
     Description: TBD
     """
@@ -1390,7 +1409,7 @@ class MsgDissectionDissectCaptureReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Dissector -> Coordinator, Dissector -> Analyzer
+    Pub/Sub: Dissector -> Coordinator, Dissector -> Analyzer
 
     Description: TBD
     """
@@ -1445,7 +1464,7 @@ class MsgDissectionAutoDissect(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI the dissection of the exchanged packets.
         - GUI MUST display this info during execution:
@@ -1640,7 +1659,85 @@ class MsgPrivacyIssue(Message):
     }
 
 
+# # # # # #   PERFORMANCE TESTING TOOL MESSAGES   # # # # # #
+
+class MsgPerformanceHeartbeat(Message):
+    """
+    Requirements:   Timeline Controller MUST listen to event
+                    Performance submodules MUST emit event periodically
+    Type:           Event
+    Typical_use:    Performance Submodules -> Timeline Controller
+    Description:    The Timeline Controller verifies that all submodules are
+                    active and in the correct state
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.heartbeat",
+        "mod_name": "unknown",
+        "status": "ready",  # ready, configured or failed
+    }
+
+
+class MsgPerformanceConfiguration(Message):
+    """
+    Requirements:   Timeline Controller MUST listen to event
+    Type:           Event
+    Typical_use:    Orchestrator -> Timeline Controller
+    Description:    Carries the performance test configuration to the
+                    Timeline Controller
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.configuration",
+        "configuration": {  # As produced by configuration GUI
+            "static": {},  # Static configuration of submodules
+            "initial": {},  # Initial values for dynamic parameters
+            "segments": [],  # Timeline segments
+        }
+    }
+
+
+class MsgPerformanceSetValues(Message):
+    """
+    Requirements:   Performance Submodules MUST listen to event
+    Type:           Event
+    Typical_use:    Timeline Controller -> Performance Submodules
+    Description:    During the test execution, the Timeline Controller will
+                    periodically emit this event to the performance submodules
+                    to update dynamic parameters
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.setvalues",
+        "values": {}
+    }
+
+
+class MsgPerformanceStats(Message):
+    """
+    Requirements:   Performance Submodules SHOULD emit this event periodically
+                    Visualization module SHOULD listen to this event
+    Type:           Event
+    Typical_use:    Performance Submodules -> Visualization
+    Description:    During the test execution, the Performance Submodules
+                    will periodically emit this event carrying current
+                    performance statistics/measurements
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.setvalues",
+        "mod_name": "unknown",
+        "timestamp": 0,
+        "stats": {},
+    }
+
+
 message_types_dict = {
+    "agent.configured": MsgAgentConfigured,  # TestingTool -> GUI
     "tun.start": MsgAgentTunStart,  # TestingTool -> Agent
     "tun.started": MsgAgentTunStarted,  # Agent -> TestingTool
     "session.interop.configuration": MsgInteropSessionConfiguration,  # Orchestrator -> TestingTool
@@ -1693,6 +1790,12 @@ message_types_dict = {
     "privacy.configuration.get.reply": MsgPrivacyGetConfigurationReply,  # TestingTool -> GUI (reply),
     "privacy.configuration.set": MsgPrivacySetConfiguration,  # GUI -> TestingTool,
     "privacy.configuration.set.reply": MsgPrivacySetConfigurationReply,  # GUI -> TestingTool (reply),
+    # PERFORMANCE TESTING TOOL -> Reference: Eduard Bröse (EANTC)
+    "performance.heartbeat": MsgPerformanceHeartbeat,  # Perf. Submodules -> Timeline Controller
+    "performance.configuration": MsgPerformanceConfiguration,  # Orchestrator -> Timeline Controller
+    "performance.stats": MsgPerformanceStats,  # Perf. Submodules -> Visualization
+    "performance.setvalues": MsgPerformanceSetValues,  # Timeline Controller -> Perf. Submodules
+
 }
 
 if __name__ == '__main__':
