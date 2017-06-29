@@ -614,7 +614,7 @@ class Coordinator:
         # TODO get params from index.json
         agents_config = (AGENT_NAMES[0], ':1', False), (AGENT_NAMES[1], ':2', True), (AGENT_TT_ID, ':3', True)
         for agent, assigned_ip, ipv6_no_fw in agents_config:
-            bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, ipv6_no_fw)
+            bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, "bbbb", ipv6_no_fw)
 
     def notify_testcase_is_ready(self):
         if self.current_tc:
