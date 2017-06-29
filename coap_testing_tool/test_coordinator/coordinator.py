@@ -21,6 +21,7 @@ from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_reques
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.agent.utils import bootstrap_agent
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -602,28 +603,18 @@ class Coordinator:
 
     def notify_tun_interfaces_start(self):
         """
-        Starts tun interface in agent1, agent2 and agent TT
+        Starts tun interface in agent1, agent2 and agent TT.
+        This is best effort, no exeption is raised if the bootstrapping fails
 
         Returns:
 
         """
-        agent_bootstrap_msg = MsgAgentTunStart()
-
         logger.debug("Let's start the bootstrap the agents")
 
         # TODO get params from index.json
-        for agent, assigned_ip in (
-                (AGENT_NAMES[0], ':1'),
-                (AGENT_NAMES[1], ':2'),
-                (AGENT_TT_ID, ':3')):
-
-            agent_bootstrap_msg.routing_key = 'control.tun.toAgent.%s' % agent
-            agent_bootstrap_msg.ipv6_host = assigned_ip
-
-            if agent == AGENT_TT_ID:
-                agent_bootstrap_msg.ipv6_no_forwarding = True
-
-            publish_message(self.channel, agent_bootstrap_msg)
+        agents_config = (AGENT_NAMES[0], ':1', False), (AGENT_NAMES[1], ':2', True), (AGENT_TT_ID, ':3', True)
+        for agent, assigned_ip, ipv6_no_fw in agents_config:
+            bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, ipv6_no_fw)
 
     def notify_testcase_is_ready(self):
         if self.current_tc:
@@ -646,14 +637,27 @@ class Coordinator:
         if self.current_tc.current_step.iut:
             msg_fields.update(self.current_tc.current_step.iut.to_dict())
 
+        description_message = ['Please execute step: %s \n' % self.current_tc.current_step.id]
+
         if self.current_tc.current_step.type == "stimuli":
+
+            description_message += ['Step description: %s \n' % self.current_tc.current_step.description]
+            if self.current_tc.current_step.iut.node:
+                description_message += ['IUT: %s \n' % self.current_tc.current_step.iut.node]
+
             event = MsgStepStimuliExecute(
-                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                description=description_message,
                 **msg_fields
             )
+
         elif self.current_tc.current_step.type == "verify":
+
+            description_message += ['Step description: %s \n' % self.current_tc.current_step.description]
+            if self.current_tc.current_step.iut.node:
+                description_message += ['IUT: %s \n' % self.current_tc.current_step.iut.node]
+
             event = MsgStepVerifyExecute(
-                description='Next test step to be executed is %s' % self.current_tc.current_step.id,
+                description=description_message,
                 **msg_fields
             )
         elif self.current_tc.current_step.type == "check":
