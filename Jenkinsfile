@@ -45,6 +45,16 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         }
       }
 
+      stage("unittesting submodules"){
+        gitlabCommitStatus("Testing Tool's components unit-testing"){
+            sh '''
+            echo $AMQP_URL
+            cd coap_testing_tool/test_analysis_tool
+            pwd
+            python3 -m pytest tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            '''
+        }
+      }
 
       stage("unittesting components"){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
@@ -58,18 +68,9 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         }
       }
 
-        stage("unittesting submodules"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
-            sh '''
-            echo $AMQP_URL
-            cd coap_testing_tool/test_analysis_tool
-            pwd
-            python3 -m pytest tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
-            '''
-        }
-      }
 
-      stage("Functional API smoke tests"){
+
+      stage("Testing Tool's AMQP API smoke tests"){
         gitlabCommitStatus("Functional API smoke tests"){
             sh '''
             echo $AMQP_URL
