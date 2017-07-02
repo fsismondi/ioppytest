@@ -22,18 +22,6 @@ COMPONENT_ID = 'automated_iut'
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
 
-# IUT_CMD = [
-#     'python',
-#     'automated_IUTs/coap_client_coapthon/CoAPthon/coapclient.py'
-# ]
-#
-#
-# # mapping message's stimuli id -> CoAPthon (coap client) commands
-# stimuli_cmd_dict = {
-# 'TD_COAP_CORE_01_v01_step_01' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
-# 'TD_COAP_CORE_01_v01_step_02' :  IUT_CMD + ['-o', 'GET', '-p', 'coap://127.0.0.1:5683/test', ],
-# }
-
 IUT_CMD = [
     'python',
     'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py ',

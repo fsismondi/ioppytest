@@ -2,6 +2,7 @@
 # !/usr/bin/env python3
 
 import subprocess
+from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT
 from automated_IUTs.automation import *
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,8 @@ class CoapthonCoapClient(AutomatedIUT):
     iut_cmd = [
         'python',
         'automated_IUTs/coap_client_coapthon/CoAPthon/finterop_interop_tests.py',
+        '-ip',
+        COAP_SERVER_HOST,
         '-t',
     ]
 
