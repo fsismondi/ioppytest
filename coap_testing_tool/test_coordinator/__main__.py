@@ -138,6 +138,9 @@ if __name__ == '__main__':
         assert len(TT_check_list) == 0
         publish_message(channel, MsgTestingToolReady())
 
+        # TODO quick fix. to be deleted later. This is for unblocking the GUI
+        publish_message(channel, MsgTestingToolConfigured())
+
     except Exception as e:
         # cannot emit AMQP messages for the fail
         error_msg = str(e)

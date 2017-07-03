@@ -1036,11 +1036,11 @@ class Coordinator:
 
             self.session_config = session_config
 
-            event = MsgTestingToolConfigured(
-                session_id=event.session_id,
-                testing_tools=event.testing_tools,
-                tc_list=self.get_testcases_basic(verbose=False),
-            )
+            # event = MsgTestingToolConfigured(
+            #     session_id=event.session_id,
+            #     testing_tools=event.testing_tools,
+            #     tc_list=self.get_testcases_basic(verbose=False),
+            # )
 
             publish_message(self.channel, event)
 
