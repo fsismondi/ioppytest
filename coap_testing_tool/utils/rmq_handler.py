@@ -185,7 +185,7 @@ class RabbitMQHandler(logging.Handler):
      Example setup::
         handler = RabbitMQHandler('amqp://guest:guest@localhost')
     """
-    def __init__(self, url, name, exchange="default"):
+    def __init__(self, url, name, exchange="amq.topic"):
         logging.Handler.__init__(self)
         self.url = url
         self.connection = pika.BlockingConnection(pika.URLParameters(url+"?heartbeat=10"))

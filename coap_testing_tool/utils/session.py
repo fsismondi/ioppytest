@@ -8,7 +8,7 @@ class Session(object):
 
     """
 
-    def __init__(self, amqp_url, exchange="default"):
+    def __init__(self, amqp_url, exchange="amq.topic"):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
 

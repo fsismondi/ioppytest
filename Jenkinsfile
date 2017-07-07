@@ -3,7 +3,7 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool"
-        env.AMQP_EXCHANGE="default"
+        env.AMQP_EXCHANGE="amq.topic"
 
         stage ("Setup dependencies"){
             checkout scm
@@ -134,7 +134,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
     node('docker'){
 
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
-        env.AMQP_EXCHANGE="default"
+        env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
         env.TT_DOCKER_IMAGE_NAME="testing_tool-coap"
@@ -183,7 +183,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
     node('docker'){
 
         env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_automated_iuts"
-        env.AMQP_EXCHANGE="default"
+        env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 

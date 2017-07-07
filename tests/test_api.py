@@ -299,7 +299,7 @@ def import_env_vars():
     try:
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
     except KeyError as e:
-        AMQP_EXCHANGE = "default"
+        AMQP_EXCHANGE = "amq.topic"
 
     try:
         AMQP_URL = str(os.environ['AMQP_URL'])
