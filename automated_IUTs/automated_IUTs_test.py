@@ -26,13 +26,13 @@ def NotImplementedField(self):
     raise NotImplementedError
 
 
-def signal_int_handler(signal, frame):
+def signal_int_component_handler(signal, frame, component_id):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     channel = connection.channel()
 
     publish_message(
         channel,
-        MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        MsgTestingToolComponentShutdown(component=component_id)
     )
 
     logger.info('got SIGINT. Bye bye!')
@@ -40,7 +40,7 @@ def signal_int_handler(signal, frame):
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, signal_int_handler)
+signal.signal(signal.SIGINT, signal_int_component_handler)
 
 
 class AutomatedIUT(threading.Thread):

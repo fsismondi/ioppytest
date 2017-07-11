@@ -5,6 +5,7 @@ import supervisor.xmlrpc
 import xmlrpclib
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from coap_testing_tool import AMQP_URL
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_ENVIRONMENT = Environment(
@@ -17,64 +18,48 @@ def render_template(template_filename, context):
     return TEMPLATE_ENVIRONMENT.get_template(template_filename).render(context)
 
 
-def create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, client_name):
+def create_plugtest_supervisor_conf(group_name, amqp_exchange,
+                                    docker_client_name, docker_server_name, stdout_logfile_client,
+                                    stdout_logfile_server, stderr_logfile_client, stderr_logfile_server,
+                                    docker_testing_tool_name):
     if (group_name == 'plugtest1'):
         file_name = "conf.d/plugtest1.conf"
-        groupe_name = "plugtest1"
-        prog_in_group = "automated_iut-coap_client-californium-v0.1, automated_iut-coap_server-californium-v0.1, testing_tool-interoperability-coap-v-0.5, user_mock"
+        prog_in_group = docker_client_name+", "+docker_server_name+", "+docker_testing_tool_name+", user_mock"
         program_variable = [
-            ['automated_iut-coap_client-californium-v0.1', 'automated_iut-coap_client-californium-v0.1-stdout.log',
-             'automated_iut-coap_client-californium-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_01'],
-            ['automated_iut-coap_server-californium-v0.1', 'automated_iut-coap_server-californium-v0.1-stdout.log',
-             'automated_iut-coap_server-californium-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_01']]
+            [docker_client_name, stdout_logfile_client, stderr_logfile_client],
+            [docker_server_name, stdout_logfile_server, stderr_logfile_server]]
 
     elif (group_name == 'plugtest2'):
         file_name = "conf.d/plugtest2.conf"
-        groupe_name = "plugtest2"
-        prog_in_group = "automated_iut-coap_server-californium-v0.1, automated_iut-coap_client-coapthon-v0.1, testing_tool-interoperability-coap-v-0.5, user_mock"
+        prog_in_group = docker_client_name + ", " + docker_server_name + ", " + docker_testing_tool_name + ", user_mock"
         program_variable = [
-            ['automated_iut-coap_server-californium-v0.1', 'automated_iut-coap_server-californium-v0.1-stdout.log',
-             'automated_iut-coap_server-californium-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_02'],
-            ['automated_iut-coap_client-coapthon-v0.1', 'automated_iut-coap_client-coapthon-v0.1-stdout.log',
-             'automated_iut-coap_client-coapthon-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_02']]
+            [docker_client_name, stdout_logfile_client, stderr_logfile_client],
+            [docker_server_name, stdout_logfile_server, stderr_logfile_server]]
 
     elif (group_name == 'plugtest3'):
         file_name = "conf.d/plugtest3.conf"
-        groupe_name = "plugtest3"
-        prog_in_group = "automated_iut-coap_client-coapthon-v0.1, automated_iut-coap_server-coapthon-v0.1, testing_tool-interoperability-coap-v-0.5, user_mock"
+        prog_in_group = docker_client_name + ", " + docker_server_name + ", " + docker_testing_tool_name + ", user_mock"
         program_variable = [
-            ['automated_iut-coap_client-coapthon-v0.1', 'automated_iut-coap_client-coapthon-v0.1-stdout.log',
-             'automated_iut-coap_client-coapthon-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_03'],
-            ['automated_iut-coap_server-coapthon-v0.1', 'automated_iut-coap_server-coapthon-v0.1-stdout.log',
-             'automated_iut-coap_server-coapthon-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_03']]
+            [docker_client_name, stdout_logfile_client, stderr_logfile_client],
+            [docker_server_name, stdout_logfile_server, stderr_logfile_server]]
 
     elif (group_name == 'plugtest4'):
         file_name = "conf.d/plugtest4.conf"
-        groupe_name = "plugtest4"
-        prog_in_group = "automated_iut-coap_client-californium-v0.1, automated_iut-coap_server-coapthon-v0.1, testing_tool-interoperability-coap-v-0.5, user_mock"
+        prog_in_group = docker_client_name + ", " + docker_server_name + ", " + docker_testing_tool_name + ", user_mock"
         program_variable = [
-            ['automated_iut-coap_client-californium-v0.1', 'automated_iut-coap_client-californium-v0.1-stdout.log',
-             'automated_iut-coap_client-californium-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_04'],
-            ['automated_iut-coap_server-coapthon-v0.1', 'automated_iut-coap_server-coapthon-v0.1-stdout.log',
-             'automated_iut-coap_server-coapthon-v0.1-stderr.log',
-             'amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_04']]
+            [docker_client_name, stdout_logfile_client, stderr_logfile_client],
+            [docker_server_name, stdout_logfile_server, stderr_logfile_server]]
 
     else:
         program_variable = ''
 
     context = {
         'groupe_name': groupe_name,
+        'amqp_exchange': amqp_exchange,
         'prog_in_group': prog_in_group,
         'program_variable': program_variable,
-        'amqp_exchange': amqp_exchange,
-
+        'docker_testing_tool_name': docker_testing_tool_name,
+        'amqp_url': AMQP_URL,
     }
 
     with open(file_name, 'w') as new_file:
@@ -121,11 +106,23 @@ if __name__ == "__main__":
     if execute_plugtests == True:
         i = 1
         while i <= 4:
-            amqp_exchange = td_list[0].get("plugtest" + str(i))[0].get("amqp_exchange")
-            client_name = td_list[0].get("plugtest" + str(i))[1].get("coap_client")
-            server_name = td_list[0].get("plugtest" + str(i))[2].get("coap_server")
             group_name = "plugtest" + str(i)
-            file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, client_name)
+            amqp_exchange = td_list[0].get(group_name)[0].get("amqp_exchange")
+            docker_client_name = td_list[0].get(group_name)[1].get("docker_client_name")
+            docker_server_name = td_list[0].get(group_name)[2].get("docker_server_name")
+            stdout_logfile_client = td_list[0].get(group_name)[3].get("stdout_logfile_client")
+            stdout_logfile_server = td_list[0].get(group_name)[4].get("stdout_logfile_server")
+            stderr_logfile_client = td_list[0].get(group_name)[5].get("stderr_logfile_client")
+            stderr_logfile_server = td_list[0].get(group_name)[6].get("stderr_logfile_server")
+            docker_testing_tool_name = td_list[0].get(group_name)[7].get("docker_testing_tool_name")
+            coap_client_ip = td_list[0].get(group_name)[8].get("coap_client_ip")
+            coap_server_ip = td_list[0].get(group_name)[9].get("coap_server_ip")
+            coap_server_port = td_list[0].get(group_name)[10].get("coap_server_port")
+
+            file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange,
+                                                        docker_client_name, docker_server_name, stdout_logfile_client,
+                                                        stdout_logfile_server, stderr_logfile_client, stderr_logfile_server,
+                                                        docker_testing_tool_name)
             i = i + 1
     elif testing_tool == True:
         print("NOT implemented for the moment")
@@ -133,9 +130,21 @@ if __name__ == "__main__":
 
     else:
         amqp_exchange = td_list[0].get(group_name)[0].get("amqp_exchange")
-        client_name = td_list[0].get(group_name)[1].get("coap_client")
-        server_name = td_list[0].get(group_name)[2].get("coap_server")
-        file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, client_name)
+        docker_client_name = td_list[0].get(group_name)[1].get("docker_client_name")
+        docker_server_name = td_list[0].get(group_name)[2].get("docker_server_name")
+        stdout_logfile_client = td_list[0].get(group_name)[3].get("stdout_logfile_client")
+        stdout_logfile_server = td_list[0].get(group_name)[4].get("stdout_logfile_server")
+        stderr_logfile_client = td_list[0].get(group_name)[5].get("stderr_logfile_client")
+        stderr_logfile_server = td_list[0].get(group_name)[6].get("stderr_logfile_server")
+        docker_testing_tool_name = td_list[0].get(group_name)[7].get("docker_testing_tool_name")
+        coap_client_ip = td_list[0].get(group_name)[8].get("coap_client_ip")
+        coap_server_ip = td_list[0].get(group_name)[9].get("coap_server_ip")
+        coap_server_port = td_list[0].get(group_name)[10].get("coap_server_port")
+
+        file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange,
+                                                    docker_client_name, docker_server_name, stdout_logfile_client,
+                                                    stdout_logfile_server, stderr_logfile_client, stderr_logfile_server,
+                                                    docker_testing_tool_name)
 
     socketpath = "/tmp/supervisor.sock"
     server = xmlrpclib.ServerProxy('http://127.0.0.1',
