@@ -1,0 +1,31 @@
+plugtest1:
+    - amqp_exchange : 'default'
+    - coap_client : 'californium_client'
+    - coap_server : 'californium_server'
+    - coap_client_ip : ''
+    - coap_server_ip : ''
+    - coap_server_port: ''
+
+plugtest2:
+    - amqp_exchange : 'default'
+    - coap_client : 'coapthon_client'
+    - coap_server : 'californium_server'
+    - coap_client_ip : ''
+    - coap_server_ip : ''
+    - coap_server_port: ''
+
+plugtest3:
+    - amqp_exchange : 'default'
+    - coap_client : 'coapthon_client'
+    - coap_server : 'coapthon_server'
+    - coap_client_ip : ''
+    - coap_server_ip : ''
+    - coap_server_port: ''
+
+plugtest4:
+    - amqp_exchange : 'default'
+    - coap_client : 'californium_client'
+    - coap_server : 'coapthon_server'
+    - coap_client_ip : ''
+    - coap_server_ip : ''
+    - coap_server_port: ''
