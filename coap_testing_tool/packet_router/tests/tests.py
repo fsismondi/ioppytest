@@ -13,7 +13,7 @@ for running single a single test:
 class PacketRouterTestCase(unittest.TestCase):
 
     def setUp(self):
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
         self.queue_name = 'testing_packet_router'
 
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -29,6 +29,8 @@ class PacketRouterTestCase(unittest.TestCase):
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                            queue=self.queue_name,
                            routing_key='data.tun.#')
+
+        logging.info('using AMQP vars: %s, %s'%(AMQP_URL,AMQP_EXCHANGE,))
         # start packet router
         packet_router = PacketRouter(self.connection,None)
         packet_router.daemon=True

@@ -183,14 +183,7 @@ if __name__ == '__main__':
 
         sys.exit(0)
 
-
     signal.signal(signal.SIGINT, signal_int_handler)
-
-    # in case its not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
 
     # start amqp router thread
     r = PacketRouter(connection, None)
