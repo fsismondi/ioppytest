@@ -78,6 +78,7 @@ def create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, clie
 if __name__ == "__main__":
     # take in argument the name of client and server we want to use
     execute_plugtests = False
+    testing_tool = False
     try:
         parser = argparse.ArgumentParser()
         parser.add_argument("-p","--plugtest", help="increase output verbosity")
@@ -86,10 +87,12 @@ if __name__ == "__main__":
         args = parser.parse_args()
         if args.plugtest:
             group_name = args.plugtest
-        if args.execute_plugtests:
+        elif args.execute_plugtests:
             execute_plugtests = args.execute_plugtests
-        if args.testing_tool:
+        elif args.testing_tool:
             testing_tool = args.testing_tool
+        else :
+            raise Exception
 
     except:
         print("Error, please see help (-h)")
@@ -101,11 +104,6 @@ if __name__ == "__main__":
         yaml_docs = yaml.load_all(stream)
         for yaml_doc in yaml_docs:
             td_list.append(yaml_doc)
-    #print(td_list)
-
-    #print(td_list[0].get("plugtest"+str(i))[0].get("amqp_exchange"))
-
-
 
     if execute_plugtests == True:
         i = 1
@@ -116,36 +114,36 @@ if __name__ == "__main__":
             group_name = "plugtest"+str(i)
             file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, client_name)
             i = i + 1
-
+    elif testing_tool == True:
+        print("NOT implemented for the moment")
+        sys.exit(1)
 
     else :
         if group_name == "plugtest1":
             i = 1
         elif group_name == "plugtest2":
-            i = 1
+            i = 2
         elif group_name == "plugtest3":
-            i = 1
+            i = 3
         elif group_name == "plugtest4":
-            i = 1
+            i = 4
 
         amqp_exchange = td_list[0].get("plugtest" + str(i))[0].get("amqp_exchange")
         client_name = td_list[0].get("plugtest" + str(i))[1].get("coap_client")
         server_name = td_list[0].get("plugtest" + str(i))[2].get("coap_server")
         group_name = "plugtest" + str(i)
         file_name = create_plugtest_supervisor_conf(group_name, amqp_exchange, server_name, client_name)
-        i = i + 1
-
 
     socketpath = "/tmp/supervisor.sock"
     server = xmlrpclib.ServerProxy('http://127.0.0.1',
                                    transport=supervisor.xmlrpc.SupervisorTransport(
                                        None, None, serverurl='unix://' + socketpath))
     #launch supervisor
-    print('sudo -E supervisord -c supervisor.conf')
+    print('doing this : sudo -E supervisord -c supervisor.conf')
     os.system('sudo -E supervisord -c supervisord.conf')
     #os.system('sudo supervisorctl -c supervisord.conf')
 
-    server.supervisor.startProcessGroup("plugtest1", True)
+    #server.supervisor.startProcessGroup("plugtest1", True)
 
     print(server.supervisor.getState())
 
