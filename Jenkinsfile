@@ -46,7 +46,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
       }
 
       stage("unittesting submodules"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
+        gitlabCommitStatus("Testing Tool's submodules unit-testing"){
             sh '''
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
@@ -74,6 +74,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         gitlabCommitStatus("Functional API smoke tests"){
             sh '''
             echo $AMQP_URL
+            sudo -E supervisorctl -c supervisor.conf shutdown
+            sleep 2
             sudo -E supervisord -c supervisor.conf
             sleep 15
             pwd
