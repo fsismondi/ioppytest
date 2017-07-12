@@ -54,7 +54,7 @@ def create_plugtest_supervisor_conf(group_name, amqp_exchange,
         program_variable = ''
 
     context = {
-        'groupe_name': groupe_name,
+        'group_name': group_name,
         'amqp_exchange': amqp_exchange,
         'prog_in_group': prog_in_group,
         'program_variable': program_variable,
@@ -152,6 +152,7 @@ if __name__ == "__main__":
                                        None, None, serverurl='unix://' + socketpath))
     # launch supervisor
     print('doing this : sudo -E supervisord -c supervisor.conf')
+    print(AMQP_URL)
     os.system('sudo -E supervisord -c supervisord.conf')
     # os.system('sudo supervisorctl -c supervisord.conf')
 

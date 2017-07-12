@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
-from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 
 __version__ = (0, 0, 6)
 
@@ -56,7 +56,6 @@ try:
     print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
-
     print('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
     # load default values
     AMQP_SERVER = "localhost"
