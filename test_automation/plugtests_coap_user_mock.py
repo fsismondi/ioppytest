@@ -111,9 +111,18 @@ class UserEmulator(threading.Thread):
         print('Bye byes!')
 
 
+if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def main():
-    print('test')
+    if INTERACTIVE_SESSION:
+        logging.info(' shutting down, as INTERACTIVE MODE selected')
+    else:
+
+        iut = UserEmulator(connection)
+        iut.start()
+        iut.join()
+
+
     #socketpath = "/tmp/supervisor.sock"
     #server = xmlrpclib.ServerProxy('http://127.0.0.1',
     #                              transport=supervisor.xmlrpc.SupervisorTransport(
@@ -131,17 +140,3 @@ def main():
     #server.supervisor.startProcessGroup("client_coapthon_vs_server_californium", True)
     #server.supervisor.startProcessGroup("client_californium_vs_server_coapthon", True)
     #server.supervisor.startProcessGroup("client_californium_vs_server_californium", True)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-
-    if INTERACTIVE_SESSION:
-        logging.info(' shutting down, as INTERACTIVE MODE selected')
-    else:
-        iut = UserEmulator(connection)
-        iut.start()
-        iut.join()
-
-
-
