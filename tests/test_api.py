@@ -204,6 +204,13 @@ class ApiTests(unittest.TestCase):
         """
         global COMPONENT_ID
 
+        # some non request/response messages types exchanged during a session
+        events_to_ignore = [
+            'testingtool.ready',
+            'testingtool.compoent.ready',
+            'agent.configured'
+        ]
+
         # auxiliary function
         def check_for_correlated_request_reply(ch, method, props, body):
 
@@ -223,7 +230,7 @@ class ApiTests(unittest.TestCase):
                 ch.stop_consuming()
                 return
 
-            if msg_type in ('testingtool.ready', 'testingtool.compoent.ready'):
+            if msg_type in events_to_ignore:
                 # forget about these.. we are checking services and services reply only
                 return
 
