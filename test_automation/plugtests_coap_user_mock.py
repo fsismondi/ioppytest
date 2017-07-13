@@ -31,7 +31,7 @@ class UserEmulator(threading.Thread):
         # lets create connection
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
-        channel = connection.channel()
+        self.channel = connection.channel()
 
         # in case exchange not not declared
         connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
@@ -112,18 +112,19 @@ class UserEmulator(threading.Thread):
 
 
 if __name__ == '__main__':
+    INTERACTIVE_SESSION = False
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     if INTERACTIVE_SESSION:
         logging.info(' shutting down, as INTERACTIVE MODE selected')
     else:
 
-        iut = UserEmulator(connection)
+        iut = UserEmulator("test", "test2")
         iut.start()
         iut.join()
 
 
-    #socketpath = "/tmp/supervisor.sock"
+        #socketpath = "/tmp/supervisor.sock"
     #server = xmlrpclib.ServerProxy('http://127.0.0.1',
     #                              transport=supervisor.xmlrpc.SupervisorTransport(
     #                                  None, None, serverurl='unix://' + socketpath))
