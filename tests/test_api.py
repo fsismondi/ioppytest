@@ -2,7 +2,7 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
-from tests.database_pcap_base64 import *
+from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
 import logging
 
