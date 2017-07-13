@@ -8,6 +8,7 @@ from coap_testing_tool.utils.event_bus_messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION
 
+
 class UserEmulator(threading.Thread):
     """
     this class servers for moking user inputs into GUI
@@ -27,7 +28,7 @@ class UserEmulator(threading.Thread):
         # queues & default exchange declaration
         self.iut_node = iut_node
         self.iut_testcases = iut_testcases
-
+        logging.info("connect to %s ,exchange  %s " % (AMQP_URL, AMQP_EXCHANGE))
         # lets create connection
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
@@ -44,6 +45,9 @@ class UserEmulator(threading.Thread):
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key='control.testcoordination')
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=services_queue_name,
+                                routing_key='control.session')
         publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
@@ -68,7 +72,7 @@ class UserEmulator(threading.Thread):
         }
         event = Message.from_json(body)
         event.update_properties(**props_dict)
-
+        logging.info('event received : %s' % event.to_json())
         self.message_count += 1
 
         if event is None:
@@ -124,20 +128,20 @@ if __name__ == '__main__':
         iut.join()
 
 
-        #socketpath = "/tmp/supervisor.sock"
-    #server = xmlrpclib.ServerProxy('http://127.0.0.1',
-    #                              transport=supervisor.xmlrpc.SupervisorTransport(
-    #                                  None, None, serverurl='unix://' + socketpath))
-    #print(server.supervisor.getState())
-    #print(server.supervisor.readLog(0, 101))
-    #print(server.supervisor.getProcessInfo("agent"))
-    #print(server.supervisor.getProcessInfo("tat"))
-    #print(server.supervisor.getAllProcessInfo())
-    #print(server.supervisor.restart())
-    #server.supervisor.startProcess("automated_iut-coap_server-coapthon-v0.1", True)
-    #server.supervisor.stopAllProcesses()
+        # socketpath = "/tmp/supervisor.sock"
+        # server = xmlrpclib.ServerProxy('http://127.0.0.1',
+        #                              transport=supervisor.xmlrpc.SupervisorTransport(
+        #                                  None, None, serverurl='unix://' + socketpath))
+        # print(server.supervisor.getState())
+        # print(server.supervisor.readLog(0, 101))
+        # print(server.supervisor.getProcessInfo("agent"))
+        # print(server.supervisor.getProcessInfo("tat"))
+        # print(server.supervisor.getAllProcessInfo())
+        # print(server.supervisor.restart())
+        # server.supervisor.startProcess("automated_iut-coap_server-coapthon-v0.1", True)
+        # server.supervisor.stopAllProcesses()
 
-    #server.supervisor.startProcessGroup("client_coapthon_vs_server_coapthon", True)
-    #server.supervisor.startProcessGroup("client_coapthon_vs_server_californium", True)
-    #server.supervisor.startProcessGroup("client_californium_vs_server_coapthon", True)
-    #server.supervisor.startProcessGroup("client_californium_vs_server_californium", True)
+        # server.supervisor.startProcessGroup("client_coapthon_vs_server_coapthon", True)
+        # server.supervisor.startProcessGroup("client_coapthon_vs_server_californium", True)
+        # server.supervisor.startProcessGroup("client_californium_vs_server_coapthon", True)
+        # server.supervisor.startProcessGroup("client_californium_vs_server_californium", True)

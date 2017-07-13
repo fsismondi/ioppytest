@@ -12,7 +12,7 @@ RUN apt-get -y install net-tools
 
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+WORKDIR /coap_testing_tool/coap_testing_tool
 
 #py2 requirements
 RUN pip install -r agent/requirements.txt
