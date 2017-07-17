@@ -77,6 +77,11 @@ class PacketRouter(threading.Thread):
         self.channel = self.connection.channel()
         self.queues_init()
 
+        msg = MsgTestingToolComponentReady(
+            component='packetrouting'
+        )
+        publish_message(self.channel, msg)
+
         logger.info('packet router waiting for new messages in the data plane..')
 
     def queues_init(self):
