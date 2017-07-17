@@ -33,7 +33,7 @@ cd coap_testing_tool
 
 (# TODO talk about the CLI, without it you cannot run a session)
 
-First thing needed is to have the rabbit running. Whaat?
+First thing needed is to have the rabbit running ;)
 You need a server running RabbitMQ message broker for handling the
 messaging between the components taking part in your test session.
 
@@ -52,7 +52,7 @@ then, export in the machine where the testing tool is running the following vars
 
     ```
     export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
-    export AMQP_EXCHANGE='default'
+    export AMQP_EXCHANGE='amq.topic'
     ```
 
 ---
@@ -99,7 +99,7 @@ Go to FAQ, for known errors.
 
 Finally, **run** it, from inside coap_testing_tool run:
 ```
-docker run -it --env AMQP_EXCHANGE='default' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
+docker run -it --env AMQP_EXCHANGE='amq.topic' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
 ```
 
 alternatively, you can:

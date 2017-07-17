@@ -2,7 +2,7 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
-from tests.database_pcap_base64 import *
+from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
 import logging
 
@@ -204,6 +204,13 @@ class ApiTests(unittest.TestCase):
         """
         global COMPONENT_ID
 
+        # some non request/response messages types exchanged during a session
+        events_to_ignore = [
+            'testingtool.ready',
+            'testingtool.compoent.ready',
+            'agent.configured'
+        ]
+
         # auxiliary function
         def check_for_correlated_request_reply(ch, method, props, body):
 
@@ -223,7 +230,7 @@ class ApiTests(unittest.TestCase):
                 ch.stop_consuming()
                 return
 
-            if msg_type in ('testingtool.ready', 'testingtool.compoent.ready'):
+            if msg_type in events_to_ignore:
                 # forget about these.. we are checking services and services reply only
                 return
 
@@ -299,7 +306,7 @@ def import_env_vars():
     try:
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
     except KeyError as e:
-        AMQP_EXCHANGE = "default"
+        AMQP_EXCHANGE = "amq.topic"
 
     try:
         AMQP_URL = str(os.environ['AMQP_URL'])

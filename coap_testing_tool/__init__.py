@@ -43,7 +43,7 @@ INTERACTIVE_SESSION = get_from_environment("INTERACTIVE_SESSION", True)
 try:
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
 except KeyError as e:
-    AMQP_EXCHANGE = "default"
+    AMQP_EXCHANGE = "amq.topic"
 
 try:
     AMQP_URL = str(os.environ['AMQP_URL'])
