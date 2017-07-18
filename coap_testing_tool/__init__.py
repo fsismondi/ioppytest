@@ -1,8 +1,12 @@
-#!/usr/bin/env python3
+
 # -*- coding: utf-8 -*-
+
 import os
 import json
-from six.moves.urllib.parse import urlparse
+try: # py2 and py3 compat
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 __version__ = (0, 0, 6)
 
@@ -79,7 +83,7 @@ print(json.dumps(
 
 try:
     # read config information from manifest file (interoperability_manifest.json)
-    with open('interoperability_manifest.json') as index_file:
+    with open('coap_testing_tool/interoperability_manifest.json') as index_file:
         AGENT_NAMES = json.load(index_file)['agent_names']
 
 except:

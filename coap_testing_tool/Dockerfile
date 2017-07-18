@@ -12,17 +12,17 @@ RUN apt-get -y install net-tools
 
 ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool/coap_testing_tool
+WORKDIR /coap_testing_tool
 
 #py2 requirements
-RUN pip install -r agent/requirements.txt
+RUN pip install -r coap_testing_tool/agent/requirements.txt
 
 #py3 requirements
-RUN pip3 install -r test_coordinator/requirements.txt
-RUN pip3 install -r test_analysis_tool/requirements.txt
-RUN pip3 install -r packet_router/requirements.txt
-RUN pip3 install -r sniffer/requirements.txt
-RUN pip3 install -r webserver/requirements.txt
+RUN pip3 install -r coap_testing_tool/test_coordinator/requirements.txt
+RUN pip3 install -r coap_testing_tool/test_analysis_tool/requirements.txt
+RUN pip3 install -r coap_testing_tool/packet_router/requirements.txt
+RUN pip3 install -r coap_testing_tool/sniffer/requirements.txt
+RUN pip3 install -r coap_testing_tool/webserver/requirements.txt
 
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
@@ -31,4 +31,4 @@ RUN pip3 install -r webserver/requirements.txt
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration  supervisord.conf
+CMD supervisord --nodaemon --configuration  coap_testing_tool/supervisord.conf
