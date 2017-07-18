@@ -26,13 +26,13 @@ def NotImplementedField(self):
     raise NotImplementedError
 
 
-def signal_int_handler(signal, frame):
+def signal_int_component_handler(signal, frame, component_id):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     channel = connection.channel()
 
     publish_message(
         channel,
-        MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        MsgTestingToolComponentShutdown(component=component_id)
     )
 
     logger.info('got SIGINT. Bye bye!')
@@ -40,7 +40,7 @@ def signal_int_handler(signal, frame):
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, signal_int_handler)
+signal.signal(signal.SIGINT, signal_int_component_handler)
 
 
 class AutomatedIUT(threading.Thread):
@@ -162,104 +162,3 @@ class AutomatedIUT(threading.Thread):
         raise NotImplementedError("Subclasses should implement this!")
 
 
-class UserEmulator(threading.Thread):
-    """
-    this class servers for moking user inputs into GUI
-    """
-    component_id = 'user_emulation'
-
-    implemented_testcases_list = [
-        'TD_COAP_CORE_01_v01',
-        'TD_COAP_CORE_02_v01',
-        'TD_COAP_CORE_03_v01',
-        'TD_COAP_CORE_04_v01',
-    ]
-
-    def __init__(self, iut_testcases, iut_node):
-        threading.Thread.__init__(self)
-        self.message_count = 0
-        # queues & default exchange declaration
-        self.iut_node = iut_node
-        self.iut_testcases = iut_testcases
-
-        # lets create connection
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-
-        channel = connection.channel()
-
-        # in case exchange not not declared
-        connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                              type='topic',
-                                              durable=True,
-                                              )
-
-        services_queue_name = 'services_queue@%s' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='control.testcoordination')
-        publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
-        self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
-
-    def stop(self):
-
-        self.channel.stop_consuming()
-
-    def on_request(self, ch, method, props, body):
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        props_dict = {
-            'content_type': props.content_type,
-            'delivery_mode': props.delivery_mode,
-            'correlation_id': props.correlation_id,
-            'reply_to': props.reply_to,
-            'message_id': props.message_id,
-            'timestamp': props.timestamp,
-            'user_id': props.user_id,
-            'app_id': props.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
-
-        self.message_count += 1
-
-        if event is None:
-            return
-
-        elif isinstance(event, MsgTestCaseReady):
-            if event.testcase_id in self.implemented_testcases_list:
-                m = MsgTestCaseStart()
-                publish_message(self.channel, m)
-                logging.info('Event received %s' % event._type)
-                logging.info('Event pushed %s' % m)
-            else:
-                m = MsgTestCaseSkip(testcase_id=event.testcase_id)
-                publish_message(self.channel, m)
-                logging.info('Event received %s' % event._type)
-                logging.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestingToolReady):
-            m = MsgTestSuiteStart()
-            publish_message(self.channel, m)
-            logging.info('Event received %s' % event._type)
-            logging.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestSuiteReport):
-            logging.info('Test suite finished, final report: %s' % event.to_json())
-            self._exit
-
-        else:
-
-            logging.info('Event received and ignored: %s' % event._type)
-
-    def _exit(self):
-        time.sleep(2)
-        self.connection.close()
-        sys.exit(0)
-
-    def run(self):
-        print("Starting thread listening on the event bus")
-        self.channel.start_consuming()
-        print('Bye byes!')

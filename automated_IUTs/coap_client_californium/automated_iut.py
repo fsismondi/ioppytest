@@ -3,16 +3,12 @@
 
 import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
-from automated_IUTs.automation import *
+from automated_IUTs.automated_IUTs_test import *
 
-logger = logging.getLogger(__name__)
+
 
 str_coap_server_port = str(COAP_SERVER_PORT)
 
-# timeout in seconds
-STIMULI_HANDLER_TOUT = 10
-
-signal.signal(signal.SIGINT, signal_int_handler)
 
 
 class CaliforniumCoapClient(AutomatedIUT):

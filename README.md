@@ -98,11 +98,18 @@ docker build -t finterop-coap . --no-cache
 Go to FAQ, for known errors.
 
 Finally, **run** it, from inside coap_testing_tool run:
+
 ```
-docker run -it --env AMQP_EXCHANGE='amq.topic' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
+docker run -it
+    --env AMQP_EXCHANGE='default'
+    --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
+    --privileged finterop-coap supervisord
+    --nodaemon
+    --configuration supervisor.conf
 ```
 
 alternatively, you can:
+
 ```
 docker run -it --env AMQP_EXCHANGE=default --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap  bash
 root@bab3b2220510:/coap_testing_tool# supervisord -c supervisor.conf
@@ -142,7 +149,8 @@ Now, let's install the testing tool requirements:
 unix user, then run ansible script:
 
     ```
-    ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass
+    ansible-playbook -i ansible/hosts.local ansible/main.yml
+        --ask-become-pass
     ```
 
 - run CoAP testing tool and monitor processes

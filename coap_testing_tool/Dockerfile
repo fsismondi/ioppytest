@@ -31,4 +31,4 @@ RUN pip3 install -r coap_testing_tool/webserver/requirements.txt
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration  supervisor.conf
+CMD supervisord --nodaemon --configuration  coap_testing_tool/supervisord.conf

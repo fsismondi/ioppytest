@@ -1747,6 +1747,7 @@ message_types_dict = {
     "testingtool.ready": MsgTestingToolReady,  # GUI Testing Tool -> GUI
     "testingtool.terminate": MsgTestingToolTerminate,  # orchestrator -> TestingTool
     "testcoordination.testsuite.start": MsgTestSuiteStart,  # GUI -> TestingTool
+    "testcoordination.testsuite.ready": MsgTestingToolReady,
     "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
     "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI
     "testcoordination.testcase.start": MsgTestCaseStart,  # GUI -> TestingTool
