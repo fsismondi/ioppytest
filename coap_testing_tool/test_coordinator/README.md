@@ -1,25 +1,16 @@
-Test coordinator component.
+# Test coordinator component.
 
-Reads test extended description, and dispatches orders to other components
+Reads test extended description, and dispatches orders to other components.
+
+All communication happens though the AMQP event bus.
+    see http://doc.f-interop.eu for more info
 
 Dispatches orders related to:
-	- sniffing
-	- analysis
-	- step execution
-	- dissection
-
-
-DONE:
-	- AMQP interface between coord and test-gui
-	- Test with 3 CoAP test cases
-
-TODO:
-	- implement calls to  analysis component, dissection component
-and sniffing component with AMQP
-	- test with a 6tisch example
-	- adapt it the case where we have two users and not just one user agains
-an automated IUT
-	- adapt coord for 'step by step' mode of analysis
+	- sniffing (e.g. start sniffing)
+	- analysis (e.g. analyse frames for testcase x)
+	- testcoordination ( e.g. step stimuli execute)
+	- dissection ( e.g. dissect frames )
+	- agent (e.g. start tun interface)
 
 For more info go to:
 	http://doc.f-interop.eu/#test-coordinator
