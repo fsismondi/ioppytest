@@ -1277,8 +1277,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-        self.current_tc.current_step.type,
-        self.current_tc.current_step.state))
+                        self.current_tc.current_step.type,
+                        self.current_tc.current_step.state))
 
     def handle_check_step_response(self, verdict, description):
         # some sanity checks on the states
@@ -1298,8 +1298,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-        self.current_tc.current_step.type,
-        self.current_tc.current_step.state))
+                        self.current_tc.current_step.type,
+                        self.current_tc.current_step.state))
 
     def handle_stimuli_step_executed(self):
         """
@@ -1318,8 +1318,8 @@ class Coordinator:
         # some info logs:
         logger.debug("[step_finished event] step %s, type %s -> new state : %s"
                      % (self.current_tc.current_step.id,
-        self.current_tc.current_step.type,
-        self.current_tc.current_step.state))
+                        self.current_tc.current_step.type,
+                        self.current_tc.current_step.state))
 
     def finish_testcase(self):
         """
@@ -1342,6 +1342,10 @@ class Coordinator:
         if ANALYSIS_MODE == 'post_mortem':
 
             tat_response = None
+            gen_verdict = ''
+            gen_description = ''
+            report = []
+            error_msg = ''
 
             logger.debug("Sending get capture request to sniffer...")
             sniffer_response = self.call_service_sniffer_get_capture(capture_id=tc_id)
@@ -1351,61 +1355,69 @@ class Coordinator:
                 if sniffer_response.ok is True:
                     pcap_file_base64 = sniffer_response.value
                     filename = sniffer_response.filename
+
+                    # save PCAP to file
+                    with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
+                        nb = pcap_file.write(base64.b64decode(pcap_file_base64))
+                        logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
+
+                    logger.debug("Sending PCAP file to TAT for analysis...")
+
+                    # Forwards PCAP to TAT to get CHECKs results
+                    try:
+                        tat_response = self.call_service_testcase_analysis(testcase_id=tc_id,
+                                                                           testcase_ref=tc_ref,
+                                                                           file_enc="pcap_base64",
+                                                                           filename=tc_id + ".pcap",
+                                                                           value=pcap_file_base64)
+                    except TimeoutError as e:
+                        error_msg += "TAT didnt answer to the analysis request"
+                        logger.error(error_msg)
+
+                    if tat_response and tat_response.ok:
+
+                        logger.info("Response received from TAT: %s " % repr(tat_response))
+                        # Save the json object received
+                        json_file = os.path.join(
+                            TMPDIR,
+                            tc_id + '_analysis.json'
+                        )
+
+                        with open(json_file, 'w') as f:
+                            f.write(tat_response.to_json())
+
+                        # let's process the partial verdicts from TAT's answer
+                        # format : [[partial verdict : str, description : str]]
+                        partial_verd = []
+                        step_count = 0
+                        for item in tat_response.partial_verdicts:
+                            # cannot really know which partial verdicts
+                            step_count += 1
+                            p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
+                            partial_verd.append(p)
+                            logger.debug("Processing partical verdict received from TAT: %s" % str(p))
+
+                        # generates a general verdict considering other steps partial verdicts besides TAT's
+                        gen_verdict, gen_description, report = self.current_tc.generate_testcases_verdict(partial_verd)
+
+                    else:
+                        error_msg += 'Response from Test Analyzer NOK: %s' % repr(tat_response)
+                        logger.warning(error_msg)
+                        gen_verdict = 'error'
+                        gen_description = error_msg
+                        report = []
                 else:
-                    logger.warning('Error encountered with packet sniffer: %s' % repr(sniffer_response))
+                    error_msg += 'Error encountered with packet sniffer: %s' % repr(sniffer_response)
+                    logger.warning(error_msg)
+                    gen_verdict = 'error'
+                    gen_description = error_msg
+                    report = []
 
             except AttributeError as ae:
-                logger.error('Failed to process Sniffer response: %s' % repr(sniffer_response))
-                raise ae
-
-            # save PCAP to file
-            with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
-                nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
-
-            logger.debug("Sending PCAP file to TAT for analysis...")
-            try:
-                # Forwards PCAP to TAT to get CHECKs results
-                tat_response = self.call_service_testcase_analysis(testcase_id=tc_id,
-                                                                   testcase_ref=tc_ref,
-                                                                   file_enc="pcap_base64",
-                                                                   filename=tc_id + ".pcap",
-                                                                   value=pcap_file_base64)
-            except TimeoutError as e:
-                logger.error("TAT didnt answer to the analysis request")
-
-            if tat_response and tat_response.ok:
-
-                logger.info("Response received from TAT: %s " % repr(tat_response))
-                # Save the json object received
-                json_file = os.path.join(
-                    TMPDIR,
-                    tc_id + '_analysis.json'
-                )
-
-                with open(json_file, 'w') as f:
-                    f.write(tat_response.to_json())
-
-                # let's process the partial verdicts from TAT's answer
-                # they come as [[str,str]] first string is partial verdict , second is description.
-                partial_verd = []
-                step_count = 0
-                for item in tat_response.partial_verdicts:
-                    # I cannot really know which partial verdicts belongs to which step cause TAT doesnt provide me
-                    # with this
-                    # info, so ill make a name up(this is just for visualization purposes)
-                    step_count += 1
-                    p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
-                    partial_verd.append(p)
-                    logger.debug("Processing partical verdict received from TAT: %s" % str(p))
-
-                # generates a general verdict considering other steps partial verdicts besides TAT's
-                gen_verdict, gen_description, report = self.current_tc.generate_testcases_verdict(partial_verd)
-
-            else:
-                logger.warning('Response from Test Analyzer NOK: %s' % repr(tat_response))
+                error_msg += 'Failed to process Sniffer response. Wrongly formated resonse? : %s' % repr(sniffer_response)
+                logger.error(error_msg)
                 gen_verdict = 'error'
-                gen_description = 'Response from test analyzer: %s' % repr(tat_response)
+                gen_description = error_msg
                 report = []
 
             # save sent message in RESULTS dir
@@ -1416,8 +1428,6 @@ class Coordinator:
 
             # lets generate test case report
             self.current_tc.report = final_report
-            # for item in overridden_response:
-            #     self.current_tc.report.append(item)
 
             # Save the final verdict as json
             json_file = os.path.join(
@@ -1431,7 +1441,8 @@ class Coordinator:
             self.current_tc.change_state('finished')
             logger.info("General verdict generated: %s" % json.dumps(self.current_tc.report))
 
-        else:  # TODO implement step-by-step analysis
+        else:
+            # TODO implement step-by-step analysis
             raise NotImplementedError()
 
         return self.current_tc.report
