@@ -28,4 +28,4 @@ RUN pip3 install pika
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration automated_IUTs/coap_client_californium/supervisor.conf
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_client_californium/supervisor.conf"]

@@ -27,4 +27,4 @@ RUN pip3 install -r automated_IUTs/coap_client_coapthon/requirements.txt
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration automated_IUTs/coap_client_coapthon/supervisor.conf
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_client_coapthon/supervisor.conf"]
