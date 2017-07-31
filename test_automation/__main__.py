@@ -93,7 +93,7 @@ if __name__ == "__main__":
             raise Exception
 
     except:
-        print("Error, please see help (-h)")
+        print("ERROR, please see help (-h)")
         sys.exit(1)
 
     yamlfile = "test_automation/plugtests.conf.yaml"
