@@ -1,0 +1,1 @@
+{"description": "Coordination was expecting message for step type: VERIFY , but got type: STIMULI", "error_code": null, "testsuite_status": {"started": true, "testcase_id": "TD_COAP_CORE_01_v01", "testcase_state": "executing", "step_id": "TD_COAP_CORE_01_v01_step_04"}}

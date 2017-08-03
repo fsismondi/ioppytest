@@ -3,7 +3,7 @@
 
 import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
-from automated_IUTs.automated_IUTs_test import *
+from automated_IUTs.automation import *
 
 
 

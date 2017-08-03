@@ -83,10 +83,24 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/tests/'):
             logger.debug('Handling tescase request: %s' % self.path)
             return self.handle_testcase(self.path)
+        elif self.path.startswith('/results/COAP_CORE'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results_COAP_CORE(self.path)
+        elif self.path.startswith('/results/OBSERVE'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results_OBSERVE(self.path)
+        elif self.path.startswith('/results/LINK'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results_LINK(self.path)
+        elif self.path.startswith('/results/BLOCK'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results_BLOCK(self.path)
+        elif self.path.startswith('/results/DTLS'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results_DTLS(self.path)
         elif self.path.startswith('/results'):
             logger.debug('Handling tescase request: %s' % self.path)
             return self.handle_results(self.path)
-
         # check if its a file in the testing tool dir
         path = self.translate_path(self.path)
         f = None
@@ -123,10 +137,35 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-
         with open('testsuite_results.html', 'w+') as file:
 
             for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict_menu.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp,'utf-8'))
+
+    def handle_results_COAP_CORE(self, path):
+        assert "/results/COAP_CORE" in path
+        #tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR +'/COAP_CORE'+ '/*_verdict.json'):
                 try:
                     with open(filename, 'r') as jsonfile:
                         an_item = json.loads(jsonfile.read())
@@ -140,6 +179,109 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         self.wfile.write(bytes(resp,'utf-8'))
 
+    def handle_results_OBSERVE(self, path):
+        assert "/results/OBSERVE" in path
+        #tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR +'/OBSERVE'+ '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp,'utf-8'))
+
+    def handle_results_LINK(self, path):
+        assert "/results/LINK" in path
+        #tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR +'/LINK'+ '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp,'utf-8'))
+
+    def handle_results_BLOCK(self, path):
+        assert "/results/BLOCK" in path
+        #tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR +'/BLOCK'+ '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp,'utf-8'))
+
+    def handle_results_DTLS(self, path):
+        assert "/results/DTLS" in path
+        #tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR +'/DTLS'+ '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp,'utf-8'))
 
     def handle_testcase(self, path):
         """
@@ -386,7 +528,14 @@ template_test_vedict = Template("""
         </head>
 
         <body>
-
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
+        
         <table style="width:100%;text-align: center"; border="1">
           <tr>
             <th style="width:10%">Testcase ID</th>
@@ -425,4 +574,26 @@ template_test_vedict = Template("""
         </tr>
         {% endfor %}
         </table>
+        </body>""")
+
+template_test_vedict_menu = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
+
+        <body>
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
         </body>""")
