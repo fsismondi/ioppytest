@@ -31,7 +31,7 @@ MsgTestCaseSkip(_api_version = 0.1.35, _type = testcoordination.testcase.skip, t
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
-'802012eb-24e3-45c4-9dcc-dc293c584f63'  
+'802012eb-24e3-45c4-9dcc-dc293c584f63'
 >>> m.testcase_id
 'TD_COAP_CORE_02_v01'
 
