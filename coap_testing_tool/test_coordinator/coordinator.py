@@ -511,9 +511,12 @@ class TestCase:
 class Coordinator:
     """
     see F-Interop API for the coordination events and services
-    http://doc.f-interop.eu/#services-provided
+    http://doc.f-interop.eu/#test-coordinator
 
     """
+
+    # TODO decouple amqp stuff from Coordinator
+    #
 
     def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
 
