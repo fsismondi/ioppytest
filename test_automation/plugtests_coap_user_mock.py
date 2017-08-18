@@ -1,13 +1,16 @@
 
 from automated_IUTs.automation import UserEmulator
-import pika
-from coap_testing_tool import AMQP_EXCHANGE,AMQP_URL
+import pika, logging
+from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
+
 
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-    UserEmulator(connection, 'coap_client')
+    u = UserEmulator(connection, 'coap_client')
+    u.start()
     #INTERACTIVE_SESSION = False
     #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 

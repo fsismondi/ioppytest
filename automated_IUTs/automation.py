@@ -22,6 +22,7 @@ STIMULI_HANDLER_TOUT = 10
 
 COMPONENT_ID = 'automation'
 
+
 @property
 def NotImplementedField(self):
     raise NotImplementedError
@@ -172,28 +173,31 @@ class UserEmulator(threading.Thread):
     DEFAULT_TC_LIST = [
         'TD_COAP_CORE_01_v01',
         'TD_COAP_CORE_02_v01',
-        'TD_COAP_CORE_03_v01',
-        'TD_COAP_CORE_04_v01',
     ]
 
-    def __init__(self, connection, iut_node, iut_testcases = None):
+    def __init__(self, connection, iut_node, iut_testcases=None):
         threading.Thread.__init__(self)
         self.message_count = 0
         # queues & default exchange declaration
         self.iut_node = iut_node
 
         if iut_testcases:
-            self.iut_testcases = iut_testcases
+            self.implemented_testcases_list = iut_testcases
         else:
-            self.iut_testcases = UserEmulator.DEFAULT_TC_LIST
+            self.implemented_testcases_list = UserEmulator.DEFAULT_TC_LIST
 
         self.connection = connection
         self.channel = connection.channel()
         services_queue_name = 'services_queue@%s' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key='control.testcoordination')
+
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=services_queue_name,
+                                routing_key='control.session')
 
         publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -225,6 +229,12 @@ class UserEmulator(threading.Thread):
         if event is None:
             return
 
+        elif isinstance(event, MsgTestingToolReady):
+            m = MsgTestSuiteStart()
+            publish_message(self.channel, m)
+            logging.info('Event received %s' % event._type)
+            logging.info('Event pushed %s' % m)
+
         elif isinstance(event, MsgTestCaseReady):
             if event.testcase_id in self.implemented_testcases_list:
                 m = MsgTestCaseStart()
@@ -236,12 +246,6 @@ class UserEmulator(threading.Thread):
                 publish_message(self.channel, m)
                 logging.info('Event received %s' % event._type)
                 logging.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestingToolReady):
-            m = MsgTestSuiteStart()
-            publish_message(self.channel, m)
-            logging.info('Event received %s' % event._type)
-            logging.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())

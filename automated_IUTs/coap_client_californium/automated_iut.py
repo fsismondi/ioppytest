@@ -5,10 +5,7 @@ import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 
-
-
 str_coap_server_port = str(COAP_SERVER_PORT)
-
 
 
 class CaliforniumCoapClient(AutomatedIUT):

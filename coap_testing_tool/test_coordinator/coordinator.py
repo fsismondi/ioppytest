@@ -596,7 +596,7 @@ class Coordinator:
             return True
 
     def run(self):
-        logger.info('start consuming..')
+        logger.info('start consuming events from the bus..')
         self.channel.start_consuming()
 
     # # # AUXILIARY AMQP MESSAGING FUNCTIONS # # #
@@ -847,7 +847,7 @@ class Coordinator:
                 testcase_id_skip = event.testcase_id
                 if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
                     testcase_id_skip = self.current_tc.id
-            except:  # if no testcase_id was sent then I skip  the current one
+            except AttributeError:  # if no testcase_id was sent then I skip  the current one
                 testcase_id_skip = self.current_tc.id
 
             try:
