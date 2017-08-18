@@ -73,11 +73,15 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
       stage("Testing Tool's AMQP API smoke tests"){
         gitlabCommitStatus("Functional API smoke tests"){
             sh '''
+            echo 'AMQP PARAMS:'
             echo $AMQP_URL
+            echo $AMQP_EXCHANGE
             sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
             sleep 2
             sudo -E supervisord -c coap_testing_tool/supervisord.conf
             sleep 15
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+            sleep 2
             pwd
             python3 $(which py.test) tests/test_api.py -vv
             sleep 5
