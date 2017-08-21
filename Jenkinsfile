@@ -51,7 +51,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
             pwd
-            python3 $(which py.test) tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            sudo -E python3 $(which py.test) tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -61,9 +61,9 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             echo $AMQP_URL
             pwd
-            python3 $(which py.test) coap_testing_tool/test_coordinator/tests/tests.py
-            python3 $(which py.test) coap_testing_tool/packet_router/tests/tests.py
-            python3 $(which py.test) coap_testing_tool/extended_test_descriptions/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/test_coordinator/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/packet_router/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/extended_test_descriptions/tests/tests.py
             '''
         }
       }
@@ -73,15 +73,19 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
       stage("Testing Tool's AMQP API smoke tests"){
         gitlabCommitStatus("Functional API smoke tests"){
             sh '''
+            echo 'AMQP PARAMS:'
             echo $AMQP_URL
-            sudo -E supervisorctl -c supervisor.conf shutdown
+            echo $AMQP_EXCHANGE
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
             sleep 2
-            sudo -E supervisord -c supervisor.conf
+            sudo -E supervisord -c coap_testing_tool/supervisord.conf
             sleep 15
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+            sleep 2
             pwd
             python3 $(which py.test) tests/test_api.py -vv
             sleep 5
-            sudo -E supervisorctl -c supervisor.conf stop all
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
             '''
         }
       }
