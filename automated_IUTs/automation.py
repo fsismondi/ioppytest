@@ -90,6 +90,7 @@ class AutomatedIUT(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
+
         props_dict = {
             'content_type': props.content_type,
             'delivery_mode': props.delivery_mode,
@@ -108,8 +109,12 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        elif isinstance(event, MsgTestCaseReady):
+        logging.info('Event received: %s' % repr(event))
+
+        if isinstance(event, MsgTestCaseReady):
             if event.testcase_id not in self.implemented_testcases_list:
+                time.sleep(0.1)
+                logging.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
                 publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
             else:
                 logging.info('IUT %s ready to execute testcase' % self.component_id)
