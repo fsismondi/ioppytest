@@ -840,12 +840,15 @@ class Coordinator:
         logger.info('Event received: %s' % event._type)
 
         if isinstance(event, MsgTestCaseSkip):
+            testcase_id_skip = None
+
             # operation health check
             if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
                 self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
+            # set testcase_id_skip
             try:
                 testcase_id_skip = event.testcase_id
                 if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
@@ -853,6 +856,12 @@ class Coordinator:
             except AttributeError:  # if no testcase_id was sent then I skip  the current one
                 testcase_id_skip = self.current_tc.id
 
+
+            # check if testcase already in skip state
+            if self.get_testcase(testcase_id_skip).state == 'skipped':
+                return
+
+            # skip testcase_id_skip
             try:
                 if self.skip_testcase(testcase_id_skip):  # if there's more TCs
                     self.notify_testcase_is_ready()
