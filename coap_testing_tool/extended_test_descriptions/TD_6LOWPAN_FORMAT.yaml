@@ -3,7 +3,7 @@
 testcase_id: TD_6LoWPAN_FORMAT_01
 uri : none
 configuration: Node to Node
-objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 linklocal)
+objective: Check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 linklocal)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 and EUT2 are configured to use EUI-64
@@ -17,7 +17,7 @@ sequence:
       - ICMP payload = 4 bytes, total IPv6 size 52 bytes
 
   - step_id: 'TD_6LoWPAN_FORMAT_01_step_01'
-    type: check
+    type: Check
     node : IUT1
     description:
       - EUT1 sends an uncompressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address
@@ -25,13 +25,13 @@ sequence:
       - Both source and destination addresses are EUI-64 linklocal
 
   - step_id: 'TD_6LoWPAN_FORMAT_01_step_02'
-    type: verify
+    type: Verify
     node : IUT2
     description:
       - EUT2 receives the Echo Request message from EUT1
 
   - step_id: 'TD_6LoWPAN_FORMAT_01_step_03'
-    type: check
+    type: Check
     node : IUT2
     description:
       - EUT2 sends an uncompressed 6LoWPAN packet containing the Echo Reply message to EUT1's link-local address
@@ -39,15 +39,13 @@ sequence:
       - Both source and destination addresses are EUI-64 linklocal
 
   - step_id: 'TD_6LoWPAN_FORMAT_01_step_04'
-    type: verify
+    type: Verify
     node : IUT1
     description:
       - EUT1 receives the Echo Reply message from EUT2
 
   - step_id: 'TD_6LoWPAN_FORMAT_01_step_05'
-    type: check
+    type: Check
     node : IUT1
     description:
       - The data received in the echo reply message is identical to that sent in EUT1's echo request message
-
---- !testcase
