@@ -51,7 +51,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
             pwd
-            sudo python3 $(which py.test) tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            sudo -E python3 $(which py.test) tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -61,9 +61,9 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             echo $AMQP_URL
             pwd
-            sudo python3 $(which py.test) coap_testing_tool/test_coordinator/tests/tests.py
-            sudo python3 $(which py.test) coap_testing_tool/packet_router/tests/tests.py
-            sudo python3 $(which py.test) coap_testing_tool/extended_test_descriptions/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/test_coordinator/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/packet_router/tests/tests.py
+            sudo -E python3 $(which py.test) coap_testing_tool/extended_test_descriptions/tests/tests.py
             '''
         }
       }
