@@ -1,0 +1,68 @@
+[group:plugtest3]
+programs=automated_iut-coap_client-coapthon-v0.1, automated_iut-coap_server-coapthon-v0.1, testing_tool-interoperability-coap-v-0.5, automation
+
+[program:automated_iut-coap_client-coapthon-v0.1]
+stopsignal=TERM
+killasgroup=true
+autostart=false
+stdout_logfile = %(here)s/../log/automated_iut-coap_client-coapthon-v0.1-stdout.log
+stderr_logfile = %(here)s/../log/automated_iut-coap_client-coapthon-v0.1-stderr.log
+command = docker run
+    --env AMQP_URL=amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_03
+    --env AMQP_EXCHANGE=default
+    --rm
+    --privileged=true
+    --sysctl net.ipv6.conf.all.disable_ipv6=0
+    --name="automated_iut-coap_client-coapthon-v0.1"
+    automated_iut-coap_client-coapthon-v0.1
+    supervisord --nodaemon --configuration supervisor.conf
+
+[program:automated_iut-coap_server-coapthon-v0.1]
+stopsignal=TERM
+killasgroup=true
+autostart=false
+stdout_logfile = %(here)s/../log/automated_iut-coap_server-coapthon-v0.1-stdout.log
+stderr_logfile = %(here)s/../log/automated_iut-coap_server-coapthon-v0.1-stderr.log
+command = docker run
+    --env AMQP_URL=amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/plugtests_03
+    --env AMQP_EXCHANGE=default
+    --rm
+    --privileged=true
+    --sysctl net.ipv6.conf.all.disable_ipv6=0
+    --name="automated_iut-coap_server-coapthon-v0.1"
+    automated_iut-coap_server-coapthon-v0.1
+    supervisord --nodaemon --configuration supervisor.conf
+
+[program:testing_tool-interoperability-coap-v-0.5]
+stopsignal=TERM
+killasgroup=true
+autostart=false
+stdout_logfile = %(here)s/../log/testing_tool-interoperability-coap-v-0.5-stdout.log
+stderr_logfile = %(here)s/../log/testing_tool-interoperability-coap-v-0.5-stderr.log
+command = docker run
+    --env AMQP_URL=amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/session05
+    --env AMQP_EXCHANGE=default
+    --rm
+    --privileged=true
+    --sysctl net.ipv6.conf.all.disable_ipv6=0
+    --name="testing_tool-interoperability-coap-v-0.5"
+    testing_tool-interoperability-coap-v-0.5
+    supervisord --nodaemon --configuration supervisor.conf
+
+[program:automation]
+directory= ./automated_IUTs/
+command = python3 automation.py
+user=root
+stopsignal=INT
+stopasgroup=true
+autorestart=false
+loglevel=debug
+; for sending logs to docker
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+;redirect_stderr=true
+;stdout_logfile = /var/log/agent-stdout.log
+;stdout_logfile_maxbytes = 10MB
+;stdout_logfile_backups = 5

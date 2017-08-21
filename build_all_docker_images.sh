@@ -26,7 +26,9 @@ docker build -t automated_iut-coap_server-californium-v0.1 -f automated_IUTs/coa
 docker build -t automated_iut-coap_client-californium-v0.1 -f automated_IUTs/coap_client_californium/Dockerfile .
 docker build -t automated_iut-coap_server-coapthon-v0.1 -f automated_IUTs/coap_server_coapthon/Dockerfile .
 docker build -t automated_iut-coap_client-coapthon-v0.1 -f automated_IUTs/coap_client_coapthon/Dockerfile .
+
 docker build -t testing_tool-interoperability-coap-v-0.6 .
+
 
 # tag "HEAD" for INTEROP TESTING TOOL
 docker tag testing_tool-interoperability-coap-v-0.6:latest testing_tool-interoperability-coap
