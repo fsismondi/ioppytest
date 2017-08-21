@@ -90,7 +90,6 @@ class AutomatedIUT(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-
         props_dict = {
             'content_type': props.content_type,
             'delivery_mode': props.delivery_mode,
@@ -154,10 +153,18 @@ class AutomatedIUT(threading.Thread):
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
 
+
+        elif isinstance(event, MsgTestingToolTerminate):
+            logging.info('Test terminate signal received. Quitting..')
+            time.sleep(2)
+            self._exit
+
         else:
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
+        m = MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        publish_message(self.channel, m)
         time.sleep(2)
         self.connection.close()
         sys.exit(0)
@@ -169,27 +176,26 @@ class AutomatedIUT(threading.Thread):
         raise NotImplementedError("Subclasses should implement this!")
 
 
-class UserEmulator(threading.Thread):
+class UserMock(threading.Thread):
     """
     this class servers for moking user inputs into GUI
     """
-    component_id = 'user_emulation'
+    component_id = 'user_mock'
 
     DEFAULT_TC_LIST = [
         'TD_COAP_CORE_01_v01',
         'TD_COAP_CORE_02_v01',
     ]
 
-    def __init__(self, connection, iut_node, iut_testcases=None):
+    def __init__(self, connection, iut_testcases=None):
         threading.Thread.__init__(self)
         self.message_count = 0
         # queues & default exchange declaration
-        self.iut_node = iut_node
 
         if iut_testcases:
             self.implemented_testcases_list = iut_testcases
         else:
-            self.implemented_testcases_list = UserEmulator.DEFAULT_TC_LIST
+            self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
         self.connection = connection
         self.channel = connection.channel()
@@ -254,6 +260,10 @@ class UserEmulator(threading.Thread):
 
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
+            time.sleep(2)
+            m = MsgTestingToolTerminate()
+            publish_message(self.channel, m)
+            time.sleep(2)
             self._exit
 
         else:
@@ -261,6 +271,8 @@ class UserEmulator(threading.Thread):
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
+        m = MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        publish_message(self.channel, m)
         time.sleep(2)
         self.connection.close()
         sys.exit(0)
