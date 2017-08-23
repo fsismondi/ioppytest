@@ -5,22 +5,24 @@ and HEAD requests in a fairly straightforward manner.
 
 """
 
-
-import os, logging
+import os
+import logging
 import posixpath
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib
 import html
 import yaml
 import mimetypes
-from coap_testing_tool import TD_COAP,TD_COAP_CFG
+import glob, json
+from jinja2 import Template
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from coap_testing_tool import TD_COAP, TD_COAP_CFG, RESULTS_DIR, AUTO_DISSECTION_DIR
 from coap_testing_tool.test_coordinator.coordinator import TestCase
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 td_list = []
 
-tail ="""
+tail = """
 "mantainer": "Federico Sismondi",
 "mantainer_email": "federico.sismondi@inria.fr"
 
@@ -33,10 +35,10 @@ with open(TD_COAP, "r", encoding="utf-8") as stream:
         if type(yaml_doc) is TestCase:
             td_list.append(yaml_doc)
 
+
 # TODO server config files too
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-
     """Simple HTTP request handler with GET and HEAD commands.
 
     This serves files from the current directory and any of its
@@ -48,7 +50,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     request omits the actual contents of the file.
 
     """
-
 
     def do_GET(self):
         """Serve a GET request."""
@@ -79,8 +80,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/tests/'):
             logger.debug('Handling tescase request: %s' % self.path)
             return self.handle_testcase(self.path)
-
-
+        elif self.path.startswith('/results'):
+            logger.debug('Handling tescase request: %s' % self.path)
+            return self.handle_results(self.path)
         # check if its a file in the testing tool dir
         path = self.translate_path(self.path)
         f = None
@@ -108,6 +110,56 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         return f
 
+    def handle_results(self, path):
+        assert "/results" in path
+        # tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        with open('testsuite_results.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp, 'utf-8'))
+
+    def handle_dissections(self, path):
+        assert "/dissections" in path
+        # tc_name = path.split('/')[-1]
+        items = []
+        resp = None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        with open('session_dissections.html', 'w+') as file:
+
+            for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
+                try:
+                    with open(filename, 'r') as jsonfile:
+                        an_item = json.loads(jsonfile.read())
+
+                except:
+                    an_item = {'description': 'error importing'}
+
+                items.append(an_item)
+            resp = template_test_vedict.render(items=items)
+            file.write(resp)
+
+        self.wfile.write(bytes(resp, 'utf-8'))
+
     def handle_testcase(self, path):
         """
         Helper to produce testcase for paths like : (...)/tests/TD_COAP_(...)
@@ -128,7 +180,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        head= """
+        head = """
     <html>
         <head>
         <meta charset='utf-8'>
@@ -141,7 +193,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 font-family: Arial;
                 font-size: 20px;
                 font-style: normal;
-                font-weight: normal;
             }
             p {
                 font-family: Arial;
@@ -162,7 +213,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 font-size: 15px;
                 paddomg-legt 1.8em
             }
-
             li {
                 display: list-item;
                 font-family: Arial;
@@ -171,7 +221,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 font-size: 13px;
                 paddomg-legt 1.8em
             }
-
             table {
                 border-collapse: collapse;
                 font-family: Arial;
@@ -190,7 +239,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<title>Testcase description</title>", 'utf-8'))
         self.wfile.write(bytes("<h2>Testcase identifier: <em>%s</em> </h2>" % tc.id, 'utf-8'))
 
-
         # Test case general info
         self.wfile.write(bytes("<h2>Objective: <em>%s</em></h2>\n" % tc.objective, 'utf-8'))
         self.wfile.write(bytes("<h2>Configuration: <em>%s</em></h2>\n" % tc.configuration_id, 'utf-8'))
@@ -208,7 +256,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             # decompose up to two levels of nested list
 
-            if isinstance(step.description,list):
+            if isinstance(step.description, list):
                 self.wfile.write(bytes("<ol>\n", 'utf-8'))
                 for item in step.description:
                     if isinstance(item, list):
@@ -217,7 +265,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             self.wfile.write(bytes("<li>%s</li>  \n" % str(item_of_item), 'utf-8'))
                         self.wfile.write(bytes("</ol>\n", 'utf-8'))
                     else:
-                        self.wfile.write(bytes("<li>%s</li>"% str(item), 'utf-8'))
+                        self.wfile.write(bytes("<li>%s</li>" % str(item), 'utf-8'))
                 self.wfile.write(bytes("</ol>\n", 'utf-8'))
             else:
                 self.wfile.write(bytes("<em>%s</em>\n" % str(step.description), 'utf-8'))
@@ -225,9 +273,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes("</p>\n", 'utf-8'))
             self.wfile.write(bytes("<hr>\n", 'utf-8'))
 
-
-        self.wfile.write(bytes("<tail>%s</tail> </body>\n"%tail, 'utf-8'))
-        self.wfile.write(bytes("</html>\n",'utf-8'))
+        self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
+        self.wfile.write(bytes("</html>\n", 'utf-8'))
         return
 
     def list_directory(self, path):
@@ -237,7 +284,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         error).  In either case, the headers are sent, making the
         interface the same as for send_head().
         """
-
 
         try:
             list = os.listdir(path)
@@ -249,7 +295,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        #list.sort(lambda a, b: cmp(a.lower(), b.lower()))
+        # list.sort(lambda a, b: cmp(a.lower(), b.lower()))
         self.wfile.write(bytes("<title>CoAP Testing Tool directory. dir: %s</title>\n" % self.path, 'utf-8'))
         self.wfile.write(bytes("<h2>CoAP Testing Tool directory</h2>\n", 'utf-8'))
         self.wfile.write(bytes("<h3>dir: %s</h3>\n" % self.path, 'utf-8'))
@@ -331,15 +377,96 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     extensions_map = mimetypes.types_map.copy()
     extensions_map.update({
-        '': 'application/octet-stream', # Default
+        '': 'application/octet-stream',  # Default
         '.py': 'text/plain',
         '.c': 'text/plain',
         '.h': 'text/plain',
-        '.yaml' : 'text/plain',
+        '.yaml': 'text/plain',
         '.yml': 'text/plain',
         '.log': 'text/plain',
-        })
+        '.json': 'text/plain',
+    })
 
 
+template_test_vedict = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
 
+        <body>
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
+        
+        <table style="width:100%;text-align: center"; border="1">
+          <tr>
+            <th style="width:10%">Testcase ID</th>
+            <th style="width:25%">Objective</th>
+            <th style="width:5%">State</th>
+            <th style="width:10%">Verdict</th>
+            <th style="width:50%">Partial verdicts</th>
+          </tr>
 
+        {% for item in items %}
+        <tr>
+           <td class="c1"><a href={{item.testcase_ref}}>{{item.testcase_id}}</a></td>
+           <td class="c2">{{item.objective}}</td>
+           <td class="c3">{{item.state}}</td>
+            {% if item.verdict == 'error' %}
+                <td class="c4" bgcolor="#FF0000">{{ item.verdict.upper()  }}</td>
+             {% elif item.verdict == 'pass' %}
+                <td class="c4" bgcolor="#00FF00">{{ item.verdict.upper()  }}</td>
+            {% elif item.verdict == 'inconc' %}
+                <td class="c4" bgcolor="#FFFF00">{{ item.verdict.upper()  }}</td>
+            {% elif item.verdict == 'inconclusive' %}
+                <td class="c4" bgcolor="#FFFF00">{{ item.verdict.upper()  }}</td>
+            {% endif %}
+           <td class="c5">
+              <table style="width:100%"; border="1">
+              {% for subitem in item.partial_verdicts %}
+                       <tr class="c6"">
+                          <td class="c7">{{subitem[0]}}</td>
+                          <td class="c8">{{subitem[1]}}</td>
+                          <td class="c9">{{subitem[2]}}</td>
+                       </tr>
+              {% endfor %}
+              </table>
+           </tr>
+           </td>
+        </tr>
+        {% endfor %}
+        </table>
+        </body>""")
+
+template_test_vedict_menu = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
+
+        <body>
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
+        </body>""")

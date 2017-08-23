@@ -37,6 +37,7 @@ LOGDIR = os.path.join( project_dir,'log')
 TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptions')
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
+AUTO_DISSECTION_DIR =  os.path.join( project_dir,'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
 
