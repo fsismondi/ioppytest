@@ -1,9 +1,9 @@
-
 # -*- coding: utf-8 -*-
 
 import os
 import json
-try: # py2 and py3 compat
+
+try:  # py2 and py3 compat
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
@@ -12,8 +12,8 @@ __version__ = (0, 0, 6)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 if '/coap_testing_tool' in project_dir:
-     project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
-print('Project dir: %s'%project_dir)
+    project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
+print('Project dir: %s' % project_dir)
 
 
 def get_from_environment(variable, default):
@@ -26,18 +26,17 @@ def get_from_environment(variable, default):
     return v
 
 
-
 # # # # # # hard variables # # # # # # # # # #
-
-TMPDIR = os.path.join( project_dir,'tmp')
-DATADIR = os.path.join( project_dir,'data')
-RESULTS_DIR = os.path.join( DATADIR,'results')
-PCAP_DIR =  os.path.join( DATADIR,'dumps')
-LOGDIR = os.path.join( project_dir,'log')
-TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptions')
-TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
-TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
-AUTO_DISSECTION_DIR =  os.path.join( project_dir,'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
+PROJECT_DIR = project_dir
+TMPDIR = os.path.join(project_dir, 'tmp')
+DATADIR = os.path.join(project_dir, 'data')
+RESULTS_DIR = os.path.join(DATADIR, 'results')
+PCAP_DIR = os.path.join(DATADIR, 'dumps')
+LOGDIR = os.path.join(project_dir, 'log')
+TD_DIR = os.path.join(project_dir, 'coap_testing_tool', 'extended_test_descriptions')
+TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
+TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
+AUTO_DISSECTION_FILE = os.path.join(project_dir, 'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
 
@@ -70,15 +69,14 @@ except KeyError as e:
     AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format(AMQP_USER, AMQP_PASS, AMQP_SERVER, AMQP_VHOST)
 
 print(json.dumps(
-                {
-                    'server': AMQP_SERVER,
-                    'session': AMQP_VHOST,
-                    'user': AMQP_USER,
-                    'pass': '#' * len(AMQP_PASS),
-                    'exchange': AMQP_EXCHANGE
-                }
+    {
+        'server': AMQP_SERVER,
+        'session': AMQP_VHOST,
+        'user': AMQP_USER,
+        'pass': '#' * len(AMQP_PASS),
+        'exchange': AMQP_EXCHANGE
+    }
 ))
-
 
 # # # # # # variables coming from index.json # # # # # # # # # #
 
@@ -106,4 +104,3 @@ __all__ = [
     AGENT_TT_ID,
     INTERACTIVE_SESSION
 ]
-
