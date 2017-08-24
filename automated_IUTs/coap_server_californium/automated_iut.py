@@ -10,16 +10,16 @@ logger = logging.getLogger(__name__)
 STIMULI_HANDLER_TOUT = 10
 
 signal.signal(signal.SIGINT, signal_int_handler)
-
+str_coap_server_port = str(COAP_SERVER_PORT)
 
 class CoapthonCoapClient(AutomatedIUT):
     component_id = 'automated_iut-coap_server'
 
     node = 'coap_server'
 
-    IUT_CMD = [
-        'python',
-        'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py ',
+    iut_cmd = [
+        'java - jar automated_IUTs/coap_server_californium/target/coap_plugtest_server-1.0-SNAPSHOT.jar::'+str_coap_server_port
+
     ]
 
     # mapping message's stimuli id -> CoAPthon (coap client) commands
