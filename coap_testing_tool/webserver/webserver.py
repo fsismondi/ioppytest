@@ -6,6 +6,7 @@ and HEAD requests in a fairly straightforward manner.
 """
 
 import os
+import shutil
 import logging
 import posixpath
 import urllib
@@ -15,7 +16,7 @@ import mimetypes
 import glob, json
 from jinja2 import Template
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from coap_testing_tool import TD_COAP, TD_COAP_CFG, RESULTS_DIR, AUTO_DISSECTION_DIR
+from coap_testing_tool import TD_COAP, TD_COAP_CFG, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
 from coap_testing_tool.test_coordinator.coordinator import TestCase
 
 logger = logging.getLogger(__name__)
@@ -78,11 +79,18 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # check if its a testcase in the ones already loaded
         if self.path.startswith('/tests/'):
-            logger.debug('Handling tescase request: %s' % self.path)
+            logger.debug('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
+        elif self.path.startswith('/pcaps'):
+            logger.debug('Handling PCAP request: %s' % self.path)
+            return self.handle_data(self.path)
         elif self.path.startswith('/results'):
-            logger.debug('Handling tescase request: %s' % self.path)
+            logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
+        elif self.path.startswith('/packets'):
+            logger.debug('Handling PACKETS dissection request: %s' % self.path)
+            return self.handle_packets(self.path)
+
         # check if its a file in the testing tool dir
         path = self.translate_path(self.path)
         f = None
@@ -110,6 +118,27 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         return f
 
+    def handle_data(self, path):
+        logger.info('Handling data: %s' % path)
+        assert '/pcaps' in path
+
+        if 'IEEE802_15_4' in path:
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+        elif 'DLT_RAW' in path:
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_RAW.pcap')
+        else:
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+
+        with open(file, 'rb') as f:
+            self.send_response(200)
+            self.send_header("Content-Type", 'application/octet-stream')
+            self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(file)))
+            fs = os.fstat(f.fileno())
+            self.send_header("Content-Length", str(fs.st_size))
+            self.end_headers()
+            # self.copyfile(f, self.wfile)
+            shutil.copyfileobj(f, self.wfile)
+
     def handle_results(self, path):
         assert "/results" in path
         # tc_name = path.split('/')[-1]
@@ -135,30 +164,30 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         self.wfile.write(bytes(resp, 'utf-8'))
 
-    def handle_dissections(self, path):
-        assert "/dissections" in path
+    def handle_packets(self, path):
+        assert "/packets" in path
         # tc_name = path.split('/')[-1]
-        items = []
-        resp = None
+        items = ''
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         with open('session_dissections.html', 'w+') as file:
 
-            for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
-                try:
-                    with open(filename, 'r') as jsonfile:
-                        an_item = json.loads(jsonfile.read())
+            try:
+                with open(AUTO_DISSECTION_FILE, 'r') as jsonfile:
+                    frames = json.loads(jsonfile.read())
 
-                except:
-                    an_item = {'description': 'error importing'}
+            except Exception as e:
+                frames = {'description': 'error importing',
+                          'error': str(e)
+                          }
 
-                items.append(an_item)
-            resp = template_test_vedict.render(items=items)
+            resp = template_frame_list.render(items=frames)
             file.write(resp)
 
         self.wfile.write(bytes(resp, 'utf-8'))
+
 
     def handle_testcase(self, path):
         """
@@ -386,6 +415,50 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         '.log': 'text/plain',
         '.json': 'text/plain',
     })
+
+
+
+
+
+template_frame_list = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
+
+        <body>
+
+        <table style="width:100%;text-align: center"; border="1">
+          <tr>
+            <th style="width:10%">Frame Info</th>
+            <th style="width:25%">Frame Dissection</th>
+          </tr>
+
+        {% for frame in items %}
+
+        <tr>
+           <td class="c1">frame id: {{frame.id}}<br>frame timestamp: {{frame.timestamp}}<br>frame error: {{frame.error}}</td>
+           <td class="c1">  
+           <table style="width:100%;text-align: center"; border="0.1">
+           {% for layer in frame.protocol_stack %}
+            <tr>
+                <th style="width:5%">{{layer._protocol}}</th>
+                <td style="width:25%">{{layer}} </td>
+            </tr>
+            {% endfor %}
+           </table>
+           </td>
+        </tr>
+        {% endfor %}
+        </table>
+        </body>""")
+
 
 
 template_test_vedict = Template("""
