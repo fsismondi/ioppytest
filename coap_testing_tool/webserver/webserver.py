@@ -78,16 +78,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
 
         # check if its a testcase in the ones already loaded
-        if self.path.startswith('/tests/'):
+        if self.path.startswith('/tests/') or self.path.startswith('/coap_testing_tool/tests/'):
             logger.debug('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
-        elif self.path.startswith('/pcaps'):
+        elif self.path.startswith('/coap_testing_tool/pcaps'):
             logger.debug('Handling PCAP request: %s' % self.path)
             return self.handle_data(self.path)
-        elif self.path.startswith('/results'):
+        elif self.path.startswith('/coap_testing_tool/results'):
             logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
-        elif self.path.startswith('/packets'):
+        elif self.path.startswith('/coap_testing_tool/packets'):
             logger.debug('Handling PACKETS dissection request: %s' % self.path)
             return self.handle_packets(self.path)
 
