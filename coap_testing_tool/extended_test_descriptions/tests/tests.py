@@ -21,6 +21,7 @@ class PacketRouterTestCase(unittest.TestCase):
             assert tc.configuration_id
             assert tc.references
             assert tc.pre_conditions
+            assert tc.notes
             assert tc.sequence
 
             for step in tc.sequence:
@@ -39,6 +40,7 @@ class PacketRouterTestCase(unittest.TestCase):
             assert tc.configuration_id
             assert tc.references
             assert tc.pre_conditions
+            assert tc.notes
             assert tc.sequence
 
             for step in tc.sequence:
