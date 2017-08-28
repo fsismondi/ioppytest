@@ -83,7 +83,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return self.handle_testcase(self.path)
         elif self.path.startswith('/coap_testing_tool/pcaps'):
             logger.debug('Handling PCAP request: %s' % self.path)
-            return self.handle_data(self.path)
+            return self.handle_pcaps(self.path)
         elif self.path.startswith('/coap_testing_tool/results'):
             logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
@@ -91,34 +91,35 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             logger.debug('Handling PACKETS dissection request: %s' % self.path)
             return self.handle_packets(self.path)
 
-        # check if its a file in the testing tool dir
-        path = self.translate_path(self.path)
-        f = None
+        else:  # allow introspection of project directory
+            # check if its a file in the testing tool dir
+            path = self.translate_path(self.path)
+            f = None
 
-        if os.path.isdir(path):
-            for index in "index.html", "index.htm":
-                index = os.path.join(path, index)
-                if os.path.exists(index):
-                    path = index
-                    break
+            if os.path.isdir(path):
+                for index in "index.html", "index.htm":
+                    index = os.path.join(path, index)
+                    if os.path.exists(index):
+                        path = index
+                        break
+                else:
+                    return self.list_directory(path)
+            ctype = self.guess_type(path)
+            if ctype.startswith('text/'):
+                mode = 'r'
             else:
-                return self.list_directory(path)
-        ctype = self.guess_type(path)
-        if ctype.startswith('text/'):
-            mode = 'r'
-        else:
-            mode = 'rb'
-        try:
-            f = open(path, mode)
-        except IOError:
-            self.send_error(404, "File not found")
-            return None
-        self.send_response(200)
-        self.send_header("Content-type", ctype)
-        self.end_headers()
-        return f
+                mode = 'rb'
+            try:
+                f = open(path, mode)
+            except IOError:
+                self.send_error(404, "File not found")
+                return None
+            self.send_response(200)
+            self.send_header("Content-type", ctype)
+            self.end_headers()
+            return f
 
-    def handle_data(self, path):
+    def handle_pcaps(self, path):
         logger.info('Handling data: %s' % path)
         assert '/pcaps' in path
 
@@ -187,7 +188,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             file.write(resp)
 
         self.wfile.write(bytes(resp, 'utf-8'))
-
 
     def handle_testcase(self, path):
         """
@@ -417,9 +417,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     })
 
 
-
-
-
 template_frame_list = Template("""
         <!DOCTYPE html>
         <html>
@@ -458,8 +455,6 @@ template_frame_list = Template("""
         {% endfor %}
         </table>
         </body>""")
-
-
 
 template_test_vedict = Template("""
         <!DOCTYPE html>
