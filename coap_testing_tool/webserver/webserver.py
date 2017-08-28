@@ -14,7 +14,6 @@ import html
 import yaml
 import mimetypes
 import re
-from pathlib import Path
 from coap_testing_tool import TD_COAP,TD_COAP_CFG, TD_6LOWPAN
 from coap_testing_tool.test_coordinator.coordinator import TestCase
 logger = logging.getLogger(__name__)
@@ -29,11 +28,18 @@ tail ="""
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
 
+
+with open(TD_COAP, "r", encoding="utf-8") as stream:
+	yaml_docs = yaml.load_all(stream)
+	for yaml_doc in yaml_docs:
+		if type(yaml_doc) is TestCase:
+			td_list.append(yaml_doc)
 with open(TD_6LOWPAN, "r", encoding="utf-8") as stream:
-    yaml_docs = yaml.load_all(stream)
-    for yaml_doc in yaml_docs:
-        if type(yaml_doc) is TestCase:
-            td_list.append(yaml_doc)
+	yaml_docs = yaml.load_all(stream)
+	for yaml_doc in yaml_docs:
+		if type(yaml_doc) is TestCase:
+			td_list.append(yaml_doc)
+
 
 # TODO server config files too
 
@@ -118,8 +124,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         tc = None
         
         for tc_iter in td_list:
-            logger.debug('essai 9 tc_iter : %s' % tc_iter.id.lower())
-            logger.debug('essai 9 tc_name : %s' % tc_name.lower())
+
             if tc_iter.id.lower() == tc_name.lower():
                 tc = tc_iter
 

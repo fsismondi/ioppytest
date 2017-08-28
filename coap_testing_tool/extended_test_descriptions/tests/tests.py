@@ -12,7 +12,7 @@ class PacketRouterTestCase(unittest.TestCase):
 
     def test_yaml_testcase_syntax(self):
 
-        imported_tcs = import_teds(TD_6LOWPAN)
+        imported_tcs = import_teds(TD_COAP)
         for tc in imported_tcs:
             print(tc)
             assert tc.id
@@ -29,6 +29,23 @@ class PacketRouterTestCase(unittest.TestCase):
                 assert step.type
                 assert step.description
 
+    def test_yaml_testcase_syntax_2(self):
+        imported_tcs = import_teds(TD_6LOWPAN)
+        for tc in imported_tcs:
+            print(tc)
+            assert tc.id
+            assert tc.uri
+            assert tc.objective
+            assert tc.configuration_id
+            assert tc.references
+            assert tc.pre_conditions
+            assert tc.sequence
+
+            for step in tc.sequence:
+                print(step)
+                assert step.id
+                assert step.type
+                assert step.description
 				
 
     def test_yaml_testcase_configuration_syntax(self):
