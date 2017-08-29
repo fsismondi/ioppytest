@@ -8,6 +8,7 @@ if __name__ == '__main__':
     tc_list = [
         'TD_COAP_CORE_01_v01',
         'TD_COAP_CORE_02_v01',
+
     ]
     u = UserMock(connection, tc_list)
     u.start()
