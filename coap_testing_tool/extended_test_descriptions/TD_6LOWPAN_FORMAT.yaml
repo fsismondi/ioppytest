@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LowPAN_FORMAT_01
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (EUI-64 linklocal)
 pre_conditions: 
@@ -54,7 +54,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_02
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (16-bit linklocal)
 pre_conditions: 
@@ -107,7 +107,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_03
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN fragmented packets
 pre_conditions: 
@@ -166,7 +166,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_04
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle maximum size uncompressed 6LowPAN fragmented packets
 pre_conditions: 
@@ -225,7 +225,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_05
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN multicast to all-nodes (16-bit link-local)
 pre_conditions: 
@@ -285,7 +285,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_06
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN multicast to all-nodes (EUI-64 link-local)
 pre_conditions: 
@@ -345,7 +345,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_07
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (EUI-64 to 16-bit link-local)
 pre_conditions: 
@@ -400,7 +400,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_08
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (16-bit to EUI-64 link-local)
 pre_conditions: 
@@ -455,7 +455,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_01
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 linklocal, hop limit=64)
 pre_conditions: 
@@ -550,7 +550,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_02
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit linklocal, hop limit=64)
 pre_conditions: 
@@ -645,7 +645,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_03
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 linklocal, hop limit=63)
 pre_conditions: 
@@ -740,7 +740,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_04
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit linklocal, hop limit=63)
 pre_conditions: 
@@ -835,7 +835,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_05
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (EUI-64, server port 5683)
 pre_conditions: 
@@ -892,7 +892,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_06
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (16-bit, server port 5683)
 pre_conditions: 
@@ -949,7 +949,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_07
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (EUI-64, server port 61616)
 pre_conditions: 
@@ -1006,7 +1006,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_08
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (16-bit, server port 61616)
 pre_conditions: 
@@ -1063,7 +1063,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_09
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 to 16- bit link-local, hop limit=64)
 pre_conditions: 
@@ -1158,7 +1158,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_10
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Node to node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 to 16- bit link-local, hop limit=64)
 pre_conditions: 
@@ -1253,7 +1253,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_01
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that a host is able to register its global IPv6 address (EUI-64)
 pre_conditions: 
@@ -1397,7 +1397,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_02
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that a host is able to register its global IPv6 address (16-bit)
 pre_conditions: 
@@ -1541,7 +1541,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_03
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check Host NUD behavior
 pre_conditions: 
@@ -1566,7 +1566,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_04
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check 6LR NUD behavior (ICMP version)
 pre_conditions: 
@@ -1598,7 +1598,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_05
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check 6LR NUD behavior (UDP version)
 pre_conditions: 
@@ -1631,7 +1631,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_06
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check host behavior under multiple prefixes (EUI-64)
 pre_conditions: 
@@ -1776,7 +1776,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_07
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check host behavior under multiple prefixes (EUI-64)
 pre_conditions: 
@@ -1922,7 +1922,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_01
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs make use of context 0 (EUI-64)
 pre_conditions: 
@@ -2024,7 +2024,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_02
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs make use of context 0 (16-bit)
 pre_conditions: 
@@ -2126,7 +2126,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_03
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs make use of context ≠ 0 (EUI-64)
 pre_conditions: 
@@ -2228,7 +2228,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_04
-uri : null
+uri : http://doc.f-interop.eu/tests/TD_6LowPAN_xxx_xx
 configuration: Host to 6LR
 objective: check that EUTs make use of context ≠ 0 (16-bit)
 pre_conditions: 
