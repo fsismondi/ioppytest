@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LowPAN_FORMAT_01
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (EUI-64 linklocal)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 and EUT2 are configured to use EUI-64
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_01_step_00'
@@ -54,13 +54,13 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_02
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (16-bit linklocal)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 and EUT2 are configured to use 16-bit short address
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_02_step_00'
@@ -107,12 +107,12 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_03
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN fragmented packets
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 5.3'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_03_step_00'
@@ -166,12 +166,12 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_04
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle maximum size uncompressed 6LowPAN fragmented packets
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 5.3'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_04_step_00'
@@ -225,13 +225,13 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_05
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN multicast to all-nodes (16-bit link-local)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 and EUT2 are configured to use 16-bit short address
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_05_step_00'
@@ -285,13 +285,13 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_06
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN multicast to all-nodes (EUI-64 link-local)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 and EUT2 are configured to use EUI-64
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_06_step_00'
@@ -345,13 +345,13 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_07
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (EUI-64 to 16-bit link-local)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 is configured to use EUI-64 and EUT2 is configured to use 16-bit short address
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_07_step_00'
@@ -400,13 +400,13 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_FORMAT_08
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle uncompressed 6LowPAN packets (16-bit to EUI-64 link-local)
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2
   - EUT1 is configured to use 16-bit short address and EUT2 is configured to use EUI-64
-notes: none
+notes: null
 references: 'RFC 4944 5.1, 8'
 sequence:
   - step_id: 'TD_6LowPAN_FORMAT_08_step_00'
@@ -455,7 +455,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_01
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 linklocal, hop limit=64)
 pre_conditions: 
@@ -550,7 +550,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_02
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit linklocal, hop limit=64)
 pre_conditions: 
@@ -645,7 +645,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_03
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 linklocal, hop limit=63)
 pre_conditions: 
@@ -740,7 +740,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_04
-uri : none
+uri : null
 configuration: Node to Node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit linklocal, hop limit=63)
 pre_conditions: 
@@ -835,7 +835,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_05
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (EUI-64, server port 5683)
 pre_conditions: 
@@ -892,7 +892,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_06
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (16-bit, server port 5683)
 pre_conditions: 
@@ -949,7 +949,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_07
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (EUI-64, server port 61616)
 pre_conditions: 
@@ -1006,7 +1006,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_08
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs correctly handle compressed UDP packets (16-bit, server port 61616)
 pre_conditions: 
@@ -1063,7 +1063,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_09
-uri : none
+uri : null
 configuration: Node to node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 to 16- bit link-local, hop limit=64)
 pre_conditions: 
@@ -1158,7 +1158,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LowPAN_HC_10
-uri : none
+uri : null
 configuration: Node to node
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 to 16- bit link-local, hop limit=64)
 pre_conditions: 
@@ -1253,7 +1253,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_01
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that a host is able to register its global IPv6 address (EUI-64)
 pre_conditions: 
@@ -1397,7 +1397,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_02
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that a host is able to register its global IPv6 address (16-bit)
 pre_conditions: 
@@ -1541,14 +1541,14 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_03
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check Host NUD behavior
 pre_conditions: 
   - Header compression is enabled on both Host and Router
   - Host is configured to use EUI-64 address
   - Host is up and registered its global address with the Router
-notes: none
+notes: null
 references: 'RFC 6775 5.5'
 sequence:
   - step_id: 'TD_6LoWPAN_ND_03_step_00'
@@ -1566,7 +1566,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_04
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check 6LR NUD behavior (ICMP version)
 pre_conditions: 
@@ -1598,7 +1598,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_05
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check 6LR NUD behavior (UDP version)
 pre_conditions: 
@@ -1631,7 +1631,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_06
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check host behavior under multiple prefixes (EUI-64)
 pre_conditions: 
@@ -1776,7 +1776,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_07
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check host behavior under multiple prefixes (EUI-64)
 pre_conditions: 
@@ -1922,7 +1922,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_01
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs make use of context 0 (EUI-64)
 pre_conditions: 
@@ -2024,7 +2024,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_02
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs make use of context 0 (16-bit)
 pre_conditions: 
@@ -2126,7 +2126,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_03
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs make use of context ≠ 0 (EUI-64)
 pre_conditions: 
@@ -2228,7 +2228,7 @@ notes:
 --- !testcase
 
 testcase_id: TD_6LoWPAN_ND_HC_04
-uri : none
+uri : null
 configuration: Host to 6LR
 objective: check that EUTs make use of context ≠ 0 (16-bit)
 pre_conditions: 

@@ -1,13 +1,19 @@
-#!/usr/bin/env python3
+
 # -*- coding: utf-8 -*-
+
 import os
 import json
-from urllib.parse import urlparse
+try: # py2 and py3 compat
+	from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
+
 
 __version__ = (0, 0, 6)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
-if '\coap_testing_tool' in project_dir:
+if '/coap_testing_tool' in project_dir:
      project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
 print('Project dir: %s'%project_dir)
 
@@ -60,10 +66,10 @@ except KeyError as e:
 
     print('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
     # load default values
-    AMQP_SERVER = "http://f-interop.rennes.inria.fr:15672/#/"
-    AMQP_USER = "kereval"
-    AMQP_PASS = "kere1234"
-    AMQP_VHOST = "kereval_session"
+    AMQP_SERVER = "localhost"
+    AMQP_USER = "guest"
+    AMQP_PASS = "guest"
+    AMQP_VHOST = "/"
     AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format(AMQP_USER, AMQP_PASS, AMQP_SERVER, AMQP_VHOST)
 
 print(json.dumps(

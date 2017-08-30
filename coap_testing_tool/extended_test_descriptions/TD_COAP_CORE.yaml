@@ -6,7 +6,7 @@ configuration: COAP_CFG_01_v01
 objective: Perform GET transaction(CON mode)
 pre_conditions:
   - Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
-notes: none
+notes: null
 references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
 sequence:
   - step_id: 'TD_COAP_CORE_01_v01_step_01'
@@ -50,7 +50,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 1.2, 2.1, 2.2, 3.1"
 pre_conditions:
   - Server offers a /test resource that handles DELETE
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_02_v01_step_01
@@ -94,7 +94,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.3, 1.2, 2.1, 2.2, 3.1"
 pre_conditions:
   - Server offers already available resource /test or accepts creation of new resource on /test that handles PUT
-notes: none
+notes: null
 sequence:
 
 - step_id : TD_COAP_CORE_03_v01_step_01
@@ -149,7 +149,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 1.2, 2.1, 2.2, 3.1"
 pre_conditions:
   - Server accepts POST requet on /test
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_04_v01_step_01
@@ -201,7 +201,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.1, 5.2.3"
 pre_conditions:
   - Server offers a /test resource with resource content is not empty that handles GET
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_05_v01_step_01
@@ -245,7 +245,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.4, 5.2.3"
 pre_conditions:
   - Server offers a /test resource that handles DELETE
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_06_v01_step_01
@@ -290,7 +290,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.3, 5.2.3"
 pre_conditions:
   - Server offers a /test resource that handles PUT
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_07_v01_step_01
@@ -343,7 +343,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 5.2.3"
 pre_conditions:
   - Server accepts POST request on /test
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_08_v01_step_01
@@ -399,7 +399,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.1, 5.2.2"
 pre_conditions:
   - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_09_v01_step_01
@@ -460,7 +460,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.8.1, 5.10.1"
 pre_conditions:
   - Server offers a /test resource with content is not empty that handles GET
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_10_v01_step_01
@@ -504,7 +504,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
 pre_conditions:
   - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_11_v01_step_01
@@ -566,7 +566,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.10.1, 5.8.1"
 pre_conditions:
   - Server offers a resource /test with resource content is not empty that handles GEt with an arbitrary payload
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_12_v01_step_01
@@ -607,7 +607,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.4.5, 5.10.2, 6.5"
 pre_conditions:
   - Server offers a /seg1/seg2/seg3 resource with resource content is not empty
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_13_v01_step_01
@@ -653,7 +653,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.4.5, 5.10.2, 6.5"
 pre_conditions:
   - Server offers a /query resource with resource content is not empty
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_14_v01_step_01
@@ -699,7 +699,7 @@ references: "[COAP] 4.4.1, 5.2.1, 5.8.1"
 pre_conditions:
   - Gateway is introduced and configured to produce packet losses
   - Server offers a /test resource with resource content is not empty that can handle GET
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_15_v01_step_01
@@ -757,7 +757,7 @@ references: "[COAP] 4.4.1, 5.2.2, 5.8.1"
 pre_conditions:
   - Gateway is introduced and configured to produce packet losses
   - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_16_v01_step_01
@@ -834,7 +834,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
 pre_conditions:
   - Server offers a resource /separate which is not served immediately and which therefore is not acknowledged in a piggybacked way.
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_17_v01_step_01
@@ -884,7 +884,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 2.2, 5.2.2, 5.8.1"
 pre_conditions:
   - Server accepts creation of new resource on /test and the created resource is located at /location1/location2:location3 (resource does not exist yet)
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_18_v01_step_01
@@ -927,7 +927,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 5.8.2, 5.10.7, 5.9.1.1"
 pre_conditions:
   - Server accepts creation of new resource on uri /location-query, the location of the created resource contains two query parameters ?first=1&second=2
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_19_v01_step_01
@@ -956,7 +956,7 @@ sequence:
         - Content-format option if payload non-empty
         - Zero or more Location-path option
         - Empty or non-empty Payload
-      - 'and two options of type Location-Query, with the values (none of which contains a "?" or "&"):'
+      - 'and two options of type Location-Query, with the values (null of which contains a "?" or "&"):'
       - - first=1
         - second=2
 
@@ -977,7 +977,7 @@ pre_conditions:
   - Server should provide a resource /multi-format which exists in two formats
   - text/plain;charset=utf-8
   - application/xml
-notes: none
+notes: null
 sequence:
 
   - step_id : TD_COAP_CORE_20_v01_step_01
@@ -1053,7 +1053,7 @@ pre_conditions:
   - Server chould offer a /validate resource which may be made to vary over time
   - Client & server support Etag option
   - The client's cache must be purged
-notes: none
+notes: null
 sequence:
 #Verifying that client cache is empty
   - step_id : TD_COAP_CORE_21_v01_step_01
@@ -1166,7 +1166,7 @@ pre_conditions:
   - Server offer a /validate resource
   - Client & server support Etag and if-Match option
   - The client's cache must be purged
-notes: none
+notes: null
 sequence:
 #client gets the resource
   - step_id : TD_COAP_CORE_22_v01_step_01
@@ -1307,7 +1307,7 @@ references: "[COAP] 5.8.1, 5.10.7, 5.10.10, 12.1.12"
 pre_conditions:
   - Server offer a /create1 resource, which does not exist and can be created by the client
   - Client & server support If-Non-Match option
-notes: none
+notes: null
 sequence:
 #single creation
   - step_id : TD_COAP_CORE_23_v01_step_01
@@ -1385,7 +1385,7 @@ configuration: COAP_CFG_01_v01
 references: "[COAP] 4.3"
 pre_conditions:
   - (Should work with any CoAP server)
-notes: none
+notes: null
 sequence:
   - step_id : TD_COAP_CORE_31_v01_step_01
     type : stimuli
