@@ -1,6 +1,6 @@
-=======================
-Contributing to TIoPPy 
-=======================
+=================================
+Contributing to CoAP_testing_tool
+=================================
 
 Thank you for considering contributing to ttproto!
 
