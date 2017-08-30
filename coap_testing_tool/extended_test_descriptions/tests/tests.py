@@ -1,4 +1,4 @@
-from coap_testing_tool import TD_DIR, TD_COAP, TD_COAP_CFG
+from coap_testing_tool import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
 from coap_testing_tool.test_coordinator.coordinator import import_teds
 from collections import OrderedDict
 import json, unittest, os
@@ -19,6 +19,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
             assert tc.configuration_id
             assert tc.references
             assert tc.pre_conditions
+            assert tc.notes
             assert tc.sequence
 
             for step in tc.sequence:
@@ -26,6 +27,26 @@ class ImportYamlInteropTestCases(unittest.TestCase):
                 assert step.id
                 assert step.type
                 assert step.description
+
+    def test_yaml_testcase_syntax_6lowpan(self):
+        imported_tcs = import_teds(TD_6LOWPAN)
+        for tc in imported_tcs:
+            print(tc)
+            assert tc.id
+            assert tc.uri
+            assert tc.objective
+            assert tc.configuration_id
+            assert tc.references
+            assert tc.pre_conditions
+            assert tc.notes
+            assert tc.sequence
+
+            for step in tc.sequence:
+                print(step)
+                assert step.id
+                assert step.type
+                assert step.description
+
 
     def test_yaml_testcase_configuration_syntax_coap(self):
         imported_configs = import_teds(TD_COAP_CFG)

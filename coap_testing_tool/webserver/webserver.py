@@ -13,7 +13,8 @@ import urllib
 import html
 import yaml
 import mimetypes
-from coap_testing_tool import TD_COAP,TD_COAP_CFG
+import re
+from coap_testing_tool import TD_COAP,TD_COAP_CFG, TD_6LOWPAN
 from coap_testing_tool.test_coordinator.coordinator import TestCase
 logger = logging.getLogger(__name__)
 
@@ -27,11 +28,18 @@ tail ="""
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
 
+
 with open(TD_COAP, "r", encoding="utf-8") as stream:
-    yaml_docs = yaml.load_all(stream)
-    for yaml_doc in yaml_docs:
-        if type(yaml_doc) is TestCase:
-            td_list.append(yaml_doc)
+	yaml_docs = yaml.load_all(stream)
+	for yaml_doc in yaml_docs:
+		if type(yaml_doc) is TestCase:
+			td_list.append(yaml_doc)
+with open(TD_6LOWPAN, "r", encoding="utf-8") as stream:
+	yaml_docs = yaml.load_all(stream)
+	for yaml_doc in yaml_docs:
+		if type(yaml_doc) is TestCase:
+			td_list.append(yaml_doc)
+
 
 # TODO server config files too
 
@@ -76,10 +84,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
 
         # check if its a testcase in the ones already loaded
-        if self.path.startswith('/tests/'):
+        if self.path.startswith("/tests/"):
             logger.debug('Handling tescase request: %s' % self.path)
             return self.handle_testcase(self.path)
-
 
         # check if its a file in the testing tool dir
         path = self.translate_path(self.path)
@@ -112,15 +119,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
         Helper to produce testcase for paths like : (...)/tests/TD_COAP_(...)
         """
-        assert "/tests/" in path
+        assert ("/tests/") in path
         tc_name = path.split('/')[-1]
         tc = None
-
+        
         for tc_iter in td_list:
+
             if tc_iter.id.lower() == tc_name.lower():
                 tc = tc_iter
-                break
 
+                break
+                  
         if tc is None:
             self.send_error(404, "Testcase couldn't be found")
             return None
@@ -195,6 +204,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<h2>Objective: <em>%s</em></h2>\n" % tc.objective, 'utf-8'))
         self.wfile.write(bytes("<h2>Configuration: <em>%s</em></h2>\n" % tc.configuration_id, 'utf-8'))
         self.wfile.write(bytes("<h2>Preconditions: <em>%s</em></h2>\n" % tc.pre_conditions, 'utf-8'))
+        self.wfile.write(bytes("<h2>Notes: <em>%s</em></h2>\n" % tc.notes, 'utf-8'))
         self.wfile.write(bytes("<h2>References: <em>%s</em></h2>\n" % tc.references, 'utf-8'))
         self.wfile.write(bytes("<hr>\n", 'utf-8'))
 

@@ -4,9 +4,11 @@
 import os
 import json
 try: # py2 and py3 compat
-    from urllib.parse import urlparse
+	from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
+
+
 
 __version__ = (0, 0, 6)
 
@@ -37,6 +39,7 @@ LOGDIR = os.path.join( project_dir,'log')
 TD_DIR = os.path.join( project_dir,'coap_testing_tool','extended_test_descriptions')
 TD_COAP = os.path.join(TD_DIR,"TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR,"TD_COAP_CFG.yaml")
+TD_6LOWPAN = os.path.join(TD_DIR,"TD_6LOWPAN_FORMAT.yaml")
 
 # # # # # # ENV variables # # # # # # # # # #
 
@@ -60,6 +63,7 @@ try:
     print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
+
     print('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
     # load default values
     AMQP_SERVER = "localhost"
@@ -73,7 +77,8 @@ print(json.dumps(
                     'server': AMQP_SERVER,
                     'session': AMQP_VHOST,
                     'user': AMQP_USER,
-                    'pass': '#' * len(AMQP_PASS),
+                    #'pass': '#' * len(AMQP_PASS),
+					'pass': AMQP_PASS,
                     'exchange': AMQP_EXCHANGE
                 }
 ))
@@ -83,7 +88,7 @@ print(json.dumps(
 
 try:
     # read config information from manifest file (interoperability_manifest.json)
-    with open('coap_testing_tool/interoperability_manifest.json') as index_file:
+    with open('interoperability_manifest.json') as index_file:
         AGENT_NAMES = json.load(index_file)['agent_names']
 
 except:
