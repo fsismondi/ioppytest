@@ -2,7 +2,14 @@
 
 import os
 import json
-import six
+
+
+try:
+    # For Python 3.0 and later
+    from urllib.parse import urlparse
+except ImportError:
+    # Fall back to Python 2
+    from urlparse import urlparse
 
 __version__ = (0, 0, 6)
 
@@ -48,7 +55,7 @@ except KeyError as e:
 
 try:
     AMQP_URL = str(os.environ['AMQP_URL'])
-    p = six.moves.urllib_parse.urlparse(AMQP_URL)
+    p = urlparse(AMQP_URL)
     AMQP_USER = p.username
     AMQP_PASS = p.password
     AMQP_SERVER = p.hostname
