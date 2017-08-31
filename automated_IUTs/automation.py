@@ -59,11 +59,6 @@ class AutomatedIUT(threading.Thread):
 
         self.channel = self.connection.channel()
 
-        # in case exchange not not declared
-        self.connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                                   type='topic',
-                                                   durable=True,
-                                                   )
         threading.Thread.__init__(self)
         self.message_count = 0
         # queues & default exchange declaration

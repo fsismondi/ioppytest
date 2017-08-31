@@ -149,12 +149,6 @@ if __name__ == '__main__':
 
     channel = connection.channel()
 
-    # in case exchange not not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
-
     iut = AutomatedIUT(connection)
     iut.start()
     iut.join()

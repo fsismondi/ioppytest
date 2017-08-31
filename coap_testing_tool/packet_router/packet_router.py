@@ -246,11 +246,6 @@ if __name__ == '__main__':
     routing_table.update(iut_routing_table_serial)
     routing_table.update(iut_routing_table_tun)
 
-    # in case its not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
 
     # start amqp router thread
     r = PacketRouter(connection, routing_table)
