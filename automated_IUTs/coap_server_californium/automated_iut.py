@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 STIMULI_HANDLER_TOUT = 10
 
 signal.signal(signal.SIGINT, signal_int_handler)
-
+str_coap_server_port = str(COAP_SERVER_PORT)
 
 class CoapthonCoapServer(AutomatedIUT):
     component_id = 'automated_iut-coap_server'
@@ -19,15 +19,13 @@ class CoapthonCoapServer(AutomatedIUT):
     implemented_testcases_list = NotImplementedField
     stimuli_cmd_dict = NotImplementedField
 
-    IUT_CMD = [
-        'python',
-        'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py ',
-    ]
+    iut_cmd = [
+        'java - jar automated_IUTs/coap_server_californium/target/coap_plugtest_server-1.0-SNAPSHOT.jar::'+str_coap_server_port
 
+    ]
 
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
-
 
 
 if __name__ == '__main__':
