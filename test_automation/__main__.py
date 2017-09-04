@@ -6,6 +6,8 @@ import logging
 import time
 import xmlrpclib
 import yaml
+import socket
+import errno
 from jinja2 import Environment, FileSystemLoader
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION
 
@@ -105,6 +107,13 @@ if __name__ == "__main__":
     with open(PLUGTESTS_CONFIG, "r") as stream:
         plugtests_config_dict = yaml.load(stream)
 
+    socketpath = "/tmp/supervisor.sock"
+    server = xmlrpclib.ServerProxy('http://127.0.0.1',
+                                   transport=supervisor.xmlrpc.SupervisorTransport(
+                                       None, None,
+                                       serverurl='unix://' + socketpath)
+                                   )
+
     if execute_all:
         for plugtest_name, config in plugtests_config_dict.items():
             docker_client_name = config["docker_client_name"]
@@ -159,22 +168,64 @@ if __name__ == "__main__":
                                                     stderr_logfile_server,
                                                     docker_testing_tool_name)
 
-    socketpath = "/tmp/supervisor.sock"
-    server = xmlrpclib.ServerProxy('http://127.0.0.1',
-                                   transport=supervisor.xmlrpc.SupervisorTransport(
-                                       None, None,
-                                       serverurl='unix://' + socketpath)
-                                   )
+        try :
+            server.supervisor.stopAllProcesses()
+            logging.info(server.supervisor.getState())
+            logging.info(server.supervisor.getAllProcessInfo())
+            logging.info("Starting processes from config file: %s" % SUPERVISORD_CONFIG_FILE)
+            server.supervisor.startProcessGroup(plugtest_select, True)
+            time.sleep(2)
+            logging.info(server.supervisor.getAllProcessInfo())
 
-    logging.info(server.getAllProcessInfo())
-    logging.info("Starting processes from config file: %s" % SUPERVISORD_CONFIG_FILE)
-    server.startAllProcesses()
-    time.sleep(2)
-    logging.info(server.getAllProcessInfo())
+        except socket.error:
+            os.system('sudo -E supervisord -c supervisord.conf')
+            server.supervisor.stopAllProcesses()
+            logging.info(server.supervisor.getState())
+            logging.info(server.supervisor.getAllProcessInfo())
+            logging.info("Starting processes from config file: %s" % SUPERVISORD_CONFIG_FILE)
+            server.supervisor.startProcessGroup(plugtest_select, True)
+            time.sleep(2)
+            logging.info(server.supervisor.getAllProcessInfo())
+
+    if execute_all:
+        for plugtest_name, config in plugtests_config_dict.items():
+            try:
+                server.supervisor.stopAllProcesses()
+                logging.info(server.supervisor.getState())
+                logging.info(server.supervisor.getAllProcessInfo())
+                logging.info("Starting processes from config file: %s" % SUPERVISORD_CONFIG_FILE)
+                server.supervisor.startProcessGroup(plugtest_name, True)
+                time.sleep(2)
+                logging.info(server.supervisor.getAllProcessInfo())
+
+            except socket.error:
+                os.system('sudo -E supervisord -c supervisord.conf')
+                server.supervisor.stopAllProcesses()
+                logging.info(server.supervisor.getState())
+                logging.info(server.supervisor.getAllProcessInfo())
+                logging.info("Starting processes from config file: %s" % SUPERVISORD_CONFIG_FILE)
+                server.supervisor.startProcessGroup(plugtest_name, True)
+                time.sleep(2)
+                logging.info(server.supervisor.getAllProcessInfo())
+
+            body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
+            msg_type = body_dict['_type']
+
+            while msg_type != 'testingtool.terminate':
+                #MsgTestingToolTerminate
+                wait()
+
+
+
+
+
+
+
 
 
     # os.system('sudo supervisorctl -c supervisord.conf')
 
     # server.supervisor.startProcessGroup("plugtest1", True)
 
-    print(server.supervisor.getState())
+
+
