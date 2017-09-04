@@ -27,7 +27,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip()
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.38, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -38,18 +38,18 @@ MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, t
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.38, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
 >>> m.testcase_id
 'TD_COAP_CORE_03_v01'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.34", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.38", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.34", "_type": "testcoordination.testsuite.start"}'
+'{"_api_version": "0.1.38", "_type": "testcoordination.testsuite.start"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.34, _type = testcoordination.testcase.skip, t
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.34, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
+MsgErrorReply(_api_version = 0.1.38, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
 error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
@@ -81,7 +81,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.33'
+API_VERSION = '0.1.38'
 
 
 # TODO use metaclasses instead?
@@ -284,9 +284,9 @@ class MsgAgentTunStart(Message):
     }
 
 
-class MsgAgentTunStarted(Message):
+class MsgAgentSerialStarted(Message):
     """
-    Description: Message for indicating that agent tun has been started
+    Description: Message for indicating that agent serial interface has been started
 
     Type: Event
 
@@ -294,7 +294,27 @@ class MsgAgentTunStarted(Message):
 
     Description: TBD
     """
-    routing_key = "control.tun.from.agent_TT"
+    routing_key = "control.serial.from.tbd"
+
+    _msg_data_template = {
+        "_type": "serial.started",
+        "name": "tbd",
+        "port": "tbd",
+        "boudrate": "tbd",
+    }
+
+
+class MsgAgentTunStarted(Message):
+    """
+    Description: Message for indicating that agent tun has been started
+
+    Type: Event
+
+    Pub/Sub: Agent -> Testing Tool
+
+    Description: TBD
+    """
+    routing_key = "control.tun.from.tbd"
 
     _msg_data_template = {
         "_type": "tun.started",
@@ -308,17 +328,46 @@ class MsgAgentTunStarted(Message):
     }
 
 
-'''
-TODO add packet.sniffed.raw
-ROUTING_KEY: data.tun.fromAgent.coap_server_agent
- - - -
-PROPS: {"delivery_mode": 2, "content_type": "application/json", "headers": {}, "priority": 0, "content_encoding": 
-"utf-8"}
- - - -
-BODY {"timestamp": "1488586183.45", "_type": "packet.sniffed.raw", "interface_name": "tun0", "data": [96, 0, 0, 0, 0, 
-36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 
-0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
-'''
+class MsgPacketInjectRaw(Message):
+    """
+    Description: Message to be captured by the agent an push into the correct embedded interface (e.g. tun, serial, etc..)
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> Agent
+
+    Description: TBD
+    """
+    routing_key = None  # depends on the agent_id and the agent interface being used, re-write after creation
+
+    _msg_data_template = {
+        "_type": "packet.to_inject.raw",
+        "timestamp": "1488586183.45",
+        "interface_name": "tun0",
+        "data": [96, 0, 0, 0, 0, 36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
+
+
+class MsgPacketSniffedRaw(Message):
+    """
+    Description: Message captured by the agent in one of its embedded interfaces (e.g. tun, serial, etc..)
+
+    Type: Event
+
+    Pub/Sub: Agent -> Testing Tool
+
+    Description: TBD
+    """
+    routing_key = None  # depends on the agent_id and the agent interface being used, re-write after creation
+
+    _msg_data_template = {
+        "_type": "packet.sniffed.raw",
+        "timestamp": "1488586183.45",
+        "interface_name": "tun0",
+        "data": [96, 0, 0, 0, 0, 36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
 
 
 # # # # # # SESSION MESSAGES # # # # # #
@@ -377,6 +426,47 @@ class MsgTestingToolComponentReady(Message):
         "description": "Component READY to start test suite."
     }
 
+
+class MsgSessionChat(Message):
+    """
+    Requirements: GUI should implement
+
+    Type: Event
+
+    Pub/Sub: UI 1 (2) -> UI 2 (1)
+
+    Description: Generic descriptor of chat messages
+    """
+    routing_key = "log.warning.the_drummer"
+
+    _msg_data_template = {
+        "_type": "chat",
+        "user_name": "Ringo",
+        "iut_node": "tbd",
+        "description": "I've got blisters on my fingers!"
+    }
+
+
+class MsgSessionLog(Message):
+    """
+    Requirements: Testing Tool SHOULD implement
+
+    Type: Event
+
+    Pub/Sub: Any Testing tool's component -> user/devs interfaces
+
+    Description: Generic descriptor of log messages
+    """
+    routing_key = "log.warning.the_drummer"
+
+    _msg_data_template = {
+        "_type": "log",
+        "component": "the_drummer",
+        "description": "I've got blisters on my fingers!"
+    }
+
+
+# TODO delete "Interop" to generalize
 
 class MsgInteropSessionConfiguration(Message):
     """
@@ -471,6 +561,27 @@ class MsgTestingToolConfigured(Message):
         "description": "Event Testing tool CONFIGURED",
         "session_id": "TBD",
         "testing_tools": "f-interop/interoperability-coap",
+    }
+
+
+class MsgSessionCreated(Message):
+    """
+    Requirements: Session Orchestrator MUST publish message on common-services channel (on every session creation)
+
+    Type: Event
+
+    Pub/Sub: SO -> viz tools
+
+    Description: The goal is to notify viz tools about new sessions
+    """
+
+    routing_key = "control.session.created"
+
+    _msg_data_template = {
+        "_type": "session.created",
+        "description": "A new session has been created",
+        "session_id": "TBD",
+        "testing_tools": "TBD",
     }
 
 
@@ -580,6 +691,8 @@ class MsgTestCaseStart(Message):
     }
 
 
+# TODO MsgTestCaseNotes, see https://portal.etsi.org/cti/downloads/TestSpecifications/6LoWPAN_Plugtests_TestDescriptions_1.0.pdf
+
 class MsgTestCaseConfiguration(Message):
     """
     Requirements: Testing Tool MAY publish event (if needed for executing the test case)
@@ -601,25 +714,25 @@ class MsgTestCaseConfiguration(Message):
         "testcase_ref": "TBD",
         "description":
             ["CoAP servers running service at [bbbb::2]:5683",
-                "CoAP servers are requested to offer the following resources",
-                ["/test", "Default test resource", "Should not exceed 64bytes"],
-                ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
-                ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
-                ["/separate",
-                    "Ressource which cannot be served immediately and which cannot be "
-                    "acknowledged in a piggy-backed way",
-                    "Should not exceed 64bytes"],
-                ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
-                ["/large_update",
-                    "Large resource that can be updated using PUT method (>1024 bytes)",
-                    "shall not exceed 2048bytes"],
-                ["/large_create",
-                    "Large resource that can be  created using POST method (>1024 bytes)",
-                    "shall not exceed 2048bytes"],
-                ["/obs", "Observable resource which changes every 5 seconds",
-                    "shall not exceed 2048bytes"],
-                ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
-            ]
+             "CoAP servers are requested to offer the following resources",
+             ["/test", "Default test resource", "Should not exceed 64bytes"],
+             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+             ["/separate",
+              "Ressource which cannot be served immediately and which cannot be "
+              "acknowledged in a piggy-backed way",
+              "Should not exceed 64bytes"],
+             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+             ["/large_update",
+              "Large resource that can be updated using PUT method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/large_create",
+              "Large resource that can be  created using POST method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/obs", "Observable resource which changes every 5 seconds",
+              "shall not exceed 2048bytes"],
+             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+             ]
     }
 
 
@@ -1059,15 +1172,15 @@ class MsgTestCaseVerdict(Message):
             ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
             ["TD_COAP_CORE_01_v01_step_04", "pass",
-                "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
+             "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
             ["CHECK_1_post_mortem_analysis", "pass",
-                "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
+             "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
             ["CHECK_2_post_mortem_analysis", "pass",
-                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
-                "mid=0xa8cb, tok=b'', pl=Not(b''))"],
+             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
+             "mid=0xa8cb, tok=b'', pl=Not(b''))"],
             ["CHECK_3_post_mortem_analysis", "pass",
-                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
-                "CoAPOptionContentFormat()))"]],
+             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
+             "CoAPOptionContentFormat()))"]],
         "testcase_id": "TD_COAP_CORE_01_v01",
         "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
         "objective": "Perform GET transaction(CON mode)", "state": "finished"
@@ -1098,15 +1211,15 @@ class MsgTestSuiteReport(Message):
                         ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
                         ["TD_COAP_CORE_01_v01_step_04", "pass",
-                            "VERIFY step: User informed that the information was displayed "
-                            "correclty on his/her IUT",
-                            ""],
+                         "VERIFY step: User informed that the information was displayed "
+                         "correclty on his/her IUT",
+                         ""],
                         ["CHECK_1_post_mortem_analysis", "pass",
-                            "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
-                            "CoAP(type=0, code=1)"],
+                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
+                         "CoAP(type=0, code=1)"],
                         ["CHECK_2_post_mortem_analysis", "pass",
-                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                            "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                         "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
                         [
                             "CHECK_3_post_mortem_analysis",
                             "pass",
@@ -1123,14 +1236,14 @@ class MsgTestSuiteReport(Message):
                     ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
                     ["TD_COAP_CORE_02_v01_step_04", "pass",
-                        "VERIFY step: User informed that the information was displayed correclty on his/her "
-                        "IUT",
-                        ""], ["CHECK_1_post_mortem_analysis", "pass",
-                        "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
-                        "code=4)"],
+                     "VERIFY step: User informed that the information was displayed correclty on his/her "
+                     "IUT",
+                     ""], ["CHECK_1_post_mortem_analysis", "pass",
+                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
+                           "code=4)"],
                     ["CHECK_2_post_mortem_analysis", "pass",
-                        "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
-                        "code=66, mid=0xa8cd, tok=b'')"]]
+                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
+                     "code=66, mid=0xa8cd, tok=b'')"]]
             }
     }
 
@@ -1313,6 +1426,7 @@ class MsgInteropTestCaseAnalyze(Message):
 
     _msg_data_template = {
         "_type": "analysis.interop.testcase.analyze",
+        "protocol": "coap",
         "testcase_id": "TD_COAP_CORE_01",
         "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
         "file_enc": "pcap_base64",
@@ -1535,15 +1649,15 @@ class MsgPrivacyAnalyzeReply(MsgReply):
     """
 
     _privacy_empty_report = {"type": "Anomalies Report",
-        "protocols": ["coap"],
-        "conversation": [],
-        "status": "none",
-        "testing_tool": "Privacy Testing Tool",
-        "byte_exchanged": 0,
-        "timestamp": 1493798811.53124,
-        "is_final": True,
-        "packets": {},
-        "version": "0.0.1"}
+                             "protocols": ["coap"],
+                             "conversation": [],
+                             "status": "none",
+                             "testing_tool": "Privacy Testing Tool",
+                             "byte_exchanged": 0,
+                             "timestamp": 1493798811.53124,
+                             "is_final": True,
+                             "packets": {},
+                             "version": "0.0.1"}
 
     _msg_data_template = {
         "_type": "privacy.analyze.reply",
@@ -1729,7 +1843,7 @@ class MsgPerformanceStats(Message):
     routing_key = "control.performance"
 
     _msg_data_template = {
-        "_type": "performance.setvalues",
+        "_type": "performance.stats",
         "mod_name": "unknown",
         "timestamp": 0,
         "stats": {},
@@ -1737,9 +1851,14 @@ class MsgPerformanceStats(Message):
 
 
 message_types_dict = {
+    "log": MsgSessionLog,  # Any -> Any
+    "chat": MsgSessionChat,  # GUI_x -> GUI_y
     "agent.configured": MsgAgentConfigured,  # TestingTool -> GUI
     "tun.start": MsgAgentTunStart,  # TestingTool -> Agent
     "tun.started": MsgAgentTunStarted,  # Agent -> TestingTool
+    "serial.started": MsgAgentSerialStarted,  # Agent -> TestingTool
+    "packet.sniffed.raw": MsgPacketSniffedRaw,  # Agent -> TestingTool
+    "packet.to_inject.raw": MsgPacketInjectRaw,  # TestingTool -> Agent
     "session.interop.configuration": MsgInteropSessionConfiguration,  # Orchestrator -> TestingTool
     "testingtool.configured": MsgTestingToolConfigured,  # TestingTool -> Orchestrator, GUI
     "testingtool.component.ready": MsgTestingToolComponentReady,  # Testing Tool internal

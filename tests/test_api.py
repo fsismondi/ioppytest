@@ -323,11 +323,6 @@ def import_env_vars():
 
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
-    # in case its not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
     connection.close()
 
 

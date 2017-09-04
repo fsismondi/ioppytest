@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from itertools import cycle
 from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG
+from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
@@ -83,7 +83,7 @@ def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    # logger.debug("pasing test case: " + str(state))
+    logger.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 
@@ -128,7 +128,7 @@ def import_teds(yamlfile):
                 td_list.append(yaml_doc)
             else:
                 logger.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
-
+        logger.debug('td_list: %s' % td_list)
     return td_list
 
 
@@ -276,7 +276,7 @@ class Step():
     # TODO check step id uniqueness
     def __init__(self, step_id, type, description, node=None):
         self.id = step_id
-        assert type in ("stimuli", "check", "verify")
+        assert type in ("stimuli", "check", "verify", "feature")
         # TODO sth else might need to be defined for conformance testing TBD (inject? drop packet?)..
         self.type = type
         self.description = description
@@ -304,13 +304,13 @@ class Step():
 
     def reinit(self):
 
-        if self.type in ('check', 'verify'):
+        if self.type in ('check', 'verify', 'feature'):
             self.partial_verdict = Verdict()
 
             # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
             logger.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
                 self.id, self.type, ANALYSIS_MODE))
-            if self.type == 'check' and ANALYSIS_MODE == 'post_mortem':
+            if self.type == 'check' or self.type == 'feature' and ANALYSIS_MODE == 'post_mortem':
                 self.change_state('postponed')
             else:
                 self.change_state(None)
@@ -337,7 +337,7 @@ class Step():
 
     def set_result(self, result, result_info):
         # Only check and verify steps can have a result
-        assert self.type in ('check', 'verify')
+        assert self.type in ('check', 'verify', 'feature')
         assert result in Verdict.values()
         self.partial_verdict.update(result, result_info)
 
@@ -356,7 +356,7 @@ class TestCase:
     ready_for_analysis -> intermediate state between executing and analyzing for waiting for user call to analyse TC
     """
 
-    def __init__(self, testcase_id, uri, objective, configuration, references, pre_conditions, sequence):
+    def __init__(self, testcase_id, uri, objective, configuration, references, pre_conditions, notes, sequence):
         self.id = testcase_id
         self.state = None
         self.uri = uri
@@ -364,6 +364,7 @@ class TestCase:
         self.configuration_id = configuration
         self.references = references
         self.pre_conditions = pre_conditions
+        self.notes = notes
         self.sequence = []
         for s in sequence:
             # some sanity checks of imported steps
@@ -395,9 +396,9 @@ class TestCase:
             s.reinit()
 
     def __repr__(self):
-        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, test_sequence=%s)" % (
+        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, notes=%s, test_sequence=%s)" % (
             self.__class__.__name__, self.id,
-            self.uri, self.objective, self.configuration_id, self.sequence)
+            self.uri, self.objective, self.configuration_id, self.notes, self.sequence)
 
     def to_dict(self, verbose=None):
 
@@ -409,6 +410,7 @@ class TestCase:
         if verbose:
             d['objective'] = self.objective
             d['pre_conditions'] = self.pre_conditions
+            d['notes'] = self.notes
 
         return d
 
@@ -469,7 +471,7 @@ class TestCase:
         logger.debug("[VERDICT GENERATION] starting the verdict generation")
         for step in self.sequence:
             # for the verdict we use the info in the checks and verify steps
-            if step.type in ("check", "verify"):
+            if step.type in ("check", "verify", "feature"):
 
                 logger.debug("[VERDICT GENERATION] Processing step %s" % step.id)
 
@@ -511,9 +513,12 @@ class TestCase:
 class Coordinator:
     """
     see F-Interop API for the coordination events and services
-    http://doc.f-interop.eu/#services-provided
+    http://doc.f-interop.eu/#test-coordinator
 
     """
+
+    # TODO decouple amqp stuff from Coordinator
+    #
 
     def __init__(self, amqp_connection, ted_tc_file, ted_config_file):
 
@@ -596,7 +601,7 @@ class Coordinator:
             return True
 
     def run(self):
-        logger.info('start consuming..')
+        logger.info('start consuming events from the bus..')
         self.channel.start_consuming()
 
     # # # AUXILIARY AMQP MESSAGING FUNCTIONS # # #
@@ -660,7 +665,7 @@ class Coordinator:
                 description=description_message,
                 **msg_fields
             )
-        elif self.current_tc.current_step.type == "check":
+        elif self.current_tc.current_step.type == "check" or self.current_tc.current_step.type == "feature":
             raise NotImplementedError()
 
         publish_message(self.channel, event)
@@ -837,19 +842,28 @@ class Coordinator:
         logger.info('Event received: %s' % event._type)
 
         if isinstance(event, MsgTestCaseSkip):
+            testcase_id_skip = None
+
             # operation health check
             if self.current_tc is None and event.testcase_id is None:
                 error_msg = "No current testcase. Please provide a testcase_id to skip."
                 self.notify_coordination_error(description=error_msg, error_code=None)
                 return
 
+            # set testcase_id_skip
             try:
                 testcase_id_skip = event.testcase_id
                 if testcase_id_skip is None:  # if {'testcase_id' : null} was sent then I skip  the current one
                     testcase_id_skip = self.current_tc.id
-            except:  # if no testcase_id was sent then I skip  the current one
+            except AttributeError:  # if no testcase_id was sent then I skip  the current one
                 testcase_id_skip = self.current_tc.id
 
+
+            # check if testcase already in skip state
+            if self.get_testcase(testcase_id_skip).state == 'skipped':
+                return
+
+            # skip testcase_id_skip
             try:
                 if self.skip_testcase(testcase_id_skip):  # if there's more TCs
                     self.notify_testcase_is_ready()

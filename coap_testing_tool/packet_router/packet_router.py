@@ -50,7 +50,6 @@ def publish_message(channel, message):
 
 
 class PacketRouter(threading.Thread):
-
     DEFAULT_ROUTING = {
         'data.tun.fromAgent.%s' % AGENT_1_ID: ['data.tun.toAgent.%s' % AGENT_2_ID,
                                                'data.tun.toAgent.%s' % AGENT_TT_ID
@@ -90,8 +89,12 @@ class PacketRouter(threading.Thread):
             assert type(dst_rkey_list) is list
 
             src_queue = '%s@%s' % (src_rkey, COMPONENT_ID)
+            self.channel.queue_declare(queue=src_queue,
+                                       auto_delete=False,
+                                       arguments={'x-max-length': 100})
 
-            self.channel.queue_declare(queue=src_queue, auto_delete=False)
+            # start with clean queues
+            self.channel.queue_purge(src_queue)
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                     queue=src_queue,
                                     routing_key=src_rkey)
@@ -99,16 +102,14 @@ class PacketRouter(threading.Thread):
             # bind all src queues to on_request callback
             self.channel.basic_consume(self.on_request, queue=src_queue)
 
-            for dst_rkey in dst_rkey_list:
-                # start with clean queues
-                dst_queue = '%s@%s_dumps' % (dst_rkey, COMPONENT_ID)
-                self.channel.queue_delete(dst_queue)
-                self.channel.queue_declare(queue=dst_queue, auto_delete=False, arguments={'x-max-length': 10})
-                self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                        queue=src_queue,
-                                        routing_key=dst_rkey)
-
     def stop(self):
+
+        # delete routing all queues
+        for src_rkey in self.routing_table.keys():
+            # convention on queue naming
+            src_queue = '%s@%s' % (src_rkey, COMPONENT_ID)
+            self.channel.queue_delete(src_queue)
+
         self.channel.stop_consuming()
 
     def on_request(self, ch, method, props, body):
@@ -118,47 +119,9 @@ class PacketRouter(threading.Thread):
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
         body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        try:
-            logger.debug("Message sniffed: %s" % (body_dict['_type']))
-        except KeyError:
-            logger.warning("Incorrect formatted message received in event bus")
-
         self.message_count += 1
 
-        print('\n* * * * * * MESSAGE SNIFFED (%s) * * * * * * *' % self.message_count)
-        print("TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
-        print(" - - - ")
-        print("ROUTING_KEY: %s" % method.routing_key)
-        print(" - - - ")
-        print("HEADERS: %s" % props.headers)
-        print(" - - - ")
-        print("PROPS: %s" % json.dumps(
-            {
-                'content_type': props.content_type,
-                'content_encoding': props.content_encoding,
-                'headers': props.headers,
-                'delivery_mode': props.delivery_mode,
-                'priority': props.priority,
-                'correlation_id': props.correlation_id,
-                'reply_to': props.reply_to,
-                'expiration': props.expiration,
-                'message_id': props.message_id,
-                'timestamp': props.timestamp,
-                'user_id': props.user_id,
-                'app_id': props.app_id,
-                'cluster_id': props.cluster_id,
-            }
-        )
-              )
-        print(" - - - ")
-        print('BODY %s' % json.dumps(body_dict))
-        print(" - - - ")
-        # print("ERRORS: %s" % )
-        print('* * * * * * * * * * * * * * * * * * * * * \n')
-
         # let's route the message to the right agent
-
         try:
             data = body_dict['data']
         except:
@@ -169,18 +132,22 @@ class PacketRouter(threading.Thread):
         if src_rkey in self.routing_table.keys():
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
-                # resend to dst_rkey
+
+                m = MsgPacketInjectRaw(
+                    data=data
+                )
+                # forward to dst_rkey
                 self.channel.basic_publish(
-                    body=json.dumps({'_type': 'packet.to_inject.raw', 'data': data}),
+                    body=m.to_json(),
                     routing_key=dst_rkey,
                     exchange=AMQP_EXCHANGE,
                     properties=pika.BasicProperties(
                         content_type='application/json',
                     )
                 )
-
                 logger.info(
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
+
 
         elif 'toAgent' in src_rkey:
             pass  # echo of router message
@@ -202,7 +169,7 @@ if __name__ == '__main__':
 
 
     def signal_int_handler(channel):
-        # FINISHING... let's send a goodby message
+        # FINISHING... let's send a goodbye message
         msg = {
             'message': '{component} is out! Bye bye..'.format(component=COMPONENT_ID),
             "_type": '{component}.shutdown'.format(component=COMPONENT_ID)
@@ -245,12 +212,6 @@ if __name__ == '__main__':
     routing_table = dict()
     routing_table.update(iut_routing_table_serial)
     routing_table.update(iut_routing_table_tun)
-
-    # in case its not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
 
     # start amqp router thread
     r = PacketRouter(connection, routing_table)

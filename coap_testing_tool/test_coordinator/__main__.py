@@ -62,13 +62,6 @@ if __name__ == '__main__':
 
     channel = connection.channel()
 
-    # in case exchange not declared
-    channel.exchange_declare(
-            exchange=AMQP_EXCHANGE,
-            type='topic',
-            durable=True,
-    )
-
     bootstrap_q = channel.queue_declare(queue='bootstrapping', auto_delete=True)
 
     channel.queue_bind(
