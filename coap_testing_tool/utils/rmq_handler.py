@@ -33,7 +33,7 @@ import time
 import os
 from inspect import istraceback
 
-#Support order in python 2.7 and 3
+# Support order in python 2.7 and 3
 try:
     from collections import OrderedDict
 except ImportError:
@@ -49,11 +49,12 @@ try:
     AMQP_URL = str(os.environ['AMQP_URL'])
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
     print('Env vars for AMQP connection succesfully imported')
-    print('URL: %s'%AMQP_URL)
+    print('URL: %s' % AMQP_URL)
     print('AMQP_EXCHANGE: %s' % AMQP_EXCHANGE)
 
 except KeyError as e:
-    print(' Cannot retrieve environment variables for AMQP connection, using default url: %s, exchange: %s'%(AMQP_URL,AMQP_EXCHANGE))
+    print(' Cannot retrieve environment variables for AMQP connection, using default url: %s, exchange: %s' % (
+    AMQP_URL, AMQP_EXCHANGE))
 
 # skip natural LogRecord attributes
 # http://docs.python.org/library/logging.html#logrecord-attributes
@@ -74,7 +75,7 @@ def merge_record_extra(record, target, reserved=RESERVED_ATTR_HASH):
     :param reserved: dict or list with reserved keys to skip
     """
     for key, value in record.__dict__.items():
-        #this allows to have numeric keys
+        # this allows to have numeric keys
         if (key not in reserved
             and not (hasattr(key, "startswith")
                      and key.startswith('_'))):
@@ -100,7 +101,7 @@ class JsonFormatter(logging.Formatter):
         self.json_default = kwargs.pop("json_default", None)
         self.json_encoder = kwargs.pop("json_encoder", None)
         self.prefix = kwargs.pop("prefix", "")
-        #super(JsonFormatter, self).__init__(*args, **kwargs)
+        # super(JsonFormatter, self).__init__(*args, **kwargs)
         logging.Formatter.__init__(self, *args, **kwargs)
         if not self.json_encoder and not self.json_default:
             def _default_json_handler(obj):
@@ -113,6 +114,7 @@ class JsonFormatter(logging.Formatter):
                 elif isinstance(obj, Exception):
                     return "Exception: %s" % str(obj)
                 return str(obj)
+
             self.json_default = _default_json_handler
         self._required_fields = self.parse()
         self._skip_fields = dict(zip(self._required_fields,
@@ -184,23 +186,28 @@ class RabbitMQHandler(logging.Handler):
      Example setup::
         handler = RabbitMQHandler('amqp://guest:guest@localhost')
     """
+
     def __init__(self, url, name, exchange="amq.topic"):
         logging.Handler.__init__(self)
-        self.connection = pika.BlockingConnection(pika.URLParameters(url))
+        self.url = url
+        self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
         self.channel = self.connection.channel()
         self.exchange = exchange
         self.name = name
 
     def emit(self, record):
         routing_key = ".".join(["log", record.levelname.lower(), self.name])
-        self.channel.basic_publish(
+        try:
+            self.channel.basic_publish(
                 exchange=self.exchange,
                 routing_key=routing_key,
                 body=self.format(record),
-                properties = pika.BasicProperties(
-                        content_type='application/json',
+                properties=pika.BasicProperties(
+                    content_type='application/json',
                 )
-        )
+            )
+        except pika.exceptions.ConnectionClosed:
+            self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
 
     def close(self):
         self.channel.close()
