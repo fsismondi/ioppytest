@@ -91,6 +91,8 @@ class PacketRouter(threading.Thread):
 
             src_queue = '%s@%s' % (src_rkey, COMPONENT_ID)
 
+            # start with clean queues
+            self.channel.queue_delete(src_queue)
             self.channel.queue_declare(queue=src_queue, auto_delete=False)
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                     queue=src_queue,
@@ -109,6 +111,18 @@ class PacketRouter(threading.Thread):
                                         routing_key=dst_rkey)
 
     def stop(self):
+
+        # delete routing all queues
+        for src_rkey, dst_rkey_list in self.routing_table.items():
+            # convention on queue naming
+            src_queue = '%s@%s' % (src_rkey, COMPONENT_ID)
+            self.channel.queue_delete(src_queue)
+
+            for dst_rkey in dst_rkey_list:
+                dst_queue = '%s@%s_dumps' % (dst_rkey, COMPONENT_ID)
+                self.channel.queue_delete(dst_queue)
+
+
         self.channel.stop_consuming()
 
     def on_request(self, ch, method, props, body):
