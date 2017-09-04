@@ -3,9 +3,8 @@
 import os
 import json
 
-
-try:
-    # For Python 3.0 and later
+# py2 and py3 compat
+try:  # try py3 import
     from urllib.parse import urlparse
 except ImportError:
     # Fall back to Python 2
@@ -14,6 +13,7 @@ except ImportError:
 __version__ = (0, 0, 6)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
+
 if os.sep + 'coap_testing_tool' in project_dir:
     project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
 
@@ -31,7 +31,7 @@ def get_from_environment(variable, default):
 
 
 # # # # # # hard variables # # # # # # # # # #
-
+PROJECT_DIR = project_dir
 TMPDIR = os.path.join(project_dir, 'tmp')
 DATADIR = os.path.join(project_dir, 'data')
 RESULTS_DIR = os.path.join(DATADIR, 'results')
@@ -41,6 +41,7 @@ TD_DIR = os.path.join(project_dir, 'coap_testing_tool', 'extended_test_descripti
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
+AUTO_DISSECTION_FILE = os.path.join(project_dir, 'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
 
@@ -112,5 +113,4 @@ __all__ = [
     TD_6LOWPAN,
     TD_COAP,
     TD_COAP_CFG
-
 ]
