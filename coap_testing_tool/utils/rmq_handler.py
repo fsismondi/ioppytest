@@ -208,6 +208,7 @@ class RabbitMQHandler(logging.Handler):
             )
         except pika.exceptions.ConnectionClosed:
             self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
+            self.channel = self.connection.channel()
 
     def close(self):
         self.channel.close()
