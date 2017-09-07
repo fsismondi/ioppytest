@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # print(server.supervisor.getProcessInfo("tat"))
     # print(server.supervisor.getAllProcessInfo())
     # print(server.supervisor.restart())
-    # server.supervisor.startProcess("automated_iut-coap_server-coapthon-v0.1", True)
+    # server.supervisor.startProcess("automated_iut-coap_server-coapthon-v0.8", True)
     # server.supervisor.stopAllProcesses()
 
     # server.supervisor.startProcessGroup("client_coapthon_vs_server_coapthon", True)
