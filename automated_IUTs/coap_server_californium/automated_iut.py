@@ -18,9 +18,11 @@ signal.signal(signal.SIGINT, signal_int_handler)
 class CaliforniumCoapServer(AutomatedIUT):
     component_id = 'automated_iut_californium'
     node = 'coap_server'
-    implemented_testcases_list = NotImplementedField
-    stimuli_cmd_dict = NotImplementedField
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
+
+    implemented_testcases_list = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
+
+    stimuli_cmd_dict = NotImplementedField
 
     iut_cmd = [
         'java',
