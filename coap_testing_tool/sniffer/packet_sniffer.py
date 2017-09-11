@@ -39,6 +39,7 @@ logger.setLevel(logging.DEBUG)
 TIME_WAIT_FOR_TCPDUMP_ON = 5
 TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 
+
 def on_request(ch, method, props, body):
     """
 
@@ -87,16 +88,16 @@ def on_request(ch, method, props, body):
 
             except FileNotFoundError as fne:
                 publish_message(
-                        ch,
-                        MsgErrorReply(request, error_message=str(fne))
+                    ch,
+                    MsgErrorReply(request, error_message=str(fne))
                 )
                 logger.error(str(fne))
                 return
 
             except Exception as e:
                 publish_message(
-                        ch,
-                        MsgErrorReply(request, error_message=str(e))
+                    ch,
+                    MsgErrorReply(request, error_message=str(e))
                 )
                 logger.error(str(e))
                 return
@@ -109,10 +110,10 @@ def on_request(ch, method, props, body):
                     enc = base64.b64encode(file.read())
 
                 response = MsgSniffingGetCaptureLastReply(
-                        request,
-                        ok=True,
-                        filename='%s.pcap' % capture_id,
-                        value=enc.decode("utf-8")
+                    request,
+                    ok=True,
+                    filename='%s.pcap' % capture_id,
+                    value=enc.decode("utf-8")
                 )
             except Exception as e:
                 err_mess = str(e)
@@ -150,11 +151,11 @@ def on_request(ch, method, props, body):
             logger.warning('Coulnt retrieve file %s from dir' % file)
             logger.warning(str(fne))
             publish_message(
-                    ch,
-                    MsgErrorReply(
-                            request,
-                            error_message=str(fne)
-                    )
+                ch,
+                MsgErrorReply(
+                    request,
+                    error_message=str(fne)
+                )
             )
             return
 
@@ -165,10 +166,10 @@ def on_request(ch, method, props, body):
             enc = base64.b64encode(file.read())
 
         response = MsgSniffingGetCaptureReply(
-                request,
-                ok=True,
-                filename='%s.pcap' % capture_id,
-                value=enc.decode("utf-8")
+            request,
+            ok=True,
+            filename='%s.pcap' % capture_id,
+            value=enc.decode("utf-8")
 
         )
 
@@ -240,11 +241,12 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     """
     logger.info('Launching packet capture..')
 
+    sys_type = platform.system()
+
     if filter_proto is None:
-        filter_proto = 'udp' # for CoAP over TCP not yet supported
+        filter_proto = 'udp'  # for CoAP over TCP not yet supported
 
     if (filter_if is None) or (filter_if == ''):
-        sys_type = platform.system()
         if sys_type == 'Darwin':
             filter_if = 'lo0'
         else:
@@ -260,7 +262,11 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     except:
         pass
 
-    cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
+    if sys_type == 'Darwin':  # macos port of tcpdump bugs when using -U  option and filters :/
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -w ' + filename
+    else:
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
+
     logger.info('spawning process with : %s' % str(cmd))
 
     proc_sniff = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -312,7 +318,7 @@ def main():
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
     msg = MsgTestingToolComponentReady(
-            component='sniffing'
+        component='sniffing'
     )
     publish_message(channel, msg)
 
