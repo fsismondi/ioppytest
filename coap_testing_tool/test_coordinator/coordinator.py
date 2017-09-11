@@ -476,7 +476,7 @@ class TestCase:
                 logger.debug("[VERDICT GENERATION] Processing step %s" % step.id)
 
                 if step.state == "postponed":
-                    tc_report.append((step.id, None, "%s postponed" % step.type.upper(), ""))
+                    tc_report.append((step.id, None, "%s step: postponed" % step.type.upper(), ""))
                 elif step.state == "finished":
                     tc_report.append(
                         (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
@@ -1258,6 +1258,10 @@ class Coordinator:
             raise Exception(error_msg)
 
         logger.debug("Skipping testcase: %s" % testcase_t.id)
+
+        if testcase_t.state and testcase_t.state == 'executing':
+            self.call_service_sniffer_stop()
+
         testcase_t.change_state("skipped")
 
         # if skipped tc is current test case then next tc
@@ -1405,9 +1409,9 @@ class Coordinator:
                         partial_verd = []
                         step_count = 0
                         for item in tat_response.partial_verdicts:
-                            # cannot really know which partial verdicts
+                            # let's partial verdict id
                             step_count += 1
-                            p = ("CHECK_%d_post_mortem_analysis" % step_count, item[0], item[1])
+                            p = ("post_mortem_analysis_check_%d" % step_count, item[0], item[1])
                             partial_verd.append(p)
                             logger.debug("Processing partical verdict received from TAT: %s" % str(p))
 
