@@ -32,5 +32,5 @@ EXPOSE 5671 5672
 
 # launch processes
 
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "coap_testing_tool/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "coap_testing_tool/docker.coap_testing_tool.conf"]
 
