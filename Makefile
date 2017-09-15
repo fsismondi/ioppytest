@@ -5,7 +5,8 @@ docker-build-all:
 	@echo $(info_message)
 
 	@echo "Starting to build all docker images.. "
-	# let's build the automated/reference IUT images used by F-Interop platformdocker build -t automated_iut-coap_server-californium-v0.8 -f automated_IUTs/coap_server_californium/Dockerfile .
+	# let's build the automated/reference IUT images used by F-Interop platform
+	docker build -t automated_iut-coap_server-californium-v0.8 -f automated_IUTs/coap_server_californium/Dockerfile .
 	docker build -t automated_iut-coap_client-californium-v0.8 -f automated_IUTs/coap_client_californium/Dockerfile .
 	docker build -t automated_iut-coap_server-coapthon-v0.8 -f automated_IUTs/coap_server_coapthon/Dockerfile .
 	docker build -t automated_iut-coap_client-coapthon-v0.8 -f automated_IUTs/coap_client_coapthon/Dockerfile .
