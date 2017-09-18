@@ -552,6 +552,7 @@ class Coordinator:
         # AMQP queues and callbacks config
         self.connection = amqp_connection
         self.channel = self.connection.channel()
+        self.channel.basic_qos(prefetch_count=1)
 
         self.services_q_name = 'services@%s' % COMPONENT_ID
         self.events_q_name = 'events@%s' % COMPONENT_ID

@@ -272,6 +272,7 @@ class ApiTests(unittest.TestCase):
                                 routing_key=MsgTestingToolTerminate.routing_key)
 
         # for checking that for every request we get a reply
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
 
         # prepare the message generator
