@@ -1266,7 +1266,7 @@ class MsgSniffingStart(Message):
         "_type": "sniffing.start",
         "capture_id": "TD_COAP_CORE_01",
         "filter_if": "tun0",
-        "filter_proto": "udp port 5683"
+        "filter_proto": "udp"
     }
 
 

@@ -14,6 +14,9 @@ ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
 WORKDIR /coap_testing_tool
 
+# HACK around https://github.com/dotcloud/docker/issues/5490
+RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
+
 #py2 requirements
 RUN pip install -r coap_testing_tool/agent/requirements.txt
 
