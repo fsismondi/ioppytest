@@ -54,6 +54,8 @@
       "field_name": "Testing tool version",
       "type": "selection",
       "value": [
+        "0.0.8",
+        "0.0.7",
         "0.0.6",
         "0.0.5",
         "0.0.4",
@@ -69,7 +71,28 @@
       "value": [
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01"
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_04_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_05_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_06_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_07_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_08_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_09_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_10_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_11_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_12_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_13_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_14_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_15_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_16_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_17_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_18_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_19_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_20_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_21_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_22_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_23_v01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_31_v01"
       ],
       "mandatory": false
     }

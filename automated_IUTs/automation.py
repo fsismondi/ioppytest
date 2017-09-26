@@ -6,14 +6,16 @@ Example of python code for implementing an automated IUT.
 AutomatedIUT class provides an interface for automated IUTs implementations.
 """
 
-import pika
-import threading
-import logging
+import os
 import sys
+import pika
 import signal
+import logging
+import threading
+
 from coap_testing_tool.utils.event_bus_messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -177,10 +179,10 @@ class UserMock(threading.Thread):
     """
     component_id = 'user_mock'
 
-    DEFAULT_TC_LIST = [
-        'TD_COAP_CORE_01_v01',
-        'TD_COAP_CORE_02_v01',
-    ]
+
+    # e.g. for TD COAP CORE from 1 to 31
+    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
+
 
     def __init__(self, connection, iut_testcases=None):
         threading.Thread.__init__(self)
@@ -239,19 +241,35 @@ class UserMock(threading.Thread):
             m = MsgTestSuiteStart()
             publish_message(self.channel, m)
             logging.info('Event received %s' % event._type)
+            logging.info('Event description %s' % event.description)
             logging.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseReady):
+            logging.info('Event received %s' % event._type)
+            logging.info('Event description %s' % event.description)
+
             if event.testcase_id in self.implemented_testcases_list:
                 m = MsgTestCaseStart()
                 publish_message(self.channel, m)
-                logging.info('Event received %s' % event._type)
+
                 logging.info('Event pushed %s' % m)
             else:
                 m = MsgTestCaseSkip(testcase_id=event.testcase_id)
                 publish_message(self.channel, m)
-                logging.info('Event received %s' % event._type)
                 logging.info('Event pushed %s' % m)
+
+        elif isinstance(event, MsgTestCaseVerdict):
+            logging.info('Event received %s' % event._type)
+            logging.info('Event description %s' % event.description)
+            logging.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
+
+            #  Save verdict
+            json_file = os.path.join(
+                RESULTS_DIR,
+                event.testcase_id + '_verdict.json'
+            )
+            with open(json_file, 'w') as f:
+                f.write(event.to_json())
 
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
@@ -259,11 +277,31 @@ class UserMock(threading.Thread):
             m = MsgTestingToolTerminate()
             publish_message(self.channel, m)
             time.sleep(2)
-            self._exit
+
+        elif isinstance(event, MsgTestingToolTerminate):
+            logging.info('Event received %s' % event._type)
+            logging.info('Event description %s' % event.description)
+            logging.info('Terminating execution.. ')
+            time.sleep(2)
+            self._exit()
+
+        elif isinstance(event, MsgStepStimuliExecute):
+            logging.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logging.info('Event description %s' % event.description)
+
+        elif isinstance(event, MsgStepVerifyExecute):
+            logging.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logging.info('Event description %s' % event.description)
+
+        elif isinstance(event, MsgTestingToolComponentReady) or isinstance(event, MsgTestingToolComponentShutdown):
+            logging.info('Message received %s . Component: %s ' % (event._type, event.component))
 
         else:
 
-            logging.info('Event received and ignored: %s' % event._type)
+            if hasattr(event, 'description'):
+                logging.info('Event received and ignored < %s >  %s' % (event._type, event.description))
+            else:
+                logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
         m = MsgTestingToolComponentShutdown(component=COMPONENT_ID)

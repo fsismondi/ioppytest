@@ -74,6 +74,7 @@ class PacketRouter(threading.Thread):
         self.message_count = 0
         self.connection = conn
         self.channel = self.connection.channel()
+        self.channel.basic_qos(prefetch_count=1)
         self.queues_init()
 
         msg = MsgTestingToolComponentReady(
@@ -188,7 +189,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
 
-    signal.signal(signal.SIGINT, signal_int_handler)
+    #signal.signal(signal.SIGINT, signal_int_handler)
 
     # routing tables for between agents' TUNs interfaces and also between agents' serial interfaces
     iut_routing_table_serial = {
@@ -215,4 +216,10 @@ if __name__ == '__main__':
 
     # start amqp router thread
     r = PacketRouter(connection, routing_table)
-    r.start()
+    try:
+        r.start()
+        r.join()
+    except (KeyboardInterrupt, SystemExit):
+        r.stop()
+
+

@@ -25,6 +25,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 logger = logging.getLogger(__name__)
 
 td_list = []
+FILENAME_HTML_REPORT = 'testsuite_results.html'
 
 tail = """
 "mantainer": "Federico Sismondi",
@@ -35,17 +36,32 @@ if you spotted any errors or you want to comment on sth don't hesitate to contac
 
 
 with open(TD_COAP, "r", encoding="utf-8") as stream:
-	yaml_docs = yaml.load_all(stream)
-	for yaml_doc in yaml_docs:
-		if type(yaml_doc) is TestCase:
-			td_list.append(yaml_doc)
+    yaml_docs = yaml.load_all(stream)
+    for yaml_doc in yaml_docs:
+        if type(yaml_doc) is TestCase:
+            td_list.append(yaml_doc)
+
 with open(TD_6LOWPAN, "r", encoding="utf-8") as stream:
-	yaml_docs = yaml.load_all(stream)
-	for yaml_doc in yaml_docs:
-		if type(yaml_doc) is TestCase:
-			td_list.append(yaml_doc)
+    yaml_docs = yaml.load_all(stream)
+    for yaml_doc in yaml_docs:
+        if type(yaml_doc) is TestCase:
+            td_list.append(yaml_doc)
 
 
+def create_html_test_results():
+    resp = None
+    with open(FILENAME_HTML_REPORT, 'w+') as file:
+        items = []
+        for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
+            try:
+                with open(filename, 'r') as jsonfile:
+                    an_item = json.loads(jsonfile.read())
+            except:
+                an_item = {'description': 'error importing'}
+            items.append(an_item)
+        resp = template_test_vedict.render(items=items)
+        file.write(resp)
+    return resp
 
 # TODO server config files too
 
@@ -153,23 +169,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_results(self, path):
         assert "/results" in path
         # tc_name = path.split('/')[-1]
-        items = []
-        resp = None
+
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        with open('testsuite_results.html', 'w+') as file:
-            for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
-                try:
-                    with open(filename, 'r') as jsonfile:
-                        an_item = json.loads(jsonfile.read())
-                except:
-                    an_item = {'description': 'error importing'}
-                items.append(an_item)
-            resp = template_test_vedict.render(items=items)
-            file.write(resp)
-
+        resp = create_html_test_results()
         self.wfile.write(bytes(resp, 'utf-8'))
 
     def handle_packets(self, path):
@@ -203,14 +208,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         assert ("/tests/") in path
         tc_name = path.split('/')[-1]
         tc = None
-        
+
         for tc_iter in td_list:
 
             if tc_iter.id.lower() == tc_name.lower():
                 tc = tc_iter
 
                 break
-                  
+
         if tc is None:
             self.send_error(404, "Testcase couldn't be found")
             return None
