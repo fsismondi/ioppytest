@@ -72,6 +72,8 @@ def amqp_request(channel, request_message: Message, component_id: str):
         response = MsgReply(request_message, **body_dict)
 
     else:
+        # clean up
+        channel.queue_delete(reply_queue_name)
         raise TimeoutError(
                 "Response timeout! rkey: %s , request type: %s" % (
                     request_message.routing_key,

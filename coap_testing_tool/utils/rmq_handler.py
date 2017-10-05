@@ -39,12 +39,13 @@ try:
 except ImportError:
     pass
 
-VERSION = '0.0.3'
+VERSION = '0.0.6'
 
 # defaults vars
 AMQP_URL = 'amqp://guest:guest@localhost'
 AMQP_EXCHANGE = 'amq.topic'
 
+# import AMQP variables from environment
 try:
     AMQP_URL = str(os.environ['AMQP_URL'])
     AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -171,6 +172,7 @@ class JsonFormatter(logging.Formatter):
         try:
             log_record = OrderedDict()
             log_record['_type'] = 'log'
+            log_record['component'] = record.module
         except NameError:
             log_record = {}
 
@@ -194,24 +196,60 @@ class RabbitMQHandler(logging.Handler):
         self.channel = self.connection.channel()
         self.exchange = exchange
         self.name = name
+        self.createLock()
 
     def emit(self, record):
+
+        self.acquire()
+
         routing_key = ".".join(["log", record.levelname.lower(), self.name])
+
         try:
             self.channel.basic_publish(
                 exchange=self.exchange,
                 routing_key=routing_key,
                 body=self.format(record),
                 properties=pika.BasicProperties(
-                    content_type='application/json',
+                    content_type='application/json'
                 )
             )
+
         except pika.exceptions.ConnectionClosed:
+
+            print("Log hanlder connection closed. Reconnecting..")
+
             self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
             self.channel = self.connection.channel()
 
+            # send retry
+            self.channel.basic_publish(
+                exchange=self.exchange,
+                routing_key=routing_key,
+                body=self.format(record),
+                properties=pika.BasicProperties(
+                    content_type='application/json'
+                )
+            )
+
+        finally:
+            self.release()
+
+
     def close(self):
-        self.channel.close()
+
+        self.acquire()
+
+        try:
+            if self.channel:
+                self.channel.close()
+
+            if self.connection:
+                self.connection.close()
+
+        finally:
+            self.release()
+
+        self.connection, self.channel = None, None
 
 
 if __name__ == "__main__":
