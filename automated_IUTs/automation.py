@@ -54,9 +54,11 @@ class AutomatedIUT(threading.Thread):
     component_id = NotImplementedField
     node = NotImplementedField
 
-    def __init__(self):
-
+    def __init__(self, node_id):
+        AutomatedIUT.node = node_id
+        AutomatedIUT.component_id = 'automated_iut-%s' % node_id
         # lets create connection
+        print("---------------------")
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
         self.channel = self.connection.channel()
@@ -66,6 +68,7 @@ class AutomatedIUT(threading.Thread):
         # queues & default exchange declaration
 
         services_queue_name = 'services_queue@%s' % self.component_id
+        print("component id %s" % self.component_id)
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
@@ -116,12 +119,14 @@ class AutomatedIUT(threading.Thread):
                 logging.info('IUT %s ready to execute testcase' % self.component_id)
 
         elif isinstance(event, MsgStepStimuliExecute):
-
+            logging.info('event.node %s,%s' % (event.node, self.node))
             if event.node == self.node and event.step_id in self.stimuli_cmd_dict:
+                # TODO Fix me: No  need to go fetch CMD to child object, just call as _execute_simuli(step_id,target_address)
                 cmd = self.stimuli_cmd_dict[event.step_id]
                 step = event.step_id
+                addr = event.target_address
                 if cmd:
-                    self._execute_stimuli(step, cmd)
+                    self._execute_stimuli(step, cmd, addr) #this should be a blocking call until stimuli has been executed
                 publish_message(self.channel, MsgStepStimuliExecuted(node=self.node))
             else:
                 logging.info('Event received and ignored: %s (node: %s - step: %s)' %
@@ -150,12 +155,17 @@ class AutomatedIUT(threading.Thread):
         elif isinstance(event, MsgTestSuiteReport):
             logging.info('Test suite finished, final report: %s' % event.to_json())
 
-
         elif isinstance(event, MsgTestingToolTerminate):
             logging.info('Test terminate signal received. Quitting..')
             time.sleep(2)
             self._exit
-
+        elif isinstance(event, MsgConfigurationExecute):
+            if event.node == self.node:
+                logging.info('Configure test case %s', event.testcase_id)
+                ipaddr=self._execute_configuration(event.testcase_id, event.node) #this should be a blocking call until configuration has been done
+                if ipaddr != '':
+                    m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
+                    publish_message(self.channel, m)
         else:
             logging.info('Event received and ignored: %s' % event._type)
 
@@ -169,7 +179,10 @@ class AutomatedIUT(threading.Thread):
     def _execute_verify(self, verify_step_id, ):
         raise NotImplementedError("Subclasses should implement this!")
 
-    def _execute_stimuli(self, stimuli_step_id, cmd):
+    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+        raise NotImplementedError("Subclasses should implement this!")
+
+    def _execute_configuration(self, testcase_id, node):
         raise NotImplementedError("Subclasses should implement this!")
 
 
@@ -179,10 +192,8 @@ class UserMock(threading.Thread):
     """
     component_id = 'user_mock'
 
-
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
-
 
     def __init__(self, connection, iut_testcases=None):
         threading.Thread.__init__(self)
