@@ -33,7 +33,7 @@ class CaliforniumCoapServer(AutomatedIUT):
     ]
 
     def __init__(self):
-        super().__init__()
+        super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
         th = threading.Thread(target=self._launch_automated_iut)
@@ -43,7 +43,7 @@ class CaliforniumCoapServer(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd):
+    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
         pass
 
     def _launch_automated_iut(self):

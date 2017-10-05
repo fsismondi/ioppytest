@@ -78,7 +78,7 @@ class CaliforniumCoapClient(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd):
+    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
         try:
             logging.info('spawning process with : %s' % cmd)
             cmd = " ".join(cmd)
