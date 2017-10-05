@@ -33,13 +33,19 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             sudo apt-get -y install supervisor
             sudo apt-get -y install tcpdump
-            sudo -H pip3 install pytest --ignore-installed
-            sudo -H pip install -r coap_testing_tool/agent/requirements.txt --upgrade
-            sudo -H pip3 install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-            sudo -H pip3 install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-            sudo -H pip3 install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-            sudo -H pip3 install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-            sudo -H pip3 install -r coap_testing_tool/webserver/requirements.txt --upgrade
+
+            python3 -m pip install pytest --ignore-installed
+            python3 -m pytest --version
+
+            echo 'installing py2 dependencies'
+            python -m pip install -r coap_testing_tool/agent/requirements.txt --upgrade
+
+            echo 'installing py3 dependencies'
+            python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
+            python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
+            python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
+            python3 -m pip install -r coap_testing_tool/sniffer/requirements.txt --upgrade
+            python3 -m pip install -r coap_testing_tool/webserver/requirements.txt --upgrade
             '''
             }
         }
@@ -51,7 +57,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
             pwd
-            sudo -E python3 $(which py.test) tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+            python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -60,33 +66,53 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
         gitlabCommitStatus("Testing Tool's components unit-testing"){
             sh '''
             echo $AMQP_URL
+            echo $(which pytest)
             pwd
-            sudo -E python3 $(which py.test) coap_testing_tool/test_coordinator/tests/tests.py
-            sudo -E python3 $(which py.test) coap_testing_tool/packet_router/tests/tests.py
-            sudo -E python3 $(which py.test) coap_testing_tool/extended_test_descriptions/tests/tests.py
+            python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
+            python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
+            python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
             '''
         }
       }
 
-
-
       stage("Testing Tool's AMQP API smoke tests"){
-        gitlabCommitStatus("Functional API smoke tests"){
+
+        gitlabCommitStatus("Testing Tool's AMQP API smoke tests"){
+          try {
+                sh '''
+                echo 'AMQP PARAMS:'
+                echo $AMQP_URL
+                echo $AMQP_EXCHANGE
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
+                sleep 10
+                sudo -E supervisord -c coap_testing_tool/supervisord.conf
+                sleep 15
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sleep 2
+                pwd
+                python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
+                '''
+          }
+          catch (e){
             sh '''
-            echo 'AMQP PARAMS:'
-            echo $AMQP_URL
-            echo $AMQP_EXCHANGE
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
-            sleep 2
-            sudo -E supervisord -c coap_testing_tool/supervisord.conf
-            sleep 15
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
-            sleep 2
-            pwd
-            python3 $(which py.test) tests/test_api.py -vv
-            sleep 5
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
+            echo 'Do you smell the smoke in the room??'
+            echo 'processes logs :'
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 tat
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 test-coordinator
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 agent
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 packet-router
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 packet-sniffer
             '''
+            throw e
+          }
+          finally {
+                sh '''
+                sleep 5
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sleep 5
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
+                '''
+          }
         }
       }
     }

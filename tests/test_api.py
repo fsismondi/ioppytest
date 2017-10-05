@@ -237,13 +237,13 @@ class ApiTests(unittest.TestCase):
             if '.service.reply' in method.routing_key:
                 if props.correlation_id in services_mid_backlog:
                     services_mid_backlog.remove(props.correlation_id)
-                    services_events_tracelog.append(msg_type)
+                    services_events_tracelog.append((msg_type, props.correlation_id))
                 else:
                     assert False, 'got a reply but theres no request in the backlog'
 
             elif '.service' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
-                services_events_tracelog.append(msg_type)
+                services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
                 assert False, 'error! we shouldnt be here!'
