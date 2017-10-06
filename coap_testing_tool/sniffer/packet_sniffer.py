@@ -15,7 +15,7 @@ from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.event_bus_messages import *
 
 COMPONENT_ID = 'packet_sniffer'
-last_capture = None
+last_capture_name = None
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -52,7 +52,7 @@ def on_request(ch, method, props, body):
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    global last_capture
+    global last_capture_name
 
     try:
         props_dict = {
@@ -75,8 +75,8 @@ def on_request(ch, method, props, body):
     if isinstance(request, MsgSniffingGetCaptureLast):
         logger.info('Processing request: %s' % repr(request))
 
-        if last_capture:
-            capture_id = last_capture
+        if last_capture_name:
+            capture_id = last_capture_name
 
             try:
                 file = TMPDIR + '/%s.pcap' % capture_id
@@ -207,7 +207,7 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed starting the capture')
 
-        last_capture = capture_id  # keep track of the undergoing capture name
+        last_capture_name = capture_id  # keep track of the undergoing capture name
         time.sleep(TIME_WAIT_FOR_TCPDUMP_ON)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
         publish_message(ch, response)
