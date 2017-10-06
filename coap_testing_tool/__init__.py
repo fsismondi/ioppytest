@@ -41,6 +41,7 @@ TD_DIR = os.path.join(project_dir, 'coap_testing_tool', 'extended_test_descripti
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
+TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #

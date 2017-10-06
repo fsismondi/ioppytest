@@ -14,9 +14,8 @@ import logging
 
 from urllib.parse import urlparse
 from itertools import cycle
-from collections import OrderedDict
 from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
+from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
@@ -32,6 +31,13 @@ ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
 SNIFFER_FILTER_IF = 'tun0'
+
+# TODO 6lo FIX ME !
+# - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
+# - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
+# - COAP_CLIENT_IUT_MODE, COAP_SERVER_IUT_MODE , this should not exist in the code of the coord
+# - change all TESTCASES_ID so they dont contain a vXX at the end,  this doesnt make any sense
+
 
 # component identification & bus params
 COMPONENT_ID = 'test_coordinator'
@@ -228,23 +234,27 @@ class Iut:
     def __init__(self, node=None, mode="user_assisted"):
         # TODO get IUT mode from session config!!!
         self.node = node
+        self.address = 'TBD'
         if mode:
             assert mode in ("user_assisted", "automated")
         self.mode = mode
 
     def to_dict(self):
         ret = OrderedDict({'node': self.node})
-        ret.update({'node_execution_mode': self.mode})
+        ret.update({
+            'node_execution_mode': self.mode,
+            'node_address': self.address
+        })
         return ret
 
-    # TODO implement this
+    # TODO FIX ME , this has been replace by noptify configuration method, delete?
     def configure(self):
         pass
 
     def __repr__(self):
         if self.mode:
-            return "%s(node=%s, mode=%s)" % (
-                self.__class__.__name__, self.node, self.mode if self.mode else "not defined..")
+            return "%s(node=%s, mode=%s, address=%s)" % (
+                self.__class__.__name__, self.node, self.mode if self.mode else "not defined..", self.address)
         return "%s(node=%s)" % (self.__class__.__name__, self.node)
 
 
@@ -253,15 +263,64 @@ class TestConfig:
         self.id = configuration_id
         self.uri = uri
         self.nodes = nodes
-        self.topology = topology
         self.description = description
+
+        # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
+        # see test configuration yaml file
+        self.topology = topology
+
+        # initialize addresses table
+        self.addresses_table = dict()
+        for node in self.nodes:
+            self.addresses_table.update({node: ''})
 
     def __repr__(self):
         return json.dumps(self.to_dict(True))
 
+    def update_node_address(self, node, address):
+        assert node
+        assert address
+        self.addresses_table.update({node: address})
+
+    def get_node_address(self, node):
+        return self.addresses_table[node]
+
+    def get_target_address(self, node, link=None):
+        """
+        We assume two nodes per link:
+         node & target_node
+
+        If the test conguration defines more that one link, then link argument must be provided.
+
+        :param node: Node origin/source of the communication
+        :param link: link which is used by node to contact target_node
+        :return: target address (str)
+        """
+        target = None
+        target_node = None
+        nodes_on_link = []
+
+        # let's find the target node first
+        if link:
+            for link_item in self.topology:
+                if link_item['link_id'] == link:
+                    nodes_on_link = link_item['link_id']['nodes'].copy()  # copy list
+
+        else:  # assuming only one link defined in test configuration (YAML)
+            nodes_on_link = self.topology[0]['nodes'].copy()  # copy list
+
+        assert node in nodes_on_link, 'Node %s not in known nodes link list: %s' % (node, nodes_on_link)
+        assert len(nodes_on_link) == 2
+        nodes_on_link.remove(node)
+        target_node = nodes_on_link.pop()
+
+        return self.get_node_address(target_node)
+
     def to_dict(self, verbose=None):
         d = OrderedDict()
         d['configuration_id'] = self.id
+        for key, val in self.addresses_table.items():
+            d['address_%s' % key] = val
 
         if verbose:
             d['configuration_ref'] = self.uri
@@ -345,9 +404,11 @@ class Step():
 class TestCase:
     """
     FSM states:
-    (None,'skipped', 'executing','ready_for_analysis','analyzing','finished')
+    (None,'skipped', 'configuring','executing','ready_for_analysis','analyzing','finished')
     - None -> Rest state. Wait for user input.
     - Skipped -> If a TC is in skipped state is probably cause of user input. Jump to next TC
+    - Configuring -> Configuring remotes. Once all configuration.executed messages from IUTs are received (or timed-out)
+        we pass to state executing
     - Executing -> Inside this state we iterate over the steps. Once iteration finished go to "Analyzing" state.
     - Analyzing -> Most probably we are waiting for TAT analysis CHECK analysis (eith post_mortem or step_by_step).
         Jump to finished once answer received and final verdict generated.
@@ -421,7 +482,7 @@ class TestCase:
         return steps
 
     def change_state(self, state):
-        assert state in (None, 'skipped', 'executing', 'ready_for_analysis', 'analyzing', 'finished')
+        assert state in (None, 'skipped', 'configuring', 'executing', 'ready_for_analysis', 'analyzing', 'finished')
         self.state = state
 
         if state == 'skipped':
@@ -440,8 +501,8 @@ class TestCase:
 
         try:
             while True:
-                # check that there's no steps in state = None or executing
-                if step.state is None or step.state == 'executing':
+                # check that there's no steps in state = None , executing or configuring
+                if step.state is None or step.state == 'executing' or step.state == 'configuring':
                     logger.debug("[TESTCASE] - there are still steps to execute or under execution")
                     return False
                 else:
@@ -489,14 +550,14 @@ class TestCase:
 
         # append at the end of the report the analysis done a posteriori (if any)
         if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report) != 0:
-            logger.warning('Processing TAT partial verdict: ' + str(tat_post_mortem_analysis_report))
+            logger.info('Processing TAT partial verdict: ' + str(tat_post_mortem_analysis_report))
             for item in tat_post_mortem_analysis_report:
                 # TODO process the items correctly
                 tc_report.append(item)
                 final_verdict.update(item[1], item[2])
         else:
             # we cannot emit a final verdict if the report from TAT is empy (no CHECKS-> error verdict)
-            logger.warning('[VERDICT GENERATION] Empty list of report passed from TAT')
+            logger.info('[VERDICT GENERATION] Empty list of report passed from TAT')
             final_verdict.update('error', 'Test Analysis Tool returned an empty analysis report')
 
         # hack to overwrite the final verdict MESSAGE in case of pass
@@ -533,6 +594,9 @@ class Coordinator:
             self.tc_configs[tc_config.id] = tc_config
 
         logger.info('Imports: %s TC_CONFIG imported' % len(self.tc_configs))
+        for key, val in self.tc_configs.items():
+            logger.info('test configuration imported from YAML into Test Suite: %s' % key)
+            # logger.warning('%s: %s' % (key, repr(val)))
 
         # lets import TCs and make sure there's a tc config for each one of them
         imported_teds = import_teds(ted_tc_file)
@@ -544,6 +608,9 @@ class Coordinator:
             assert ted.configuration_id in self.tc_configs
 
         logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
+        for key, val in self.teds.items():
+            # logger.warning('%s: %s' % (key, repr(val)))
+            logger.info('test case imported from YAML into Test Suite: %s' % key)
 
         # test cases iterator (over the TC objects, not the keys)
         self._ted_it = cycle(self.teds.values())
@@ -624,10 +691,12 @@ class Coordinator:
 
     def notify_testcase_is_ready(self):
         if self.current_tc:
-            tc_info_dict = self.current_tc.to_dict(verbose=True)
+            tc_info_dict = {}
+            tc_info_dict.update(self.current_tc.to_dict(verbose=True))
+            tc_info_dict.update(self.tc_configs[self.current_tc.configuration_id].to_dict(verbose=True))
+            tc_info_dict.update({'description': 'Next test case to be executed is %s' % self.current_tc.id})
 
             event = MsgTestCaseReady(
-                description='Next test case to be executed is %s' % self.current_tc.id,
                 **tc_info_dict
             )
         else:
@@ -638,19 +707,30 @@ class Coordinator:
 
     def notify_step_to_execute(self):
         msg_fields = {}
+        # put step info
         msg_fields.update(self.current_tc.current_step.to_dict(verbose=True))
+        # put tc info
         msg_fields.update(self.current_tc.to_dict(verbose=False))
+        # put iut info
         if self.current_tc.current_step.iut:
             msg_fields.update(self.current_tc.current_step.iut.to_dict())
-
+        # put some extra description
         description_message = ['Please execute step: %s \n' % self.current_tc.current_step.id]
 
         if self.current_tc.current_step.type == "stimuli":
-
             description_message += ['Step description: %s \n' % self.current_tc.current_step.description]
+
+            # put info IUT info into the description
             if self.current_tc.current_step.iut.node:
                 description_message += ['IUT: %s \n' % self.current_tc.current_step.iut.node]
 
+            # put extra config info (e.g. target address)
+            config = self.tc_configs[self.current_tc.configuration_id]
+
+            # put target address info
+            msg_fields.update({'target_address': config.get_target_address(self.current_tc.current_step.iut.node)})
+
+            # publish message
             event = MsgStepStimuliExecute(
                 description=description_message,
                 **msg_fields
@@ -666,6 +746,7 @@ class Coordinator:
                 description=description_message,
                 **msg_fields
             )
+
         elif self.current_tc.current_step.type == "check" or self.current_tc.current_step.type == "feature":
             raise NotImplementedError()
 
@@ -739,18 +820,19 @@ class Coordinator:
             description = desc['message']
             node = desc['node']
 
-            event = MsgTestCaseConfiguration(
+            event = MsgConfigurationExecute(
                 configuration_id=config_id,
                 node=node,
                 description=description,
                 **tc_info_dict
             )
+
             publish_message(self.channel, event)
 
     def call_service_sniffer_start(self, **kwargs):
 
         try:
-            response = amqp_request(self.connection.channel(), MsgSniffingStart(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.channel, MsgSniffingStart(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -759,7 +841,7 @@ class Coordinator:
     def call_service_sniffer_stop(self):
 
         try:
-            response = amqp_request(self.connection.channel(), MsgSniffingStop(), COMPONENT_ID)
+            response = amqp_request(self.channel, MsgSniffingStop(), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -768,7 +850,7 @@ class Coordinator:
     def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            response = amqp_request(self.connection.channel(), MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.channel, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -777,7 +859,7 @@ class Coordinator:
     def call_service_testcase_analysis(self, **kwargs):
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
-        response = amqp_request(self.connection.channel(), request, COMPONENT_ID)
+        response = amqp_request(self.channel, request, COMPONENT_ID)
         logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response
 
@@ -859,7 +941,6 @@ class Coordinator:
             except AttributeError:  # if no testcase_id was sent then I skip  the current one
                 testcase_id_skip = self.current_tc.id
 
-
             # check if testcase already in skip state
             if self.get_testcase(testcase_id_skip).state == 'skipped':
                 return
@@ -867,7 +948,10 @@ class Coordinator:
             # skip testcase_id_skip
             try:
                 if self.skip_testcase(testcase_id_skip):  # if there's more TCs
+                    # send configurations to IUT, wait for confirmations or for them to time-out
+                    self.configure_testcase()  # this is blocking
                     self.notify_testcase_is_ready()
+
                 elif self.check_testsuite_finished():  # no more TCs to execute
                     self.finish_testsuite()
                     self.notify_testsuite_finished()
@@ -878,13 +962,27 @@ class Coordinator:
 
         elif isinstance(event, MsgTestSuiteStart):
             # lets open tun interfaces
-            self.notify_tun_interfaces_start()
-            time.sleep(2)
+            # TODO fix me! run only if we test suite requires to!
+            # self.notify_tun_interfaces_start()
+            # time.sleep(2)
 
+            # gets first TC
             self.start_test_suite()
 
-            # send general notif
+            # send configurations to IUT, wait for confirmations or for them to time-out
+            self.configure_testcase()  # this is blocking
+
+            # TC ready to start
             self.notify_testcase_is_ready()
+
+        # elif isinstance(event, MsgConfigurationExecuted):
+        #     logging.warning(repr(event))
+        #     self.handle_iut_configuration_executed(event.node , event.ipv6_address)
+        #
+        #     if
+        #     # send general notif
+        #     self.notify_testcase_is_ready()
+
 
         elif isinstance(event, MsgTestCaseSelect):
 
@@ -903,6 +1001,9 @@ class Coordinator:
                 error_msg = e.description
                 # send general notif
                 self.notify_coordination_error(description=error_msg, error_code=None)
+
+            # send configurations to IUT, wait for confirmations or for them to time-out
+            self.configure_testcase()  # this is blocking
 
             # send general notif
             self.notify_testcase_is_ready()
@@ -966,6 +1067,10 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
+
+                    # send configurations to IUT, wait for confirmations or for them to time-out
+                    self.configure_testcase()  # this is blocking
+
                     self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
@@ -1023,6 +1128,10 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
+
+                    # send configurations to IUT, wait for confirmations or for them to time-out
+                    self.configure_testcase()  # this is blocking
+
                     self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
@@ -1107,6 +1216,10 @@ class Coordinator:
                 # there is at least a TC left
                 if not self.check_testsuite_finished():
                     self.next_testcase()
+
+                    # send configurations to IUT, wait for confirmations or for them to time-out
+                    self.configure_testcase()  # this is blocking
+
                     self.notify_testcase_is_ready()
 
                 # im at the end of the TC and also of the TS
@@ -1206,6 +1319,72 @@ class Coordinator:
         # TODO prepare a test suite report of the tescases verdicts?
         pass
 
+    def configure_testcase(self):
+
+        # send the configuration events to each node and wait for their confirmation
+        assert self.current_tc
+        self.current_tc.change_state('configuring')
+
+        number_of_notifications = 0
+        responses = []
+        channel = self.connection.channel()
+
+        temp_queue_name = 'amqp_rpc_%s@%s' % (str(uuid.uuid4())[:8], COMPONENT_ID)
+
+        result = channel.queue_declare(queue=temp_queue_name, auto_delete=True)
+
+        callback_queue = result.method.queue
+
+        channel.queue_bind(
+            exchange=AMQP_EXCHANGE,
+            queue=callback_queue,
+            routing_key=MsgConfigurationExecuted.routing_key
+        )
+
+        tc_info_dict = self.current_tc.to_dict(verbose=False)
+        config_id = self.current_tc.configuration_id
+        config = self.tc_configs[config_id]  # Configuration object
+
+        for desc in config.description:
+            description = desc['message']
+            node = desc['node']
+
+            event = MsgConfigurationExecute(
+                configuration_id=config_id,
+                node=node,
+                description=description,
+                **tc_info_dict
+            )
+
+            publish_message(channel, event)
+            number_of_notifications += 1
+
+        time.sleep(1)
+        retries_left = 60
+
+        while retries_left > 0:
+            time.sleep(0.5)
+            method, props, body = self.channel.basic_get(callback_queue)
+            if method:
+                self.channel.basic_ack(method.delivery_tag)
+                m = Message.from_json(body)
+                if isinstance(m, MsgConfigurationExecuted):
+                    responses.append(m)
+                    if number_of_notifications == len(responses):
+                        break
+            retries_left -= 1
+
+        if retries_left <= 0:
+            logger.warning('Expecting %s but not received..' % MsgConfigurationExecuted)
+
+        for m in responses:
+            logger.info("Received: %s" % repr(m))
+            self.handle_iut_configuration_executed(m.node, m.ipv6_address)
+
+        channel.queue_delete(queue=temp_queue_name)
+        channel.close()
+        # TODO do sth with the responses!
+
     def start_testcase(self):
         """
         Method to start current tc (the previously selected tc).
@@ -1222,9 +1401,6 @@ class Coordinator:
 
         self.current_tc.change_state('executing')
 
-        # send the configuration events to each node
-        self.notify_current_configuration()
-
         # start sniffing each link
         # TODO this is still not handled by sniffer, for the time being sniffer only supports sniffing the tun interface
         config = self.tc_configs[self.current_tc.configuration_id]
@@ -1233,7 +1409,7 @@ class Coordinator:
             link_id = link['link_id']
 
             sniff_params = {
-                'capture_id': self.current_tc.id[:-4],
+                'capture_id': self.current_tc.id,
                 'filter_proto': filter_proto,
                 'filter_if': SNIFFER_FILTER_IF,
                 'link_id': link_id,
@@ -1270,6 +1446,14 @@ class Coordinator:
             self.next_testcase()
 
         return self.current_tc
+
+    def handle_iut_configuration_executed(self, node, node_address):
+        if node and node_address:
+            self.tc_configs[self.current_tc.configuration_id].update_node_address(node, node_address)
+            logger.info('IUT/EUT addresses updated: %s' %
+                        repr(self.tc_configs[self.current_tc.configuration_id].to_dict(verbose=True)))
+        else:
+            logger.warning('Configuration Executed messages didnt provide any node address field')
 
     def handle_verify_step_response(self, verify_response):
         # some sanity checks on the states
@@ -1349,7 +1533,7 @@ class Coordinator:
 
         # get TC params
         # tc_id = self.current_tc.id
-        tc_id = self.current_tc.id[:-4]
+        tc_id = self.current_tc.id
         tc_ref = self.current_tc.uri
 
         self.current_tc.change_state('analyzing')
@@ -1433,7 +1617,8 @@ class Coordinator:
                     report = []
 
             except AttributeError as ae:
-                error_msg += 'Failed to process Sniffer response. Wrongly formated resonse? : %s' % repr(sniffer_response)
+                error_msg += 'Failed to process Sniffer response. Wrongly formated resonse? : %s' % repr(
+                    sniffer_response)
                 logger.error(error_msg)
                 gen_verdict = 'error'
                 gen_description = error_msg

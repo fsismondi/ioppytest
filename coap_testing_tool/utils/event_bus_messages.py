@@ -27,7 +27,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip()
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.40, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.43, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_02_v01, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -38,18 +38,18 @@ MsgTestCaseSkip(_api_version = 0.1.40, _type = testcoordination.testcase.skip, n
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.40, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.43, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_03_v01, )
 >>> m.testcase_id
 'TD_COAP_CORE_03_v01'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.40", "_type": "testcoordination.testcase.skip", "node": "someNode", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.43", "_type": "testcoordination.testcase.skip", "node": "someNode", "testcase_id": "TD_COAP_CORE_03_v01"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.40", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
+'{"_api_version": "0.1.43", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.40, _type = testcoordination.testcase.skip, n
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.40, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
+MsgErrorReply(_api_version = 0.1.43, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
 >>> err.routing_key
@@ -80,7 +80,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.40'
+API_VERSION = '0.1.43'
 
 
 # TODO use metaclasses instead?
@@ -460,7 +460,7 @@ class MsgSessionLog(Message):
     _msg_data_template = {
         "_type": "log",
         "component": "the_drummer",
-        "description": "I've got blisters on my fingers!"
+        "message": "I've got blisters on my fingers!"
     }
 
 
@@ -689,21 +689,39 @@ class MsgTestCaseStart(Message):
     }
 
 
+class MsgTestCaseStarted(Message):
+    """
+    Requirements: Testing Tool SHOULD publish event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description:
+        - Message used for indicating that testcase has started
+    """
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.testcase.started",
+        "description": "Event test case STARTED",
+        "testcase_id": "TBD",
+    }
+
+
 # TODO MsgTestCaseNotes, see https://portal.etsi.org/cti/downloads/TestSpecifications/6LoWPAN_Plugtests_TestDescriptions_1.0.pdf
+
 
 class MsgTestCaseConfiguration(Message):
     """
     Requirements: Testing Tool MAY publish event (if needed for executing the test case)
-
     Type: Event
-
     Pub/Sub: Testing Tool -> GUI & automated-iut
-
     Description:
         - Message used to indicate GUI and/or automated-iut which configuration to use.
+        - IMPORTANT: deprecate this message in favor of MsgConfigurationExecute and MsgConfigurationExecuted
     """
     routing_key = "control.testcoordination"
-
     _msg_data_template = {
         "_type": "testcoordination.testcase.configuration",
         "configuration_id": "COAP_CFG_01_v01",
@@ -731,6 +749,71 @@ class MsgTestCaseConfiguration(Message):
               "shall not exceed 2048bytes"],
              ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
              ]
+    }
+
+
+class MsgConfigurationExecute(Message):
+    """
+    Requirements: Testing Tool MAY publish event (if needed for executing the test case)
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI & automated-iut
+
+    Description:
+        - Message used to indicate GUI and/or automated-iut which configuration to use.
+    """
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.configuration.execute",
+        "configuration_id": "COAP_CFG_01_v01",
+        "node": "coap_server",
+        "testcase_id": "TBD",
+        "testcase_ref": "TBD",
+        "description":
+            ["CoAP servers running service at [bbbb::2]:5683",
+             "CoAP servers are requested to offer the following resources",
+             ["/test", "Default test resource", "Should not exceed 64bytes"],
+             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+             ["/separate",
+              "Ressource which cannot be served immediately and which cannot be "
+              "acknowledged in a piggy-backed way",
+              "Should not exceed 64bytes"],
+             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+             ["/large_update",
+              "Large resource that can be updated using PUT method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/large_create",
+              "Large resource that can be  created using POST method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/obs", "Observable resource which changes every 5 seconds",
+              "shall not exceed 2048bytes"],
+             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+             ]
+    }
+
+
+class MsgConfigurationExecuted(Message):
+    """
+    Requirements: Testing Tool SHOULD listen to event
+
+    Type: Event
+
+    Pub/Sub: GUI (automated-IUT) -> Testing Tool
+
+    Description:
+        - Message used for indicating that the IUT has been configured as requested
+        - pixit must be included in this message (pixit = Protocol Implementaiton eXtra Information for Testing)
+    """
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.configuration.executed",
+        "description": "Event IUT has been configured",
+        "node": "coap_server",
+        "ipv6_address": "TBD"  # example of pixit
     }
 
 
@@ -802,7 +885,8 @@ class MsgStepStimuliExecute(Message):
         "node": "coap_client",
         "node_execution_mode": "user_assisted",
         "testcase_id": "TBD",
-        "testcase_ref": "TBD"
+        "testcase_ref": "TBD",
+        "target_address": "TBD"
     }
 
 
@@ -1868,6 +1952,7 @@ message_types_dict = {
     "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
     "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI
     "testcoordination.testcase.start": MsgTestCaseStart,  # GUI -> TestingTool
+    "testcoordination.testcase.started": MsgTestCaseStarted,  # TestingTool -> GUI
     "testcoordination.step.stimuli.execute": MsgStepStimuliExecute,  # TestingTool -> GUI
     "testcoordination.step.stimuli.executed": MsgStepStimuliExecuted,  # GUI -> TestingTool
     "testcoordination.step.check.execute": MsgStepCheckExecute,  # TestingTool -> GUI
@@ -1875,6 +1960,8 @@ message_types_dict = {
     "testcoordination.step.verify.execute": MsgStepVerifyExecute,  # Testing Tool Internal
     "testcoordination.step.verify.executed": MsgStepVerifyExecuted,  # Testing Tool Internal
     "testcoordination.testcase.configuration": MsgTestCaseConfiguration,  # TestingTool -> GUI
+    "testcoordination.configuration.execute": MsgConfigurationExecute,  # TestingTool -> GUI (or auto-iut)
+    "testcoordination.configuration.executed": MsgConfigurationExecuted,  # GUI (or auto-iut) -> TestingTool
     "testcoordination.testcase.stop": MsgTestCaseStop,  # GUI -> TestingTool
     "testcoordination.testcase.restart": MsgTestCaseRestart,  # GUI -> TestingTool
     "testcoordination.testcase.skip": MsgTestCaseSkip,  # GUI -> TestingTool
