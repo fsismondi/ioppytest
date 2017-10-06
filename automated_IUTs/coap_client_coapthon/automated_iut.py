@@ -17,6 +17,11 @@ class CoapthonCoapClient(AutomatedIUT):
         '-t',
     ]
 
+    def __init__(self):
+        super().__init__(self.node)
+        logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
+
+
     # mapping message's stimuli id -> CoAPthon (coap client) commands
     stimuli_cmd_dict = {
         'TD_COAP_CORE_01_v01_step_01': iut_cmd + ['test_td_coap_core_01'],

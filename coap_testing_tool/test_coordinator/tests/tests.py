@@ -1,7 +1,7 @@
 import unittest, logging, os, pika, json
 from collections import OrderedDict
-from coap_testing_tool import AMQP_URL
-from coap_testing_tool.test_coordinator.coordinator import Coordinator, TD_COAP_CFG, TD_COAP, import_teds
+from coap_testing_tool import AMQP_URL, TD_COAP_CFG, TD_COAP
+from coap_testing_tool.test_coordinator.coordinator import Coordinator, import_teds
 
 
 class CoordinatorTestCase(unittest.TestCase):
