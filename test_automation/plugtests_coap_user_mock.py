@@ -17,7 +17,7 @@ if __name__ == '__main__':
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
     # e.g. for TD COAP CORE from 1 to 31
-    tc_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
+    tc_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 3)]
 
     u = UserMock(connection, tc_list)
     u.start()
