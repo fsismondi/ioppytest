@@ -5,15 +5,15 @@ import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 
-str_coap_server_port = str(COAP_SERVER_PORT)
-
+server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+coap_host_address = COAP_CLIENT_HOST
 
 class CaliforniumCoapClient(AutomatedIUT):
-    component_id = 'automated_iut'
+    component_id = 'automated_iut-coap_client-californium'
     node = 'coap_client'
     iut_cmd = [
-        'java -jar automated_IUTs/coap_client_californium/target/coap_plugtest_client-1.1.0-SNAPSHOT.jar -s -u coap://['
-        + COAP_SERVER_HOST + ']:' + str_coap_server_port + ' -t'
+        'java -jar automated_IUTs/coap_client_californium/target/coap_plugtest_client-1.1.0-SNAPSHOT.jar -s -u ' +
+        server_base_url + ' -t'
     ]
 
     # mapping message's stimuli id -> CoAPthon (coap client) commands
@@ -97,6 +97,10 @@ class CaliforniumCoapClient(AutomatedIUT):
 
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
+
+    def _execute_configuration(self, testcase_id, node):
+        # no config / reset needed for implementation
+        return coap_host_address
 
 
 if __name__ == '__main__':

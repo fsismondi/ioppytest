@@ -5,10 +5,12 @@ import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 
+server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+coap_host_address = COAP_CLIENT_HOST
+
 
 class CoapthonCoapClient(AutomatedIUT):
-    component_id = 'automated_iut-coap_client'
-
+    component_id = 'automated_iut-coap_client-coapthon'
     node = 'coap_client'
 
     iut_cmd = [
@@ -67,6 +69,9 @@ class CoapthonCoapClient(AutomatedIUT):
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
 
+    def _execute_configuration(self, testcase_id, node):
+        # no config / reset needed for implementation
+        return coap_host_address
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)

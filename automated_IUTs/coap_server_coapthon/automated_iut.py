@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import subprocess
 from automated_IUTs.automation import *
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 
@@ -10,11 +9,12 @@ logger = logging.getLogger(__name__)
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
 
-signal.signal(signal.SIGINT, signal_int_handler)
+server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+coap_host_address = COAP_CLIENT_HOST
 
 
 class CoapthonCoapServer(AutomatedIUT):
-    component_id = 'automated_iut-coap_server'
+    component_id = 'automated_iut-coap_server-coapthon'
     node = 'coap_server'
 
     IUT_CMD = [
@@ -31,6 +31,9 @@ class CoapthonCoapServer(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
+    def _execute_configuration(self, testcase_id, node):
+        # shoud we restart californium process?
+        return server_base_url
 
 
 if __name__ == '__main__':

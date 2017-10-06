@@ -1,8 +1,6 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-# docker build -t automated-iut-coap-client-coapthon-v01 ./coap_testing_tool/automated_implementations/coap_client_coapthon/
-
 RUN apt-get update -y -qq && apt-get -y -qq install python3-dev
 RUN apt-get -y install python3-setuptools
 RUN	apt-get -y install python3-pip

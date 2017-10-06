@@ -4,7 +4,7 @@ import os
 import subprocess
 
 from coap_testing_tool import TMPDIR
-from automated_IUTs import COAP_SERVER_PORT
+from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 
 logger = logging.getLogger(__name__)
@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
 
-signal.signal(signal.SIGINT, signal_int_handler)
+server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+coap_host_address = COAP_CLIENT_HOST
 
 
 class CaliforniumCoapServer(AutomatedIUT):
-    component_id = 'automated_iut_californium'
+    component_id = 'automated_iut-coap_server-californium'
     node = 'coap_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
 
@@ -52,6 +53,9 @@ class CaliforniumCoapServer(AutomatedIUT):
         with open(self.process_log_file, "w") as outfile:
             subprocess.call(self.iut_cmd, stdout=outfile)
 
+    def _execute_configuration(self, testcase_id, node):
+        # shoud we restart californium process?
+        return server_base_url
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)

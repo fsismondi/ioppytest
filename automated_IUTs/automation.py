@@ -54,33 +54,31 @@ class AutomatedIUT(threading.Thread):
     component_id = NotImplementedField
     node = NotImplementedField
 
-    def __init__(self, node_id):
-        AutomatedIUT.node = node_id
-        AutomatedIUT.component_id = 'automated_iut-%s' % node_id
-        # lets create connection
-        print("---------------------")
+    def __init__(self, node):
+
+        self.node = node
+
+        # lets setup the AMQP stuff
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-
         self.channel = self.connection.channel()
-
         threading.Thread.__init__(self)
         self.message_count = 0
-        # queues & default exchange declaration
 
+        # queues & default exchange declaration
         services_queue_name = 'services_queue@%s' % self.component_id
-        print("component id %s" % self.component_id)
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key='control.testcoordination')
+        # send hello message
         publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
     def run(self):
-        print("Starting thread listening on the event bus")
+        logger.info("Starting thread listening on the event bus")
         self.channel.start_consuming()
-        print('Bye byes!')
+        logger.info('Bye byes!')
 
     def stop(self):
 
@@ -126,7 +124,8 @@ class AutomatedIUT(threading.Thread):
                 step = event.step_id
                 addr = event.target_address
                 if cmd:
-                    self._execute_stimuli(step, cmd, addr) #this should be a blocking call until stimuli has been executed
+                    self._execute_stimuli(step, cmd,
+                                          addr)  # this should be a blocking call until stimuli has been executed
                 publish_message(self.channel, MsgStepStimuliExecuted(node=self.node))
             else:
                 logging.info('Event received and ignored: %s (node: %s - step: %s)' %
@@ -159,10 +158,13 @@ class AutomatedIUT(threading.Thread):
             logging.info('Test terminate signal received. Quitting..')
             time.sleep(2)
             self._exit
+
         elif isinstance(event, MsgConfigurationExecute):
             if event.node == self.node:
                 logging.info('Configure test case %s', event.testcase_id)
-                ipaddr=self._execute_configuration(event.testcase_id, event.node) #this should be a blocking call until configuration has been done
+                # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
+                ipaddr = self._execute_configuration(event.testcase_id,
+                                                     event.node)  # this should be a blocking call until configuration has been done
                 if ipaddr != '':
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.channel, m)
@@ -170,18 +172,20 @@ class AutomatedIUT(threading.Thread):
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=COMPONENT_ID)
+        m = MsgTestingToolComponentShutdown(component=self.component_id)
         publish_message(self.channel, m)
         time.sleep(2)
         self.connection.close()
         sys.exit(0)
 
-    def _execute_verify(self, verify_step_id, ):
+    def _execute_verify(self, verify_step_id):
         raise NotImplementedError("Subclasses should implement this!")
 
+    # TODO fix me! no cmd should be passed, this is child class related stuff
     def _execute_stimuli(self, stimuli_step_id, cmd, addr):
         raise NotImplementedError("Subclasses should implement this!")
 
+    # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
     def _execute_configuration(self, testcase_id, node):
         raise NotImplementedError("Subclasses should implement this!")
 
