@@ -32,8 +32,8 @@ class CoordinatorTestCase(unittest.TestCase):
         print(ls)
 
     def test_select_testcase(self):
-        self.coord.select_testcase('TD_COAP_CORE_02_v01')
-        assert self.coord.current_tc.id == 'TD_COAP_CORE_02_v01'
+        self.coord.select_testcase('TD_COAP_CORE_02')
+        assert self.coord.current_tc.id == 'TD_COAP_CORE_02'
 
     def test_check_all_steps_finished(self):
         # this must not raise any errors during the iteration, control flow is done with None when iter is over!

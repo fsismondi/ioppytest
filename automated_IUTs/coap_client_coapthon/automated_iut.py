@@ -26,29 +26,29 @@ class CoapthonCoapClient(AutomatedIUT):
 
     # mapping message's stimuli id -> CoAPthon (coap client) commands
     stimuli_cmd_dict = {
-        'TD_COAP_CORE_01_v01_step_01': iut_cmd + ['test_td_coap_core_01'],
-        'TD_COAP_CORE_02_v01_step_01': iut_cmd + ['test_td_coap_core_02'],
-        'TD_COAP_CORE_03_v01_step_01': iut_cmd + ['test_td_coap_core_03'],
-        'TD_COAP_CORE_04_v01_step_01': iut_cmd + ['test_td_coap_core_04'],
-        'TD_COAP_CORE_05_v01_step_01': iut_cmd + ['test_td_coap_core_05'],
-        'TD_COAP_CORE_06_v01_step_01': iut_cmd + ['test_td_coap_core_06'],
-        'TD_COAP_CORE_07_v01_step_01': iut_cmd + ['test_td_coap_core_07'],
-        'TD_COAP_CORE_08_v01_step_01': iut_cmd + ['test_td_coap_core_08'],
-        'TD_COAP_CORE_09_v01_step_01': iut_cmd + ['test_td_coap_core_09'],
-        'TD_COAP_CORE_10_v01_step_01': iut_cmd + ['test_td_coap_core_10'],
+        'TD_COAP_CORE_01_step_01': iut_cmd + ['test_td_coap_core_01'],
+        'TD_COAP_CORE_02_step_01': iut_cmd + ['test_td_coap_core_02'],
+        'TD_COAP_CORE_03_step_01': iut_cmd + ['test_td_coap_core_03'],
+        'TD_COAP_CORE_04_step_01': iut_cmd + ['test_td_coap_core_04'],
+        'TD_COAP_CORE_05_step_01': iut_cmd + ['test_td_coap_core_05'],
+        'TD_COAP_CORE_06_step_01': iut_cmd + ['test_td_coap_core_06'],
+        'TD_COAP_CORE_07_step_01': iut_cmd + ['test_td_coap_core_07'],
+        'TD_COAP_CORE_08_step_01': iut_cmd + ['test_td_coap_core_08'],
+        'TD_COAP_CORE_09_step_01': iut_cmd + ['test_td_coap_core_09'],
+        'TD_COAP_CORE_10_step_01': iut_cmd + ['test_td_coap_core_10'],
     }
 
     implemented_testcases_list = [
-        'TD_COAP_CORE_01_v01',
-        'TD_COAP_CORE_02_v01',
-        'TD_COAP_CORE_03_v01',
-        'TD_COAP_CORE_04_v01',
-        'TD_COAP_CORE_05_v01',
-        'TD_COAP_CORE_06_v01',
-        'TD_COAP_CORE_07_v01',
-        'TD_COAP_CORE_08_v01',
-        'TD_COAP_CORE_09_v01',
-        'TD_COAP_CORE_10_v01',
+        'TD_COAP_CORE_01',
+        'TD_COAP_CORE_02',
+        'TD_COAP_CORE_03',
+        'TD_COAP_CORE_04',
+        'TD_COAP_CORE_05',
+        'TD_COAP_CORE_06',
+        'TD_COAP_CORE_07',
+        'TD_COAP_CORE_08',
+        'TD_COAP_CORE_09',
+        'TD_COAP_CORE_10',
     ]
 
     def _execute_verify(self, verify_step_id, ):

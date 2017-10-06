@@ -197,7 +197,7 @@ class UserMock(threading.Thread):
     component_id = 'user_mock'
 
     # e.g. for TD COAP CORE from 1 to 31
-    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
+    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
     def __init__(self, connection, iut_testcases=None):
         threading.Thread.__init__(self)

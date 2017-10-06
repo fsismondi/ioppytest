@@ -42,9 +42,9 @@ user_sequence = [
     MsgInteropSessionConfiguration(),  # from TC1 to TC3
     MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
     MsgTestSuiteGetStatus(),
     MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
     MsgTestSuiteGetStatus(),
@@ -68,7 +68,7 @@ service_api_calls = [
     MsgTestSuiteGetTestCases(),
     MsgInteropTestCaseAnalyze(
         testcase_id="TD_COAP_CORE_01",
-        testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
+        testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01",
         file_enc="pcap_base64",
         filename="TD_COAP_CORE_01.pcap",
         value=PCAP_TC_COAP_01_base64,
@@ -113,7 +113,7 @@ service_api_calls = [
     ),
 
     # this should generate an error
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_04_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_04'),
 
     # pcap sniffed using AMQP based packet sniffer
     MsgDissectionDissectCapture(
