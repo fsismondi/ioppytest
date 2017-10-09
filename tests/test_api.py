@@ -207,7 +207,7 @@ class ApiTests(unittest.TestCase):
         # some non request/response messages types exchanged during a session
         events_to_ignore = [
             'testingtool.ready',
-            'testingtool.compoent.ready',
+            'testingtool.component.ready',
             'agent.configured'
         ]
 
