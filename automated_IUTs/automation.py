@@ -199,8 +199,13 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
 
-    def __init__(self, connection, iut_testcases=None):
+    def __init__(self, iut_testcases=None):
+
         threading.Thread.__init__(self)
+
+        self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        self.channel = self.connection.channel()
+
         self.message_count = 0
         # queues & default exchange declaration
 
@@ -209,8 +214,6 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        self.connection = connection
-        self.channel = connection.channel()
         services_queue_name = 'services_queue@%s' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
 
@@ -225,10 +228,6 @@ class UserMock(threading.Thread):
         publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
-
-    def stop(self):
-
-        self.channel.stop_consuming()
 
     def on_request(self, ch, method, props, body):
 
@@ -298,7 +297,7 @@ class UserMock(threading.Thread):
             logging.info('Event description %s' % event.description)
             logging.info('Terminating execution.. ')
             time.sleep(2)
-            self._exit()
+            self.stop()
 
         elif isinstance(event, MsgStepStimuliExecute):
             logging.info('Message received %s . IUT node: %s ' % (event._type, event.node))
@@ -318,14 +317,15 @@ class UserMock(threading.Thread):
             else:
                 logging.info('Event received and ignored: %s' % event._type)
 
-    def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=COMPONENT_ID)
-        publish_message(self.channel, m)
+    def stop(self):
+        self.channel.stop_consuming()
+
+    def exit(self):
+        publish_message(self.connection.channel(),
+                        MsgTestingToolComponentShutdown(component=COMPONENT_ID))
         time.sleep(2)
         self.connection.close()
-        sys.exit(0)
 
     def run(self):
-        print("Starting thread listening on the event bus")
         self.channel.start_consuming()
-        print('Bye byes!')
+        self.exit()
