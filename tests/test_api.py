@@ -347,11 +347,9 @@ def stop_generator():
 def check_for_bus_error(ch, method, props, body):
     logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
-    msg = None
-
     try:
         msg = Message.from_json(body)
-        if isinstance(m, MsgTestingToolTerminate):
+        if isinstance(msg, MsgTestingToolTerminate):
             ch.stop_consuming()
             return
     except:
