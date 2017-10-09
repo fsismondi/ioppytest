@@ -97,11 +97,12 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
             sh '''
             echo 'Do you smell the smoke in the room??'
             echo 'processes logs :'
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 tat
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 test-coordinator
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 agent
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 packet-router
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -5000 packet-sniffer
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 tat
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 test-coordinator
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 agent
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-router
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-sniffer
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 bootstrap-agent-TT
             '''
             throw e
           }

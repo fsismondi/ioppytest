@@ -14,7 +14,7 @@ ADD . /coap_testing_tool
 ENV PATH="/coap_testing_tool:$PATH"
 WORKDIR /coap_testing_tool
 
-# HACK around https://github.com/dotcloud/docker/issues/5490
+# HACK to avoid "cannot open shared object file: Permission denied" , see https://github.com/dotcloud/docker/issues/5490
 RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
 
 #py2 requirements
@@ -34,6 +34,5 @@ RUN pip3 install -r coap_testing_tool/webserver/requirements.txt
 EXPOSE 5671 5672
 
 # launch processes
-
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "coap_testing_tool/docker.coap_testing_tool.conf"]
 

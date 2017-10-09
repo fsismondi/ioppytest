@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 --- !configuration
-configuration_id: COAP_CFG_01_v01
+configuration_id: COAP_CFG_01
 uri: http://doc.f-interop.eu/tests/CoAP_CFG_01
 nodes:
   - coap_client
@@ -53,7 +53,7 @@ description:
         - Destination UDP Port = 5683
 
 --- !configuration
-configuration_id: CoAP_CFG_02_v01
+configuration_id: CoAP_CFG_02
 uri: http://doc.f-interop.eu/tests/CoAP_CFG_02
 nodes:
   - coap_client
