@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # e.g. for TD COAP CORE from 1 to 31
     tc_list = ['TD_COAP_CORE_%02d_v01' % tc for tc in range(1, 31)]
 
-    u = UserMock(connection, tc_list)
+    u = UserMock(tc_list)
     u.start()
     u.join()
 
