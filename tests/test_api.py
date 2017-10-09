@@ -78,7 +78,7 @@ service_api_calls = [
     MsgSniffingStart(
         capture_id='TD_COAP_CORE_01',
         filter_if='tun0',
-        filter_proto='udp port 5683'
+        filter_proto='udp'
     ),
     MsgSniffingStop(),
     MsgSniffingGetCapture(tescase_id='TD_COAP_CORE_01'),
@@ -345,6 +345,10 @@ def stop_generator():
 
 
 def check_for_bus_error(ch, method, props, body):
+    """
+    If function was called then it means an error log was found in the bus.
+    """
+
     logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
     try:
