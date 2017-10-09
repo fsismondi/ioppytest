@@ -25,31 +25,31 @@ F-Interop conventions:
 Usage:
 ------
 >>> from messages import * # doctest: +SKIP
->>> m = MsgTestCaseSkip()
+>>> m = MsgTestCaseSkip(testcase_id = 'some_testcase_id')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.43, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = some_testcase_id, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
 '802012eb-24e3-45c4-9dcc-dc293c584f63'
 >>> m.testcase_id
-'TD_COAP_CORE_02_v01'
+'some_testcase_id'
 
 # also we can modify some of the fields (rewrite the default ones)
->>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
+>>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.43, _type = testcoordination.testcase.skip, node = someNode, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = TD_COAP_CORE_03, )
 >>> m.testcase_id
-'TD_COAP_CORE_03_v01'
+'TD_COAP_CORE_03'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.43", "_type": "testcoordination.testcase.skip", "node": "someNode", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.45", "_type": "testcoordination.testcase.skip", "description": "Skip testcase", "node": "someNode", "testcase_id": "TD_COAP_CORE_03"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.43", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
+'{"_api_version": "0.1.45", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.43, _type = testcoordination.testcase.skip, n
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.43, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
+MsgErrorReply(_api_version = 0.1.45, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
 >>> err.routing_key
@@ -80,7 +80,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.43'
+API_VERSION = '0.1.45'
 
 
 # TODO use metaclasses instead?
@@ -459,7 +459,7 @@ class MsgSessionLog(Message):
 
     _msg_data_template = {
         "_type": "log",
-        "component": "the_drummer",
+        "component": "misc",
         "message": "I've got blisters on my fingers!"
     }
 
@@ -506,15 +506,15 @@ class MsgInteropSessionConfiguration(Message):
         ],
         "tests": [
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
                 "settings": {}
             },
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
                 "settings": {}
             },
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
                 "settings": {}
             }
         ]
@@ -659,9 +659,9 @@ class MsgTestCaseReady(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.ready",
-        "description": "Next test case to be executed is TD_COAP_CORE_01_v01",
-        "testcase_id": "TD_COAP_CORE_01_v01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "description": "Next test case to be executed is TD_COAP_CORE_01",
+        "testcase_id": "TD_COAP_CORE_01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
         "objective": "Perform GET transaction(CON mode)",
         "state": None
     }
@@ -724,7 +724,7 @@ class MsgTestCaseConfiguration(Message):
     routing_key = "control.testcoordination"
     _msg_data_template = {
         "_type": "testcoordination.testcase.configuration",
-        "configuration_id": "COAP_CFG_01_v01",
+        "configuration_id": "COAP_CFG_01",
         "node": "coap_server",
         "testcase_id": "TBD",
         "testcase_ref": "TBD",
@@ -767,7 +767,7 @@ class MsgConfigurationExecute(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.configuration.execute",
-        "configuration_id": "COAP_CFG_01_v01",
+        "configuration_id": "COAP_CFG_01",
         "node": "coap_server",
         "testcase_id": "TBD",
         "testcase_ref": "TBD",
@@ -813,7 +813,7 @@ class MsgConfigurationExecuted(Message):
         "_type": "testcoordination.configuration.executed",
         "description": "Event IUT has been configured",
         "node": "coap_server",
-        "ipv6_address": "TBD"  # example of pixit
+        "ipv6_address": "tbd"  # example of pixit
     }
 
 
@@ -873,8 +873,8 @@ class MsgStepStimuliExecute(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.step.stimuli.execute",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_01",
-        "step_id": "TD_COAP_CORE_01_v01_step_01",
+        "description": "Please execute TD_COAP_CORE_01_step_01",
+        "step_id": "TD_COAP_CORE_01_step_01",
         "step_type": "stimuli",
         "step_info": [
             "Client is requested to send a GET request with",
@@ -929,8 +929,8 @@ class MsgStepCheckExecute(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.step.check.execute",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_02",
-        "step_id": "TD_COAP_CORE_01_v01_step_02",
+        "description": "Please execute TD_COAP_CORE_01_step_02",
+        "step_id": "TD_COAP_CORE_01_step_02",
         "step_type": "check",
         "step_info": [
             "The request sent by the client contains",
@@ -987,8 +987,8 @@ class MsgStepVerifyExecute(Message):
     _msg_data_template = {
         "_type": "testcoordination.step.verify.execute",
         "response_type": "bool",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_04",
-        "step_id": "TD_COAP_CORE_01_v01_step_04",
+        "description": "Please execute TD_COAP_CORE_01_step_04",
+        "step_id": "TD_COAP_CORE_01_step_04",
         "step_type": "verify",
         "step_info": [
             "Client displays the received information"
@@ -1108,7 +1108,7 @@ class MsgTestCaseSelect(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.select",
-        "testcase_id": "TD_COAP_CORE_03_v01",
+        "testcase_id": "TD_COAP_CORE_03",
     }
 
 
@@ -1170,9 +1170,9 @@ class MsgTestSuiteGetStatusReply(MsgReply):
         "_type": "testcoordination.testsuite.getstatus.reply",
         "ok": True,
         "started": True,
-        "testcase_id": "TD_COAP_CORE_01_v01",
+        "testcase_id": "TD_COAP_CORE_01",
         "testcase_state": "executing",
-        "step_id": "TD_COAP_CORE_01_v01_step_01"
+        "step_id": "TD_COAP_CORE_01_step_01"
 
     }
 
@@ -1213,20 +1213,20 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
         "ok": True,
         "tc_list": [
             {
-                "testcase_id": "TD_COAP_CORE_01_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+                "testcase_id": "TD_COAP_CORE_01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
                 "objective": "Perform GET transaction(CON mode)",
                 "state": None
             },
             {
-                "testcase_id": "TD_COAP_CORE_02_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+                "testcase_id": "TD_COAP_CORE_02",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
                 "objective": "Perform DELETE transaction (CON mode)",
                 "state": None
             },
             {
-                "testcase_id": "TD_COAP_CORE_03_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+                "testcase_id": "TD_COAP_CORE_03",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
                 "objective": "Perform PUT transaction (CON mode)",
                 "state": None
             }
@@ -1252,9 +1252,9 @@ class MsgTestCaseVerdict(Message):
         "verdict": "pass",
         "description": "No interoperability error was detected,",
         "partial_verdicts": [
-            ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
-            ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
-            ["TD_COAP_CORE_01_v01_step_04", "pass",
+            ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
+            ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
+            ["TD_COAP_CORE_01_step_04", "pass",
              "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
             ["CHECK_1_post_mortem_analysis", "pass",
              "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
@@ -1264,8 +1264,8 @@ class MsgTestCaseVerdict(Message):
             ["CHECK_3_post_mortem_analysis", "pass",
              "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
              "CoAPOptionContentFormat()))"]],
-        "testcase_id": "TD_COAP_CORE_01_v01",
-        "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
+        "testcase_id": "TD_COAP_CORE_01",
+        "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01",
         "objective": "Perform GET transaction(CON mode)", "state": "finished"
     }
 
@@ -1285,15 +1285,15 @@ class MsgTestSuiteReport(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testsuite.report",
-        "TD_COAP_CORE_01_v01":
+        "TD_COAP_CORE_01":
             {
                 "verdict": "pass",
                 "description": "No interoperability error was detected,",
                 "partial_verdicts":
                     [
-                        ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_04", "pass",
+                        ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_04", "pass",
                          "VERIFY step: User informed that the information was displayed "
                          "correclty on his/her IUT",
                          ""],
@@ -1311,14 +1311,14 @@ class MsgTestSuiteReport(Message):
                     ]
             },
 
-        "TD_COAP_CORE_02_v01":
+        "TD_COAP_CORE_02":
             {
                 "verdict": "pass",
                 "description": "No interoperability error was detected,",
                 "partial_verdicts": [
-                    ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_04", "pass",
+                    ["TD_COAP_CORE_02_step_02", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_03", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_04", "pass",
                      "VERIFY step: User informed that the information was displayed correclty on his/her "
                      "IUT",
                      ""], ["CHECK_1_post_mortem_analysis", "pass",
@@ -1511,7 +1511,7 @@ class MsgInteropTestCaseAnalyze(Message):
         "_type": "analysis.interop.testcase.analyze",
         "protocol": "coap",
         "testcase_id": "TD_COAP_CORE_01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
         "file_enc": "pcap_base64",
         "filename": "TD_COAP_CORE_01.pcap",
         "value": PCAP_empty_base64,
@@ -1563,7 +1563,7 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
             ]
         ],
         "testcase_id": "TD_COAP_CORE_01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
     }
 
     # # # # # # DISSECTION MESSAGES # # # # # #
@@ -1976,7 +1976,9 @@ message_types_dict = {
     "testcoordination.testsuite.gettestcases.reply": MsgTestSuiteGetTestCasesReply,  # TestingTool -> GUI (reply)
     "testcoordination.testsuite.report": MsgTestSuiteReport,  # TestingTool -> GUI
     "sniffing.start": MsgSniffingStart,  # Testing Tool Internal
+    "sniffing.start.reply": MsgSniffingStartReply,  # Testing Tool Internal
     "sniffing.stop": MsgSniffingStop,  # Testing Tool Internal
+    "sniffing.stop.reply": MsgSniffingStoptReply,  # Testing Tool Internal
     "sniffing.getcapture": MsgSniffingGetCapture,  # Testing Tool Internal
     "sniffing.getlastcapture": MsgSniffingGetCaptureLast,  # Testing Tool Internal
     "analysis.interop.testcase.analyze": MsgInteropTestCaseAnalyze,  # Testing Tool Internal
@@ -2054,7 +2056,7 @@ if __name__ == '__main__':
         m.message_id,
         m.testcase_id,
     )
-    m = MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03_v01')
+    m = MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03')
     print(
         m.testcase_id,
         m.to_json(),
