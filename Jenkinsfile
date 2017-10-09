@@ -314,20 +314,51 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
+        env.CONTAINER_AUTOMATED_IUT1='automated_iut-coap_server-californium'
+        env.CONTAINER_AUTOMATED_IUT2='automated_iut-coap_client-coapthon'
+        env.CONTAINER_TESTING_TOOL='testing_tool-conformance-coap'
+
         stage("Clone repo and submodules"){
             checkout scm
             sh "git submodule update --init"
             sh "tree ."
         }
 
-        stage("docker build testing tool and automated-iuts"){
-            env.AUTOMATED_IUT='coap_server_californium'
-            gitlabCommitStatus("docker build testing tool and automated-iuts") {
-
+        stage("docker BUILD testing tool and automated-iuts"){
+            gitlabCommitStatus("docker BUILD testing tool and automated-iuts") {
                 sh "echo buiding $AUTOMATED_IUT"
                 sh "sudo -E make docker-build-all "
                 sh "sudo -E docker images"
             }
         }
+
+        stage("docker RUN testing tool and automated-iuts"){
+            gitlabCommitStatus("docker RUN testing tool and automated-iuts") {
+                long startTime = System.currentTimeMillis()
+                long timeoutInSeconds = 30
+                gitlabCommitStatus("Docker run") {
+                    sh "echo CONTAINER_AUTOMATED_IUT1"
+                    sh "echo CONTAINER_AUTOMATED_IUT2"
+                    sh "echo CONTAINER_TESTING_TOOL"
+                    sh "echo $AMQP_URL"
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_AUTOMATED_IUT1} "
+                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_AUTOMATED_IUT2} "
+                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_TESTING_TOOL} "
+                        }
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+         }
     }
 }
