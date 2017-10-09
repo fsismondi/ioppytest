@@ -240,11 +240,14 @@ class RabbitMQHandler(logging.Handler):
         self.acquire()
 
         try:
-            if self.channel:
-                self.channel.close()
+            self.channel.close()
+        except AttributeError:
+            pass
 
-            if self.connection:
-                self.connection.close()
+        try:
+            self.connection.close()
+        except AttributeError:
+            pass
 
         finally:
             self.release()
