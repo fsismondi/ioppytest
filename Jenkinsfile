@@ -304,3 +304,30 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
          }
     }
 }
+
+
+if(env.JOB_NAME =~ 'full_coap_interop_session/'){
+    node('docker'){
+
+        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh "git submodule update --init"
+            sh "tree ."
+        }
+
+        stage("docker build testing tool and automated-iuts"){
+            env.AUTOMATED_IUT='coap_server_californium'
+            gitlabCommitStatus("docker build testing tool and automated-iuts") {
+
+                sh "echo buiding $AUTOMATED_IUT"
+                sh "sudo -E make docker-build-all "
+                sh "sudo -E docker images"
+            }
+        }
+    }
+}
