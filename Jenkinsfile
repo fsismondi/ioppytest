@@ -314,10 +314,6 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        env.CONTAINER_AUTOMATED_IUT1='automated_iut-coap_server-californium'
-        env.CONTAINER_AUTOMATED_IUT2='automated_iut-coap_client-coapthon'
-        env.CONTAINER_TESTING_TOOL='testing_tool-conformance-coap'
-
         stage("Clone repo and submodules"){
             checkout scm
             sh "git submodule update --init"
@@ -362,33 +358,13 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 45
 
-                    sh "echo CONTAINER_AUTOMATED_IUT1"
-                    sh "echo CONTAINER_AUTOMATED_IUT2"
-                    sh "echo CONTAINER_TESTING_TOOL"
                     sh "echo $AMQP_URL"
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
-                                --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
-                                --env AMQP_URL=$AMQP_URL \
-                                --sysctl net.ipv6.conf.all.disable_ipv6=0 \
-                                --name ${env.CONTAINER_AUTOMATED_IUT1} \
-                                ${env.CONTAINER_AUTOMATED_IUT1} "
-
-                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
-                            --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
-                            --env AMQP_URL=$AMQP_URL \
-                            --sysctl net.ipv6.conf.all.disable_ipv6=0 \
-                            --name ${env.CONTAINER_AUTOMATED_IUT2} \
-                            ${env.CONTAINER_AUTOMATED_IUT2} "
-
-                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
-                            --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
-                            --env AMQP_URL=$AMQP_URL \
-                            --sysctl net.ipv6.conf.all.disable_ipv6=0 \
-                            --name ${env.CONTAINER_TESTING_TOOL} \
-                            ${env.CONTAINER_TESTING_TOOL} "
+                            sh "sudo -E make run-coap-client"
+                            sh "sudo -E make run-coap-server"
+                            sh "sudo -E make run-coap-testing-tool"
                         }
 
                     } catch (err) {
