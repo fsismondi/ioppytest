@@ -251,7 +251,7 @@ class UserMock(threading.Thread):
         if event is None:
             return
 
-        elif isinstance(event, MsgTestingToolReady):
+        elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
             publish_message(self.channel, m)
             logging.info('Event received %s' % event._type)

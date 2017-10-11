@@ -324,9 +324,33 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
             sh "tree ."
         }
 
+        stage("Testing Tool components requirements"){
+            gitlabCommitStatus("Testing Tool's components unit-testing"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y
+                        sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y build-essential
+                        sudo apt-get install --fix-missing -y libyaml-dev
+                        sudo apt-get install --fix-missing -y libssl-dev openssl
+                        sudo apt-get install --fix-missing -y libffi-dev
+
+                        python3 -m pip install pytest --ignore-installed
+                        python3 -m pytest --version
+
+                        echo 'installing py2 dependencies'
+                        make install-requirements
+                    '''
+                }
+            }
+        }
+
         stage("docker BUILD testing tool and automated-iuts"){
             gitlabCommitStatus("docker BUILD testing tool and automated-iuts") {
-                sh "echo buiding $AUTOMATED_IUT"
+                sh "sudo apt-get install --reinstall make"
                 sh "sudo -E make docker-build-all "
                 sh "sudo -E docker images"
             }
@@ -344,10 +368,28 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_AUTOMATED_IUT1} "
-                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_AUTOMATED_IUT2} "
-                            sh "sudo -E docker run -i --rm --sig-proxy=true --env AMQP_URL=$AMQP_URL --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged ${env.CONTAINER_TESTING_TOOL} "
+                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
+                                --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
+                                --env AMQP_URL=$AMQP_URL \
+                                --sysctl net.ipv6.conf.all.disable_ipv6=0 \
+                                --name ${env.CONTAINER_AUTOMATED_IUT1} \
+                                ${env.CONTAINER_AUTOMATED_IUT1} "
+
+                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
+                            --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
+                            --env AMQP_URL=$AMQP_URL \
+                            --sysctl net.ipv6.conf.all.disable_ipv6=0 \
+                            --name ${env.CONTAINER_AUTOMATED_IUT2} \
+                            ${env.CONTAINER_AUTOMATED_IUT2} "
+
+                            sh "sudo -E docker run -d --sig-proxy=true --privileged \
+                            --env AMQP_EXCHANGE=$AMQP_EXCHANGE \
+                            --env AMQP_URL=$AMQP_URL \
+                            --sysctl net.ipv6.conf.all.disable_ipv6=0 \
+                            --name ${env.CONTAINER_TESTING_TOOL} \
+                            ${env.CONTAINER_TESTING_TOOL} "
                         }
+
                     } catch (err) {
                         long timePassed = System.currentTimeMillis() - startTime
                         if (timePassed >= timeoutInSeconds * 1000) {
@@ -359,6 +401,34 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
                     }
                 }
             }
+         }
+
+         stage("full_coap_interop_session"){
+            gitlabCommitStatus("full_coap_interop_session") {
+                      try {
+                        sh '''
+                            echo 'AMQP PARAMS:'
+                            echo $AMQP_URL
+                            echo $AMQP_EXCHANGE
+                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                        '''
+                      }
+                      catch (e){
+                        sh '''
+                            echo 'Do you smell the smoke in the room??'
+                            echo 'docker container logs :'
+                        '''
+                        throw e
+                      }
+                      finally {
+                        sh '''
+                            sudo make get-logs
+                            sudo make stop-all
+                            sudo -E docker ps
+                        '''
+                      }
+            }
+
          }
     }
 }
