@@ -358,9 +358,10 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
 
         stage("docker RUN testing tool and automated-iuts"){
             gitlabCommitStatus("docker RUN testing tool and automated-iuts") {
-                long startTime = System.currentTimeMillis()
-                long timeoutInSeconds = 30
                 gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 45
+
                     sh "echo CONTAINER_AUTOMATED_IUT1"
                     sh "echo CONTAINER_AUTOMATED_IUT2"
                     sh "echo CONTAINER_TESTING_TOOL"
@@ -405,28 +406,31 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
 
          stage("full_coap_interop_session"){
             gitlabCommitStatus("full_coap_interop_session") {
-                      try {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo 'AMQP PARAMS:'
                             echo $AMQP_URL
                             echo $AMQP_EXCHANGE
                             python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
                         '''
-                      }
-                      catch (e){
-                        sh '''
-                            echo 'Do you smell the smoke in the room??'
-                            echo 'docker container logs :'
-                        '''
-                        throw e
-                      }
-                      finally {
-                        sh '''
-                            sudo make get-logs
-                            sudo make stop-all
-                            sudo -E docker ps
-                        '''
-                      }
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo 'Do you smell the smoke in the room??'
+                        echo 'docker container logs :'
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo make stop-all
+                        sudo -E docker ps
+                    '''
+                }
             }
 
          }
