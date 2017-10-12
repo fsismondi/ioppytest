@@ -304,3 +304,111 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
          }
     }
 }
+
+
+if(env.JOB_NAME =~ 'full_coap_interop_session/'){
+    node('docker'){
+
+        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh "git submodule update --init"
+            sh "tree ."
+        }
+
+        stage("Testing Tool components requirements"){
+            gitlabCommitStatus("Testing Tool's components unit-testing"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y
+                        sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y build-essential
+                        sudo apt-get install --fix-missing -y libyaml-dev
+                        sudo apt-get install --fix-missing -y libssl-dev openssl
+                        sudo apt-get install --fix-missing -y libffi-dev
+
+                        python3 -m pip install pytest --ignore-installed
+                        python3 -m pytest --version
+
+                        echo 'installing py2 dependencies'
+                        make install-requirements
+                    '''
+                }
+            }
+        }
+
+        stage("docker BUILD testing tool and automated-iuts"){
+            gitlabCommitStatus("docker BUILD testing tool and automated-iuts") {
+                sh "sudo apt-get install --reinstall make"
+                sh "sudo -E make docker-build-all "
+                sh "sudo -E docker images"
+            }
+        }
+
+        stage("docker RUN testing tool and automated-iuts"){
+            gitlabCommitStatus("docker RUN testing tool and automated-iuts") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 45
+
+                    sh "echo $AMQP_URL"
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh "sudo -E make run-coap-client"
+                            sh "sudo -E make run-coap-server"
+                            sh "sudo -E make run-coap-testing-tool"
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+         }
+
+         stage("full_coap_interop_session"){
+            gitlabCommitStatus("full_coap_interop_session") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo 'AMQP PARAMS:'
+                            echo $AMQP_URL
+                            echo $AMQP_EXCHANGE
+                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo 'Do you smell the smoke in the room??'
+                        echo 'docker container logs :'
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+
+         }
+    }
+}
