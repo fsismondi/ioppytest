@@ -1199,7 +1199,7 @@ class Coordinator:
             try:
                 verdict = event.partial_verdict
                 description = event.description
-            except KeyError:
+            except AttributeError:
                 self.notify_coordination_error(description='Malformed CHECK response', error_code=None)
 
             self.handle_check_step_response(verdict, description)
@@ -1657,7 +1657,7 @@ class Coordinator:
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
-        # _ted_it is acircular iterator
+        # _ted_it is a circular iterator
         # testcase can eventually be executed out of order due tu user selection-
         self.current_tc = next(self._ted_it)
 

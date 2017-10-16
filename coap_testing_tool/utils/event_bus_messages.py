@@ -27,7 +27,7 @@ Usage:
 >>> from messages import * # doctest: +SKIP
 >>> m = MsgTestCaseSkip(testcase_id = 'some_testcase_id')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = some_testcase_id, )
+MsgTestCaseSkip(_api_version = 0.1.46, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = some_testcase_id, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
@@ -38,18 +38,18 @@ MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, d
 # also we can modify some of the fields (rewrite the default ones)
 >>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = TD_COAP_CORE_03, )
+MsgTestCaseSkip(_api_version = 0.1.46, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = TD_COAP_CORE_03, )
 >>> m.testcase_id
 'TD_COAP_CORE_03'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.45", "_type": "testcoordination.testcase.skip", "description": "Skip testcase", "node": "someNode", "testcase_id": "TD_COAP_CORE_03"}'
+'{"_api_version": "0.1.46", "_type": "testcoordination.testcase.skip", "description": "Skip testcase", "node": "someNode", "testcase_id": "TD_COAP_CORE_03"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.45", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
+'{"_api_version": "0.1.46", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,7 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.45, _type = testcoordination.testcase.skip, d
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.45, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
+MsgErrorReply(_api_version = 0.1.46, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
 >>> err.routing_key
@@ -80,7 +80,7 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.45'
+API_VERSION = '0.1.46'
 
 
 # TODO use metaclasses instead?
@@ -620,6 +620,25 @@ class MsgTestSuiteStart(Message):
     _msg_data_template = {
         "_type": "testcoordination.testsuite.start",
         "description": "Event test suite START"
+    }
+
+
+class MsgTestSuiteStarted(Message):
+    """
+    Requirements: Testing Tool SHOULD publish to event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description: tbd
+    """
+
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.testsuite.started",
+        "description": "Event test suite STARTED"
     }
 
 
@@ -1946,9 +1965,10 @@ message_types_dict = {
     "testingtool.configured": MsgTestingToolConfigured,  # TestingTool -> Orchestrator, GUI
     "testingtool.component.ready": MsgTestingToolComponentReady,  # Testing Tool internal
     "testingtool.component.shutdown": MsgTestingToolComponentShutdown,  # Testing Tool internal
-    "testingtool.ready": MsgTestingToolReady,  # GUI Testing Tool -> GUI
+    "testingtool.ready": MsgTestingToolReady,  # Testing Tool -> GUI
     "testingtool.terminate": MsgTestingToolTerminate,  # orchestrator -> TestingTool
     "testcoordination.testsuite.start": MsgTestSuiteStart,  # GUI -> TestingTool
+    "testcoordination.testsuite.started": MsgTestSuiteStarted,  # Testing Tool -> GUI
     "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
     "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI
     "testcoordination.testcase.start": MsgTestCaseStart,  # GUI -> TestingTool
