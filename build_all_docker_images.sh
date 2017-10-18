@@ -18,14 +18,9 @@ testing_tool-interoperability-coap (alias to last version)
 testing_tool-conformance-coap-v0.8
 testing_tool-conformance-coap (alias to last version)
 testing_tool-conformance-6tisch-v0.8
-
-reference_iut-coap_client-coapthon-v0.8
-reference_iut-coap_client (alias to last version)
-reference_iut-coap_server-californium-v0.8
-reference_iut-coap_server (alias to last version)
 """
 
-# let's build the automated/reference IUT images used by F-Interop platform
+# let's build the automated IUT images used by F-Interop platform
 docker build -t automated_iut-coap_server-californium-v0.8 -f automated_IUTs/coap_server_californium/Dockerfile .
 docker build -t automated_iut-coap_client-californium-v0.8 -f automated_IUTs/coap_client_californium/Dockerfile .
 docker build -t automated_iut-coap_server-coapthon-v0.8 -f automated_IUTs/coap_server_coapthon/Dockerfile .
@@ -47,14 +42,6 @@ docker tag automated_iut-coap_server-coapthon-v0.8:latest automated_iut-coap_ser
 docker tag automated_iut-coap_client-californium-v0.8:latest automated_iut-coap_client-californium
 docker tag automated_iut-coap_server-californium-v0.8:latest automated_iut-coap_server-californium
 
-# reference iut (only reference per sub_type in F-Interop plaform) e.g.: for coap server is californium
-docker tag automated_iut-coap_server-californium-v0.8:latest reference_iut-coap_server-californium-v0.8
-docker tag automated_iut-coap_client-coapthon-v0.8:latest reference_iut-coap_client-coapthon-v0.8
-
-# which can be run also by using "reference_iut-coap_client" or "reference_iut-coap_server"
-# TODO just use this name and not the one with the sub_type
+# for conformance testing we use "reference implementations"
 docker tag automated_iut-coap_client-coapthon-v0.8:latest reference_iut-coap_client
 docker tag automated_iut-coap_server-californium-v0.8:latest reference_iut-coap_server
-
-
-

@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
-  "testing_tool": "CoAP Testing Tool",
-  "version": "0.0.6",
+  "testing_tool": "CoAP Testing Tool (1 user)",
+  "version": "0.0.8",
   "test_type": "interoperability",
   "protocols_under_test": [
     "CoAP",
@@ -42,7 +42,8 @@
   ],
   "ui_information": [
     {
-      "field_name": "Testing Tool Description",
+      "field_name": "testingtool.description",
+      "description": "Testing Tool Description",
       "type": "text",
       "value": [
         "Interoperability Testing Tool for testing CoAP interoperability between two IUTs (CoAP client and CoAP server).",
@@ -50,7 +51,8 @@
       ]
     },
     {
-      "field_name": "Testing tool version",
+      "field_name": "testingtool.version",
+      "description": "Testing tool version (optional)",
       "type": "selection",
       "value": [
         "0.0.8",
@@ -65,7 +67,8 @@
       "mandatory": false
     },
     {
-      "field_name": "Test cases selection",
+      "field_name": "testsuite.testcases",
+      "description": "Test cases selection (optional)",
       "type": "multi-selection",
       "value": [
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
@@ -94,9 +97,20 @@
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_31"
       ],
       "mandatory": false
+    },
+    {
+      "field_name": "testsuite.automated_iut",
+      "description": "Automated-IUT selection (optional)",
+      "type": "selection",
+      "value": [
+        "automated_iut-coap_server-californium",
+        "automated_iut-coap_client-californium",
+        "automated_iut-coap_server-coapthon",
+        "automated_iut-coap_client-coapthon"
+      ],
+      "mandatory": false
     }
   ],
-  "ansible_playbook": "ansible/main.yml",
   "owner": "F-Interop",
   "mantainer": "Federico Sismondi",
   "mantainer_email": "federico.sismondi@inria.fr"

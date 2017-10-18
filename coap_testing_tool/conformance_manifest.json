@@ -1,7 +1,7 @@
 {
   "_type": "testsuite.manifest",
   "testing_tool": "CoAP Testing Tool",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "test_type": "conformance",
   "protocols_under_test": [
     "CoAP",
@@ -42,7 +42,8 @@
   ],
   "ui_information": [
     {
-      "field_name": "Testing Tool Description",
+      "field_name": "testingtool.description",
+      "description": "Testing Tool Description",
       "type": "text",
       "value": [
         "Reference-based interoperability (~conformance) Testing Tool for validating conformance to CoAP RFCs.",
@@ -51,7 +52,8 @@
       ]
     },
     {
-      "field_name": "Testing tool version",
+      "field_name": "testingtool.version",
+      "description": "Testing tool version (optional)",
       "type": "selection",
       "value": [
         "0.0.8",
@@ -66,7 +68,8 @@
       "mandatory": false
     },
     {
-      "field_name": "Test cases selection",
+      "field_name": "testsuite.testcases",
+      "description": "Test cases selection (optional)",
       "type": "multi-selection",
       "value": [
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
@@ -95,9 +98,18 @@
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_31"
       ],
       "mandatory": false
+    },
+    {
+      "field_name": "testsuite.reference_iut",
+      "description": "Reference implementation (mandatory)",
+      "type": "selection",
+      "value": [
+        "reference_iut-coap_server",
+        "reference_iut-coap_client"
+      ],
+      "mandatory": false
     }
   ],
-  "ansible_playbook": "ansible/main.yml",
   "owner": "F-Interop",
   "mantainer": "Federico Sismondi",
   "mantainer_email": "federico.sismondi@inria.fr"
