@@ -17,7 +17,7 @@ AGENT_2_ID = AGENT_NAMES[1]
 AGENT_TT_ID = AGENT_TT_ID
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()

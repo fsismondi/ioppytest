@@ -48,7 +48,7 @@ description:
   - node: coap_client
     message:
       - No special configuration needed
-      - CoAP client requests:
+      - CoAP client requests
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683
 
@@ -105,6 +105,6 @@ description:
   - node: coap_client
     message:
       - No special configuration needed
-      - CoAP client requests:
+      - CoAP client requests
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683

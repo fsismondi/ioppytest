@@ -27,12 +27,6 @@ docker-build-all:
 	docker tag automated_iut-coap_client-californium-v0.8:latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v0.8:latest automated_iut-coap_server-californium
 
-	# reference iut (only reference per sub_type in F-Interop plaform) e.g.: for coap server is californium
-	docker tag automated_iut-coap_server-californium-v0.8:latest reference_iut-coap_server-californium-v0.8
-	docker tag automated_iut-coap_client-coapthon-v0.8:latest reference_iut-coap_client-coapthon-v0.8
-
-	# which can be run also by using "reference_iut-coap_client" or "reference_iut-coap_server"
-	# TODO just use this name and not the one with the sub_type
 	docker tag automated_iut-coap_client-coapthon-v0.8:latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v0.8:latest reference_iut-coap_server
 
@@ -113,8 +107,6 @@ info_message = """ \
 	testing_tool-conformance-coap (alias to last version) \n\
 	testing_tool-conformance-6tisch-v0.8 \n\
 	\n\
-	reference_iut-coap_client-coapthon-v0.8 \n\
-	reference_iut-coap_client (alias to last version) \n\
-	reference_iut-coap_server-californium-v0.8 \n\
-	reference_iut-coap_server (alias to last version) \n\
+	reference_iut-coap_client (alias) \n\
+	reference_iut-coap_server (alias) \n\
 	"""
