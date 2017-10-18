@@ -1,21 +1,31 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import os
+import sys
+import json
+import errno
+import pika
+import time
+import traceback
 import logging
 import argparse
 from threading import Timer
-from coap_testing_tool.test_coordinator.coordinator import *
+
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
-from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR
+from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+from coap_testing_tool.utils.event_bus_messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
+from coap_testing_tool.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
@@ -47,7 +57,8 @@ if __name__ == '__main__':
     try:
         parser = argparse.ArgumentParser()
         parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan'])
-        parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message", action="store_true")
+        parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
+                            action="store_true")
         args = parser.parse_args()
 
         testsuite = args.testsuite
@@ -89,14 +100,14 @@ if __name__ == '__main__':
     bootstrap_q = channel.queue_declare(queue='bootstrapping', auto_delete=True)
 
     channel.queue_bind(
-            exchange=AMQP_EXCHANGE,
-            queue='bootstrapping',
-            routing_key='control.session',
+        exchange=AMQP_EXCHANGE,
+        queue='bootstrapping',
+        routing_key='control.session',
     )
 
     # starting verification of the testing tool components
     msg = MsgTestingToolComponentReady(
-            component='testcoordination'
+        component='testcoordination'
     )
     publish_message(channel, msg)
 
@@ -117,7 +128,7 @@ if __name__ == '__main__':
                     TT_check_list.remove(component)
                     return
 
-            elif isinstance(event, MsgTestingToolReady):
+            elif isinstance(event, MsgTestingToolReady):  # listen to self generated event
                 logger.info('all signals processed')
                 channel.queue_delete('bootstrapping')
                 return
@@ -141,7 +152,7 @@ if __name__ == '__main__':
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()
 
-        while len(TT_check_list) != 0 and not timeout:
+        while len(TT_check_list) != 0 and not timeout:  # blocking until timeout!
             time.sleep(0.3)
             connection.process_data_events()
 
@@ -152,11 +163,11 @@ if __name__ == '__main__':
         assert len(TT_check_list) == 0
         logger.info('All components ready')
 
-
     # lets start the test coordination
     try:
-        logger.info('Starting test-coordinator for test suite (ts) : %s' % testsuite)
-        coordinator = Coordinator(connection, ted_tc_file, ted_config_file)
+        logger.info('Starting test-coordinator for test suite: %s' % testsuite)
+        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
+        coordinator.bootstrap()
         publish_message(channel, MsgTestingToolReady())
 
     except Exception as e:
@@ -190,16 +201,16 @@ if __name__ == '__main__':
 
         # lets push the error message into the bus
         coordinator.channel.basic_publish(
-                body=json.dumps({
-                    'traceback': traceback.format_exc(),
-                    'message': error_msg,
-                    '_type': 'testcoordination.error',
-                }),
-                exchange=AMQP_EXCHANGE,
-                routing_key='control.session.error',
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+            body=json.dumps({
+                'traceback': traceback.format_exc(),
+                'message': error_msg,
+                '_type': 'testcoordination.error',
+            }),
+            exchange=AMQP_EXCHANGE,
+            routing_key='control.session.error',
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
         )
         # close AMQP connection
         connection.close()
