@@ -3,6 +3,7 @@ FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
 RUN apt-get update -y -qq && apt-get -y -qq install python3-dev
+RUN apt-get -y install build-essential
 RUN apt-get -y install python3-setuptools
 RUN	apt-get -y install python3-pip
 RUN	apt-get -y install python-pip
@@ -17,16 +18,8 @@ WORKDIR /coap_testing_tool
 # HACK to avoid "cannot open shared object file: Permission denied" , see https://github.com/dotcloud/docker/issues/5490
 RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
 
-#py2 requirements
-RUN pip install -r coap_testing_tool/agent/requirements.txt
-
-#py3 requirements
-RUN pip3 install -r coap_testing_tool/test_coordinator/requirements.txt
-RUN pip3 install -r coap_testing_tool/test_analysis_tool/requirements.txt
-RUN pip3 install -r coap_testing_tool/packet_router/requirements.txt
-RUN pip3 install -r coap_testing_tool/sniffer/requirements.txt
-RUN pip3 install -r coap_testing_tool/webserver/requirements.txt
-
+# install testing tool's python dependencies:
+RUN make intstall-requirements
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap
