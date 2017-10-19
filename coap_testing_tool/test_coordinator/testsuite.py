@@ -21,8 +21,9 @@ from coap_testing_tool.utils.exceptions import TestSuiteError
 from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
+COMPONENT_ID='test_coordinator'
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'testsuite'))
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 

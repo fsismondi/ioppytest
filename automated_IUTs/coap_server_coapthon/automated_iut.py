@@ -4,7 +4,7 @@
 from automated_IUTs.automation import *
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10

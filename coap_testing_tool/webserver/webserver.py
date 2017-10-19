@@ -21,8 +21,9 @@ from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUT
 from coap_testing_tool.test_coordinator.testsuite import TestCase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+COMPONENT_ID = 'webserver'
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 td_list = []
 FILENAME_HTML_REPORT = 'testsuite_results.html'

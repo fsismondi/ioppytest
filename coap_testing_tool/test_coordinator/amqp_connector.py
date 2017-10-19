@@ -36,7 +36,7 @@ SNIFFER_FILTER_IF = 'tun0'
 COMPONENT_ID = 'test_coordinator'
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'amqp_connector'))
 
 # default handler
 sh = logging.StreamHandler()
@@ -64,6 +64,7 @@ class CoordinatorAmqpInterface(object):
     def __init__(self, amqp_url, amqp_exchange):
         self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
         self.channel = self.connection.channel()
+        self.channel_producer = self.connection.channel()
         self.channel.basic_qos(prefetch_count=1)
 
         self.services_q_name = 'services@%s' % self.component_id
@@ -164,7 +165,7 @@ class CoordinatorAmqpInterface(object):
                                     error_code='TBD')
                 logger.error('[Coordination services error] %s' % e)
 
-            publish_message(self.channel, response)
+            publish_message(self.channel_producer, response)
             return
 
         else:
@@ -218,7 +219,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestingToolConfigured(
             **configs
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_testcase_finished(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -227,7 +228,7 @@ class CoordinatorAmqpInterface(object):
             description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -237,7 +238,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_report)
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_testsuite_ready(self, received_event):
         print('[test_coordinator] notify_testsuite_ready')
@@ -255,7 +256,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestCaseReady(
             **tc_info_dict
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
@@ -299,12 +300,12 @@ class CoordinatorAmqpInterface(object):
         elif step_info_dict['step_type'] == "check" or step_info_dict['step_type'] == "feature":
             raise NotImplementedError()
 
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_testcase_started(self, received_event):
         event = MsgTestCaseStarted(
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_tun_interfaces_start(self, received_event):
         """
@@ -322,13 +323,13 @@ class CoordinatorAmqpInterface(object):
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
             **self.testsuite.get_report()
         )
-        publish_message(self.channel, event)
+        publish_message(self.channel_producer, event)
 
     def notify_tescase_configuration(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -345,7 +346,7 @@ class CoordinatorAmqpInterface(object):
                 description=description,
                 **tc_info_dict
             )
-            publish_message(self.channel, event)
+            publish_message(self.channel_producer, event)
 
             # TODO how new way of config for 6lo handling is implemented in the FSM?
 
@@ -382,7 +383,7 @@ class CoordinatorAmqpInterface(object):
     def call_service_sniffer_start(self, **kwargs):
 
         try:
-            response = amqp_request(self.channel, MsgSniffingStart(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.channel_producer, MsgSniffingStart(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -391,7 +392,7 @@ class CoordinatorAmqpInterface(object):
     def call_service_sniffer_stop(self):
 
         try:
-            response = amqp_request(self.channel, MsgSniffingStop(), COMPONENT_ID)
+            response = amqp_request(self.channel_producer, MsgSniffingStop(), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -400,7 +401,7 @@ class CoordinatorAmqpInterface(object):
     def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            response = amqp_request(self.channel, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.channel_producer, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
         except TimeoutError as e:
@@ -409,6 +410,6 @@ class CoordinatorAmqpInterface(object):
     def call_service_testcase_analysis(self, **kwargs):
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
-        response = amqp_request(self.channel, request, COMPONENT_ID)
+        response = amqp_request(self.channel_producer, request, COMPONENT_ID)
         logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
         return response

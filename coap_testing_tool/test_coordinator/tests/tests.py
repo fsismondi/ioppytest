@@ -1,7 +1,7 @@
 import unittest, logging, os, pika, json
 from collections import OrderedDict
 from coap_testing_tool import AMQP_URL, TD_COAP_CFG, TD_COAP
-from coap_testing_tool.test_coordinator.coordinator import Coordinator, import_teds
+from coap_testing_tool.test_coordinator.testsuite import import_teds
 
 
 class CoordinatorTestCase(unittest.TestCase):
@@ -12,7 +12,7 @@ class CoordinatorTestCase(unittest.TestCase):
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
         # this tests import and the construction of Coordinator and test cases from yaml file
-        self.coord = Coordinator(connection, TD_COAP, TD_COAP_CFG)
+        #self.coord = Coordinator(connection, TD_COAP, TD_COAP_CFG)
 
     def test_parse_yaml(self):
         print("raw parse : ")

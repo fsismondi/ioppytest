@@ -42,7 +42,7 @@ STEP_TIMEOUT = 300  # seconds
 IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 
 # init logging to stnd output and log files
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'FSM'))
 
 # default handler
 sh = logging.StreamHandler()

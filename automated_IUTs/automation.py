@@ -17,12 +17,14 @@ from coap_testing_tool.utils.event_bus_messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
 
-logger = logging.getLogger(__name__)
+
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
 
 COMPONENT_ID = 'automation'
+
+logger = logging.getLogger(COMPONENT_ID)
 
 
 @property

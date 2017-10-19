@@ -22,7 +22,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logging.getLogger('pika').setLevel(logging.INFO)
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
