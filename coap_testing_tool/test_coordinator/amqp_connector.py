@@ -4,7 +4,6 @@
 import logging
 import os
 
-
 from transitions.core import MachineError
 # TODO fix me! dont do agent stuff in coordinator
 from coap_testing_tool.agent.utils import bootstrap_agent
@@ -33,10 +32,10 @@ SNIFFER_FILTER_IF = 'tun0'
 
 
 # component identification & bus params
-COMPONENT_ID = 'test_coordinator'
+COMPONENT_ID = '%s|%s' % ('test_coordinator', 'amqp_connector')
 
 # init logging to stnd output and log files
-logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'amqp_connector'))
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
@@ -215,7 +214,7 @@ class CoordinatorAmqpInterface(object):
 
     def notify_testsuite_configured(self, received_event):
         configs = dict()
-        configs.update({'tc_list':self.testsuite.get_testsuite_configuration()})
+        configs.update({'tc_list': self.testsuite.get_testsuite_configuration()})
         event = MsgTestingToolConfigured(
             **configs
         )

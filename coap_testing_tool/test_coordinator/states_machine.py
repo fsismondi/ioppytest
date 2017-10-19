@@ -7,7 +7,7 @@ import base64
 from time import sleep
 from urllib.parse import urlparse
 
-from transitions import Machine, State, logger
+from transitions import Machine
 from transitions.extensions.states import add_state_features, Tags, Timeout
 from transitions.core import MachineError
 
@@ -37,12 +37,12 @@ SNIFFER_FILTER_IF = 'tun0'
 
 
 # component identification & bus params
-COMPONENT_ID = 'test_coordinator'
+COMPONENT_ID = '%s%s' % ('test_coordinator', 'FSM')
 STEP_TIMEOUT = 300  # seconds
 IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 
 # init logging to stnd output and log files
-logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'FSM'))
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
@@ -83,19 +83,19 @@ class Coordinator(CoordinatorAmqpInterface):
         machine = CustomStateMachine(model=self,
                                      states=states,
                                      transitions=transitions,
-                                     initial='null',
-                                     finalize_event='summary')
+                                     initial='null')
 
     def _set_received_event(self, event=None):
         if event is None:
             logger.warning('Empty event passed to callback function')
         else:
-            print('[test_coordinator] >> FSM exteral event received, %s' % type(event))
+            # print('[test_coordinator] >> FSM exteral event received, %s' % type(event))
             self.event = event
 
-    def summary(self, event=None):
-        print(json.dumps(self.get_states_summary()))
-        # print(self.testsuite.get_detailed_status())
+    # def summary(self, event=None):
+    #
+    # print(json.dumps(self.get_states_summary()))
+    # print(self.testsuite.get_detailed_status())
 
     def generate_testcases_verdict(self, received_event):
         verdict_info = {}
@@ -182,7 +182,7 @@ class Coordinator(CoordinatorAmqpInterface):
 
     def get_states_summary(self):
         states = self.testsuite.states_summary()
-        states.update({'tc_list':self.testsuite.get_testsuite_configuration()})
+        states.update({'tc_list': self.testsuite.get_testsuite_configuration()})
         return states
 
     def finish_testcase(self):
@@ -694,8 +694,7 @@ def test_session_flow_1():
     machine = CustomStateMachine(model=test_coordinator,
                                  states=states,
                                  transitions=transitions,
-                                 initial='null',
-                                 finalize_event='summary')
+                                 initial='null')
 
     test_coordinator.bootstrap()
 
@@ -774,8 +773,7 @@ def test_session_flow_2():
     machine = CustomStateMachine(model=test_coordinator,
                                  states=states,
                                  transitions=transitions,
-                                 initial='null',
-                                 finalize_event='summary')
+                                 initial='null')
 
     test_coordinator.bootstrap()
     assert test_coordinator.state == 'waiting_for_testsuite_config'
@@ -805,8 +803,7 @@ def test_session_flow_3():
     machine = CustomStateMachine(model=test_coordinator,
                                  states=states,
                                  transitions=transitions,
-                                 initial='null',
-                                 finalize_event='summary')
+                                 initial='null')
 
     test_coordinator.bootstrap()
     assert test_coordinator.state == 'waiting_for_testsuite_config'
@@ -840,8 +837,7 @@ def test_session_flow_4():
     machine = CustomStateMachine(model=test_coordinator,
                                  states=states,
                                  transitions=transitions,
-                                 initial='null',
-                                 finalize_event='summary')
+                                 initial='null')
 
     test_coordinator.bootstrap()
     assert test_coordinator.state == 'waiting_for_testsuite_config'

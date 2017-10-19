@@ -14,29 +14,29 @@ import logging
 
 from itertools import cycle
 from collections import OrderedDict
-from urllib.parse import urlparse
 
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 from coap_testing_tool.utils.exceptions import TestSuiteError
 
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
-COMPONENT_ID='test_coordinator'
+COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
+
 # init logging to stnd output and log files
-logger = logging.getLogger('%s.%s'%(COMPONENT_ID,'testsuite'))
+logger = logging.getLogger(COMPONENT_ID)
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-#
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 # # # YAML parser methods # # #
 def testcase_constructor(loader, node):

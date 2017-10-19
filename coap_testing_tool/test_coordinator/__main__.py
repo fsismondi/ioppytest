@@ -177,7 +177,7 @@ if __name__ == '__main__':
         logger.debug(traceback.format_exc())
         sys.exit(1)
 
-    ### RUN TEST COORDINATION COMPONENT ###
+    # # # RUN TEST COORDINATION COMPONENT # # #
 
     try:
         logger.info('Starting coordinator..')
