@@ -18,7 +18,7 @@ import mimetypes
 from jinja2 import Template
 
 from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
-from coap_testing_tool.test_coordinator.coordinator import TestCase
+from coap_testing_tool.test_coordinator.testsuite import TestCase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
