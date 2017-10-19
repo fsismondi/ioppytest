@@ -1,7 +1,7 @@
 CoAP Testing Tool:
 ------------------
 
-This repo conaints all necessary software (and their dependencies) for running a 
+This repo contains all necessary software (and their dependencies) for running a
 CoAP interoperability test session.
 
 This can be run as standalone software and also integrated to f-interop 
@@ -177,5 +177,5 @@ automated-IUT into CoAP Testing Tool
     **TBD**
 
 - Docker build returns a "cannot fetch package" or a "cannot resolve .."
-
-    http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
+    -> try using --no-cache for the docker build
+    -> more info http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
