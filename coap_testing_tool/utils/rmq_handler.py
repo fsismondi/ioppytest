@@ -240,13 +240,15 @@ class RabbitMQHandler(logging.Handler):
 
         try:
             self.channel.close()
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            print('No channel found')
+            print(e)
 
         try:
             self.connection.close()
         except AttributeError:
-            pass
+            print('No connection found')
+            print(e)
 
         finally:
             self.release()
