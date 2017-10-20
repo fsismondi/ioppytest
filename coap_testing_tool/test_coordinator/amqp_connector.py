@@ -37,11 +37,11 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'amqp_connector')
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-#
-# # AMQP log handler with f-interop's json formatter
+# default handler
+sh = logging.StreamHandler()
+logger.addHandler(sh)
+
+# AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
