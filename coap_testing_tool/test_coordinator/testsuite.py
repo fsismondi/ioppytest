@@ -271,7 +271,7 @@ class TestSuite:
         if node and node_address:
             self.get_current_testcase_configuration().update_node_address(node, node_address)
             config = self.get_current_testcase_configuration().to_dict(verbose=True)
-            logger.info('IUT/EUT addresses updated: %s, topology: %s'% (config['addresses_table'], config['topology']))
+            logger.info('IUT/EUT addresses updated: %s, topology: %s' % (config['addresses_table'], config['topology']))
         else:
             raise TestSuiteError('Expected node_id and node_address, but got %s , %s ' % (node, node_address))
 
@@ -316,12 +316,11 @@ class TestSuite:
         tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
 
         if len(tc_list_requested) == 0:
-            logger.error(message='No testcases selected. Using default selection: ALL')
+            logger.error('No testcases selected. Using default selection: ALL')
             return
 
         if len(tc_non_existent) != 0:
-            logger.error(message='The following testcases are not available in the testing tool: %s'
-                                 % str(tc_non_existent))
+            logger.error('The following testcases are not available in the testing tool: %s' % str(tc_non_existent))
 
         # let's set as skipped all non requested testcases
         if len(tc_to_skip) != 0:

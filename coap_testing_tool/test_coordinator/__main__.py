@@ -97,7 +97,8 @@ if __name__ == '__main__':
 
     channel = connection.channel()
 
-    bootstrap_q = channel.queue_declare(queue='bootstrapping', auto_delete=True)
+    bootstrap_q_name = 'bootstrapping'
+    bootstrap_q = channel.queue_declare(queue=bootstrap_q_name, auto_delete=True)
 
     channel.queue_bind(
         exchange=AMQP_EXCHANGE,
@@ -139,9 +140,7 @@ if __name__ == '__main__':
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
                               queue='bootstrapping')
-
         logger.info('Waiting components ready signal... signals not checked:' + str(TT_check_list))
-
         # wait for all testing tool component's signal
         timeout = False
 
@@ -162,6 +161,9 @@ if __name__ == '__main__':
 
         assert len(TT_check_list) == 0
         logger.info('All components ready')
+
+    # clean up
+    channel.queue_delete(bootstrap_q_name)
 
     # lets start the test coordination
     try:
