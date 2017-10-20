@@ -2,6 +2,8 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+
 from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
 import logging
@@ -327,17 +329,6 @@ def import_env_vars():
     connection.close()
 
 
-def publish_message(channel, message):
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-        exchange=AMQP_EXCHANGE,
-        routing_key=message.routing_key,
-        properties=properties,
-        body=message.to_json(),
-    )
-
-
 def stop_generator():
     global stop_generator_signal
     logger.debug("The test is finished!")
@@ -446,7 +437,7 @@ class MessageGenerator(threading.Thread):
             while self.keepOnRunning:
                 time.sleep(MESSAGES_WAIT_INTERVAL)
                 m = self.messages.pop(0)
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
                 logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
         except IndexError:
             # list finished, lets wait so all messages are sent and processed

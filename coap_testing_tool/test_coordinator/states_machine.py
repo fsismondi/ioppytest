@@ -37,7 +37,7 @@ SNIFFER_FILTER_IF = 'tun0'
 
 
 # component identification & bus params
-COMPONENT_ID = '%s%s' % ('test_coordinator', 'FSM')
+COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
 STEP_TIMEOUT = 300  # seconds
 IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 
@@ -45,15 +45,15 @@ IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
+#sh = logging.StreamHandler()
+#logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.INFO)
+#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+#json_formatter = JsonFormatter()
+#rabbitmq_handler.setFormatter(json_formatter)
+#logger.addHandler(rabbitmq_handler)
+#logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -466,7 +466,7 @@ class Coordinator(CoordinatorAmqpInterface):
 states = [
     {
         'name': 'null',
-        'on_enter': [],
+        'on_enter': ['bootstrap'],
         'on_exit': [],
         'tags': []
     },

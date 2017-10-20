@@ -2,6 +2,8 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+
 from automated_IUTs.automation import UserMock
 from urllib.parse import urlparse
 import logging
@@ -61,7 +63,7 @@ class SessionMockTests(unittest.TestCase):
 
             u.start()
             e.start()
-            publish_message(self.channel,
+            publish_message(self.connection,
                             MsgInteropSessionConfiguration()  # from TC1 to TC3
                             )
             u.join(THREAD_JOIN_TIMEOUT)  # waits THREAD_JOIN_TIMEOUT for the session to terminate
@@ -71,7 +73,7 @@ class SessionMockTests(unittest.TestCase):
 
         finally:
 
-            publish_message(self.channel,
+            publish_message(self.connection,
                             MsgTestingToolTerminate())  # this should terminate all processes listening in the bus
 
             if u.is_alive():
@@ -113,16 +115,6 @@ def import_env_vars():
         # load default values
         AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format("guest", "guest", "localhost", "/")
 
-
-def publish_message(channel, message):
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-        exchange=AMQP_EXCHANGE,
-        routing_key=message.routing_key,
-        properties=properties,
-        body=message.to_json(),
-    )
 
 
 def stop_generator():
@@ -179,7 +171,7 @@ class MessageGenerator(threading.Thread):
             while self.keepOnRunning:
                 time.sleep(MESSAGES_WAIT_INTERVAL)
                 m = self.messages.pop(0)
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
                 logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
         except IndexError:
             # list finished, lets wait so all messages are sent and processed

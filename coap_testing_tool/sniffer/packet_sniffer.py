@@ -24,21 +24,22 @@ logging.getLogger('pika').setLevel(logging.INFO)
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
-
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
+#
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.DEBUG)
 
 # in seconds
 TIME_WAIT_FOR_TCPDUMP_ON = 5
 TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 
+connection = None
 
 def on_request(ch, method, props, body):
     """
@@ -53,6 +54,7 @@ def on_request(ch, method, props, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     global last_capture_name
+    global connection
 
     try:
         props_dict = {
@@ -96,7 +98,7 @@ def on_request(ch, method, props, body):
 
             except Exception as e:
                 publish_message(
-                    ch,
+                    connection,
                     MsgErrorReply(request, error_message=str(e))
                 )
                 logger.error(str(e))
@@ -118,18 +120,18 @@ def on_request(ch, method, props, body):
             except Exception as e:
                 err_mess = str(e)
                 m_resp = MsgErrorReply(request, error_message=err_mess)
-                publish_message(ch, m_resp)
+                publish_message(connection, m_resp)
                 logger.warning(err_mess)
                 return
 
             logger.info("Response ready, PCAP bytes: \n" + repr(response))
             logger.info("Sending response through AMQP interface ...")
-            publish_message(ch, response)
+            publish_message(connection, response)
 
         else:
             err_mess = 'No previous capture found.'
             m_resp = MsgErrorReply(request, error_message=err_mess)
-            publish_message(ch, m_resp)
+            publish_message(connection, m_resp)
             logger.warning(err_mess)
             return
 
@@ -151,7 +153,7 @@ def on_request(ch, method, props, body):
             logger.warning('Coulnt retrieve file %s from dir' % file)
             logger.warning(str(fne))
             publish_message(
-                ch,
+                connection,
                 MsgErrorReply(
                     request,
                     error_message=str(fne)
@@ -175,7 +177,7 @@ def on_request(ch, method, props, body):
 
         logger.info("Response ready, PCAP bytes: \n" + repr(response))
         logger.info("Sending response through AMQP interface ...")
-        publish_message(ch, response)
+        publish_message(connection, response)
         return
 
     elif isinstance(request, MsgSniffingStart):
@@ -185,7 +187,7 @@ def on_request(ch, method, props, body):
         except:
             err_mess = 'No capture id provided'
             m_resp = MsgErrorReply(request, error_message=err_mess)
-            publish_message(ch, m_resp)
+            publish_message(connection, m_resp)
             logger.error(err_mess)
             return
 
@@ -210,7 +212,7 @@ def on_request(ch, method, props, body):
         last_capture_name = capture_id  # keep track of the undergoing capture name
         time.sleep(TIME_WAIT_FOR_TCPDUMP_ON)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
-        publish_message(ch, response)
+        publish_message(connection, response)
 
     elif isinstance(request, MsgSniffingStop):
 
@@ -223,7 +225,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed stopping the sniffer')
 
         response = MsgReply(request)  # by default sends ok = True
-        publish_message(ch, response)
+        publish_message(connection, response)
 
     else:
         logger.warning('Ignoring unrecognised service request: %s' % repr(request))
@@ -294,7 +296,8 @@ def main():
 
     ### SETUPING UP CONNECTION ###
 
-    connection = None
+    global connection
+
     try:
 
         logger.info('Setting up AMQP connection..')
@@ -320,7 +323,8 @@ def main():
     msg = MsgTestingToolComponentReady(
         component='sniffing'
     )
-    publish_message(channel, msg)
+
+    publish_message(connection, msg)
 
     try:
         logger.info("Awaiting AMQP requests on topic: control.sniffing.service")

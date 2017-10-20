@@ -9,6 +9,7 @@ import logging
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
 from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.amqp_synch_call import publish_message
 
 COMPONENT_ID = 'packet_router'
 
@@ -20,33 +21,15 @@ AGENT_TT_ID = AGENT_TT_ID
 logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
+#sh = logging.StreamHandler()
+#logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
-
-
-def publish_message(channel, message):
-    """ Published which uses message object metadata
-
-    :param channel:
-    :param message:
-    :return:
-    """
-
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-        exchange=AMQP_EXCHANGE,
-        routing_key=message.routing_key,
-        properties=properties,
-        body=message.to_json(),
-    )
+#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+#json_formatter = JsonFormatter()
+#rabbitmq_handler.setFormatter(json_formatter)
+#logger.addHandler(rabbitmq_handler)
+#logger.setLevel(logging.DEBUG)
 
 
 class PacketRouter(threading.Thread):
@@ -80,7 +63,7 @@ class PacketRouter(threading.Thread):
         msg = MsgTestingToolComponentReady(
             component='packetrouting'
         )
-        publish_message(self.channel, msg)
+        publish_message(self.connection, msg)
 
         logger.info('packet router waiting for new messages in the data plane..')
 

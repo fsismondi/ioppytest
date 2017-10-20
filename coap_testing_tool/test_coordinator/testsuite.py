@@ -27,15 +27,15 @@ logger = logging.getLogger(COMPONENT_ID)
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 # default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
+#sh = logging.StreamHandler()
+#logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.INFO)
+#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+#json_formatter = JsonFormatter()
+#rabbitmq_handler.setFormatter(json_formatter)
+#logger.addHandler(rabbitmq_handler)
+#logger.setLevel(logging.INFO)
 
 
 # # # YAML parser methods # # #

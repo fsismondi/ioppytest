@@ -34,10 +34,9 @@ def NotImplementedField(self):
 
 def signal_int_handler(signal, frame):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-    channel = connection.channel()
 
     publish_message(
-        channel,
+        connection,
         MsgTestingToolComponentShutdown(component=COMPONENT_ID)
     )
 
@@ -73,7 +72,7 @@ class AutomatedIUT(threading.Thread):
                                 queue=services_queue_name,
                                 routing_key='control.testcoordination')
         # send hello message
-        publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
+        publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
@@ -114,7 +113,7 @@ class AutomatedIUT(threading.Thread):
             if event.testcase_id not in self.implemented_testcases_list:
                 time.sleep(0.1)
                 logging.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
-                publish_message(self.channel, MsgTestCaseSkip(testcase_id=event.testcase_id))
+                publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
             else:
                 logging.info('IUT %s ready to execute testcase' % self.component_id)
 
@@ -128,7 +127,7 @@ class AutomatedIUT(threading.Thread):
                 if cmd:
                     self._execute_stimuli(step, cmd,
                                           addr)  # this should be a blocking call until stimuli has been executed
-                publish_message(self.channel, MsgStepStimuliExecuted(node=self.node))
+                publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
                 logging.info('Event received and ignored: %s (node: %s - step: %s)' %
                              (
@@ -142,7 +141,7 @@ class AutomatedIUT(threading.Thread):
             if event.node == self.node:
                 step = event.step_id
                 self._execute_verify(step)
-                publish_message(self.channel, MsgStepVerifyExecuted(verify_response=True,
+                publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
                                                                     node=self.node
                                                                     ))
             else:
@@ -169,13 +168,13 @@ class AutomatedIUT(threading.Thread):
                                                      event.node)  # this should be a blocking call until configuration has been done
                 if ipaddr != '':
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
-                    publish_message(self.channel, m)
+                    publish_message(self.connection, m)
         else:
             logging.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
         m = MsgTestingToolComponentShutdown(component=self.component_id)
-        publish_message(self.channel, m)
+        publish_message(self.connection, m)
         time.sleep(2)
         self.connection.close()
         sys.exit(0)
@@ -227,7 +226,7 @@ class UserMock(threading.Thread):
                                 queue=services_queue_name,
                                 routing_key='control.session')
 
-        publish_message(self.channel, MsgTestingToolComponentReady(component=self.component_id))
+        publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
@@ -255,7 +254,7 @@ class UserMock(threading.Thread):
 
         elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
-            publish_message(self.channel, m)
+            publish_message(self.connection, m)
             logging.info('Event received %s' % event._type)
             logging.info('Event description %s' % event.description)
             logging.info('Event pushed %s' % m)
@@ -266,12 +265,12 @@ class UserMock(threading.Thread):
 
             if event.testcase_id in self.implemented_testcases_list:
                 m = MsgTestCaseStart()
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
 
                 logging.info('Event pushed %s' % m)
             else:
                 m = MsgTestCaseSkip(testcase_id=event.testcase_id)
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
                 logging.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseVerdict):
@@ -291,7 +290,7 @@ class UserMock(threading.Thread):
             logging.info('Test suite finished, final report: %s' % event.to_json())
             time.sleep(2)
             m = MsgTestingToolTerminate()
-            publish_message(self.channel, m)
+            publish_message(self.connection, m)
             time.sleep(2)
 
         elif isinstance(event, MsgTestingToolTerminate):
