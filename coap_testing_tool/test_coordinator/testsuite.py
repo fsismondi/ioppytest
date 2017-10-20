@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import base64
-import errno
 import json
-import os
-import traceback
-import sys
 import yaml
-import pika
-import time
 import logging
 
 from itertools import cycle
@@ -17,7 +10,6 @@ from collections import OrderedDict
 
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
 from coap_testing_tool.utils.exceptions import TestSuiteError
-
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
@@ -27,15 +19,15 @@ logger = logging.getLogger(COMPONENT_ID)
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
 # default handler
-#sh = logging.StreamHandler()
-#logger.addHandler(sh)
+sh = logging.StreamHandler()
+logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-#json_formatter = JsonFormatter()
-#rabbitmq_handler.setFormatter(json_formatter)
-#logger.addHandler(rabbitmq_handler)
-#logger.setLevel(logging.INFO)
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 
 # # # YAML parser methods # # #
@@ -278,9 +270,8 @@ class TestSuite:
 
         if node and node_address:
             self.get_current_testcase_configuration().update_node_address(node, node_address)
-
-            logger.info('IUT/EUT addresses updated: %s' %
-                        repr(self.get_current_testcase_configuration().to_dict(verbose=True)))
+            config = self.get_current_testcase_configuration().to_dict(verbose=True)
+            logger.info('IUT/EUT addresses updated: %s, topology: %s'% (config['addresses_table'], config['topology']))
         else:
             raise TestSuiteError('Expected node_id and node_address, but got %s , %s ' % (node, node_address))
 
@@ -727,6 +718,9 @@ class TestConfig:
     def to_dict(self, verbose=None):
         d = OrderedDict()
         d['configuration_id'] = self.id
+        d['addresses_table'] = self.addresses_table
+
+        # TODO deprecate this (returned keys should not be address_coap_client), use address table only
         for key, val in self.addresses_table.items():
             d['address_%s' % key] = val
 

@@ -41,8 +41,6 @@ PRE-CONDITIONS:
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
-    MsgInteropSessionConfiguration(),  # from TC1 to TC3
-    MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
@@ -64,7 +62,9 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
+
 service_api_calls = [
+
     # TAT calls
     MsgTestSuiteGetStatus(),
     MsgTestSuiteGetTestCases(),
@@ -127,6 +127,10 @@ service_api_calls = [
 
 
 class ApiTests(unittest.TestCase):
+    """
+    python3 -m unittest tests/test_api.py -vvv
+    """
+
     def setUp(self):
 
         global stop_generator_signal
@@ -188,11 +192,14 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
-        thread_msg_gen.start()
 
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
+
+        thread_msg_gen.start()
         try:
             self.channel.start_consuming()
-
         except Exception as e:
             thread_msg_gen.stop()
             assert False, str(e)
@@ -210,7 +217,9 @@ class ApiTests(unittest.TestCase):
         events_to_ignore = [
             'testingtool.ready',
             'testingtool.component.ready',
-            'agent.configured'
+            'agent.configured',
+            'session.interop.configuration',
+            'testingtool.configured',
         ]
 
         # auxiliary function
@@ -248,7 +257,7 @@ class ApiTests(unittest.TestCase):
                 services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
-                assert False, 'error! we shouldnt be here!'
+                assert False, 'error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type)
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (
@@ -284,6 +293,10 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
+
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
         try:
             thread_msg_gen.start()
