@@ -109,7 +109,7 @@ if __name__ == '__main__':
     msg = MsgTestingToolComponentReady(
         component='testcoordination'
     )
-    publish_message(channel, msg)
+    publish_message(connection, msg)
 
     if no_component_checks:
         logger.info('Skipping component readiness checks')
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         logger.info('Starting test-coordinator for test suite: %s' % testsuite)
         coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
         coordinator.bootstrap()
-        publish_message(channel, MsgTestingToolReady())
+        publish_message(connection, MsgTestingToolReady())
 
     except Exception as e:
         # cannot emit AMQP messages for the fail
