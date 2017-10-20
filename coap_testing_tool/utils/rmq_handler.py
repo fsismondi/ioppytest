@@ -39,7 +39,7 @@ try:
 except ImportError:
     pass
 
-VERSION = '0.0.7'
+VERSION = '0.0.8'
 
 # defaults vars
 AMQP_URL = 'amqp://guest:guest@localhost'
@@ -241,13 +241,13 @@ class RabbitMQHandler(logging.Handler):
         try:
             self.channel.close()
         except AttributeError as e:
-            print('No channel found')
+            print('trying to close channel,but no channel attribute')
             print(e)
 
         try:
             self.connection.close()
-        except AttributeError:
-            print('No connection found')
+        except AttributeError as e:
+            print('trying to close connection,but no connection attribute')
             print(e)
 
         finally:
