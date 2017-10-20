@@ -78,13 +78,13 @@ get-logs:
 
 install-requirements:
 	@echo 'installing py2 dependencies'
-	@python -m pip install -r coap_testing_tool/agent/requirements.txt --upgrade
+	@python -m pip -qq install -r coap_testing_tool/agent/requirements.txt --upgrade
 	@echo 'installing py3 dependencies'
-	@python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-	@python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-	@python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-	@python3 -m pip install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-	@python3 -m pip install -r coap_testing_tool/webserver/requirements.txt --upgrade
+	@python3 -m pip -qq install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
+	@python3 -m pip -qq install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
+	@python3 -m pip -qq install -r coap_testing_tool/packet_router/requirements.txt --upgrade
+	@python3 -m pip -qq install -r coap_testing_tool/sniffer/requirements.txt --upgrade
+	@python3 -m pip -qq install -r coap_testing_tool/webserver/requirements.txt --upgrade
 
 
 info_message = """ \
