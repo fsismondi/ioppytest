@@ -26,7 +26,6 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
 logger = logging.getLogger(COMPONENT_ID)
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
-
 # default handler
 sh = logging.StreamHandler()
 logger.addHandler(sh)
@@ -37,6 +36,7 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.INFO)
+
 
 # # # YAML parser methods # # #
 def testcase_constructor(loader, node):
@@ -325,18 +325,12 @@ class TestSuite:
         tc_to_skip = list(set(tc_list_available) - set(tc_list_requested))
 
         if len(tc_list_requested) == 0:
-            self.notify_coordination_error(
-                description='No testcases selected. Using default selection: ALL',
-                error_code='TBD'
-            )
+            logger.error(message='No testcases selected. Using default selection: ALL')
             return
 
         if len(tc_non_existent) != 0:
-            self.notify_coordination_error(
-                description='The following testcases are not available in the testing tool: %s'
-                            % str(tc_non_existent),
-                error_code='TBD'
-            )
+            logger.error(message='The following testcases are not available in the testing tool: %s'
+                                 % str(tc_non_existent))
 
         # let's set as skipped all non requested testcases
         if len(tc_to_skip) != 0:
