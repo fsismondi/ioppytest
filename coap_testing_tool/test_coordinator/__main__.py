@@ -28,15 +28,15 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
-#sh = logging.StreamHandler()
-#logger.addHandler(sh)
+sh = logging.StreamHandler()
+logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-#json_formatter = JsonFormatter()
-#rabbitmq_handler.setFormatter(json_formatter)
-#logger.addHandler(rabbitmq_handler)
-#logger.setLevel(logging.DEBUG)
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)

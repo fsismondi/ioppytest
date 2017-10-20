@@ -45,15 +45,15 @@ IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
-#sh = logging.StreamHandler()
-#logger.addHandler(sh)
+sh = logging.StreamHandler()
+logger.addHandler(sh)
 
 # AMQP log handler with f-interop's json formatter
-#rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-#json_formatter = JsonFormatter()
-#rabbitmq_handler.setFormatter(json_formatter)
-#logger.addHandler(rabbitmq_handler)
-#logger.setLevel(logging.INFO)
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -537,7 +537,6 @@ states = [
         'on_exit': []
     },
 ]
-
 transitions = [
     {
         'trigger': 'bootstrap',
@@ -657,6 +656,7 @@ transitions = [
         'trigger': 'skip_testcase',
         'source': ['waiting_for_iut_configuration_executed',
                    'waiting_for_testcase_start',
+                   'waiting_for_testsuite_config'
                    'waiting_for_step_executed',
                    'testcase_finished'],
         'dest': '=',
@@ -684,113 +684,7 @@ transitions = [
 ]
 
 
-def test_session_flow_1():
-    logger.setLevel(logging.DEBUG)
-    from coap_testing_tool import TD_COAP_CFG, TD_COAP
-    test_coordinator = Coordinator(amqp_url=AMQP_URL,
-                                   amqp_exchange=AMQP_EXCHANGE,
-                                   ted_config_file=TD_COAP_CFG,
-                                   ted_tc_file=TD_COAP)
-    machine = CustomStateMachine(model=test_coordinator,
-                                 states=states,
-                                 transitions=transitions,
-                                 initial='null')
-
-    test_coordinator.bootstrap()
-
-    assert test_coordinator.state == 'waiting_for_testsuite_config'
-
-    test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
-    assert test_coordinator.state != 'waiting_for_testcase_start'
-
-    test_coordinator.start_testsuite(MsgTestSuiteStart())
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed'
-
-    # wait until it times out
-    while True:
-        sleep(0.2)
-        print('wait for tout')
-        if test_coordinator.state == 'waiting_for_testcase_start':
-            print('it timed-out! now we are at waiting_for_testcase_start')
-            break
-
-    assert test_coordinator.state == 'waiting_for_testcase_start'
-
-    # switch to another testcase
-    test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_03'))
-    print(test_coordinator.state)
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed'
-
-    test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_03'))
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed'
-
-    test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
-        node="coap_server",
-        ipv6_address="someAddress"  # example of pixit
-    ))
-    assert test_coordinator.state != 'waiting_for_testcase_start'
-
-    test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
-        node="coap_client",
-        ipv6_address="someAddress"  # example of pixit
-    ))
-    print(test_coordinator.state)
-    assert test_coordinator.state == 'waiting_for_testcase_start'
-
-    test_coordinator.start_testcase(None)
-    assert test_coordinator.state == 'waiting_for_step_executed'
-
-    test_coordinator.step_executed(MsgStepStimuliExecuted(
-        node='coap_client'
-    ))
-
-    test_coordinator.step_executed(MsgStepVerifyExecuted(
-        node='coap_server',
-        verify_response=True
-    ))
-    test_coordinator.step_executed(MsgStepVerifyExecuted(
-        node='coap_client',
-        verify_response=True
-    ))
-
-    print('>>>' + str(test_coordinator.state))
-    test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
-    sleep(0.3)
-    test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
-    print('>>>' + str(test_coordinator.state))
-
-
-def test_session_flow_2():
-    """
-    skip all testcases
-    """
-    logger.setLevel(logging.DEBUG)
-    from coap_testing_tool import TD_COAP_CFG, TD_COAP
-    test_coordinator = Coordinator(amqp_url=AMQP_URL,
-                                   amqp_exchange=AMQP_EXCHANGE,
-                                   ted_config_file=TD_COAP_CFG,
-                                   ted_tc_file=TD_COAP)
-    machine = CustomStateMachine(model=test_coordinator,
-                                 states=states,
-                                 transitions=transitions,
-                                 initial='null')
-
-    test_coordinator.bootstrap()
-    assert test_coordinator.state == 'waiting_for_testsuite_config'
-
-    test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
-    assert test_coordinator.state != 'waiting_for_testcase_start'
-
-    test_coordinator.start_testsuite(MsgTestSuiteStart())
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed'
-
-    test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
-    test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
-    test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
-    print('>>>' + str(test_coordinator.state))
-
-
-def test_session_flow_3():
+if __name__ == '__main__':
     """
     select testcases, then skip all
     """
@@ -822,50 +716,3 @@ def test_session_flow_3():
 
     test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_01'))
     assert test_coordinator.state == 'waiting_for_iut_configuration_executed'
-
-
-def test_session_flow_4():
-    """
-    abort all testcase
-    """
-    logger.setLevel(logging.DEBUG)
-    from coap_testing_tool import TD_COAP_CFG, TD_COAP
-    test_coordinator = Coordinator(amqp_url=AMQP_URL,
-                                   amqp_exchange=AMQP_EXCHANGE,
-                                   ted_config_file=TD_COAP_CFG,
-                                   ted_tc_file=TD_COAP)
-    machine = CustomStateMachine(model=test_coordinator,
-                                 states=states,
-                                 transitions=transitions,
-                                 initial='null')
-
-    test_coordinator.bootstrap()
-    assert test_coordinator.state == 'waiting_for_testsuite_config'
-
-    test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())  # config 3 TCs
-    assert test_coordinator.state != 'waiting_for_testcase_start'
-
-    test_coordinator.start_testsuite(MsgTestSuiteStart())
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed', \
-        "expected waiting for iut confnig, but found %s" % test_coordinator.state
-
-    test_coordinator.abort_testcase(MsgTestCaseAbort())
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed', \
-        "expected waiting for iut confnig, but found %s" % test_coordinator.state
-    test_coordinator.abort_testcase(MsgTestCaseAbort())
-    assert test_coordinator.state == 'waiting_for_iut_configuration_executed', \
-        "expected waiting for iut confnig, but found %s" % test_coordinator.state
-    test_coordinator.abort_testcase(MsgTestCaseAbort())
-    assert test_coordinator.state == 'testsuite_finished', \
-        "expected waiting for iut confnig, but found %s" % test_coordinator.state
-    print(test_coordinator.state)
-
-
-if __name__ == '__main__':
-    try:
-        test_session_flow_1()
-        test_session_flow_2()
-        test_session_flow_3()
-        test_session_flow_4()
-    except MachineError as m_err:
-        logger(m_err)
