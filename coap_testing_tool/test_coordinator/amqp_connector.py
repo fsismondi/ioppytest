@@ -156,7 +156,6 @@ class CoordinatorAmqpInterface(object):
 
             try:
                 response_data = callback()
-                logger.warning(response_data)
                 response = MsgReply(request, **response_data)
             except Exception as e:
                 response = MsgReply(request,
@@ -168,7 +167,7 @@ class CoordinatorAmqpInterface(object):
             return
 
         else:
-            logger.warning('Ignoring unrecognised service request: %s' % repr(request))
+            logger.debug('Ignoring service request: %s' % repr(request))
 
     def handle_control(self, ch, method, properties, body):
 
@@ -208,7 +207,7 @@ class CoordinatorAmqpInterface(object):
                 return
 
         else:
-            logger.warning('Ignoring unrecognised event: %s' % repr(event))
+            logger.debug('Ignoring event: %s' % repr(event))
 
     # # # FSM coordination publish/notify functions # # #
 
@@ -238,9 +237,6 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
         publish_message(self.channel_producer, event)
-
-    def notify_testsuite_ready(self, received_event):
-        print('[test_coordinator] notify_testsuite_ready')
 
     def notify_testcase_ready(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -318,6 +314,9 @@ class CoordinatorAmqpInterface(object):
         agents_config = (AGENT_NAMES[0], ':1', False), (AGENT_NAMES[1], ':2', True), (AGENT_TT_ID, ':3', True)
         for agent, assigned_ip, ipv6_no_fw in agents_config:
             bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, "bbbb", ipv6_no_fw)
+
+    def notify_testsuite_ready(self,received_event):
+        pass
 
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
