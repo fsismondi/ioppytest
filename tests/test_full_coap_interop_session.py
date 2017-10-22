@@ -44,11 +44,11 @@ class SessionMockTests(unittest.TestCase):
         global stop_generator_signal
         stop_generator_signal = False
         import_env_vars()
-        self.conn = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        self.channel = self.conn.channel()
+        self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        self.channel = self.connection.channel()
 
     def tearDown(self):
-        self.conn.close()
+        self.connection.close()
 
     def test_testcase_TD_COAP_CORE_01_pass(self):
         global event_types_sniffed_on_bus
