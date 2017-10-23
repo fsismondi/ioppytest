@@ -2,6 +2,8 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+
 from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
 import logging
@@ -39,8 +41,6 @@ PRE-CONDITIONS:
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
-    MsgInteropSessionConfiguration(),  # from TC1 to TC3
-    MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
@@ -62,7 +62,9 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
+
 service_api_calls = [
+
     # TAT calls
     MsgTestSuiteGetStatus(),
     MsgTestSuiteGetTestCases(),
@@ -125,6 +127,10 @@ service_api_calls = [
 
 
 class ApiTests(unittest.TestCase):
+    """
+    python3 -m unittest tests/test_api.py -vvv
+    """
+
     def setUp(self):
 
         global stop_generator_signal
@@ -186,11 +192,14 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
-        thread_msg_gen.start()
 
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
+
+        thread_msg_gen.start()
         try:
             self.channel.start_consuming()
-
         except Exception as e:
             thread_msg_gen.stop()
             assert False, str(e)
@@ -208,7 +217,9 @@ class ApiTests(unittest.TestCase):
         events_to_ignore = [
             'testingtool.ready',
             'testingtool.component.ready',
-            'agent.configured'
+            'agent.configured',
+            'session.interop.configuration',
+            'testingtool.configured',
         ]
 
         # auxiliary function
@@ -246,7 +257,7 @@ class ApiTests(unittest.TestCase):
                 services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
-                assert False, 'error! we shouldnt be here!'
+                assert False, 'error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type)
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (
@@ -282,6 +293,10 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
+
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
         try:
             thread_msg_gen.start()
@@ -325,17 +340,6 @@ def import_env_vars():
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
     connection.close()
-
-
-def publish_message(channel, message):
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-        exchange=AMQP_EXCHANGE,
-        routing_key=message.routing_key,
-        properties=properties,
-        body=message.to_json(),
-    )
 
 
 def stop_generator():
@@ -446,7 +450,7 @@ class MessageGenerator(threading.Thread):
             while self.keepOnRunning:
                 time.sleep(MESSAGES_WAIT_INTERVAL)
                 m = self.messages.pop(0)
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
                 logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
         except IndexError:
             # list finished, lets wait so all messages are sent and processed

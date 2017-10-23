@@ -39,7 +39,7 @@ try:
 except ImportError:
     pass
 
-VERSION = '0.0.7'
+VERSION = '0.0.8'
 
 # defaults vars
 AMQP_URL = 'amqp://guest:guest@localhost'
@@ -55,7 +55,7 @@ try:
 
 except KeyError as e:
     print(' Cannot retrieve environment variables for AMQP connection, using default url: %s, exchange: %s' % (
-    AMQP_URL, AMQP_EXCHANGE))
+        AMQP_URL, AMQP_EXCHANGE))
 
 # skip natural LogRecord attributes
 # http://docs.python.org/library/logging.html#logrecord-attributes
@@ -216,7 +216,7 @@ class RabbitMQHandler(logging.Handler):
 
         except pika.exceptions.ConnectionClosed:
 
-            print("Log handler connection closed. Reconnecting..")
+            print("Log handler %s connection closed. Reconnecting.." % self.name)
 
             self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
             self.channel = self.connection.channel()
@@ -240,13 +240,15 @@ class RabbitMQHandler(logging.Handler):
 
         try:
             self.channel.close()
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            print('trying to close channel,but no channel attribute')
+            print(e)
 
         try:
             self.connection.close()
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            print('trying to close connection,but no connection attribute')
+            print(e)
 
         finally:
             self.release()

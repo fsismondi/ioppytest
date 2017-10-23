@@ -1,7 +1,6 @@
 from coap_testing_tool import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
-from coap_testing_tool.test_coordinator.coordinator import import_teds
-from collections import OrderedDict
-import json, unittest, os
+from coap_testing_tool.test_coordinator.testsuite import import_teds
+import unittest
 
 """
 python3 -m  pytest coap_testing_tool/extended_test_descriptions/tests/tests.py

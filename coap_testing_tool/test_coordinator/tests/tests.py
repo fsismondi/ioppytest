@@ -1,129 +1,150 @@
 import unittest, logging, os, pika, json
-from collections import OrderedDict
-from coap_testing_tool import AMQP_URL, TD_COAP_CFG, TD_COAP
-from coap_testing_tool.test_coordinator.coordinator import Coordinator, import_teds
+from time import sleep
+from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
+from coap_testing_tool.test_coordinator.testsuite import import_teds
+from coap_testing_tool.test_coordinator.states_machine import Coordinator
+
+COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
+# init logging to stnd output and log files
+logger = logging.getLogger(COMPONENT_ID)
 
 
-class CoordinatorTestCase(unittest.TestCase):
-    number_of_implemented_TCs = 24
-
+class CoordinatorStateMachineTests(unittest.TestCase):
+    """
+    python3 -m unittest coap_testing_tool.test_coordinator.tests.tests.CoordinatorStateMachineTests
+    """
     def setUp(self):
+        logger.setLevel(logging.DEBUG)
+        from coap_testing_tool import TD_COAP_CFG, TD_COAP
+        self.test_coordinator = Coordinator(amqp_url=AMQP_URL,
+                                            amqp_exchange=AMQP_EXCHANGE,
+                                            ted_config_file=TD_COAP_CFG,
+                                            ted_tc_file=TD_COAP)
+        self.test_coordinator.bootstrap()
 
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+    def test_session_flow_1(self):
 
-        # this tests import and the construction of Coordinator and test cases from yaml file
-        self.coord = Coordinator(connection, TD_COAP, TD_COAP_CFG)
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-    def test_parse_yaml(self):
-        print("raw parse : ")
-        it_docs = import_teds(TD_COAP)
-        for d in self.coord.teds:
-            print(d)
-        print(it_docs)
-        for item in it_docs:
-            print(str(type(item)))
-            print(str(type(item)))
-            print(str(item))
+        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
-    def test_get_testcases_as_list(self):
-        print("LIST OF TEST CASES: ")
-        ls = self.coord.get_testcases_list()
-        assert len(ls) == CoordinatorTestCase.number_of_implemented_TCs
-        print(ls)
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-    def test_select_testcase(self):
-        self.coord.select_testcase('TD_COAP_CORE_02')
-        assert self.coord.current_tc.id == 'TD_COAP_CORE_02'
+        # wait until it times out
+        while True:
+            sleep(0.2)
+            print('wait for tout')
+            if self.test_coordinator.state == 'waiting_for_testcase_start':
+                print('it timed-out! now we are at waiting_for_testcase_start')
+                break
 
-    def test_check_all_steps_finished(self):
-        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
-        c = self.coord
-        tc = c.next_testcase()
-        assert tc is not None
-        print("starting check_finished() method test")
-        for p in tc.sequence:
-            assert tc.check_all_steps_finished() is False
-            p.change_state('postponed')
-            print('step state: ' + str(p.state))
-        assert tc.check_all_steps_finished() is True
-        print("TD finished!")
+        assert self.test_coordinator.state == 'waiting_for_testcase_start'
 
-    def test_stepping_over_the_testcases(self):
-        c = self.coord
-        for i in range(CoordinatorTestCase.number_of_implemented_TCs + 1):
-            tc = c.next_testcase()
-            if tc:
-                tc.change_state('skipped')
-            print("iter over TCs: \n" + str(tc))
-        assert tc == None
+        # switch to another testcase
+        self.test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_03'))
+        print(self.test_coordinator.state)
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-    def test_stepping_over_the_steps_and_the_TCs(self):
-        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
-        c = self.coord
-        tc = c.next_testcase()
-        assert tc is not None
+        self.test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_03'))
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-        print("starting iteration over all steps in the TD")
-        print("starting with: " + tc.id)
+        self.test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
+            node="coap_server",
+            ipv6_address="someAddress"  # example of pixit
+        ))
+        assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
-        while tc is not None:
-            print("running TC: " + str(tc.id))
-            s = c.next_step()
+        self.test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
+            node="coap_client",
+            ipv6_address="someAddress"  # example of pixit
+        ))
+        print(self.test_coordinator.state)
+        assert self.test_coordinator.state == 'waiting_for_testcase_start'
 
-            while s is not None:
-                print("\t passing: " + s.id)
-                s.change_state('postponed')
-                s = c.next_step()
+        self.test_coordinator.start_testcase(None)
+        assert self.test_coordinator.state == 'waiting_for_step_executed'
 
-            tc.change_state('skipped')
-            tc = c.next_testcase()
-        print("TD finished!")
+        self.test_coordinator.step_executed(MsgStepStimuliExecuted(
+            node='coap_client'
+        ))
 
-    def test_testsuite_report(self):
-        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
-        c = self.coord
-        tc = c.next_testcase()
-        assert tc is not None
+        self.test_coordinator.step_executed(MsgStepVerifyExecuted(
+            node='coap_server',
+            verify_response=True
+        ))
+        self.test_coordinator.step_executed(MsgStepVerifyExecuted(
+            node='coap_client',
+            verify_response=True
+        ))
 
-        print("starting iteration over all steps in the TD")
-        print("starting with: " + tc.id)
+        print('>>>' + str(self.test_coordinator.state))
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
+        sleep(0.3)
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
+        print('>>>' + str(self.test_coordinator.state))
 
-        while tc is not None:
-            print("running TC: " + str(tc.id))
-            s = c.next_step()
+    def test_session_flow_2(self):
+        """
+        skip all testcases
+        """
 
-            while s is not None:
-                print("\t passing: " + s.id)
-                s.change_state('postponed')
-                s = c.next_step()
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-            tc.change_state('finished')
+        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
-            final_report = OrderedDict()
-            final_report['verdict'] = 'test verdict'
-            final_report['description'] = 'test description'
-            final_report['partial_verdicts'] = 'test partial verd.'
-            tc.report = final_report
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-            tc = c.next_testcase()
-        print("TD finished!")
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip())  # skips current testcase
+        print('>>>' + str(self.test_coordinator.state))
 
-        print(json.dumps(c.testsuite_report()))
+    def test_session_flow_3(self):
+        """
+        select testcases, then skip all
+        """
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-    def test_stepping_over_TC_config_atributes_chech_not_None(self):
-        # this must not raise any errors during the iteration, control flow is done with None when iter is over!
-        c = self.coord
+        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
-        for conf, conf_v in c.tc_configs.items():
-            print("starting with: " + conf)
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-            print(conf_v.id)
-            print(conf_v.description)
-            print(conf_v.nodes)
-            print(conf_v.topology)
-            print(conf_v.uri)
-            print(conf_v)
+        self.test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_03'))
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
+        self.test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_02'))
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
 
-if __name__ == '__main__':
-    unittest.test_stepping_over_TC_config_atributes_chech_not_None()
+        self.test_coordinator.select_testcase(MsgTestCaseSelect(testcase_id='TD_COAP_CORE_01'))
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
+
+    def test_session_flow_4(self):
+        """
+        abort all testcase
+        """
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
+
+        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())  # config 3 TCs
+        assert self.test_coordinator.state != 'waiting_for_testcase_start'
+
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', \
+            "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
+
+        self.test_coordinator.abort_testcase(MsgTestCaseAbort())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', \
+            "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
+        self.test_coordinator.abort_testcase(MsgTestCaseAbort())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', \
+            "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
+        self.test_coordinator.abort_testcase(MsgTestCaseAbort())
+        assert self.test_coordinator.state == 'testsuite_finished', \
+            "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
+        print(self.test_coordinator.state)

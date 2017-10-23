@@ -4,7 +4,7 @@ from coap_testing_tool.webserver.webserver import *
 
 COMPONENT_ID = 'webserver'
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 def launchHttpServer():
     logging.info('starting server...')

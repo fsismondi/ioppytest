@@ -7,7 +7,7 @@ from coap_testing_tool import TMPDIR
 from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
