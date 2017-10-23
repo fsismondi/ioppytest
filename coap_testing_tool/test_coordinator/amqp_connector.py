@@ -101,7 +101,8 @@ class CoordinatorAmqpInterface(object):
 
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
-            MsgInteropSessionConfiguration: 'configure_testsuite',
+            MsgSessionConfiguration: 'configure_testsuite',
+            MsgInteropSessionConfiguration: 'configure_testsuite',  # TODO deprecate this, use generic MsgSessionConfiguration
             MsgConfigurationExecuted: 'iut_configuration_executed',
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',

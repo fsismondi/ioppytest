@@ -127,19 +127,35 @@ class Coordinator(CoordinatorAmqpInterface):
 
         logging.info(" Interop session configuration received : %s" % session_config)
 
-        try:
-            for test in received_event.tests:
-                test_url = urlparse(test['testcase_ref'])
-                tc_id = str(test_url.path).lstrip("/tests/")
-                tc_list_requested.append(tc_id)
+        if isinstance(received_event, MsgInteropSessionConfiguration):  # TODO deprecate this
+            try:
+                for test in received_event.tests:
+                    test_url = urlparse(test['testcase_ref'])
+                    tc_id = str(test_url.path).lstrip("/tests/")
+                    tc_list_requested.append(tc_id)
 
-        except Exception as e:
-            error_msg = "Wrong message format sent for session configuration."
-            raise CoordinatorError(message=error_msg)
+            except Exception as e:
+                error_msg = "Wrong message format sent for session configuration."
+                raise CoordinatorError(message=error_msg)
 
-        self.testsuite.configure_test_suite(tc_list_requested)
-        self.tc_list_requested = tc_list_requested
-        self.session_config = session_config
+            self.testsuite.configure_test_suite(tc_list_requested)
+            self.tc_list_requested = tc_list_requested
+            self.session_config = session_config
+
+        elif isinstance(received_event, MsgSessionConfiguration):
+            try:
+                event_tc_list = received_event.configuration['testsuite.testcases']
+                assert type(event_tc_list) is list, 'Testcases list expected'
+                for t in event_tc_list:
+                    test_url = urlparse(t)
+                    tc_list_requested.append(str(test_url.path).lstrip("/tests/"))
+            except Exception as e:
+                error_msg = "Wrong message format sent for session configuration."
+                raise CoordinatorError(message=error_msg)
+
+            self.testsuite.configure_test_suite(tc_list_requested)
+            self.tc_list_requested = tc_list_requested
+            self.session_config = session_config
 
     def handle_step_executed(self, received_event):
 
@@ -720,6 +736,14 @@ if __name__ == '__main__':
     """
     select testcases, then skip all
     """
+    default_configuration = {
+        "testsuite.testcases": [
+            "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+            "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+            "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+        ]
+    }
+
     logger.setLevel(logging.DEBUG)
     from coap_testing_tool import TD_COAP_CFG, TD_COAP
 
@@ -735,7 +759,7 @@ if __name__ == '__main__':
     test_coordinator.bootstrap()
     assert test_coordinator.state == 'waiting_for_testsuite_config'
 
-    test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+    test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
     assert test_coordinator.state != 'waiting_for_testcase_start'
 
     test_coordinator.start_testsuite(MsgTestSuiteStart())

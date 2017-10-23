@@ -61,7 +61,15 @@ class SessionMockTests(unittest.TestCase):
             u.start()
             e.start()
             publish_message(self.connection,
-                            MsgInteropSessionConfiguration()  # from TC1 to TC3
+                            MsgSessionConfiguration(
+                                configuration={
+                                    "testsuite.testcases": [
+                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+                                    ]
+                                }
+                            )  # from TC1 to TC3
                             )
             u.join(THREAD_JOIN_TIMEOUT)  # waits THREAD_JOIN_TIMEOUT for the session to terminate
 

@@ -100,7 +100,7 @@
       "mandatory": false
     },
     {
-      "field_name": "testsuite.reference_iut",
+      "field_name": "testsuite.additional_session_resource",
       "description": "Reference implementation (mandatory)",
       "type": "selection",
       "value": [

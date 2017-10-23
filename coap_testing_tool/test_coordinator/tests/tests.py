@@ -9,11 +9,20 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 
+default_configuration = {
+    "testsuite.testcases": [
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+    ]
+}
+
 
 class CoordinatorStateMachineTests(unittest.TestCase):
     """
     python3 -m unittest coap_testing_tool.test_coordinator.tests.tests.CoordinatorStateMachineTests
     """
+
     def setUp(self):
         logger.setLevel(logging.DEBUG)
         from coap_testing_tool import TD_COAP_CFG, TD_COAP
@@ -27,7 +36,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
 
         assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())
@@ -93,7 +102,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
 
         assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())
@@ -110,7 +119,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         """
         assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())
@@ -131,7 +140,8 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         """
         assert self.test_coordinator.state == 'waiting_for_testsuite_config'
 
-        self.test_coordinator.configure_testsuite(MsgInteropSessionConfiguration())  # config 3 TCs
+        self.test_coordinator.configure_testsuite(
+            MsgSessionConfiguration(configuration=default_configuration))  # config 3 TCs
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())

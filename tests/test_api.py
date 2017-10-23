@@ -23,6 +23,14 @@ AMQP_URL = ''
 message_count = 0
 stop_generator_signal = False
 
+default_configuration = {
+    "testsuite.testcases": [
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+    ]
+}
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -193,7 +201,7 @@ class ApiTests(unittest.TestCase):
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
 
-        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgSessionConfiguration(configuration=default_configuration))  # this prepares the FSM of the coordinator
         publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
@@ -294,7 +302,7 @@ class ApiTests(unittest.TestCase):
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
 
-        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgSessionConfiguration(configuration=default_configuration))  # this prepares the FSM of the coordinator
         publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
