@@ -249,7 +249,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update({'description': 'Next test case to be executed is %s' % tc_info_dict['testcase_id']})
 
         event = MsgTestCaseReady(
-            **tc_info_dict
+            **msg_fields
         )
         publish_message(self.connection, event)
 
@@ -298,7 +298,9 @@ class CoordinatorAmqpInterface(object):
         publish_message(self.connection, event)
 
     def notify_testcase_started(self, received_event):
+        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         event = MsgTestCaseStarted(
+            **tc_info_dict
         )
         publish_message(self.connection, event)
 

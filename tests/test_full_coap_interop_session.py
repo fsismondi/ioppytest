@@ -19,8 +19,8 @@ COMPONENT_ID = 'fake_session'
 MESSAGES_WAIT_INTERVAL = 1  # in seconds
 AMQP_EXCHANGE = ''
 AMQP_URL = ''
+THREAD_JOIN_TIMEOUT = 300
 message_count = 0
-stop_generator_signal = False
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -41,8 +41,6 @@ PRE-CONDITIONS:
 
 class SessionMockTests(unittest.TestCase):
     def setUp(self):
-        global stop_generator_signal
-        stop_generator_signal = False
         import_env_vars()
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
@@ -50,12 +48,11 @@ class SessionMockTests(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
 
-    def test_testcase_TD_COAP_CORE_01_pass(self):
+    def test_testcase_report_issue_at_end_of_session(self):
         global event_types_sniffed_on_bus
         global events_sniffed_on_bus
-        THREAD_JOIN_TIMEOUT = 300
 
-        tc_list = ['TD_COAP_CORE_01_v01']  # the rest of the testcases are going to be skipped
+        tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
         u = UserMock(tc_list)
         e = EventListener(AMQP_URL)
 
@@ -116,13 +113,6 @@ def import_env_vars():
         AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format("guest", "guest", "localhost", "/")
 
 
-
-def stop_generator():
-    global stop_generator_signal
-    logger.debug("The test is finished!")
-    stop_generator_signal = True
-
-
 def check_for_bus_error(ch, method, props, body):
     logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
@@ -164,7 +154,6 @@ class MessageGenerator(threading.Thread):
         logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
 
     def run(self):
-        global MESSAGES_WAIT_INTERVAL
         logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
                     "(for a coap client)" % (self.__class__.__name__))
         try:

@@ -204,6 +204,7 @@ class UserMock(threading.Thread):
 
         threading.Thread.__init__(self)
 
+        self.shutdown = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
@@ -319,6 +320,7 @@ class UserMock(threading.Thread):
                 logging.info('Event received and ignored: %s' % event._type)
 
     def stop(self):
+        self.shutdown = True
         self.channel.stop_consuming()
 
     def exit(self):
@@ -328,5 +330,9 @@ class UserMock(threading.Thread):
         self.connection.close()
 
     def run(self):
-        self.channel.start_consuming()
+        #self.channel.start_consuming()
+        while self.shutdown is False:
+            self.connection.process_data_events()
+            logger.info('looping..')
+            time.sleep(0.3)
         self.exit()

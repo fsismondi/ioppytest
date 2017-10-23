@@ -501,7 +501,7 @@ states = [
     {
         'name': 'waiting_for_testcase_start',
         'on_enter': ['notify_testcase_ready'],
-        'on_exit': ['notify_testcase_started']
+        'on_exit': []
     },
     {
         'name': 'preparing_next_step',  # dummy state used for factorizing several transitions
@@ -552,17 +552,21 @@ transitions = [
         'trigger': 'configure_testsuite',
         'source': 'waiting_for_testsuite_config',
         'dest': 'waiting_for_testsuite_start',
-        'before': ['_set_received_event',
-                   'handle_testsuite_config']
+        'before': [
+            '_set_received_event',
+            'handle_testsuite_config'
+        ]
     },
     {
         'trigger': 'start_testsuite',
         'source': ['waiting_for_testsuite_start',
                    'waiting_for_testsuite_config'],
         'dest': 'preparing_next_testcase',
-        'before': ['_set_received_event',
-                   'handle_testsuite_start',
-                   'configure_agent_data_plane_interfaces']
+        'before': [
+            '_set_received_event',
+            'handle_testsuite_start',
+            'configure_agent_data_plane_interfaces'
+        ]
     },
     {
         'trigger': '_start_configuration',
@@ -584,12 +588,18 @@ transitions = [
     },
     {
         'trigger': 'start_testcase',
-        'source': ['waiting_for_testcase_start',
-                   'waiting_for_iut_configuration_executed'  # start tc and skip iut configuration executed is allowed
-                   ],
+        'source': [
+            'waiting_for_testcase_start',
+            'waiting_for_iut_configuration_executed'  # start tc and skip iut configuration executed is allowed
+        ],
         'dest': 'preparing_next_step',
-        'before': ['_set_received_event',
-                   'handle_start_testcase']
+        'before': [
+            '_set_received_event',
+            'handle_start_testcase'
+        ],
+        'after': [
+            'notify_testcase_started'
+        ]
     },
     {
         'trigger': '_start_next_step',
@@ -600,8 +610,10 @@ transitions = [
         'trigger': '_finish_testcase',
         'source': 'preparing_next_step',
         'dest': 'testcase_finished',
-        'before': ['_set_received_event',
-                   'handle_finish_testcase']
+        'before': [
+            '_set_received_event',
+            'handle_finish_testcase'
+        ]
     },
     {
         'trigger': 'abort_testcase',
@@ -612,15 +624,19 @@ transitions = [
             'waiting_for_step_executed',
         ],
         'dest': 'preparing_next_testcase',
-        'before': ['_set_received_event',
-                   'handle_abort_testcase']
+        'before': [
+            '_set_received_event',
+            'handle_abort_testcase'
+        ]
     },
     {
         'trigger': 'step_executed',
         'source': 'waiting_for_step_executed',
         'dest': 'preparing_next_step',
-        'before': ['_set_received_event',
-                   'handle_step_executed'],
+        'before': [
+            '_set_received_event',
+            'handle_step_executed'
+        ],
     },
     {
         'trigger': '_timeout_waiting_iut_configuration_executed',
@@ -638,42 +654,56 @@ transitions = [
         'trigger': '_timeout_waiting_step_executed',
         'source': 'waiting_for_step_executed',
         'dest': 'waiting_for_testsuite_start',
-        'before': ['_set_received_event',
-                   'handle_current_step_timeout']
+        'before': [
+            '_set_received_event',
+            'handle_current_step_timeout'
+        ]
     },
     {
         'trigger': 'select_testcase',
-        'source': ['waiting_for_iut_configuration_executed',
-                   'waiting_for_testcase_start',
-                   'waiting_for_step_executed',
-                   'testcase_finished'],
+        'source': [
+            'waiting_for_iut_configuration_executed',
+            'waiting_for_testcase_start',
+            'waiting_for_step_executed',
+            'testcase_finished'
+        ],
         'dest': 'preparing_next_testcase',
-        'before': ['_set_received_event',
-                   'handle_testcase_select']
+        'before': [
+            '_set_received_event',
+            'handle_testcase_select'
+        ]
     },
 
     {
         'trigger': 'skip_testcase',
-        'source': ['waiting_for_iut_configuration_executed',
-                   'waiting_for_testcase_start',
-                   'waiting_for_testsuite_config'
-                   'waiting_for_step_executed',
-                   'testcase_finished'],
+        'source': [
+            'waiting_for_iut_configuration_executed',
+            'waiting_for_testcase_start',
+            'waiting_for_testsuite_config'
+            'waiting_for_step_executed',
+            'testcase_finished'
+        ],
         'dest': '=',
-        'unless': ['is_skipping_current_testcase'],
-        'before': ['_set_received_event',
-                   'handle_testcase_skip']
+        'unless': 'is_skipping_current_testcase',
+        'before': [
+            '_set_received_event',
+            'handle_testcase_skip'
+        ]
     },
     {
         'trigger': 'skip_testcase',
-        'source': ['waiting_for_iut_configuration_executed',
-                   'waiting_for_testcase_start',
-                   'waiting_for_step_executed',
-                   'testcase_finished'],
+        'source': [
+            'waiting_for_iut_configuration_executed',
+            'waiting_for_testcase_start',
+            'waiting_for_step_executed',
+            'testcase_finished'
+        ],
         'dest': 'preparing_next_testcase',
-        'conditions': ['is_skipping_current_testcase'],
-        'before': ['_set_received_event',
-                   'handle_testcase_skip']
+        'conditions': 'is_skipping_current_testcase',
+        'before': [
+            '_set_received_event',
+            'handle_testcase_skip'
+        ]
     },
     {
         'trigger': 'go_to_next_testcase',
@@ -683,13 +713,13 @@ transitions = [
     },
 ]
 
-
 if __name__ == '__main__':
     """
     select testcases, then skip all
     """
     logger.setLevel(logging.DEBUG)
     from coap_testing_tool import TD_COAP_CFG, TD_COAP
+
     test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                    amqp_exchange=AMQP_EXCHANGE,
                                    ted_config_file=TD_COAP_CFG,
