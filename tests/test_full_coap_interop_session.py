@@ -51,13 +51,13 @@ class SessionMockTests(unittest.TestCase):
     def test_testcase_report_issue_at_end_of_session(self):
         global event_types_sniffed_on_bus
         global events_sniffed_on_bus
+        global THREAD_JOIN_TIMEOUT
 
         tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
         u = UserMock(tc_list)
         e = EventListener(AMQP_URL)
 
         try:
-
             u.start()
             e.start()
             publish_message(self.connection,

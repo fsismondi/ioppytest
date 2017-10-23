@@ -391,10 +391,11 @@ class Coordinator(CoordinatorAmqpInterface):
         testcase_to_execute = None
 
         try:
-            testcase_to_execute = self.testsuite.get_testcase(received_event.testcase_id)
-            if testcase_to_execute:
-                logger.info("Event received provided test case id to execute: %s" % testcase_to_execute.id)
-                self.testsuite.go_to_testcase(received_event.testcase_id)
+            if isinstance(received_event, MsgTestCaseSelect) or isinstance(received_event, MsgTestCaseStart):
+                testcase_to_execute = self.testsuite.get_testcase(received_event.testcase_id)
+                if testcase_to_execute:
+                    logger.info("Event received provided test case id to execute: %s" % testcase_to_execute.id)
+                    self.testsuite.go_to_testcase(testcase_to_execute.id)
         except AttributeError:  # no testcase id provided, go to next tc
             logger.debug('No testcase id provided')
             pass
@@ -500,7 +501,7 @@ states = [
     },
     {
         'name': 'waiting_for_testcase_start',
-        'on_enter': ['notify_testcase_ready'],
+        'on_enter': [],
         'on_exit': []
     },
     {
@@ -642,13 +643,15 @@ transitions = [
         'trigger': '_timeout_waiting_iut_configuration_executed',
         'source': 'waiting_for_iut_configuration_executed',
         'dest': 'waiting_for_testcase_start',
-        'before': '_set_received_event'
+        'before': '_set_received_event',
+        'after': 'notify_testcase_ready'
     },
     {
         'trigger': '_all_iut_configuration_executed',
         'source': 'waiting_for_iut_configuration_executed',
         'dest': 'waiting_for_testcase_start',
-        'before': '_set_received_event'
+        'before': '_set_received_event',
+        'after': 'notify_testcase_ready'
     },
     {
         'trigger': '_timeout_waiting_step_executed',

@@ -330,9 +330,7 @@ class UserMock(threading.Thread):
         self.connection.close()
 
     def run(self):
-        #self.channel.start_consuming()
         while self.shutdown is False:
             self.connection.process_data_events()
-            logger.info('looping..')
             time.sleep(0.3)
         self.exit()
