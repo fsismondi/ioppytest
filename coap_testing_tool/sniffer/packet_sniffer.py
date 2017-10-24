@@ -15,14 +15,14 @@ from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.event_bus_messages import *
 
 COMPONENT_ID = 'packet_sniffer'
-last_capture = None
+last_capture_name = None
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 logging.getLogger('pika').setLevel(logging.INFO)
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
@@ -39,6 +39,8 @@ logger.setLevel(logging.DEBUG)
 TIME_WAIT_FOR_TCPDUMP_ON = 5
 TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 
+connection = None
+
 def on_request(ch, method, props, body):
     """
 
@@ -51,7 +53,8 @@ def on_request(ch, method, props, body):
     # ack message received
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    global last_capture
+    global last_capture_name
+    global connection
 
     try:
         props_dict = {
@@ -74,8 +77,8 @@ def on_request(ch, method, props, body):
     if isinstance(request, MsgSniffingGetCaptureLast):
         logger.info('Processing request: %s' % repr(request))
 
-        if last_capture:
-            capture_id = last_capture
+        if last_capture_name:
+            capture_id = last_capture_name
 
             try:
                 file = TMPDIR + '/%s.pcap' % capture_id
@@ -87,16 +90,16 @@ def on_request(ch, method, props, body):
 
             except FileNotFoundError as fne:
                 publish_message(
-                        ch,
-                        MsgErrorReply(request, error_message=str(fne))
+                    ch,
+                    MsgErrorReply(request, error_message=str(fne))
                 )
                 logger.error(str(fne))
                 return
 
             except Exception as e:
                 publish_message(
-                        ch,
-                        MsgErrorReply(request, error_message=str(e))
+                    connection,
+                    MsgErrorReply(request, error_message=str(e))
                 )
                 logger.error(str(e))
                 return
@@ -109,26 +112,26 @@ def on_request(ch, method, props, body):
                     enc = base64.b64encode(file.read())
 
                 response = MsgSniffingGetCaptureLastReply(
-                        request,
-                        ok=True,
-                        filename='%s.pcap' % capture_id,
-                        value=enc.decode("utf-8")
+                    request,
+                    ok=True,
+                    filename='%s.pcap' % capture_id,
+                    value=enc.decode("utf-8")
                 )
             except Exception as e:
                 err_mess = str(e)
                 m_resp = MsgErrorReply(request, error_message=err_mess)
-                publish_message(ch, m_resp)
+                publish_message(connection, m_resp)
                 logger.warning(err_mess)
                 return
 
             logger.info("Response ready, PCAP bytes: \n" + repr(response))
             logger.info("Sending response through AMQP interface ...")
-            publish_message(ch, response)
+            publish_message(connection, response)
 
         else:
             err_mess = 'No previous capture found.'
             m_resp = MsgErrorReply(request, error_message=err_mess)
-            publish_message(ch, m_resp)
+            publish_message(connection, m_resp)
             logger.warning(err_mess)
             return
 
@@ -150,11 +153,11 @@ def on_request(ch, method, props, body):
             logger.warning('Coulnt retrieve file %s from dir' % file)
             logger.warning(str(fne))
             publish_message(
-                    ch,
-                    MsgErrorReply(
-                            request,
-                            error_message=str(fne)
-                    )
+                connection,
+                MsgErrorReply(
+                    request,
+                    error_message=str(fne)
+                )
             )
             return
 
@@ -165,16 +168,16 @@ def on_request(ch, method, props, body):
             enc = base64.b64encode(file.read())
 
         response = MsgSniffingGetCaptureReply(
-                request,
-                ok=True,
-                filename='%s.pcap' % capture_id,
-                value=enc.decode("utf-8")
+            request,
+            ok=True,
+            filename='%s.pcap' % capture_id,
+            value=enc.decode("utf-8")
 
         )
 
         logger.info("Response ready, PCAP bytes: \n" + repr(response))
         logger.info("Sending response through AMQP interface ...")
-        publish_message(ch, response)
+        publish_message(connection, response)
         return
 
     elif isinstance(request, MsgSniffingStart):
@@ -184,7 +187,7 @@ def on_request(ch, method, props, body):
         except:
             err_mess = 'No capture id provided'
             m_resp = MsgErrorReply(request, error_message=err_mess)
-            publish_message(ch, m_resp)
+            publish_message(connection, m_resp)
             logger.error(err_mess)
             return
 
@@ -206,10 +209,10 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed starting the capture')
 
-        last_capture = capture_id  # keep track of the undergoing capture name
+        last_capture_name = capture_id  # keep track of the undergoing capture name
         time.sleep(TIME_WAIT_FOR_TCPDUMP_ON)  # to avoid race conditions
         response = MsgReply(request)  # by default sends ok = True
-        publish_message(ch, response)
+        publish_message(connection, response)
 
     elif isinstance(request, MsgSniffingStop):
 
@@ -222,7 +225,7 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed stopping the sniffer')
 
         response = MsgReply(request)  # by default sends ok = True
-        publish_message(ch, response)
+        publish_message(connection, response)
 
     else:
         logger.warning('Ignoring unrecognised service request: %s' % repr(request))
@@ -240,11 +243,12 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     """
     logger.info('Launching packet capture..')
 
+    sys_type = platform.system()
+
     if filter_proto is None:
-        filter_proto = 'udp' # for CoAP over TCP not yet supported
+        filter_proto = 'udp'  # for CoAP over TCP not yet supported
 
     if (filter_if is None) or (filter_if == ''):
-        sys_type = platform.system()
         if sys_type == 'Darwin':
             filter_if = 'lo0'
         else:
@@ -260,7 +264,11 @@ def _launch_sniffer(filename, filter_if, filter_proto):
     except:
         pass
 
-    cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
+    if sys_type == 'Darwin':  # macos port of tcpdump bugs when using -U  option and filters :/
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -w ' + filename
+    else:
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
+
     logger.info('spawning process with : %s' % str(cmd))
 
     proc_sniff = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -288,7 +296,8 @@ def main():
 
     ### SETUPING UP CONNECTION ###
 
-    connection = None
+    global connection
+
     try:
 
         logger.info('Setting up AMQP connection..')
@@ -312,9 +321,10 @@ def main():
     channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
     msg = MsgTestingToolComponentReady(
-            component='sniffing'
+        component='sniffing'
     )
-    publish_message(channel, msg)
+
+    publish_message(connection, msg)
 
     try:
         logger.info("Awaiting AMQP requests on topic: control.sniffing.service")

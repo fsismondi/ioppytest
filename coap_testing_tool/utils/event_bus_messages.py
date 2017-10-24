@@ -25,31 +25,31 @@ F-Interop conventions:
 Usage:
 ------
 >>> from messages import * # doctest: +SKIP
->>> m = MsgTestCaseSkip()
+>>> m = MsgTestCaseSkip(testcase_id = 'some_testcase_id')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_02_v01, )
+MsgTestCaseSkip(_api_version = 0.1.47, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = some_testcase_id, )
 >>> m.routing_key
 'control.testcoordination'
 >>> m.message_id # doctest: +SKIP
 '802012eb-24e3-45c4-9dcc-dc293c584f63'
 >>> m.testcase_id
-'TD_COAP_CORE_02_v01'
+'some_testcase_id'
 
 # also we can modify some of the fields (rewrite the default ones)
->>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03_v01')
+>>> m = MsgTestCaseSkip(testcase_id = 'TD_COAP_CORE_03')
 >>> m
-MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, testcase_id = TD_COAP_CORE_03_v01, )
+MsgTestCaseSkip(_api_version = 0.1.47, _type = testcoordination.testcase.skip, description = Skip testcase, node = someNode, testcase_id = TD_COAP_CORE_03, )
 >>> m.testcase_id
-'TD_COAP_CORE_03_v01'
+'TD_COAP_CORE_03'
 
 # and even export the message in json format (for example for sending the message though the amqp event bus)
 >>> m.to_json()
-'{"_api_version": "0.1.32", "_type": "testcoordination.testcase.skip", "testcase_id": "TD_COAP_CORE_03_v01"}'
+'{"_api_version": "0.1.47", "_type": "testcoordination.testcase.skip", "description": "Skip testcase", "node": "someNode", "testcase_id": "TD_COAP_CORE_03"}'
 
 # We can use the Message class to import json into Message objects:
 >>> m=MsgTestSuiteStart()
 >>> m.to_json()
-'{"_api_version": "0.1.32", "_type": "testcoordination.testsuite.start"}'
+'{"_api_version": "0.1.47", "_type": "testcoordination.testsuite.start", "description": "Event test suite START"}'
 >>> json_message = m.to_json()
 >>> obj=Message.from_json(json_message)
 >>> type(obj)
@@ -62,8 +62,7 @@ MsgTestCaseSkip(_api_version = 0.1.32, _type = testcoordination.testcase.skip, t
 # the error reply (note that we pass the message of the request to build the reply):
 >>> err = MsgErrorReply(m)
 >>> err
-MsgErrorReply(_api_version = 0.1.32, _type = sniffing.start, error_code = Some error code TBD, error_message = Some
-error message TBD, ok = False, )
+MsgErrorReply(_api_version = 0.1.47, _type = sniffing.start, error_code = Some error code TBD, error_message = Some error message TBD, ok = False, )
 >>> m.reply_to
 'control.sniffing.service.reply'
 >>> err.routing_key
@@ -81,11 +80,10 @@ import time
 import json
 import uuid
 
-API_VERSION = '0.1.32'
+API_VERSION = '0.1.47'
 
 
 # TODO use metaclasses instead?
-
 class NonCompliantMessageFormatError(Exception):
     def __init__(self, value):
         self.value = value
@@ -266,7 +264,7 @@ class MsgAgentTunStart(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Agent
+    Pub/Sub: Testing Tool -> Agent
 
     Description: Message for triggering start IP tun interface in OS where the agent is running
     """
@@ -284,17 +282,37 @@ class MsgAgentTunStart(Message):
     }
 
 
+class MsgAgentSerialStarted(Message):
+    """
+    Description: Message for indicating that agent serial interface has been started
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> Agent
+
+    Description: TBD
+    """
+    routing_key = "control.serial.from.tbd"
+
+    _msg_data_template = {
+        "_type": "serial.started",
+        "name": "tbd",
+        "port": "tbd",
+        "boudrate": "tbd",
+    }
+
+
 class MsgAgentTunStarted(Message):
     """
     Description: Message for indicating that agent tun has been started
 
     Type: Event
 
-    Typical_use: Testing Tool -> Agent
+    Pub/Sub: Agent -> Testing Tool
 
     Description: TBD
     """
-    routing_key = "control.tun.from.agent_TT"
+    routing_key = "control.tun.from.tbd"
 
     _msg_data_template = {
         "_type": "tun.started",
@@ -308,17 +326,46 @@ class MsgAgentTunStarted(Message):
     }
 
 
-'''
-TODO add packet.sniffed.raw
-ROUTING_KEY: data.tun.fromAgent.coap_server_agent
- - - -
-PROPS: {"delivery_mode": 2, "content_type": "application/json", "headers": {}, "priority": 0, "content_encoding": 
-"utf-8"}
- - - -
-BODY {"timestamp": "1488586183.45", "_type": "packet.sniffed.raw", "interface_name": "tun0", "data": [96, 0, 0, 0, 0, 
-36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 
-0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
-'''
+class MsgPacketInjectRaw(Message):
+    """
+    Description: Message to be captured by the agent an push into the correct embedded interface (e.g. tun, serial, etc..)
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> Agent
+
+    Description: TBD
+    """
+    routing_key = None  # depends on the agent_id and the agent interface being used, re-write after creation
+
+    _msg_data_template = {
+        "_type": "packet.to_inject.raw",
+        "timestamp": "1488586183.45",
+        "interface_name": "tun0",
+        "data": [96, 0, 0, 0, 0, 36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
+
+
+class MsgPacketSniffedRaw(Message):
+    """
+    Description: Message captured by the agent in one of its embedded interfaces (e.g. tun, serial, etc..)
+
+    Type: Event
+
+    Pub/Sub: Agent -> Testing Tool
+
+    Description: TBD
+    """
+    routing_key = None  # depends on the agent_id and the agent interface being used, re-write after creation
+
+    _msg_data_template = {
+        "_type": "packet.sniffed.raw",
+        "timestamp": "1488586183.45",
+        "interface_name": "tun0",
+        "data": [96, 0, 0, 0, 0, 36, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 255, 2, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 5, 2, 0, 0, 1, 0, 143, 0, 112, 7, 0, 0, 0, 1, 4, 0, 0, 0, 255, 2, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]}
 
 
 # # # # # # SESSION MESSAGES # # # # # #
@@ -329,7 +376,7 @@ class MsgTestingToolTerminate(Message):
 
     Type: Event
 
-    Typical_use: GUI, (or Orchestrator) -> Testing Tool
+    Pub/Sub: GUI, (or Orchestrator) -> Testing Tool
 
     Description: Testing tool should stop all it's processes gracefully.
     """
@@ -365,7 +412,7 @@ class MsgTestingToolComponentReady(Message):
 
     Type: Event
 
-    Typical_use: Any Testing tool's component -> Test Coordinator
+    Pub/Sub: Any Testing tool's component -> Test Coordinator
 
     Description: Once a testing tool's component is ready, it should publish a compoennt ready message
     """
@@ -378,13 +425,54 @@ class MsgTestingToolComponentReady(Message):
     }
 
 
+class MsgSessionChat(Message):
+    """
+    Requirements: GUI should implement
+
+    Type: Event
+
+    Pub/Sub: UI 1 (2) -> UI 2 (1)
+
+    Description: Generic descriptor of chat messages
+    """
+    routing_key = "log.warning.the_drummer"
+
+    _msg_data_template = {
+        "_type": "chat",
+        "user_name": "Ringo",
+        "iut_node": "tbd",
+        "description": "I've got blisters on my fingers!"
+    }
+
+
+class MsgSessionLog(Message):
+    """
+    Requirements: Testing Tool SHOULD implement
+
+    Type: Event
+
+    Pub/Sub: Any Testing tool's component -> user/devs interfaces
+
+    Description: Generic descriptor of log messages
+    """
+    routing_key = "log.warning.the_drummer"
+
+    _msg_data_template = {
+        "_type": "log",
+        "component": "misc",
+        "message": "I've got blisters on my fingers!"
+    }
+
+
+# TODO delete "Interop" to generalize
+
 class MsgInteropSessionConfiguration(Message):
     """
     Requirements: Testing Tool MUST listen to event
 
     Type: Event
 
-    Typical_use: Orchestrator -> Testing Tool
+    Pub/Sub: Orchestrator -> Testing Tool
 
     Description: Testing tool MUST listen to this message and configure the testsuite correspondingly
     """
@@ -418,18 +506,38 @@ class MsgInteropSessionConfiguration(Message):
         ],
         "tests": [
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
                 "settings": {}
             },
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
                 "settings": {}
             },
             {
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
                 "settings": {}
             }
         ]
+    }
+
+
+class MsgAgentConfigured(Message):
+    """
+    Requirements: Testing Tool SHOULD publish event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description: The goal is to notify GUI when agents are ready to start the session
+    """
+
+    routing_key = "control.session"
+
+    _msg_data_template = {
+        "_type": "agent.configured",
+        "description": "Event agent successfully CONFIGURED",
+        'name': 'agent_TT'
     }
 
 
@@ -439,7 +547,7 @@ class MsgTestingToolConfigured(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Orchestrator, GUI
+    Pub/Sub: Testing Tool -> Orchestrator, GUI
 
     Description: The goal is to notify orchestrator and other components that the testing tool has been configured
     """
@@ -454,13 +562,34 @@ class MsgTestingToolConfigured(Message):
     }
 
 
+class MsgSessionCreated(Message):
+    """
+    Requirements: Session Orchestrator MUST publish message on common-services channel (on every session creation)
+
+    Type: Event
+
+    Pub/Sub: SO -> viz tools
+
+    Description: The goal is to notify viz tools about new sessions
+    """
+
+    routing_key = "control.session.created"
+
+    _msg_data_template = {
+        "_type": "session.created",
+        "description": "A new session has been created",
+        "session_id": "TBD",
+        "testing_tools": "TBD",
+    }
+
+
 class MsgTestingToolComponentShutdown(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
 
     Type: Event
 
-    Typical_use: Any Testing tool's component -> Test Coordinator
+    Pub/Sub: Any Testing tool's component -> Test Coordinator
 
     Description: tbd
     """
@@ -481,7 +610,7 @@ class MsgTestSuiteStart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: tbd
     """
@@ -494,13 +623,32 @@ class MsgTestSuiteStart(Message):
     }
 
 
+class MsgTestSuiteStarted(Message):
+    """
+    Requirements: Testing Tool SHOULD publish to event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description: tbd
+    """
+
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.testsuite.started",
+        "description": "Event test suite STARTED"
+    }
+
+
 class MsgTestSuiteFinish(Message):
     """
     Requirements: Testing Tool MUST listen to event
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: tbd
     """
@@ -519,7 +667,7 @@ class MsgTestCaseReady(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the next test case to be executed.
@@ -530,9 +678,9 @@ class MsgTestCaseReady(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.ready",
-        "description": "Next test case to be executed is TD_COAP_CORE_01_v01",
-        "testcase_id": "TD_COAP_CORE_01_v01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "description": "Next test case to be executed is TD_COAP_CORE_01",
+        "testcase_id": "TD_COAP_CORE_01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
         "objective": "Perform GET transaction(CON mode)",
         "state": None
     }
@@ -544,7 +692,7 @@ class MsgTestCaseStart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description:
         - Message used for indicating the testing tool to start the test case (the one previously selected)
@@ -560,13 +708,76 @@ class MsgTestCaseStart(Message):
     }
 
 
+class MsgTestCaseStarted(Message):
+    """
+    Requirements: Testing Tool SHOULD publish event
+
+    Type: Event
+
+    Pub/Sub: Testing Tool -> GUI
+
+    Description:
+        - Message used for indicating that testcase has started
+    """
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.testcase.started",
+        "description": "Event test case STARTED",
+        "testcase_id": "TBD",
+    }
+
+
+# TODO MsgTestCaseNotes, see https://portal.etsi.org/cti/downloads/TestSpecifications/6LoWPAN_Plugtests_TestDescriptions_1.0.pdf
+
+
 class MsgTestCaseConfiguration(Message):
+    """
+    Requirements: Testing Tool MAY publish event (if needed for executing the test case)
+    Type: Event
+    Pub/Sub: Testing Tool -> GUI & automated-iut
+    Description:
+        - Message used to indicate GUI and/or automated-iut which configuration to use.
+        - IMPORTANT: deprecate this message in favor of MsgConfigurationExecute and MsgConfigurationExecuted
+    """
+    routing_key = "control.testcoordination"
+    _msg_data_template = {
+        "_type": "testcoordination.testcase.configuration",
+        "configuration_id": "COAP_CFG_01",
+        "node": "coap_server",
+        "testcase_id": "TBD",
+        "testcase_ref": "TBD",
+        "description":
+            ["CoAP servers running service at [bbbb::2]:5683",
+             "CoAP servers are requested to offer the following resources",
+             ["/test", "Default test resource", "Should not exceed 64bytes"],
+             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+             ["/separate",
+              "Ressource which cannot be served immediately and which cannot be "
+              "acknowledged in a piggy-backed way",
+              "Should not exceed 64bytes"],
+             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+             ["/large_update",
+              "Large resource that can be updated using PUT method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/large_create",
+              "Large resource that can be  created using POST method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/obs", "Observable resource which changes every 5 seconds",
+              "shall not exceed 2048bytes"],
+             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+             ]
+    }
+
+
+class MsgConfigurationExecute(Message):
     """
     Requirements: Testing Tool MAY publish event (if needed for executing the test case)
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI & automated-iut
+    Pub/Sub: Testing Tool -> GUI & automated-iut
 
     Description:
         - Message used to indicate GUI and/or automated-iut which configuration to use.
@@ -574,32 +785,54 @@ class MsgTestCaseConfiguration(Message):
     routing_key = "control.testcoordination"
 
     _msg_data_template = {
-        "_type": "testcoordination.testcase.configuration",
-        "configuration_id": "COAP_CFG_01_v01",
+        "_type": "testcoordination.configuration.execute",
+        "configuration_id": "COAP_CFG_01",
         "node": "coap_server",
         "testcase_id": "TBD",
         "testcase_ref": "TBD",
         "description":
             ["CoAP servers running service at [bbbb::2]:5683",
-                "CoAP servers are requested to offer the following resources",
-                ["/test", "Default test resource", "Should not exceed 64bytes"],
-                ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
-                ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
-                ["/separate",
-                    "Ressource which cannot be served immediately and which cannot be "
-                    "acknowledged in a piggy-backed way",
-                    "Should not exceed 64bytes"],
-                ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
-                ["/large_update",
-                    "Large resource that can be updated using PUT method (>1024 bytes)",
-                    "shall not exceed 2048bytes"],
-                ["/large_create",
-                    "Large resource that can be  created using POST method (>1024 bytes)",
-                    "shall not exceed 2048bytes"],
-                ["/obs", "Observable resource which changes every 5 seconds",
-                    "shall not exceed 2048bytes"],
-                ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
-            ]
+             "CoAP servers are requested to offer the following resources",
+             ["/test", "Default test resource", "Should not exceed 64bytes"],
+             ["/seg1/seg2/seg3", "Long path ressource", "Should not exceed 64bytes"],
+             ["/query", "Ressource accepting query parameters", "Should not exceed 64bytes"],
+             ["/separate",
+              "Ressource which cannot be served immediately and which cannot be "
+              "acknowledged in a piggy-backed way",
+              "Should not exceed 64bytes"],
+             ["/large", "Large resource (>1024 bytes)", "shall not exceed 2048bytes"],
+             ["/large_update",
+              "Large resource that can be updated using PUT method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/large_create",
+              "Large resource that can be  created using POST method (>1024 bytes)",
+              "shall not exceed 2048bytes"],
+             ["/obs", "Observable resource which changes every 5 seconds",
+              "shall not exceed 2048bytes"],
+             ["/.well-known/core", "CoRE Link Format", "may require usage of Block options"]
+             ]
+    }
+
+
+class MsgConfigurationExecuted(Message):
+    """
+    Requirements: Testing Tool SHOULD listen to event
+
+    Type: Event
+
+    Pub/Sub: GUI (automated-IUT) -> Testing Tool
+
+    Description:
+        - Message used for indicating that the IUT has been configured as requested
+        - pixit must be included in this message (pixit = Protocol Implementaiton eXtra Information for Testing)
+    """
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.configuration.executed",
+        "description": "Event IUT has been configured",
+        "node": "coap_server",
+        "ipv6_address": "tbd"  # example of pixit
     }
 
 
@@ -609,7 +842,7 @@ class MsgTestCaseStop(Message):
 
     Type: Event
 
-    Typical_use: GUI & automated-iut -> Testing Tool
+    Pub/Sub: GUI & automated-iut -> Testing Tool
 
     Description:
         - Message used for indicating the testing tool to stop the test case (the one running).
@@ -629,7 +862,7 @@ class MsgTestCaseRestart(Message):
 
     Type: Event
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: Restart the running test cases.
     """
@@ -648,7 +881,7 @@ class MsgStepStimuliExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the stimuli step to be executed by the user (or
@@ -659,19 +892,20 @@ class MsgStepStimuliExecute(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.step.stimuli.execute",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_01",
-        "step_id": "TBD",
-        "step_type": "TBD",
+        "description": "Please execute TD_COAP_CORE_01_step_01",
+        "step_id": "TD_COAP_CORE_01_step_01",
+        "step_type": "stimuli",
         "step_info": [
             "Client is requested to send a GET request with",
             "Type = 0(CON)",
             "Code = 1(GET)"
         ],
-        "step_state": "TBD",
-        "node": "TBD",
-        "node_execution_mode": "TBD",
+        "step_state": "executing",
+        "node": "coap_client",
+        "node_execution_mode": "user_assisted",
         "testcase_id": "TBD",
-        "testcase_ref": "TBD"
+        "testcase_ref": "TBD",
+        "target_address": "TBD"
     }
 
 
@@ -681,7 +915,7 @@ class MsgStepStimuliExecuted(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Used to indicate stimuli has been executed by user (and it's user-assisted iut) or by automated-iut
@@ -703,7 +937,7 @@ class MsgStepCheckExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> Analysis
+    Pub/Sub: Testing Tool -> Analysis
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the stimuli step to be executed by the user (or
@@ -714,8 +948,8 @@ class MsgStepCheckExecute(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.step.check.execute",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_02",
-        "step_id": "TD_COAP_CORE_01_v01_step_02",
+        "description": "Please execute TD_COAP_CORE_01_step_02",
+        "step_id": "TD_COAP_CORE_01_step_02",
         "step_type": "check",
         "step_info": [
             "The request sent by the client contains",
@@ -736,7 +970,7 @@ class MsgStepCheckExecuted(Message):
 
     Type: Event
 
-    Typical_use: test coordination -> test analysis
+    Pub/Sub: test coordination -> test analysis
 
     Description:
         - In the context of IUT to IUT test execution, this message is used for indicating that the previously
@@ -760,7 +994,7 @@ class MsgStepVerifyExecute(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI (or automated-IUT)
+    Pub/Sub: Testing Tool -> GUI (or automated-IUT)
 
     Description:
         - Used to indicate to the GUI (or automated-iut) which is the verify step to be executed by the user (or
@@ -772,8 +1006,8 @@ class MsgStepVerifyExecute(Message):
     _msg_data_template = {
         "_type": "testcoordination.step.verify.execute",
         "response_type": "bool",
-        "description": "Please execute TD_COAP_CORE_01_v01_step_04",
-        "step_id": "TD_COAP_CORE_01_v01_step_04",
+        "description": "Please execute TD_COAP_CORE_01_step_04",
+        "step_id": "TD_COAP_CORE_01_step_04",
         "step_type": "verify",
         "step_info": [
             "Client displays the received information"
@@ -793,7 +1027,7 @@ class MsgStepVerifyExecuted(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Message generated by user (GUI or automated-IUT) declaring if the IUT VERIFY verifies the expected behaviour.
@@ -816,7 +1050,7 @@ class MsgStepVerifyExecuted(Message):
     #
     #     Requirements: Testing Tool MAY listen to event
     #     Type: Event
-    #     Typical_use: GUI (or automated-IUT)-> Testing Tool
+    #     Pub/Sub: GUI (or automated-IUT)-> Testing Tool
     #     Description:
     #         - Used for indicating that the test case has finished.
     #         - Test coordinator deduces it automatically by using the testcase's step sequence
@@ -836,7 +1070,7 @@ class MsgTestCaseFinished(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Used for indicating to subscribers that the test cases has finished.
@@ -859,7 +1093,7 @@ class MsgTestCaseSkip(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description:
         - Used for skipping a test cases event when was previusly selected to be executed.
@@ -871,8 +1105,9 @@ class MsgTestCaseSkip(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.skip",
-        "testcase_id": "TD_COAP_CORE_02_v01",
-        "node": "TBD",
+        "description": "Skip testcase",
+        "testcase_id": None,
+        "node": "someNode",
     }
 
 
@@ -882,7 +1117,7 @@ class MsgTestCaseSelect(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description: tbd
 
@@ -892,7 +1127,7 @@ class MsgTestCaseSelect(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testcase.select",
-        "testcase_id": "TD_COAP_CORE_03_v01",
+        "testcase_id": "TD_COAP_CORE_03",
     }
 
 
@@ -902,7 +1137,7 @@ class MsgTestSuiteAbort(Message):
 
     Type: Event
 
-    Typical_use: GUI (or automated-IUT)-> Testing Tool
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
 
     Description: Event test suite ABORT
     """
@@ -915,13 +1150,32 @@ class MsgTestSuiteAbort(Message):
     }
 
 
+class MsgTestCaseAbort(Message):
+    """
+    Requirements: Testing Tool SHOULD listen to event
+
+    Type: Event
+
+    Pub/Sub: GUI (or automated-IUT)-> Testing Tool
+
+    Description: Event for current test case ABORT
+    """
+
+    routing_key = "control.testcoordination"
+
+    _msg_data_template = {
+        "_type": "testcoordination.testcase.abort",
+        "description": "Event ABORT current testcase"
+    }
+
+
 class MsgTestSuiteGetStatus(Message):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
 
     Type: Request (service)
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description:
         - Describes current state of the test suite.
@@ -941,7 +1195,7 @@ class MsgTestSuiteGetStatusReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description:
         - Describes current state of the test suite.
@@ -954,9 +1208,9 @@ class MsgTestSuiteGetStatusReply(MsgReply):
         "_type": "testcoordination.testsuite.getstatus.reply",
         "ok": True,
         "started": True,
-        "testcase_id": "TD_COAP_CORE_01_v01",
+        "testcase_id": "TD_COAP_CORE_01",
         "testcase_state": "executing",
-        "step_id": "TD_COAP_CORE_01_v01_step_01"
+        "step_id": "TD_COAP_CORE_01_step_01"
 
     }
 
@@ -967,7 +1221,7 @@ class MsgTestSuiteGetTestCases(Message):
 
     Type: Request (service)
 
-    Typical_use: GUI -> Testing Tool
+    Pub/Sub: GUI -> Testing Tool
 
     Description: TBD
     """
@@ -985,7 +1239,7 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: TBD
     """
@@ -997,20 +1251,20 @@ class MsgTestSuiteGetTestCasesReply(MsgReply):
         "ok": True,
         "tc_list": [
             {
-                "testcase_id": "TD_COAP_CORE_01_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+                "testcase_id": "TD_COAP_CORE_01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
                 "objective": "Perform GET transaction(CON mode)",
                 "state": None
             },
             {
-                "testcase_id": "TD_COAP_CORE_02_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02_v01",
+                "testcase_id": "TD_COAP_CORE_02",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
                 "objective": "Perform DELETE transaction (CON mode)",
                 "state": None
             },
             {
-                "testcase_id": "TD_COAP_CORE_03_v01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03_v01",
+                "testcase_id": "TD_COAP_CORE_03",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
                 "objective": "Perform PUT transaction (CON mode)",
                 "state": None
             }
@@ -1024,7 +1278,7 @@ class MsgTestCaseVerdict(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI (or automated-iut) which is the final verdict of the testcase.
     """
@@ -1036,20 +1290,20 @@ class MsgTestCaseVerdict(Message):
         "verdict": "pass",
         "description": "No interoperability error was detected,",
         "partial_verdicts": [
-            ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
-            ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
-            ["TD_COAP_CORE_01_v01_step_04", "pass",
-                "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
+            ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
+            ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
+            ["TD_COAP_CORE_01_step_04", "pass",
+             "VERIFY step: User informed that the information was displayed correclty on his/her IUT", ""],
             ["CHECK_1_post_mortem_analysis", "pass",
-                "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
+             "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: CoAP(type=0, code=1)"],
             ["CHECK_2_post_mortem_analysis", "pass",
-                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
-                "mid=0xa8cb, tok=b'', pl=Not(b''))"],
+             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(code=69, "
+             "mid=0xa8cb, tok=b'', pl=Not(b''))"],
             ["CHECK_3_post_mortem_analysis", "pass",
-                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
-                "CoAPOptionContentFormat()))"]],
-        "testcase_id": "TD_COAP_CORE_01_v01",
-        "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
+             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > Match: CoAP(opt=Opt("
+             "CoAPOptionContentFormat()))"]],
+        "testcase_id": "TD_COAP_CORE_01",
+        "testcase_ref": "http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01",
         "objective": "Perform GET transaction(CON mode)", "state": "finished"
     }
 
@@ -1060,7 +1314,7 @@ class MsgTestSuiteReport(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI (or automated-iut) the final results of the test session.
     """
@@ -1069,24 +1323,24 @@ class MsgTestSuiteReport(Message):
 
     _msg_data_template = {
         "_type": "testcoordination.testsuite.report",
-        "TD_COAP_CORE_01_v01":
+        "TD_COAP_CORE_01":
             {
                 "verdict": "pass",
                 "description": "No interoperability error was detected,",
                 "partial_verdicts":
                     [
-                        ["TD_COAP_CORE_01_v01_step_02", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_03", None, "CHECK postponed", ""],
-                        ["TD_COAP_CORE_01_v01_step_04", "pass",
-                            "VERIFY step: User informed that the information was displayed "
-                            "correclty on his/her IUT",
-                            ""],
+                        ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_04", "pass",
+                         "VERIFY step: User informed that the information was displayed "
+                         "correclty on his/her IUT",
+                         ""],
                         ["CHECK_1_post_mortem_analysis", "pass",
-                            "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
-                            "CoAP(type=0, code=1)"],
+                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
+                         "CoAP(type=0, code=1)"],
                         ["CHECK_2_post_mortem_analysis", "pass",
-                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                            "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
+                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                         "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
                         [
                             "CHECK_3_post_mortem_analysis",
                             "pass",
@@ -1095,22 +1349,22 @@ class MsgTestSuiteReport(Message):
                     ]
             },
 
-        "TD_COAP_CORE_02_v01":
+        "TD_COAP_CORE_02":
             {
                 "verdict": "pass",
                 "description": "No interoperability error was detected,",
                 "partial_verdicts": [
-                    ["TD_COAP_CORE_02_v01_step_02", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_03", None, "CHECK postponed", ""],
-                    ["TD_COAP_CORE_02_v01_step_04", "pass",
-                        "VERIFY step: User informed that the information was displayed correclty on his/her "
-                        "IUT",
-                        ""], ["CHECK_1_post_mortem_analysis", "pass",
-                        "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
-                        "code=4)"],
+                    ["TD_COAP_CORE_02_step_02", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_03", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_04", "pass",
+                     "VERIFY step: User informed that the information was displayed correclty on his/her "
+                     "IUT",
+                     ""], ["CHECK_1_post_mortem_analysis", "pass",
+                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
+                           "code=4)"],
                     ["CHECK_2_post_mortem_analysis", "pass",
-                        "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
-                        "code=66, mid=0xa8cd, tok=b'')"]]
+                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
+                     "code=66, mid=0xa8cd, tok=b'')"]]
             }
     }
 
@@ -1123,7 +1377,7 @@ class MsgSniffingStart(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1134,7 +1388,7 @@ class MsgSniffingStart(Message):
         "_type": "sniffing.start",
         "capture_id": "TD_COAP_CORE_01",
         "filter_if": "tun0",
-        "filter_proto": "udp port 5683"
+        "filter_proto": "udp"
     }
 
 
@@ -1142,7 +1396,7 @@ class MsgSniffingStartReply(MsgReply):
     """
     Requirements: Testing Tool SHOULD implement (other components should not subscribe to event)
     Type: Reply (service)
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
     Description: tbd
     """
 
@@ -1160,7 +1414,7 @@ class MsgSniffingStop(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1178,7 +1432,7 @@ class MsgSniffingStoptReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1197,7 +1451,7 @@ class MsgSniffingGetCapture(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1217,7 +1471,7 @@ class MsgSniffingGetCaptureReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1238,7 +1492,7 @@ class MsgSniffingGetCaptureLast(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> sniffing
+    Pub/Sub: coordination -> sniffing
 
     Description: tbd
     """
@@ -1256,7 +1510,7 @@ class MsgSniffingGetCaptureLastReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: sniffing -> coordination
+    Pub/Sub: sniffing -> coordination
 
     Description: tbd
     """
@@ -1279,7 +1533,7 @@ class MsgInteropTestCaseAnalyze(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> analysis
+    Pub/Sub: coordination -> analysis
 
     Description:
         - Method to launch an analysis from a pcap file or a token if the pcap file has already been provided.
@@ -1293,8 +1547,9 @@ class MsgInteropTestCaseAnalyze(Message):
 
     _msg_data_template = {
         "_type": "analysis.interop.testcase.analyze",
+        "protocol": "coap",
         "testcase_id": "TD_COAP_CORE_01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
         "file_enc": "pcap_base64",
         "filename": "TD_COAP_CORE_01.pcap",
         "value": PCAP_empty_base64,
@@ -1307,11 +1562,10 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: analysis -> coordination
+    Pub/Sub: analysis -> coordination
 
     Description:
-        - The recommended structure for the partial_verdicts field is a list of partial verdicts with the following
-        requirements:
+        - The recommended structure for the partial_verdicts field is a list of partial verdicts which complies to:
            - each one of those elements of the list correspond to one CHECK or VERIFY steps of the test description
             - first value of the list MUST be a "pass", "fail", "inconclusive" or eventually "error" partial verdict (
             string)
@@ -1347,7 +1601,7 @@ class MsgInteropTestCaseAnalyzeReply(MsgReply):
             ]
         ],
         "testcase_id": "TD_COAP_CORE_01",
-        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01_v01",
+        "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
     }
 
     # # # # # # DISSECTION MESSAGES # # # # # #
@@ -1359,7 +1613,7 @@ class MsgDissectionDissectCapture(Message):
 
     Type: Request (service)
 
-    Typical_use: coordination -> dissection, analysis -> dissection
+    Pub/Sub: coordination -> dissection, analysis -> dissection
 
     Description: TBD
     """
@@ -1390,7 +1644,7 @@ class MsgDissectionDissectCaptureReply(MsgReply):
 
     Type: Reply (service)
 
-    Typical_use: Dissector -> Coordinator, Dissector -> Analyzer
+    Pub/Sub: Dissector -> Coordinator, Dissector -> Analyzer
 
     Description: TBD
     """
@@ -1445,7 +1699,7 @@ class MsgDissectionAutoDissect(Message):
 
     Type: Event
 
-    Typical_use: Testing Tool -> GUI
+    Pub/Sub: Testing Tool -> GUI
 
     Description: Used to indicate to the GUI the dissection of the exchanged packets.
         - GUI MUST display this info during execution:
@@ -1516,15 +1770,15 @@ class MsgPrivacyAnalyzeReply(MsgReply):
     """
 
     _privacy_empty_report = {"type": "Anomalies Report",
-        "protocols": ["coap"],
-        "conversation": [],
-        "status": "none",
-        "testing_tool": "Privacy Testing Tool",
-        "byte_exchanged": 0,
-        "timestamp": 1493798811.53124,
-        "is_final": True,
-        "packets": {},
-        "version": "0.0.1"}
+                             "protocols": ["coap"],
+                             "conversation": [],
+                             "status": "none",
+                             "testing_tool": "Privacy Testing Tool",
+                             "byte_exchanged": 0,
+                             "timestamp": 1493798811.53124,
+                             "is_final": True,
+                             "packets": {},
+                             "version": "0.0.1"}
 
     _msg_data_template = {
         "_type": "privacy.analyze.reply",
@@ -1640,19 +1894,104 @@ class MsgPrivacyIssue(Message):
     }
 
 
+# # # # # #   PERFORMANCE TESTING TOOL MESSAGES   # # # # # #
+
+class MsgPerformanceHeartbeat(Message):
+    """
+    Requirements:   Timeline Controller MUST listen to event
+                    Performance submodules MUST emit event periodically
+    Type:           Event
+    Typical_use:    Performance Submodules -> Timeline Controller
+    Description:    The Timeline Controller verifies that all submodules are
+                    active and in the correct state
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.heartbeat",
+        "mod_name": "unknown",
+        "status": "ready",  # ready, configured or failed
+    }
+
+
+class MsgPerformanceConfiguration(Message):
+    """
+    Requirements:   Timeline Controller MUST listen to event
+    Type:           Event
+    Typical_use:    Orchestrator -> Timeline Controller
+    Description:    Carries the performance test configuration to the
+                    Timeline Controller
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.configuration",
+        "configuration": {  # As produced by configuration GUI
+            "static": {},  # Static configuration of submodules
+            "initial": {},  # Initial values for dynamic parameters
+            "segments": [],  # Timeline segments
+        }
+    }
+
+
+class MsgPerformanceSetValues(Message):
+    """
+    Requirements:   Performance Submodules MUST listen to event
+    Type:           Event
+    Typical_use:    Timeline Controller -> Performance Submodules
+    Description:    During the test execution, the Timeline Controller will
+                    periodically emit this event to the performance submodules
+                    to update dynamic parameters
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.setvalues",
+        "values": {}
+    }
+
+
+class MsgPerformanceStats(Message):
+    """
+    Requirements:   Performance Submodules SHOULD emit this event periodically
+                    Visualization module SHOULD listen to this event
+    Type:           Event
+    Typical_use:    Performance Submodules -> Visualization
+    Description:    During the test execution, the Performance Submodules
+                    will periodically emit this event carrying current
+                    performance statistics/measurements
+    """
+    routing_key = "control.performance"
+
+    _msg_data_template = {
+        "_type": "performance.stats",
+        "mod_name": "unknown",
+        "timestamp": 0,
+        "stats": {},
+    }
+
+
 message_types_dict = {
+    "log": MsgSessionLog,  # Any -> Any
+    "chat": MsgSessionChat,  # GUI_x -> GUI_y
+    "agent.configured": MsgAgentConfigured,  # TestingTool -> GUI
     "tun.start": MsgAgentTunStart,  # TestingTool -> Agent
     "tun.started": MsgAgentTunStarted,  # Agent -> TestingTool
+    "serial.started": MsgAgentSerialStarted,  # Agent -> TestingTool
+    "packet.sniffed.raw": MsgPacketSniffedRaw,  # Agent -> TestingTool
+    "packet.to_inject.raw": MsgPacketInjectRaw,  # TestingTool -> Agent
     "session.interop.configuration": MsgInteropSessionConfiguration,  # Orchestrator -> TestingTool
     "testingtool.configured": MsgTestingToolConfigured,  # TestingTool -> Orchestrator, GUI
     "testingtool.component.ready": MsgTestingToolComponentReady,  # Testing Tool internal
     "testingtool.component.shutdown": MsgTestingToolComponentShutdown,  # Testing Tool internal
-    "testingtool.ready": MsgTestingToolReady,  # GUI Testing Tool -> GUI
+    "testingtool.ready": MsgTestingToolReady,  # Testing Tool -> GUI
     "testingtool.terminate": MsgTestingToolTerminate,  # orchestrator -> TestingTool
     "testcoordination.testsuite.start": MsgTestSuiteStart,  # GUI -> TestingTool
+    "testcoordination.testsuite.started": MsgTestSuiteStarted,  # Testing Tool -> GUI
     "testcoordination.testsuite.finish": MsgTestSuiteFinish,  # GUI -> TestingTool
     "testcoordination.testcase.ready": MsgTestCaseReady,  # TestingTool -> GUI
     "testcoordination.testcase.start": MsgTestCaseStart,  # GUI -> TestingTool
+    "testcoordination.testcase.started": MsgTestCaseStarted,  # TestingTool -> GUI
     "testcoordination.step.stimuli.execute": MsgStepStimuliExecute,  # TestingTool -> GUI
     "testcoordination.step.stimuli.executed": MsgStepStimuliExecuted,  # GUI -> TestingTool
     "testcoordination.step.check.execute": MsgStepCheckExecute,  # TestingTool -> GUI
@@ -1660,10 +1999,13 @@ message_types_dict = {
     "testcoordination.step.verify.execute": MsgStepVerifyExecute,  # Testing Tool Internal
     "testcoordination.step.verify.executed": MsgStepVerifyExecuted,  # Testing Tool Internal
     "testcoordination.testcase.configuration": MsgTestCaseConfiguration,  # TestingTool -> GUI
+    "testcoordination.configuration.execute": MsgConfigurationExecute,  # TestingTool -> GUI (or auto-iut)
+    "testcoordination.configuration.executed": MsgConfigurationExecuted,  # GUI (or auto-iut) -> TestingTool
     "testcoordination.testcase.stop": MsgTestCaseStop,  # GUI -> TestingTool
     "testcoordination.testcase.restart": MsgTestCaseRestart,  # GUI -> TestingTool
     "testcoordination.testcase.skip": MsgTestCaseSkip,  # GUI -> TestingTool
     "testcoordination.testcase.select": MsgTestCaseSelect,  # GUI -> TestingTool
+    "testcoordination.testcase.abort": MsgTestCaseAbort,  # GUI -> TestingTool
     # "testcoordination.testcase.finish": MsgTestCaseFinish,  # GUI -> TestingTool
     "testcoordination.testcase.finished": MsgTestCaseFinished,  # TestingTool -> GUI
     "testcoordination.testcase.verdict": MsgTestCaseVerdict,  # TestingTool -> GUI
@@ -1674,7 +2016,9 @@ message_types_dict = {
     "testcoordination.testsuite.gettestcases.reply": MsgTestSuiteGetTestCasesReply,  # TestingTool -> GUI (reply)
     "testcoordination.testsuite.report": MsgTestSuiteReport,  # TestingTool -> GUI
     "sniffing.start": MsgSniffingStart,  # Testing Tool Internal
+    "sniffing.start.reply": MsgSniffingStartReply,  # Testing Tool Internal
     "sniffing.stop": MsgSniffingStop,  # Testing Tool Internal
+    "sniffing.stop.reply": MsgSniffingStoptReply,  # Testing Tool Internal
     "sniffing.getcapture": MsgSniffingGetCapture,  # Testing Tool Internal
     "sniffing.getlastcapture": MsgSniffingGetCaptureLast,  # Testing Tool Internal
     "analysis.interop.testcase.analyze": MsgInteropTestCaseAnalyze,  # Testing Tool Internal
@@ -1693,6 +2037,12 @@ message_types_dict = {
     "privacy.configuration.get.reply": MsgPrivacyGetConfigurationReply,  # TestingTool -> GUI (reply),
     "privacy.configuration.set": MsgPrivacySetConfiguration,  # GUI -> TestingTool,
     "privacy.configuration.set.reply": MsgPrivacySetConfigurationReply,  # GUI -> TestingTool (reply),
+    # PERFORMANCE TESTING TOOL -> Reference: Eduard Bröse (EANTC)
+    "performance.heartbeat": MsgPerformanceHeartbeat,  # Perf. Submodules -> Timeline Controller
+    "performance.configuration": MsgPerformanceConfiguration,  # Orchestrator -> Timeline Controller
+    "performance.stats": MsgPerformanceStats,  # Perf. Submodules -> Visualization
+    "performance.setvalues": MsgPerformanceSetValues,  # Timeline Controller -> Perf. Submodules
+
 }
 
 if __name__ == '__main__':
@@ -1746,7 +2096,7 @@ if __name__ == '__main__':
         m.message_id,
         m.testcase_id,
     )
-    m = MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03_v01')
+    m = MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03')
     print(
         m.testcase_id,
         m.to_json(),

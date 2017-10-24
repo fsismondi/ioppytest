@@ -23,9 +23,9 @@ RUN pip install -r coap_testing_tool/agent/requirements.txt
 #py3 requierements
 RUN pip3 install pika
 
-RUN cp automated_IUTs/coap_server_californium/supervisor.conf supervisor.conf
+#RUN cp automated_IUTs/coap_server_californium/supervisor.conf supervisor.conf
 
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration supervisor.conf
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_server_californium/supervisor.conf"]

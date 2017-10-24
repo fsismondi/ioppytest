@@ -1,8 +1,6 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-# docker build -t automated-iut-coap-client-coapthon-v01 ./coap_testing_tool/automated_implementations/coap_client_coapthon/
-
 RUN apt-get update -y -qq && apt-get -y -qq install python3-dev
 RUN apt-get -y install python3-setuptools
 RUN	apt-get -y install python3-pip
@@ -22,9 +20,9 @@ RUN pip install -r coap_testing_tool/agent/requirements.txt
 RUN pip3 install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
 RUN pip3 install -r automated_IUTs/coap_client_coapthon/requirements.txt
 
-RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
+#RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
 
 EXPOSE 5671 5672
 
 # launch processes
-CMD supervisord --nodaemon --configuration supervisor.conf
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_client_coapthon/supervisor.conf"]

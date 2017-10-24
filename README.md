@@ -1,7 +1,7 @@
 CoAP Testing Tool:
 ------------------
 
-This repo conaints all necessary software (and their dependencies) for running a 
+This repo contains all necessary software (and their dependencies) for running a
 CoAP interoperability test session.
 
 This can be run as standalone software and also integrated to f-interop 
@@ -33,7 +33,7 @@ cd coap_testing_tool
 
 (# TODO talk about the CLI, without it you cannot run a session)
 
-First thing needed is to have the rabbit running. Whaat?
+First thing needed is to have the rabbit running ;)
 You need a server running RabbitMQ message broker for handling the
 messaging between the components taking part in your test session.
 
@@ -52,7 +52,7 @@ then, export in the machine where the testing tool is running the following vars
 
     ```
     export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
-    export AMQP_EXCHANGE='default'
+    export AMQP_EXCHANGE='amq.topic'
     ```
 
 ---
@@ -98,11 +98,18 @@ docker build -t finterop-coap . --no-cache
 Go to FAQ, for known errors.
 
 Finally, **run** it, from inside coap_testing_tool run:
+
 ```
-docker run -it --env AMQP_EXCHANGE='default' --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap supervisord --nodaemon --configuration supervisor.conf
+docker run -it
+    --env AMQP_EXCHANGE='default'
+    --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
+    --privileged finterop-coap supervisord
+    --nodaemon
+    --configuration supervisor.conf
 ```
 
 alternatively, you can:
+
 ```
 docker run -it --env AMQP_EXCHANGE=default --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap  bash
 root@bab3b2220510:/coap_testing_tool# supervisord -c supervisor.conf
@@ -142,7 +149,8 @@ Now, let's install the testing tool requirements:
 unix user, then run ansible script:
 
     ```
-    ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass
+    ansible-playbook -i ansible/hosts.local ansible/main.yml
+        --ask-become-pass
     ```
 
 - run CoAP testing tool and monitor processes
@@ -169,5 +177,5 @@ automated-IUT into CoAP Testing Tool
     **TBD**
 
 - Docker build returns a "cannot fetch package" or a "cannot resolve .."
-
-    http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
+    -> try using --no-cache for the docker build
+    -> more info http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a

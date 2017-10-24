@@ -5,31 +5,36 @@ and HEAD requests in a fairly straightforward manner.
 
 """
 
-
 import os
+import html
+import glob
+import json
+import yaml
+import urllib
+import shutil
 import logging
 import posixpath
-import urllib
-import html
-import yaml
 import mimetypes
-import glob, json
 from jinja2 import Template
+
+from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
+from coap_testing_tool.test_coordinator.testsuite import TestCase
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from coap_testing_tool import TD_COAP,TD_COAP_CFG, RESULTS_DIR
-from coap_testing_tool.test_coordinator.coordinator import TestCase
+COMPONENT_ID = 'webserver'
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger(COMPONENT_ID)
 
 td_list = []
+FILENAME_HTML_REPORT = 'testsuite_results.html'
 
-tail ="""
+tail = """
 "mantainer": "Federico Sismondi",
 "mantainer_email": "federico.sismondi@inria.fr"
 
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
+
 
 with open(TD_COAP, "r", encoding="utf-8") as stream:
     yaml_docs = yaml.load_all(stream)
@@ -37,10 +42,31 @@ with open(TD_COAP, "r", encoding="utf-8") as stream:
         if type(yaml_doc) is TestCase:
             td_list.append(yaml_doc)
 
+with open(TD_6LOWPAN, "r", encoding="utf-8") as stream:
+    yaml_docs = yaml.load_all(stream)
+    for yaml_doc in yaml_docs:
+        if type(yaml_doc) is TestCase:
+            td_list.append(yaml_doc)
+
+
+def create_html_test_results():
+    resp = None
+    with open(FILENAME_HTML_REPORT, 'w+') as file:
+        items = []
+        for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
+            try:
+                with open(filename, 'r') as jsonfile:
+                    an_item = json.loads(jsonfile.read())
+            except:
+                an_item = {'description': 'error importing'}
+            items.append(an_item)
+        resp = template_test_vedict.render(items=items)
+        file.write(resp)
+    return resp
+
 # TODO server config files too
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-
     """Simple HTTP request handler with GET and HEAD commands.
 
     This serves files from the current directory and any of its
@@ -52,7 +78,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     request omits the actual contents of the file.
 
     """
-
 
     def do_GET(self):
         """Serve a GET request."""
@@ -80,78 +105,116 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
 
         # check if its a testcase in the ones already loaded
-        if self.path.startswith('/tests/'):
-            logger.debug('Handling tescase request: %s' % self.path)
+        if self.path.startswith('/tests/') or self.path.startswith('/coap_testing_tool/tests/'):
+            logger.debug('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
-        elif self.path.startswith('/results'):
-            logger.debug('Handling tescase request: %s' % self.path)
+        elif self.path.startswith('/coap_testing_tool/pcaps'):
+            logger.debug('Handling PCAP request: %s' % self.path)
+            return self.handle_pcaps(self.path)
+        elif self.path.startswith('/coap_testing_tool/results'):
+            logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
+        elif self.path.startswith('/coap_testing_tool/packets'):
+            logger.debug('Handling PACKETS dissection request: %s' % self.path)
+            return self.handle_packets(self.path)
 
-        # check if its a file in the testing tool dir
-        path = self.translate_path(self.path)
-        f = None
+        else:  # allow introspection of project directory
+            # check if its a file in the testing tool dir
+            path = self.translate_path(self.path)
+            f = None
 
-        if os.path.isdir(path):
-            for index in "index.html", "index.htm":
-                index = os.path.join(path, index)
-                if os.path.exists(index):
-                    path = index
-                    break
+            if os.path.isdir(path):
+                for index in "index.html", "index.htm":
+                    index = os.path.join(path, index)
+                    if os.path.exists(index):
+                        path = index
+                        break
+                else:
+                    return self.list_directory(path)
+            ctype = self.guess_type(path)
+            if ctype.startswith('text/'):
+                mode = 'r'
             else:
-                return self.list_directory(path)
-        ctype = self.guess_type(path)
-        if ctype.startswith('text/'):
-            mode = 'r'
+                mode = 'rb'
+            try:
+                f = open(path, mode)
+            except IOError:
+                self.send_error(404, "File not found")
+                return None
+            self.send_response(200)
+            self.send_header("Content-type", ctype)
+            self.end_headers()
+            return f
+
+    def handle_pcaps(self, path):
+        logger.info('Handling data: %s' % path)
+        assert '/pcaps' in path
+
+        if 'IEEE802_15_4' in path:
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+        elif 'DLT_RAW' in path:
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_RAW.pcap')
         else:
-            mode = 'rb'
-        try:
-            f = open(path, mode)
-        except IOError:
-            self.send_error(404, "File not found")
-            return None
-        self.send_response(200)
-        self.send_header("Content-type", ctype)
-        self.end_headers()
-        return f
+            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+
+        with open(file, 'rb') as f:
+            self.send_response(200)
+            self.send_header("Content-Type", 'application/octet-stream')
+            self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(file)))
+            fs = os.fstat(f.fileno())
+            self.send_header("Content-Length", str(fs.st_size))
+            self.end_headers()
+            # self.copyfile(f, self.wfile)
+            shutil.copyfileobj(f, self.wfile)
 
     def handle_results(self, path):
         assert "/results" in path
-        #tc_name = path.split('/')[-1]
-        items = []
-        resp = None
+        # tc_name = path.split('/')[-1]
+
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
+        resp = create_html_test_results()
+        self.wfile.write(bytes(resp, 'utf-8'))
 
-        with open('testsuite_results.html', 'w+') as file:
+    def handle_packets(self, path):
+        assert "/packets" in path
+        # tc_name = path.split('/')[-1]
+        items = ''
 
-            for filename in glob.iglob(RESULTS_DIR + '/*_verdict.json'):
-                try:
-                    with open(filename, 'r') as jsonfile:
-                        an_item = json.loads(jsonfile.read())
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        with open('session_dissections.html', 'w+') as file:
 
-                except:
-                    an_item = {'description': 'error importing'}
+            try:
+                with open(AUTO_DISSECTION_FILE, 'r') as jsonfile:
+                    frames = json.loads(jsonfile.read())
 
-                items.append(an_item)
-            resp = template_test_vedict.render(items=items)
+            except Exception as e:
+                frames = {'description': 'error importing',
+                          'error': str(e)
+                          }
+
+            resp = template_frame_list.render(items=frames)
             file.write(resp)
 
-        self.wfile.write(bytes(resp,'utf-8'))
-
+        self.wfile.write(bytes(resp, 'utf-8'))
 
     def handle_testcase(self, path):
         """
         Helper to produce testcase for paths like : (...)/tests/TD_COAP_(...)
         """
-        assert "/tests/" in path
+        assert ("/tests/") in path
         tc_name = path.split('/')[-1]
         tc = None
 
         for tc_iter in td_list:
+
             if tc_iter.id.lower() == tc_name.lower():
                 tc = tc_iter
+
                 break
 
         if tc is None:
@@ -161,7 +224,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        head= """
+        head = """
     <html>
         <head>
         <meta charset='utf-8'>
@@ -220,11 +283,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<title>Testcase description</title>", 'utf-8'))
         self.wfile.write(bytes("<h2>Testcase identifier: <em>%s</em> </h2>" % tc.id, 'utf-8'))
 
-
         # Test case general info
         self.wfile.write(bytes("<h2>Objective: <em>%s</em></h2>\n" % tc.objective, 'utf-8'))
         self.wfile.write(bytes("<h2>Configuration: <em>%s</em></h2>\n" % tc.configuration_id, 'utf-8'))
         self.wfile.write(bytes("<h2>Preconditions: <em>%s</em></h2>\n" % tc.pre_conditions, 'utf-8'))
+        self.wfile.write(bytes("<h2>Notes: <em>%s</em></h2>\n" % tc.notes, 'utf-8'))
         self.wfile.write(bytes("<h2>References: <em>%s</em></h2>\n" % tc.references, 'utf-8'))
         self.wfile.write(bytes("<hr>\n", 'utf-8'))
 
@@ -238,7 +301,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             # decompose up to two levels of nested list
 
-            if isinstance(step.description,list):
+            if isinstance(step.description, list):
                 self.wfile.write(bytes("<ol>\n", 'utf-8'))
                 for item in step.description:
                     if isinstance(item, list):
@@ -247,7 +310,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             self.wfile.write(bytes("<li>%s</li>  \n" % str(item_of_item), 'utf-8'))
                         self.wfile.write(bytes("</ol>\n", 'utf-8'))
                     else:
-                        self.wfile.write(bytes("<li>%s</li>"% str(item), 'utf-8'))
+                        self.wfile.write(bytes("<li>%s</li>" % str(item), 'utf-8'))
                 self.wfile.write(bytes("</ol>\n", 'utf-8'))
             else:
                 self.wfile.write(bytes("<em>%s</em>\n" % str(step.description), 'utf-8'))
@@ -255,9 +318,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes("</p>\n", 'utf-8'))
             self.wfile.write(bytes("<hr>\n", 'utf-8'))
 
-
-        self.wfile.write(bytes("<tail>%s</tail> </body>\n"%tail, 'utf-8'))
-        self.wfile.write(bytes("</html>\n",'utf-8'))
+        self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
+        self.wfile.write(bytes("</html>\n", 'utf-8'))
         return
 
     def list_directory(self, path):
@@ -267,7 +329,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         error).  In either case, the headers are sent, making the
         interface the same as for send_head().
         """
-
 
         try:
             list = os.listdir(path)
@@ -279,7 +340,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        #list.sort(lambda a, b: cmp(a.lower(), b.lower()))
+        # list.sort(lambda a, b: cmp(a.lower(), b.lower()))
         self.wfile.write(bytes("<title>CoAP Testing Tool directory. dir: %s</title>\n" % self.path, 'utf-8'))
         self.wfile.write(bytes("<h2>CoAP Testing Tool directory</h2>\n", 'utf-8'))
         self.wfile.write(bytes("<h3>dir: %s</h3>\n" % self.path, 'utf-8'))
@@ -361,17 +422,55 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     extensions_map = mimetypes.types_map.copy()
     extensions_map.update({
-        '': 'application/octet-stream', # Default
+        '': 'application/octet-stream',  # Default
         '.py': 'text/plain',
         '.c': 'text/plain',
         '.h': 'text/plain',
-        '.yaml' : 'text/plain',
+        '.yaml': 'text/plain',
         '.yml': 'text/plain',
         '.log': 'text/plain',
-        })
+        '.json': 'text/plain',
+    })
 
 
+template_frame_list = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
 
+        <body>
+
+        <table style="width:100%;text-align: center"; border="1">
+          <tr>
+            <th style="width:10%">Frame Info</th>
+            <th style="width:25%">Frame Dissection</th>
+          </tr>
+
+        {% for frame in items %}
+
+        <tr>
+           <td class="c1">frame id: {{frame.id}}<br>frame timestamp: {{frame.timestamp}}<br>frame error: {{frame.error}}</td>
+           <td class="c1">  
+           <table style="width:100%;text-align: center"; border="0.1">
+           {% for layer in frame.protocol_stack %}
+            <tr>
+                <th style="width:5%">{{layer._protocol}}</th>
+                <td style="width:25%">{{layer}} </td>
+            </tr>
+            {% endfor %}
+           </table>
+           </td>
+        </tr>
+        {% endfor %}
+        </table>
+        </body>""")
 
 template_test_vedict = Template("""
         <!DOCTYPE html>
@@ -386,7 +485,14 @@ template_test_vedict = Template("""
         </head>
 
         <body>
-
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
+        
         <table style="width:100%;text-align: center"; border="1">
           <tr>
             <th style="width:10%">Testcase ID</th>
@@ -425,4 +531,26 @@ template_test_vedict = Template("""
         </tr>
         {% endfor %}
         </table>
+        </body>""")
+
+template_test_vedict_menu = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+        * {
+            font-family:Arial !important
+            text-align: center  !important
+        }
+        </style>
+        </head>
+
+        <body>
+        <ul>
+            <li><a href="http://127.0.0.1:8080/results/COAP_CORE">COAP_CORE</a>
+            <li><a href="http://127.0.0.1:8080/results/LINK">LINK</a>
+            <li><a href="http://127.0.0.1:8080/results/BLOCK">BLOCK</a>
+            <li><a href="http://127.0.0.1:8080/results/OBSERVE">OBSERVE</a>
+            <li><a href="http://127.0.0.1:8080/results/DTLS">DTLS</a>
+        </ul>
         </body>""")

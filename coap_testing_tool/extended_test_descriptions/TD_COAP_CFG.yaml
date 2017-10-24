@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 --- !configuration
-configuration_id: COAP_CFG_01_v01
+configuration_id: COAP_CFG_01
 uri: http://doc.f-interop.eu/tests/CoAP_CFG_01
 nodes:
   - coap_client
@@ -48,12 +48,12 @@ description:
   - node: coap_client
     message:
       - No special configuration needed
-      - CoAP client requests:
+      - CoAP client requests
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683
 
 --- !configuration
-configuration_id: CoAP_CFG_02_v01
+configuration_id: CoAP_CFG_02
 uri: http://doc.f-interop.eu/tests/CoAP_CFG_02
 nodes:
   - coap_client
@@ -61,12 +61,12 @@ nodes:
   - gateway
 topology:
   - link_id : link_01
-    capture_filter: udp and dst port 5683
+    capture_filter: udp
     nodes:
       - coap_client
       - gateway
   - link_id : link_02
-    capture_filter: udp and src port 5683
+    capture_filter: udp
     nodes:
       - gateway
       - coap_server
@@ -105,6 +105,6 @@ description:
   - node: coap_client
     message:
       - No special configuration needed
-      - CoAP client requests:
+      - CoAP client requests
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683

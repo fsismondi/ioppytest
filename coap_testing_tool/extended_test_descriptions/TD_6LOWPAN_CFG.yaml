@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: 6LoWPAN_CFG_01
+uri: http://doc.f-interop.eu/tests/6LoWPAN_CFG_01
+nodes:
+  - eut1
+  - eut2
+topology:
+  - link_id : link_01
+    capture_filter: TBD
+    nodes:
+      - eut1
+      - eut2
+description:
+  - node: eut1
+    message:
+      - This is the <node to node> configueration. Add some more info here! (TBD)
+  - node: eut2
+    message:
+      - This is the <node to node> configueration. Add some more info here! (TBD)
+
+
+--- !configuration
+configuration_id: 6LoWPAN_CFG_02
+uri: http://doc.f-interop.eu/tests/6LoWPAN_CFG_02
+nodes:
+  - 6LR
+  - Host
+topology:
+  - link_id : link_01
+    capture_filter: TBD
+    nodes:
+      - 6LR
+      - Host
+description:
+  - node: 6LR
+    message:
+      - This is the <Host to 6LR> configueration. Add some more info here! (TBD)
+  - node: Host
+    message:
+      - This is the <Host to 6LR> configueration. Add some more info here! (TBD)

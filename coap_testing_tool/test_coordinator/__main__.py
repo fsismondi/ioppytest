@@ -1,19 +1,31 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import os
+import sys
+import json
+import errno
+import pika
+import time
+import traceback
 import logging
+import argparse
 from threading import Timer
-from coap_testing_tool.test_coordinator.coordinator import *
+
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
-from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR
+from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
+from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+from coap_testing_tool.utils.event_bus_messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
+from coap_testing_tool.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 # init logging to stnd output and log files
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(COMPONENT_ID)
 
 # default handler
 sh = logging.StreamHandler()
@@ -38,9 +50,32 @@ TT_check_list = [
     'agent_TT',
 ]
 # time to wait for components to send for READY signal
-READY_SIGNAL_TOUT = 15
+READY_SIGNAL_TOUT = 20
 
 if __name__ == '__main__':
+
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan'])
+        parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
+                            action="store_true")
+        args = parser.parse_args()
+
+        testsuite = args.testsuite
+        no_component_checks = args.no_component_checks
+
+        if testsuite == 'coap':
+            ted_tc_file = TD_COAP
+            ted_config_file = TD_COAP_CFG
+
+        elif testsuite == '6lowpan':
+            ted_tc_file = TD_6LOWPAN
+            ted_config_file = TD_6LOWPAN_CFG
+        else:
+            logger.error("Error , please see coordinator help (-h)")
+            sys.exit(1)
+    except Exception as e:
+        print(e)
 
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR, RESULTS_DIR, PCAP_DIR:
@@ -62,81 +97,80 @@ if __name__ == '__main__':
 
     channel = connection.channel()
 
-    # in case exchange not declared
-    channel.exchange_declare(
-            exchange=AMQP_EXCHANGE,
-            type='topic',
-            durable=True,
-    )
-
-    bootstrap_q = channel.queue_declare(queue='bootstrapping', auto_delete=True)
+    bootstrap_q_name = 'bootstrapping'
+    bootstrap_q = channel.queue_declare(queue=bootstrap_q_name, auto_delete=True)
 
     channel.queue_bind(
-            exchange=AMQP_EXCHANGE,
-            queue='bootstrapping',
-            routing_key='control.session',
+        exchange=AMQP_EXCHANGE,
+        queue='bootstrapping',
+        routing_key='control.session',
     )
 
     # starting verification of the testing tool components
     msg = MsgTestingToolComponentReady(
-            component='testcoordination'
+        component='testcoordination'
     )
-    publish_message(channel, msg)
+    publish_message(connection, msg)
 
+    if no_component_checks:
+        logger.info('Skipping component readiness checks')
 
-    def on_ready_signal(ch, method, props, body):
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+    else:
 
-        event = Message.from_json(body)
+        def on_ready_signal(ch, method, props, body):
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        if isinstance(event, MsgTestingToolComponentReady):
-            component = event.component
-            logger.info('ready signals received %s' % component)
-            if component in TT_check_list:
-                TT_check_list.remove(component)
+            event = Message.from_json(body)
+
+            if isinstance(event, MsgTestingToolComponentReady):
+                component = event.component
+                logger.info('ready signals received %s' % component)
+                if component in TT_check_list:
+                    TT_check_list.remove(component)
+                    return
+
+            elif isinstance(event, MsgTestingToolReady):  # listen to self generated event
+                logger.info('all signals processed')
+                channel.queue_delete('bootstrapping')
                 return
+            else:
+                pass
 
-        elif isinstance(event, MsgTestingToolReady):
-            logger.info('all signals processed')
-            channel.queue_delete('bootstrapping')
-            return
-        else:
-            pass
+        # bind callback function to signal queue
+        channel.basic_consume(on_ready_signal,
+                              no_ack=False,
+                              queue='bootstrapping')
+        logger.info('Waiting components ready signal... signals not checked:' + str(TT_check_list))
+        # wait for all testing tool component's signal
+        timeout = False
 
-    # bind callback function to signal queue
-    channel.basic_consume(on_ready_signal,
-                          no_ack=False,
-                          queue='bootstrapping')
+        def timeout_f():
+            global timeout
+            timeout = True
 
-    logger.info('Waiting components ready signal... signals not checked:' + str(TT_check_list))
+        t = Timer(READY_SIGNAL_TOUT, timeout_f)
+        t.start()
 
-    # wait for all testing tool component's signal
-    timeout = False
+        while len(TT_check_list) != 0 and not timeout:  # blocking until timeout!
+            time.sleep(0.3)
+            connection.process_data_events()
 
-    def timeout_f():
-        global timeout
-        timeout = True
+        if timeout:
+            logger.error("Some components havent sent READY signal: %s" % str(TT_check_list))
+            sys.exit(1)
 
-    t = Timer(READY_SIGNAL_TOUT, timeout_f)
-    t.start()
+        assert len(TT_check_list) == 0
+        logger.info('All components ready')
 
-    while len(TT_check_list) != 0 and not timeout:
-        time.sleep(0.3)
-        connection.process_data_events()
-
-    if timeout:
-        logger.error("Some components havent sent READY signal: %s" % str(TT_check_list))
-        sys.exit(1)
-
+    # clean up
+    channel.queue_delete(bootstrap_q_name)
 
     # lets start the test coordination
     try:
-        logger.info('Starting test-coordinator..')
-        coordinator = Coordinator(connection, TD_COAP, TD_COAP_CFG)
-
-        logger.info('All components ready')
-        assert len(TT_check_list) == 0
-        publish_message(channel, MsgTestingToolReady())
+        logger.info('Starting test-coordinator for test suite: %s' % testsuite)
+        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
+        coordinator.bootstrap()
+        publish_message(connection, MsgTestingToolReady())
 
     except Exception as e:
         # cannot emit AMQP messages for the fail
@@ -145,7 +179,7 @@ if __name__ == '__main__':
         logger.debug(traceback.format_exc())
         sys.exit(1)
 
-    ### RUN TEST COORDINATION COMPONENT ###
+    # # # RUN TEST COORDINATION COMPONENT # # #
 
     try:
         logger.info('Starting coordinator..')
@@ -169,16 +203,16 @@ if __name__ == '__main__':
 
         # lets push the error message into the bus
         coordinator.channel.basic_publish(
-                body=json.dumps({
-                    'traceback': traceback.format_exc(),
-                    'message': error_msg,
-                    '_type': 'testcoordination.error',
-                }),
-                exchange=AMQP_EXCHANGE,
-                routing_key='control.session.error',
-                properties=pika.BasicProperties(
-                        content_type='application/json',
-                )
+            body=json.dumps({
+                'traceback': traceback.format_exc(),
+                'message': error_msg,
+                '_type': 'testcoordination.error',
+            }),
+            exchange=AMQP_EXCHANGE,
+            routing_key='control.session.error',
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
         )
         # close AMQP connection
         connection.close()

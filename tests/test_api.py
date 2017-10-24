@@ -2,7 +2,9 @@
 # !/usr/bin/env python3
 
 from coap_testing_tool.utils.event_bus_messages import *
-from tests.database_pcap_base64 import *
+from coap_testing_tool.utils.amqp_synch_call import publish_message
+
+from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
 import logging
 
@@ -39,12 +41,10 @@ PRE-CONDITIONS:
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
-    MsgInteropSessionConfiguration(),  # from TC1 to TC3
-    MsgTestSuiteStart(),
     MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
     MsgTestSuiteGetStatus(),
     MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
     MsgTestSuiteGetStatus(),
@@ -53,8 +53,8 @@ user_sequence = [
     MsgStepVerifyExecuted(),
     MsgTestSuiteGetStatus(),
     MsgStepVerifyExecuted(
-            verify_response=False,
-            description='User indicates that IUT didnt behave as expected '),
+        verify_response=False,
+        description='User indicates that IUT didnt behave as expected '),
     MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
     MsgTestCaseRestart(),
     MsgTestSuiteGetStatus(),
@@ -62,23 +62,25 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
+
 service_api_calls = [
+
     # TAT calls
     MsgTestSuiteGetStatus(),
     MsgTestSuiteGetTestCases(),
     MsgInteropTestCaseAnalyze(
-            testcase_id="TD_COAP_CORE_01",
-            testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01_v01",
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_base64,
+        testcase_id="TD_COAP_CORE_01",
+        testcase_ref="http://f-interop.paris.inria.fr/tests/TD_COAP_CORE_01",
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_base64,
     ),
 
     # Sniffer calls (order matters!)
     MsgSniffingStart(
-            capture_id='TD_COAP_CORE_01',
-            filter_if='tun0',
-            filter_proto='udp port 5683'
+        capture_id='TD_COAP_CORE_01',
+        filter_if='tun0',
+        filter_proto='udp'
     ),
     MsgSniffingStop(),
     MsgSniffingGetCapture(tescase_id='TD_COAP_CORE_01'),
@@ -87,44 +89,48 @@ service_api_calls = [
     # Dissector calls
     MsgDissectionDissectCapture(),
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            protocol_selection='coap',
-            value=PCAP_TC_COAP_01_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        protocol_selection='coap',
+        value=PCAP_TC_COAP_01_base64,
     ),
     # complete dissection of pcap
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_base64,
     ),
     # complete dissection of pcap with extra TCP traffic
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
     ),
     # same as dis4 but filtering coap messages
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            protocol_selection='coap',
-            value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        protocol_selection='coap',
+        value=PCAP_TC_COAP_01_mingled_with_tcp_traffic_base64,
     ),
 
     # this should generate an error
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_04_v01'),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_04'),
 
     # pcap sniffed using AMQP based packet sniffer
     MsgDissectionDissectCapture(
-            file_enc="pcap_base64",
-            filename="TD_COAP_CORE_01.pcap",
-            value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
+        file_enc="pcap_base64",
+        filename="TD_COAP_CORE_01.pcap",
+        value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
     )
 ]
 
 
 class ApiTests(unittest.TestCase):
+    """
+    python3 -m unittest tests/test_api.py -vvv
+    """
+
     def setUp(self):
 
         global stop_generator_signal
@@ -138,6 +144,7 @@ class ApiTests(unittest.TestCase):
 
         # MESSAGE VALIDATOR BOUND TO THE CONTROL EVENTS QUEUE
         control_queue_name = 'control_queue@%s' % COMPONENT_ID
+
         # lets' first clean up the queue
         self.channel.queue_delete(queue=control_queue_name)
         self.channel.queue_declare(queue=control_queue_name, auto_delete=True)
@@ -149,10 +156,12 @@ class ApiTests(unittest.TestCase):
         errors_queue_name = 'bus_errors_queue@%s' % COMPONENT_ID
         # lets' first clean up the queue
         self.channel.queue_delete(queue=errors_queue_name)
+
         self.channel.queue_declare(queue=errors_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=errors_queue_name,
                                 routing_key='log.error.*')
+
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=errors_queue_name,
                                 routing_key='control.session.error')
@@ -183,11 +192,14 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
-        thread_msg_gen.start()
 
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
+
+        thread_msg_gen.start()
         try:
             self.channel.start_consuming()
-
         except Exception as e:
             thread_msg_gen.stop()
             assert False, str(e)
@@ -201,6 +213,15 @@ class ApiTests(unittest.TestCase):
         """
         global COMPONENT_ID
 
+        # some non request/response messages types exchanged during a session
+        events_to_ignore = [
+            'testingtool.ready',
+            'testingtool.component.ready',
+            'agent.configured',
+            'session.interop.configuration',
+            'testingtool.configured',
+        ]
+
         # auxiliary function
         def check_for_correlated_request_reply(ch, method, props, body):
 
@@ -211,8 +232,8 @@ class ApiTests(unittest.TestCase):
             msg_type = body_dict['_type']
 
             logger.info(
-                    '[%s] Checking correlated request/response for message %s'
-                    % (sys._getframe().f_code.co_name, props.message_id))
+                '[%s] Checking correlated request/response for message %s'
+                % (sys._getframe().f_code.co_name, props.message_id))
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -220,20 +241,23 @@ class ApiTests(unittest.TestCase):
                 ch.stop_consuming()
                 return
 
-            if '.service.reply' in method.routing_key:
+            if msg_type in events_to_ignore:
+                # forget about these.. we are checking services and services reply only
+                return
 
+            if '.service.reply' in method.routing_key:
                 if props.correlation_id in services_mid_backlog:
                     services_mid_backlog.remove(props.correlation_id)
-                    services_events_tracelog.append(msg_type)
+                    services_events_tracelog.append((msg_type, props.correlation_id))
                 else:
                     assert False, 'got a reply but theres no request in the backlog'
 
             elif '.service' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
-                services_events_tracelog.append(msg_type)
+                services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
-                assert False, 'error! we shouldnt be here!'
+                assert False, 'error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type)
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (
@@ -247,14 +271,18 @@ class ApiTests(unittest.TestCase):
         services_queue_name = 'services_queue@%s' % COMPONENT_ID
         self.channel.queue_delete(queue=services_queue_name)
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+
+        # get all services messages and their replies
         self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service')
         self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=services_queue_name, routing_key='#.service.reply')
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
+
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
                                 routing_key=MsgTestingToolTerminate.routing_key)
+
+        # for checking that for every request we get a reply
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(check_for_correlated_request_reply, queue=services_queue_name)
 
@@ -265,6 +293,10 @@ class ApiTests(unittest.TestCase):
 
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
+
+        publish_message(self.conn, MsgInteropSessionConfiguration())  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
         try:
             thread_msg_gen.start()
@@ -290,7 +322,7 @@ def import_env_vars():
     try:
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
     except KeyError as e:
-        AMQP_EXCHANGE = "default"
+        AMQP_EXCHANGE = "amq.topic"
 
     try:
         AMQP_URL = str(os.environ['AMQP_URL'])
@@ -298,7 +330,7 @@ def import_env_vars():
         AMQP_USER = p.username
         AMQP_SERVER = p.hostname
         logger.info(
-                "Env variables imported for AMQP connection, User: {0} @ Server: {1} ".format(AMQP_USER, AMQP_SERVER)
+            "Env variables imported for AMQP connection, User: {0} @ Server: {1} ".format(AMQP_USER, AMQP_SERVER)
         )
     except KeyError as e:
         logger.error('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
@@ -307,23 +339,7 @@ def import_env_vars():
 
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
-    # in case its not declared
-    connection.channel().exchange_declare(exchange=AMQP_EXCHANGE,
-                                          type='topic',
-                                          durable=True,
-                                          )
     connection.close()
-
-
-def publish_message(channel, message):
-    properties = pika.BasicProperties(**message.get_properties())
-
-    channel.basic_publish(
-            exchange=AMQP_EXCHANGE,
-            routing_key=message.routing_key,
-            properties=properties,
-            body=message.to_json(),
-    )
 
 
 def stop_generator():
@@ -333,13 +349,15 @@ def stop_generator():
 
 
 def check_for_bus_error(ch, method, props, body):
-    logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
+    """
+    If function was called then it means an error log was found in the bus.
+    """
 
-    msg = None
+    logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
     try:
         msg = Message.from_json(body)
-        if isinstance(m, MsgTestingToolTerminate):
+        if isinstance(msg, MsgTestingToolTerminate):
             ch.stop_consuming()
             return
     except:
@@ -352,6 +370,7 @@ def check_for_bus_error(ch, method, props, body):
         'sniffer',
         'dissector'
         'session',
+        # TODO add agent_TT messages
     ]
     r_key = method.routing_key
     logger.info('[%s] Auditing: %s' % (sys._getframe().f_code.co_name, r_key))
@@ -431,7 +450,7 @@ class MessageGenerator(threading.Thread):
             while self.keepOnRunning:
                 time.sleep(MESSAGES_WAIT_INTERVAL)
                 m = self.messages.pop(0)
-                publish_message(self.channel, m)
+                publish_message(self.connection, m)
                 logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
         except IndexError:
             # list finished, lets wait so all messages are sent and processed
