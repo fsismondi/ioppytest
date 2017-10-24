@@ -70,7 +70,6 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
-
 service_api_calls = [
 
     # TAT calls
@@ -201,7 +200,8 @@ class ApiTests(unittest.TestCase):
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("Starting Message Generator thread ")
 
-        publish_message(self.conn, MsgSessionConfiguration(configuration=default_configuration))  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgSessionConfiguration(
+            configuration=default_configuration))  # this prepares the FSM of the coordinator
         publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
@@ -226,7 +226,8 @@ class ApiTests(unittest.TestCase):
             'testingtool.ready',
             'testingtool.component.ready',
             'agent.configured',
-            'session.interop.configuration',
+            'session.interop.configuration',  # TODO depricate this
+            'session.configuration',
             'testingtool.configured',
         ]
 
@@ -302,7 +303,8 @@ class ApiTests(unittest.TestCase):
         thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
 
-        publish_message(self.conn, MsgSessionConfiguration(configuration=default_configuration))  # this prepares the FSM of the coordinator
+        publish_message(self.conn, MsgSessionConfiguration(
+            configuration=default_configuration))  # this prepares the FSM of the coordinator
         publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
