@@ -1,9 +1,15 @@
 [submodule "coap_testing_tool/test_analysis_tool"]
 	path = coap_testing_tool/test_analysis_tool
-	url = https://gitlab.distantaccess.com/fsismondi/ttproto.git 
+	url = https://gitlab.f-interop.eu/fsismondi/ttproto.git
+	branch = master
 [submodule "coap_testing_tool/agent"]
 	path = coap_testing_tool/agent
-	url = https://gitlab.distantaccess.com/f-interop-contributors/agent.git
+	url = https://gitlab.f-interop.eu/f-interop-contributors/agent.git
+	branch = master
+[submodule "coap_testing_tool/utils"]
+	path = coap_testing_tool/utils
+	url = https://gitlab.f-interop.eu/f-interop-contributors/utils.git
+	branch = master
 [submodule "automated_IUTs/coap_client_coapthon/CoAPthon"]
 	path = automated_IUTs/coap_client_coapthon/CoAPthon
 	url = https://github.com/fsismondi/CoAPthon.git
