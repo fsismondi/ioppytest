@@ -63,7 +63,6 @@ class CoordinatorAmqpInterface(object):
     def __init__(self, amqp_url, amqp_exchange):
         self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
         self.channel = self.connection.channel()
-        self.channel_producer = self.connection.channel()
         self.channel.basic_qos(prefetch_count=1)
 
         self.services_q_name = 'services@%s' % self.component_id
