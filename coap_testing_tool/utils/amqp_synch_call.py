@@ -1,18 +1,21 @@
-# -*- coding: utf-8 -*-
-# !/usr/bin/env python3
-
+import os
 import pika
-import logging
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
-from coap_testing_tool.utils.event_bus_messages import *
+
+# for using it as library and as a __main__
+try:
+    from messages import *
+except:
+    from .messages import *
+
+VERSION = '0.0.6'
+AMQP_EXCHANGE = 'amq.topic'
 
 
 def publish_message(connection, message):
-    """ Published which uses message object metadata
-
-    :param channel:
-    :param message:
-    :return:
+    """
+    Publishes message into the correct topic (uses Message object metadata)
+    Creates temporary channel on it's own
+    Connection must be a pika.BlockingConnection
     """
     channel = None
 
@@ -33,8 +36,14 @@ def publish_message(connection, message):
             channel.close()
 
 
-def amqp_request(connection, request_message: Message, component_id: str):
-    # NOTE: channel must be a pika channel
+def amqp_request(connection, request_message, component_id):
+    """
+    Publishes message into the correct topic (uses Message object metadata)
+    Returns reply message.
+    Uses reply_to and corr id amqp's properties for matching the reply
+    Creates temporary channel, and queues on it's own
+    Connection must be a pika.BlockingConnection
+    """
 
     # check first that sender didnt forget about reply to and corr id
     assert request_message.reply_to
@@ -103,7 +112,45 @@ def amqp_request(connection, request_message: Message, component_id: str):
 
 
 if __name__ == '__main__':
+
+    try:
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+    except KeyError as e:
+        AMQP_EXCHANGE = "amq.topic"
+
+    try:
+        from urllib.parse import urlparse
+
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        p = urlparse(AMQP_URL)
+        AMQP_USER = p.username
+        AMQP_PASS = p.password
+        AMQP_SERVER = p.hostname
+        AMQP_VHOST = p.path.strip('/')
+
+        print('Env vars for AMQP connection succesfully imported')
+
+    except KeyError as e:
+
+        print('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
+        # load default values
+        AMQP_SERVER = "localhost"
+        AMQP_USER = "guest"
+        AMQP_PASS = "guest"
+        AMQP_VHOST = "/"
+        AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format(AMQP_USER, AMQP_PASS, AMQP_SERVER, AMQP_VHOST)
+
+    print(json.dumps(
+        {
+            'server': AMQP_SERVER,
+            'session': AMQP_VHOST,
+            'user': AMQP_USER,
+            'pass': '#' * len(AMQP_PASS),
+            'exchange': AMQP_EXCHANGE
+        }
+    ))
+
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     m = MsgSniffingGetCapture()
-    r = amqp_request(connection.channel(), m, 'someImaginaryComponent')
+    r = amqp_request(connection, m, 'someImaginaryComponent')
     print(repr(r))

@@ -99,7 +99,7 @@
       "mandatory": false
     },
     {
-      "field_name": "testsuite.automated_iut",
+      "field_name": "testsuite.additional_session_resource",
       "description": "Automated-IUT selection (optional)",
       "type": "selection",
       "value": [

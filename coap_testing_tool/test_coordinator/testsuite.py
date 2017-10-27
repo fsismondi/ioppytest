@@ -142,6 +142,12 @@ class TestSuite:
         self._ted_it = cycle(self.teds.values())
         self.current_tc = None
 
+        # session info (published in bus after testing tool is spawned):
+        self.session_id = None
+        self.session_users = None
+        self.session_configuration = None
+        self.session_selected_tc_list = None
+
         # final testsuite report
         self.report = None
 
@@ -253,14 +259,16 @@ class TestSuite:
     def get_report(self):
         return self.report
 
-    def start(self, tc_list_requested):
+    def reinit(self, tc_list_selection=None):
         # resets all previously executed TC
         for tc in self.teds.values():
             tc.reinit()
 
-        # reconfigure test suite
-        if tc_list_requested:
-            self.configure_test_suite(tc_list_requested)
+        # reconfigure test cases selection
+        if tc_list_selection:
+            self.configure_testsuite(tc_list_selection)
+        elif self.session_selected_tc_list:
+            self.configure_testsuite(self.session_selected_tc_list)
 
     def abort_current_testcase(self):
         self.current_tc.abort()
@@ -305,8 +313,15 @@ class TestSuite:
             logger.debug("Testsuite finished. No more test cases to execute.")
             return True
 
-    def configure_test_suite(self, tc_list_requested):
+    def configure_testsuite(self, tc_list_requested, session_id=None, users=None, configuration=None):
         assert tc_list_requested is not None
+
+        # this info is not used in the testing tool
+        self.session_id = session_id
+        self.session_users = users
+        self.session_configuration = configuration
+        self.session_selected_tc_list = tc_list_requested
+
 
         # get all TCs
         tc_list_available = self.get_testcases_list()
@@ -328,7 +343,13 @@ class TestSuite:
                 self.skip_testcase(item)
 
     def get_testsuite_configuration(self):
-        return self.get_testcases_basic(verbose=True)
+
+        resp = {}
+        resp.update({'session_id': self.session_id})
+        resp.update({'users': self.session_users})
+        resp.update({'configuration': self.session_configuration})
+        resp.update({'tc_list': self.get_testcases_basic(verbose=True)})
+        return resp
 
     def skip_testcase(self, testcase_id=None):
         """
