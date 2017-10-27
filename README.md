@@ -86,13 +86,13 @@ Don't forget to start it!
 
 Second, **build** the testing tool, from inside coap_testing_tool dir run:
 ```
-docker build -t finterop-coap .
+docker build -t testing_tool-interoperability-coap .
 ```
 
 If build fails due to a "Failed to fetch http://archive.ubuntu ...."
 then:
 ```
-docker build -t finterop-coap . --no-cache
+docker build -t testing_tool-interoperability-coap . --no-cache
 ```
 
 Go to FAQ, for known errors.
@@ -101,17 +101,24 @@ Finally, **run** it, from inside coap_testing_tool run:
 
 ```
 docker run -it
-    --env AMQP_EXCHANGE='default'
-    --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
-    --privileged finterop-coap supervisord
-    --nodaemon
-    --configuration supervisor.conf
+    --env AMQP_EXCHANGE=$AMQP_EXCHANGE
+    --env AMQP_URL=$AMQP_URL
+    --sysctl net.ipv6.conf.all.disable_ipv6=0
+    --privileged
+    testing_tool-interoperability-coap
 ```
 
 alternatively, you can:
 
 ```
-docker run -it --env AMQP_EXCHANGE=default --env AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost' --privileged finterop-coap  bash
+docker run -it
+    --env AMQP_EXCHANGE=$AMQP_EXCHANGE
+    --env AMQP_URL=$AMQP_URL
+    --sysctl net.ipv6.conf.all.disable_ipv6=0
+    --privileged
+    testing_tool-interoperability-coap
+    bash
+
 root@bab3b2220510:/coap_testing_tool# supervisord -c supervisor.conf
 root@bab3b2220510:/coap_testing_tool# supervisorctl -c supervisor.conf
 agent                            RUNNING   pid 28, uptime 0:00:02
