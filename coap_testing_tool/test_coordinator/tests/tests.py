@@ -1,6 +1,6 @@
 import unittest, logging, os, pika, json
 from time import sleep
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
 from coap_testing_tool.test_coordinator.testsuite import import_teds
 from coap_testing_tool.test_coordinator.states_machine import Coordinator

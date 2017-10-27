@@ -8,7 +8,7 @@ import sys
 import logging
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 
 COMPONENT_ID = 'packet_router'

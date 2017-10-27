@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 
 from tests.pcap_base64_examples import *

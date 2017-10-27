@@ -13,7 +13,7 @@ from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES
 from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -102,14 +102,15 @@ class CoordinatorAmqpInterface(object):
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
             MsgSessionConfiguration: 'configure_testsuite',
-            MsgInteropSessionConfiguration: 'configure_testsuite',  # TODO deprecate this, use generic MsgSessionConfiguration
+            MsgInteropSessionConfiguration: 'configure_testsuite',
+            # TODO deprecate this, use generic MsgSessionConfiguration
             MsgConfigurationExecuted: 'iut_configuration_executed',
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',
             MsgStepVerifyExecuted: 'step_executed',
+            MsgStepCheckExecuted: 'step_executed',
             MsgTestCaseSelect: 'select_testcase',
             MsgTestSuiteStart: 'start_testsuite',
-            MsgStepCheckExecuted: 'step_executed',
             MsgTestCaseSkip: 'skip_testcase',
         }
 
@@ -213,10 +214,8 @@ class CoordinatorAmqpInterface(object):
     # # # FSM coordination publish/notify functions # # #
 
     def notify_testsuite_configured(self, received_event):
-        configs = dict()
-        configs.update({'tc_list': self.testsuite.get_testsuite_configuration()})
         event = MsgTestingToolConfigured(
-            **configs
+            **self.testsuite.get_testsuite_configuration()
         )
         publish_message(self.connection, event)
 
@@ -294,7 +293,8 @@ class CoordinatorAmqpInterface(object):
             )
         #
         elif step_info_dict['step_type'] == "check" or step_info_dict['step_type'] == "feature":
-            raise NotImplementedError()
+            logger.warning('CMD Step check or CMD step very not yet implemented')
+            return  # not implemented
 
         publish_message(self.connection, event)
 
@@ -318,7 +318,7 @@ class CoordinatorAmqpInterface(object):
         for agent, assigned_ip, ipv6_no_fw in agents_config:
             bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, "bbbb", ipv6_no_fw)
 
-    def notify_testsuite_ready(self,received_event):
+    def notify_testsuite_ready(self, received_event):
         pass
 
     def notify_testsuite_started(self, received_event):

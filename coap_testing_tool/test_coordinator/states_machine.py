@@ -8,12 +8,12 @@ from time import sleep
 from urllib.parse import urlparse
 
 from transitions import Machine
-from transitions.extensions.states import add_state_features, Tags, Timeout
 from transitions.core import MachineError
+from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
+from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, AMQP_URL, AMQP_EXCHANGE
 from coap_testing_tool.utils.amqp_synch_call import *
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.exceptions import CoordinatorError
 from coap_testing_tool.test_coordinator.amqp_connector import CoordinatorAmqpInterface
@@ -119,28 +119,35 @@ class Coordinator(CoordinatorAmqpInterface):
         self.notify_tun_interfaces_start(received_event)
 
     def handle_testsuite_start(self, received_event):
-        self.testsuite.start(self.tc_list_requested)
+        self.testsuite.reinit()
 
     def handle_testsuite_config(self, received_event):
-        tc_list_requested = []
-        session_config = received_event.to_dict()
+        session_tc_list = []
+        session_id = None
+        session_users = None
+        session_config = None
 
-        logging.info(" Interop session configuration received : %s" % session_config)
+        logging.info(" Interop session configuration received : %s" % received_event)
 
-        if isinstance(received_event, MsgInteropSessionConfiguration):  # TODO deprecate this
+        if isinstance(received_event, MsgInteropSessionConfiguration):
+            # TODO deprecate this in favour of MsgSessionConfiguration
             try:
                 for test in received_event.tests:
                     test_url = urlparse(test['testcase_ref'])
                     tc_id = str(test_url.path).lstrip("/tests/")
-                    tc_list_requested.append(tc_id)
-
+                    session_tc_list.append(tc_id)
             except Exception as e:
                 error_msg = "Wrong message format sent for session configuration."
                 raise CoordinatorError(message=error_msg)
 
-            self.testsuite.configure_test_suite(tc_list_requested)
-            self.tc_list_requested = tc_list_requested
-            self.session_config = session_config
+            try:
+                session_id = received_event.session_id
+                session_users = received_event.users
+                session_config = received_event.configuration
+            except:
+                logger.warning("Missing fields in message configuration: %s" % received_event)
+
+            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
 
         elif isinstance(received_event, MsgSessionConfiguration):
             try:
@@ -148,18 +155,25 @@ class Coordinator(CoordinatorAmqpInterface):
                 assert type(event_tc_list) is list, 'Testcases list expected'
                 for t in event_tc_list:
                     test_url = urlparse(t)
-                    tc_list_requested.append(str(test_url.path).lstrip("/tests/"))
+                    session_tc_list.append(str(test_url.path).lstrip("/tests/"))
             except Exception as e:
                 error_msg = "Wrong message format sent for session configuration."
                 raise CoordinatorError(message=error_msg)
 
-            self.testsuite.configure_test_suite(tc_list_requested)
-            self.tc_list_requested = tc_list_requested
-            self.session_config = session_config
+            try:
+                session_id = received_event.session_id
+                session_users = received_event.users
+                session_config = received_event.configuration
+            except:
+                logger.warning("Missing fields in message configuration: %s" % received_event)
+
+            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
 
     def handle_step_executed(self, received_event):
+        logger.info("Handling step executed %s" % type(received_event))
 
         if isinstance(received_event, MsgStepStimuliExecuted):
+
             self.testsuite.finish_stimuli_step()
 
         elif isinstance(received_event, MsgStepCheckExecuted):
@@ -198,7 +212,7 @@ class Coordinator(CoordinatorAmqpInterface):
 
     def get_states_summary(self):
         states = self.testsuite.states_summary()
-        states.update({'tc_list': self.testsuite.get_testsuite_configuration()})
+        states.update(self.testsuite.get_testsuite_configuration())
         return states
 
     def finish_testcase(self):
@@ -403,6 +417,7 @@ class Coordinator(CoordinatorAmqpInterface):
                 CoordinatorError('Sniffer couldnt be started')
 
     def _prepare_next_testcase(self, received_event):
+        logger.info('Preparing next testcase..')
 
         testcase_to_execute = None
 
@@ -428,6 +443,7 @@ class Coordinator(CoordinatorAmqpInterface):
             self.trigger('_finish_testsuite', None)
 
     def _prepare_next_step(self, received_event):
+        logger.info('Preparing next step..')
 
         if self.testsuite.next_step():
             self.testsuite.set_current_testcase_state('executing')

@@ -12,7 +12,7 @@ import logging
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 
 COMPONENT_ID = 'packet_sniffer'
 last_capture_name = None

@@ -17,7 +17,7 @@ from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
 from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from coap_testing_tool.utils.amqp_synch_call import publish_message
-from coap_testing_tool.utils.event_bus_messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
+from coap_testing_tool.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from coap_testing_tool.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator'
