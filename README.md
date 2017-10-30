@@ -29,6 +29,32 @@ git clone --recursive https://gitlab.f-interop.eu/fsismondi/coap_testing_tool.gi
 cd coap_testing_tool
 ```
 
+### Attention with the git submodules!
+
+remember when cloning a project with submodules to use --recursive flag
+```
+git clone --recursive ...
+```
+
+or else (in case you forgot about the flag), right after cloning you can:
+```
+git submodule update --init --recursive
+```
+
+whenever you find that your utils libraries are not the latests versions
+you can 'bring' those last changes from the main utils repo to your project
+with:
+```
+git submodule update --remote --merge
+```
+
+after bringing the last changes you can update your project with the last changes by doing:
+```
+git add <someSubModuleDir>
+git commit -m 'updated submodule reference to last commit'
+git push
+```
+
 ### Running CoAP testing tool as standalone mode
 
 (# TODO talk about the CLI, without it you cannot run a session)
