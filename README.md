@@ -34,7 +34,7 @@ cd coap_testing_tool
 (# TODO talk about the CLI, without it you cannot run a session)
 
 First thing needed is to have the rabbit running ;)
-You need a server running RabbitMQ message broker for handling the
+For this, you need a server running RabbitMQ message broker for handling the
 messaging between the components taking part in your test session.
 
 The options for this are:
@@ -48,7 +48,9 @@ create RMQ vhost, user, pass on local machine
 
     for this contact federico.sismondi@inria.fr or remy.leone@inria.fr
 
-then, export in the machine where the testing tool is running the following vars:
+after having a created vhost with its user/password,
+export in the machine where the testing tool is running the following
+env vars:
 
     ```
     export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
@@ -76,7 +78,7 @@ run the testing tool using supervisor.
 
 ---
 
-#### Opt 1 - Building & running CoAP testing tool with docker
+#### Opt 1 - Building & running CoAP testing tool with docker (recommended)
 
 First, let's install docker. For this just follow this instructions:
 
@@ -86,8 +88,38 @@ Don't forget to start it!
 
 Second, **build** the testing tool, from inside coap_testing_tool dir run:
 ```
+make docker-build-all # build all tools, TT and automated-iuts
+```
+
+or run the docker build manually
+
+```
 docker build -t testing_tool-interoperability-coap .
 ```
+
+for running the coap-testing-tool do
+```
+make run-coap-testing-tool
+```
+
+for verifying that TT is actually running:
+```
+make get-logs
+```
+
+Also, if you are running a session alone (no 2nd user) then you may
+want to use one of the automated-iut or reference implementations,
+for this, if you are testing your coap server:
+
+```
+make run-coap-client
+```
+
+or (if you are testing your coap client)
+```
+run-coap-server
+```
+
 
 If build fails due to a "Failed to fetch http://archive.ubuntu ...."
 then:
@@ -97,7 +129,7 @@ docker build -t testing_tool-interoperability-coap . --no-cache
 
 Go to FAQ, for known errors.
 
-Finally, **run** it, from inside coap_testing_tool run:
+for running coap_testing_tool manually from docker api:
 
 ```
 docker run -it
@@ -108,7 +140,9 @@ docker run -it
     testing_tool-interoperability-coap
 ```
 
-alternatively, you can:
+
+alternatively, if you are curious and you want to know
+what's under the hood:
 
 ```
 docker run -it
