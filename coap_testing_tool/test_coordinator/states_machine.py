@@ -70,10 +70,6 @@ class Coordinator(CoordinatorAmqpInterface):
     def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file):
         self.event = None
 
-        # configurations received after testing tool started
-        self.session_config = None
-        self.tc_list_requested = None
-
         # testsuite init
         self.testsuite = TestSuite(ted_tc_file, ted_config_file)
 
@@ -89,13 +85,7 @@ class Coordinator(CoordinatorAmqpInterface):
         if event is None:
             logger.warning('Empty event passed to callback function')
         else:
-            # print('[test_coordinator] >> FSM exteral event received, %s' % type(event))
             self.event = event
-
-    # def summary(self, event=None):
-    #
-    # print(json.dumps(self.get_states_summary()))
-    # print(self.testsuite.get_detailed_status())
 
     def generate_testcases_verdict(self, received_event):
         verdict_info = {}
