@@ -212,7 +212,7 @@ def on_request(ch, method, props, body):
 
         last_capture_name = capture_id  # keep track of the undergoing capture name
         time.sleep(TIME_WAIT_FOR_TCPDUMP_STARTUP)  # to avoid race conditions
-        response = MsgReply(request, **{'ok': True})
+        response = MsgReply(request, ok = True)
         publish_message(connection, response)
 
     elif isinstance(request, MsgSniffingStop):
@@ -225,7 +225,7 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed stopping the sniffer')
 
-        response = MsgReply(request, **{'ok': True})
+        response = MsgReply(request, ok = True)
         publish_message(connection, response)
 
     else:
