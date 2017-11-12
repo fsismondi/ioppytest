@@ -263,7 +263,7 @@ class Coordinator(CoordinatorAmqpInterface):
                                                                            file_enc="pcap_base64",
                                                                            filename=tc_id + ".pcap",
                                                                            value=pcap_file_base64)
-                    except TimeoutError as e:
+                    except AmqpSynchCallTimeoutError as e:
                         error_msg += "TAT didnt answer to the analysis request"
                         logger.error(error_msg)
 

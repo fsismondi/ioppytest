@@ -386,7 +386,7 @@ class CoordinatorAmqpInterface(object):
             response = amqp_request(self.connection, MsgSniffingStart(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except TimeoutError as e:
+        except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_sniffer_stop(self):
@@ -395,7 +395,7 @@ class CoordinatorAmqpInterface(object):
             response = amqp_request(self.connection, MsgSniffingStop(), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except TimeoutError as e:
+        except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_sniffer_get_capture(self, **kwargs):
@@ -404,7 +404,7 @@ class CoordinatorAmqpInterface(object):
             response = amqp_request(self.connection, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
             return response
-        except TimeoutError as e:
+        except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
 
     def call_service_testcase_analysis(self, **kwargs):
