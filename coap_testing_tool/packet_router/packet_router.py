@@ -2,8 +2,6 @@
 # !/usr/bin/env python3
 import pika
 import threading
-import datetime
-import signal
 import sys
 import logging
 from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -116,7 +114,6 @@ class PacketRouter(threading.Thread):
         if src_rkey in self.routing_table.keys():
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
-
                 m = MsgPacketInjectRaw(
                     data=data
                 )
@@ -131,7 +128,6 @@ class PacketRouter(threading.Thread):
                 )
                 logger.info(
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
-
 
         elif 'toAgent' in src_rkey:
             pass  # echo of router message
@@ -148,8 +144,19 @@ class PacketRouter(threading.Thread):
 ###############################################################################
 
 if __name__ == '__main__':
-    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-    channel = connection.channel()
+
+    try:
+
+        logger.info('Setting up AMQP connection..')
+
+        # setup AMQP connection
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        channel = connection.channel()
+
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
+        sys.exit(1)
 
 
     def signal_int_handler(channel):
@@ -172,7 +179,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
 
-    #signal.signal(signal.SIGINT, signal_int_handler)
+    # signal.signal(signal.SIGINT, signal_int_handler)
 
     # routing tables for between agents' TUNs interfaces and also between agents' serial interfaces
     iut_routing_table_serial = {
@@ -204,5 +211,3 @@ if __name__ == '__main__':
         r.join()
     except (KeyboardInterrupt, SystemExit):
         r.stop()
-
-
