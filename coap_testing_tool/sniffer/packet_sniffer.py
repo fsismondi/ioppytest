@@ -36,10 +36,11 @@ logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
 
 # in seconds
-TIME_WAIT_FOR_TCPDUMP_ON = 5
+TIME_WAIT_FOR_TCPDUMP_STARTUP = 5
 TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 
 connection = None
+
 
 def on_request(ch, method, props, body):
     """
@@ -90,7 +91,7 @@ def on_request(ch, method, props, body):
 
             except FileNotFoundError as fne:
                 publish_message(
-                    ch,
+                    connection,
                     MsgErrorReply(request, error_message=str(fne))
                 )
                 logger.error(str(fne))
@@ -210,8 +211,8 @@ def on_request(ch, method, props, body):
             logger.error('Didnt succeed starting the capture')
 
         last_capture_name = capture_id  # keep track of the undergoing capture name
-        time.sleep(TIME_WAIT_FOR_TCPDUMP_ON)  # to avoid race conditions
-        response = MsgReply(request)  # by default sends ok = True
+        time.sleep(TIME_WAIT_FOR_TCPDUMP_STARTUP)  # to avoid race conditions
+        response = MsgReply(request, **{'ok': True})
         publish_message(connection, response)
 
     elif isinstance(request, MsgSniffingStop):
@@ -224,14 +225,14 @@ def on_request(ch, method, props, body):
         except:
             logger.error('Didnt succeed stopping the sniffer')
 
-        response = MsgReply(request)  # by default sends ok = True
+        response = MsgReply(request, **{'ok': True})
         publish_message(connection, response)
 
     else:
         logger.warning('Ignoring unrecognised service request: %s' % repr(request))
 
 
-### IMPLEMENTATION OF SERVICES ###
+# # # Implementation of tcpdump and OS related calls # # #
 
 def _launch_sniffer(filename, filter_if, filter_proto):
     """
@@ -294,7 +295,7 @@ def main():
             if e.errno != errno.EEXIST:
                 raise
 
-    ### SETUPING UP CONNECTION ###
+    # connection setup
 
     global connection
 
@@ -313,12 +314,12 @@ def main():
                            queue='services_queue@%s' % COMPONENT_ID,
                            routing_key='control.sniffing.service')
 
+        channel.basic_qos(prefetch_count=1)
+        channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
+
     except pika.exceptions.ConnectionClosed as cc:
         logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % traceback.format_exc())
         sys.exit(1)
-
-    channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(on_request, queue='services_queue@%s' % COMPONENT_ID)
 
     msg = MsgTestingToolComponentReady(
         component='sniffing'
