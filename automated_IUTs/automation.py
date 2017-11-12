@@ -324,7 +324,7 @@ class UserMock(threading.Thread):
         self.channel.stop_consuming()
 
     def exit(self):
-        publish_message(self.connection.channel(),
+        publish_message(self.connection,
                         MsgTestingToolComponentShutdown(component=COMPONENT_ID))
         time.sleep(2)
         self.connection.close()
