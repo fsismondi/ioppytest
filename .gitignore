@@ -8,7 +8,7 @@ data/results/*.pcap
 data/results/*.json
 data/dumps/*.pcap
 data/dumps/*.json
-
+*.pcap
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
