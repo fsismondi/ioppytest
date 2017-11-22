@@ -2,7 +2,7 @@ properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
 if(env.JOB_NAME =~ 'coap_testing_tool/'){
     node('sudo'){
-        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool"
+        env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
 
         stage ("Setup dependencies"){
@@ -20,6 +20,8 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
                 sudo apt-get install --fix-missing -y libssl-dev openssl
                 sudo apt-get install --fix-missing -y libffi-dev
                 sudo apt-get install --fix-missing -y curl tree netcat
+                sudo apt-get install --fix-missing -y rabbitmq-server
+                sudo rabbitmq-server -detached
                 '''
 
             /* Show deployed code */
@@ -166,7 +168,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
 if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
     node('docker'){
 
-        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_testing_tool_docker_build"
+        env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
@@ -215,7 +217,7 @@ if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
 if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
     node('docker'){
 
-        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_automated_iuts"
+        env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
@@ -309,7 +311,7 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
 if(env.JOB_NAME =~ 'full_coap_interop_session/'){
     node('docker'){
 
-        env.AMQP_URL = "amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
+        env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
