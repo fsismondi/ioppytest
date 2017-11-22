@@ -314,7 +314,8 @@ if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
 if(env.JOB_NAME =~ 'full_coap_interop_session/'){
     node('docker'){
 
-        env.AMQP_URL="amqp://guest:guest@localhost/"
+        /* attention, here we use external RMQ server, else we would need to allow docker containers to access host's loopback ports */
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
