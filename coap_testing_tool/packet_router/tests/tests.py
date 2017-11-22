@@ -42,12 +42,11 @@ class PacketRouterTestCase(unittest.TestCase):
         }
 
         # start packet router
-        packet_router = PacketRouter(self.connection, self.routing_table )
+        packet_router = PacketRouter(AMQP_URL, AMQP_EXCHANGE, self.routing_table)
         packet_router.daemon = True
         packet_router.start()
 
     def test_packet_routing(self):
-
         assert self.channel.is_open, 'no channel opened for tests'
         self._send_packet_fromAgent1()
 
@@ -95,9 +94,11 @@ class PacketRouterTestCase(unittest.TestCase):
                 {
                     '_type': 'packet.sniffed.raw',
                     'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243,
-                        139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0, 166,
-                        127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0, 0,
-                        255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
+                             139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0,
+                             166,
+                             127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0,
+                             0,
+                             255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
                     'description': 'hello world',
                 }
             ),
@@ -119,9 +120,11 @@ class PacketRouterTestCase(unittest.TestCase):
                 {
                     '_type': 'packet.sniffed.raw',
                     'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243,
-                        139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0, 166,
-                        127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0, 0,
-                        255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
+                             139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0,
+                             166,
+                             127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0,
+                             0,
+                             255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
                     'description': 'hello world',
                 }
             ),

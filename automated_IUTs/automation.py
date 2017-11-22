@@ -13,7 +13,7 @@ import signal
 import logging
 import threading
 
-from coap_testing_tool.utils.event_bus_messages import *
+from coap_testing_tool.utils.messages import *
 from coap_testing_tool.utils.amqp_synch_call import publish_message
 from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
 
@@ -324,7 +324,7 @@ class UserMock(threading.Thread):
         self.channel.stop_consuming()
 
     def exit(self):
-        publish_message(self.connection.channel(),
+        publish_message(self.connection,
                         MsgTestingToolComponentShutdown(component=COMPONENT_ID))
         time.sleep(2)
         self.connection.close()
