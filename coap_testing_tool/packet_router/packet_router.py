@@ -166,7 +166,6 @@ class PacketRouter(threading.Thread):
             )
         )
 
-
     def run(self):
         self.channel.start_consuming()
         self.shutdown_notification()
