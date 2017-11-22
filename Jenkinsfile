@@ -21,7 +21,10 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
                 sudo apt-get install --fix-missing -y libffi-dev
                 sudo apt-get install --fix-missing -y curl tree netcat
                 sudo apt-get install --fix-missing -y rabbitmq-server
-                sudo rabbitmq-server -detached
+                echo 'restarting rmq server and app'
+                sudo rabbitmq-server -detached || true
+                sudo rabbitmqctl stop_app || true
+                sudo rabbitmqctl start_app || true
                 '''
 
             /* Show deployed code */
