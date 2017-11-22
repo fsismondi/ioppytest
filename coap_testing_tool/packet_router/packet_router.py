@@ -41,8 +41,11 @@ class PacketRouter(threading.Thread):
                                                ],
     }
 
-    def __init__(self, conn, routing_table=None):
+    def __init__(self, amqp_url, amqp_exchange, routing_table=None):
         threading.Thread.__init__(self)
+
+        self.exchange_name = amqp_exchange
+        self.url = amqp_url
 
         if routing_table:
             self.routing_table = routing_table
@@ -51,11 +54,8 @@ class PacketRouter(threading.Thread):
 
         logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
-        # queues & default exchange declaration
         self.message_count = 0
-        self.connection = conn
-        self.channel = self.connection.channel()
-        self.channel.basic_qos(prefetch_count=1)
+        self.set_up_connection()
         self.queues_init()
 
         msg = MsgTestingToolComponentReady(
@@ -64,6 +64,18 @@ class PacketRouter(threading.Thread):
         publish_message(self.connection, msg)
 
         logger.info('packet router waiting for new messages in the data plane..')
+
+    def set_up_connection(self):
+        try:
+            logger.info('Setting up AMQP connection..')
+            # setup AMQP connection
+            self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
+            self.channel = self.connection.channel()
+            self.channel.basic_qos(prefetch_count=1)
+
+        except pika.exceptions.ConnectionClosed as cc:
+            logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
+            sys.exit(1)
 
     def queues_init(self):
         for src_rkey, dst_rkey_list in self.routing_table.items():
@@ -77,7 +89,7 @@ class PacketRouter(threading.Thread):
 
             # start with clean queues
             self.channel.queue_purge(src_queue)
-            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+            self.channel.queue_bind(exchange=self.exchange_name,
                                     queue=src_queue,
                                     routing_key=src_rkey)
 
@@ -85,6 +97,8 @@ class PacketRouter(threading.Thread):
             self.channel.basic_consume(self.on_request, queue=src_queue)
 
     def stop(self):
+
+        self.shutdown_notification()
 
         # delete routing all queues
         for src_rkey in self.routing_table.keys():
@@ -121,7 +135,7 @@ class PacketRouter(threading.Thread):
                 self.channel.basic_publish(
                     body=m.to_json(),
                     routing_key=dst_rkey,
-                    exchange=AMQP_EXCHANGE,
+                    exchange=self.exchange_name,
                     properties=pika.BasicProperties(
                         content_type='application/json',
                     )
@@ -136,50 +150,30 @@ class PacketRouter(threading.Thread):
             logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
-    def run(self):
-        self.channel.start_consuming()
-        logger.info('Bye byes!')
+    def shutdown_notification(self):
 
-
-###############################################################################
-
-if __name__ == '__main__':
-
-    try:
-
-        logger.info('Setting up AMQP connection..')
-
-        # setup AMQP connection
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-
-        channel = connection.channel()
-
-    except pika.exceptions.ConnectionClosed as cc:
-        logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
-        sys.exit(1)
-
-
-    def signal_int_handler(channel):
         # FINISHING... let's send a goodbye message
         msg = {
             'message': '{component} is out! Bye bye..'.format(component=COMPONENT_ID),
             "_type": '{component}.shutdown'.format(component=COMPONENT_ID)
         }
-        channel.basic_publish(
+        self.channel.basic_publish(
             body=json.dumps(msg),
             routing_key='control.session.info',
-            exchange=AMQP_EXCHANGE,
+            exchange=self.exchange_name,
             properties=pika.BasicProperties(
                 content_type='application/json',
             )
         )
 
-        logger.info('got SIGINT. Bye bye!')
+    def run(self):
+        self.channel.start_consuming()
+        self.shutdown_notification()
 
-        sys.exit(0)
 
+###############################################################################
 
-    # signal.signal(signal.SIGINT, signal_int_handler)
+if __name__ == '__main__':
 
     # routing tables for between agents' TUNs interfaces and also between agents' serial interfaces
     iut_routing_table_serial = {
@@ -205,9 +199,10 @@ if __name__ == '__main__':
     routing_table.update(iut_routing_table_tun)
 
     # start amqp router thread
-    r = PacketRouter(connection, routing_table)
+    r = PacketRouter(AMQP_URL, AMQP_EXCHANGE, routing_table)
     try:
         r.start()
         r.join()
     except (KeyboardInterrupt, SystemExit):
+        logger.info('got SIGINT. Bye bye!')
         r.stop()
