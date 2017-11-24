@@ -81,6 +81,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       }
 
       stage("CoAP testing tool - AMQP API smoke tests"){
+
+        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/supervisor.conf.ini"
+
+
         gitlabCommitStatus("CoAP testing tool - AMQP API smoke tests"){
             try {
                 sh '''
@@ -88,13 +92,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 echo $AMQP_URL
                 echo $AMQP_EXCHANGE
 
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
-                sleep 10
-
-                sudo -E supervisord -c coap_testing_tool/supervisord.conf
+                sudo -E supervisord -c ${env.SUPERVISOR_CONFIG_FILE}
                 sleep 15
 
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE}
                 sleep 2
 
                 python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
@@ -105,12 +106,12 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             sh '''
             echo 'Do you smell the smoke in the room??'
             echo 'processes logs :'
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 tat
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 test-coordinator
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 agent
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-router
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-sniffer
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 bootstrap-agent-TT
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 tat
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 test-coordinator
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 agent
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 packet-router
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 packet-sniffer
+            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 bootstrap-agent-TT
             '''
             throw e
           }
@@ -118,9 +119,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
           finally {
                 sh '''
                 sleep 5
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} status
                 sleep 5
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
+                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} stop all
+                sleep 5
                 '''
           }
         }
