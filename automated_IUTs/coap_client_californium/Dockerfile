@@ -25,7 +25,7 @@ WORKDIR /coap_testing_tool
 RUN python -m pip install -r coap_testing_tool/agent/requirements.txt
 
 #py3 requierements
-RUN pip3 install pika
+RUN python3 -m pip install pika
 
 #RUN cp automated_IUTs/coap_client_californium/supervisor.conf /etc/supervisor/supervisor.conf
 

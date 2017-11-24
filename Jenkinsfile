@@ -21,7 +21,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 sudo apt-get install --fix-missing -y libffi-dev
                 sudo apt-get install --fix-missing -y curl tree netcat
                 sudo apt-get install --fix-missing -y rabbitmq-server
-                echo 'restarting rmq server and app'
+                echo restarting rmq server and app
                 sudo rabbitmq-server -detached || true
                 sudo rabbitmqctl stop_app || true
                 sudo rabbitmqctl start_app || true
@@ -42,10 +42,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             python3 -m pip install pytest --ignore-installed
             python3 -m pytest --version
 
-            echo 'installing py2 dependencies'
+            echo installing py2 dependencies
             python -m pip install -r coap_testing_tool/agent/requirements.txt --upgrade
 
-            echo 'installing py3 dependencies'
+            echo installing py3 dependencies
             python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
             python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
             python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
@@ -88,42 +88,38 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("CoAP testing tool - AMQP API smoke tests"){
             try {
                 sh '''
-                echo 'AMQP PARAMS:'
-                echo $AMQP_URL
-                echo $AMQP_EXCHANGE
-
-                sudo -E supervisord -c ${env.SUPERVISOR_CONFIG_FILE}
+                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                sudo -E supervisord -c $SUPERVISOR_CONFIG_FILE
                 sleep 15
-
-                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE}
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE
                 sleep 2
-
                 python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
                 '''
           }
 
           catch (e){
             sh '''
-            echo 'Do you smell the smoke in the room??'
-            echo 'processes logs :'
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 tat
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 test-coordinator
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 agent
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 packet-router
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 packet-sniffer
-            sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} tail -10000 bootstrap-agent-TT
+            echo Do you smell the smoke in the room??
+            echo processes logs :
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 tat
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 test-coordinator
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 bootstrap-agent-TT
             '''
+
             throw e
           }
 
           finally {
-                sh '''
-                sleep 5
-                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} status
-                sleep 5
-                sudo -E supervisorctl -c ${env.SUPERVISOR_CONFIG_FILE} stop all
-                sleep 5
-                '''
+            sh'''
+            sleep 5
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
+            sleep 5
+            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop all
+            sleep 5
+            '''
           }
         }
       }
