@@ -64,9 +64,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       stage("unittesting components"){
         gitlabCommitStatus("unittesting components"){
             sh '''
-                echo $AMQP_URL
-                echo $(which pytest)
-                pwd
+                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                 python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
                 python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
                 python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
@@ -132,20 +130,13 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             '''
         }
 
-        stage("Install python and pytest"){
-            gitlabCommitStatus("Install python and pytest"){
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
                 withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                     sh '''
-                        #sudo apt-get clean
                         sudo apt-get update
-                        #sudo apt-get upgrade -y -qq
-                        #sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
                         sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
                         sudo apt-get install --fix-missing -y -qq build-essential
-                        #sudo apt-get install --fix-missing -y -qq libyaml-dev
-                        #sudo apt-get install --fix-missing -y -qq libssl-dev openssl
-                        #sudo apt-get install --fix-missing -y -qq libffi-dev
-
                         sudo apt-get install --fix-missing -y -qq make
                         sudo make install-requirements
                     '''
@@ -168,7 +159,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 45
 
-                    sh "echo $AMQP_URL"
+                    echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -192,23 +183,21 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
          }
 
-        stage("execute CoAP mini-plugtests"){
-            gitlabCommitStatus("execute CoAP mini-plugtests") {
+        stage("EXECUTE CoAP mini-plugtests"){
+            gitlabCommitStatus("EXECUTE CoAP mini-plugtests") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
-                            echo 'AMQP PARAMS:'
-                            echo $AMQP_URL
-                            echo $AMQP_EXCHANGE
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                             python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
                         '''
                     }
                 }
                 catch (e){
                     sh '''
-                        echo 'Do you smell the smoke in the room??'
-                        echo 'docker container logs :'
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
                         sudo make get-logs
                     '''
                     throw e
