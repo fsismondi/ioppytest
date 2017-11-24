@@ -18,16 +18,17 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 sh '''
                 sudo apt-get clean
                 sudo apt-get update
-                sudo apt-get upgrade -y
-                sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
-                sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
-                sudo apt-get install --fix-missing -y build-essential
-                sudo apt-get install --fix-missing -y libyaml-dev
-                sudo apt-get install --fix-missing -y libssl-dev openssl
-                sudo apt-get install --fix-missing -y libffi-dev
-                sudo apt-get install --fix-missing -y curl tree netcat
-                sudo apt-get install --fix-missing -y rabbitmq-server
-                sudo apt-get install --fix-missing -y make
+                sudo apt-get upgrade -y -qq
+                sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                sudo apt-get install --fix-missing -y -qq build-essential
+                sudo apt-get install --fix-missing -y -qq libyaml-dev
+                sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                sudo apt-get install --fix-missing -y -qq libffi-dev
+                sudo apt-get install --fix-missing -y -qq curl tree netcat
+                sudo apt-get install --fix-missing -y -qq rabbitmq-server
+                sudo apt-get install --fix-missing -y -qq supervisor
+                sudo apt-get install --fix-missing -y -qq make
 
                 echo restarting rmq server and app
                 sudo rabbitmq-server -detached || true
@@ -139,15 +140,15 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     sh '''
                         #sudo apt-get clean
                         sudo apt-get update
-                        #sudo apt-get upgrade -y
-                        #sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
-                        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
-                        sudo apt-get install --fix-missing -y build-essential
-                        #sudo apt-get install --fix-missing -y libyaml-dev
-                        #sudo apt-get install --fix-missing -y libssl-dev openssl
-                        #sudo apt-get install --fix-missing -y libffi-dev
+                        #sudo apt-get upgrade -y -qq
+                        #sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        #sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        #sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        #sudo apt-get install --fix-missing -y -qq libffi-dev
 
-                        sudo apt-get install --fix-missing -y make
+                        sudo apt-get install --fix-missing -y -qq make
 
                         python3 -m pip install pytest --ignore-installed
                         python3 -m pytest --version
