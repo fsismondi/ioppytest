@@ -57,7 +57,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       }
 
       stage("unittesting git submodules"){
-        gitlabCommitStatus("Testing Tool's submodules unit-testing"){
+        gitlabCommitStatus("unittesting git submodules"){
             sh '''
             echo $AMQP_URL
             cd coap_testing_tool/test_analysis_tool
@@ -68,7 +68,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       }
 
       stage("unittesting components"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
+        gitlabCommitStatus("unittesting components"){
             sh '''
             echo $AMQP_URL
             echo $(which pytest)
@@ -77,6 +77,52 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
             python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
             '''
+        }
+      }
+
+      stage("CoAP testing tool - AMQP API smoke tests"){
+        gitlabCommitStatus("CoAP testing tool - AMQP API smoke tests"){
+            try {
+                sh '''
+                echo 'AMQP PARAMS:'
+                echo $AMQP_URL
+                echo $AMQP_EXCHANGE
+
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
+                sleep 10
+
+                sudo -E supervisord -c coap_testing_tool/supervisord.conf
+                sleep 15
+
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sleep 2
+
+                python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
+                '''
+          }
+
+          catch (e){
+            sh '''
+            echo 'Do you smell the smoke in the room??'
+            echo 'processes logs :'
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 tat
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 test-coordinator
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 agent
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-router
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-sniffer
+            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 bootstrap-agent-TT
+            '''
+            throw e
+          }
+
+          finally {
+                sh '''
+                sleep 5
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sleep 5
+                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
+                '''
+          }
         }
       }
     }
