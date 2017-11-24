@@ -43,8 +43,6 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("Testing Tool dependencies"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
-                python3 -m pip install pytest --ignore-installed
-                python3 -m pytest --version
                 echo installing python dependencies...
                 make install-requirements
             '''
@@ -149,9 +147,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         #sudo apt-get install --fix-missing -y -qq libffi-dev
 
                         sudo apt-get install --fix-missing -y -qq make
-
-                        python3 -m pip install pytest --ignore-installed
-                        python3 -m pytest --version
+                        sudo make install-requirements
                     '''
                 }
             }
@@ -160,8 +156,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         stage("BUILD docker images (testing tools and automated-iuts)"){
             gitlabCommitStatus("BUILD docker images (testing tools and automated-iuts)") {
                 sh '''
-                sudo -E make docker-build-all
-                sudo -E docker images
+                    sudo -E make docker-build-all
+                    sudo -E docker images
                 '''
             }
         }
