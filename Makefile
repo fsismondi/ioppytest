@@ -1,34 +1,18 @@
-# TODO add docker-build for building testing tool
 # TODO add run for running testing tool locally (from docker image of supervisor?)
+
+version = 1.0
+
+info:
+	@echo $(info_message)
+
+version:
+	@echo ioppytest v$(version)
 
 docker-build-all:
 	@echo $(info_message)
-
-	@echo "Starting to build all docker images.. "
-	# let's build the automated/reference IUT images used by F-Interop platform
-	docker build -t automated_iut-coap_server-californium-v0.8 -f automated_IUTs/coap_server_californium/Dockerfile .
-	docker build -t automated_iut-coap_client-californium-v0.8 -f automated_IUTs/coap_client_californium/Dockerfile .
-	docker build -t automated_iut-coap_server-coapthon-v0.8 -f automated_IUTs/coap_server_coapthon/Dockerfile .
-	docker build -t automated_iut-coap_client-coapthon-v0.8 -f automated_IUTs/coap_client_coapthon/Dockerfile .
-
-	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-coap-v0.8 .
-
-	# the testing tool for interop and conformance are the same, so lets tag it as such
-	docker tag testing_tool-interoperability-coap-v0.8:latest testing_tool-conformance-coap-v0.8
-
-	# tag all last version images also with a version-less name
-	docker tag testing_tool-interoperability-coap-v0.8:latest testing_tool-interoperability-coap
-	docker tag testing_tool-conformance-coap-v0.8:latest testing_tool-conformance-coap
-
-	docker tag automated_iut-coap_client-coapthon-v0.8:latest automated_iut-coap_client-coapthon
-	docker tag automated_iut-coap_server-coapthon-v0.8:latest automated_iut-coap_server-coapthon
-
-	docker tag automated_iut-coap_client-californium-v0.8:latest automated_iut-coap_client-californium
-	docker tag automated_iut-coap_server-californium-v0.8:latest automated_iut-coap_server-californium
-
-	docker tag automated_iut-coap_client-coapthon-v0.8:latest reference_iut-coap_client
-	docker tag automated_iut-coap_server-californium-v0.8:latest reference_iut-coap_server
+	@echo "Starting to build docker images.. "
+	$(MAKE) _docker-build-coap
+	$(MAKE) _docker-build-coap-additional-resources
 
 run-coap-testing-tool:
 	@echo "Using env vars:"
@@ -87,7 +71,39 @@ install-requirements:
 	@python3 -m pip -qq install -r coap_testing_tool/webserver/requirements.txt --upgrade
 
 
-info_message = """ \
+_docker-build-coap:
+	@echo "Starting to build coap testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t testing_tool-interoperability-coap-v$(version) -f envs/coap_testing_tool/Dockerfile .
+
+	# the testing tool for interop and conformance are the same, so lets tag it as such
+	docker tag testing_tool-interoperability-coap-v$(version):latest testing_tool-conformance-coap-v$(version)
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-coap-v$(version):latest testing_tool-interoperability-coap
+	docker tag testing_tool-conformance-coap-v$(version):latest testing_tool-conformance-coap
+
+_docker-build-coap-additional-resources:
+	@echo "Starting to build coap-additional-resources.. "
+
+	# let's build the automated/reference IUT images used by F-Interop platform
+	docker build -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
+	docker build -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+	docker build -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
+	docker build -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
+
+	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
+	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
+
+	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
+	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
+
+	docker tag automated_iut-coap_client-coapthon-v$(version):latest reference_iut-coap_client
+	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
+
+info_message = """ \\n\
+	******************************************************************************************\n\
 	docker images naming must follow the following conventions: \n\
 	\n\
 	resource_type-sub_type-resource_name-version \n\
@@ -97,16 +113,17 @@ info_message = """ \
 	\n\
 	examples: \n\
 	\n\
-	automated_iut-coap_client-coapthon-v0.8 \n\
-	automated_iut-coap_server-californium-v0.8 \n\
+	automated_iut-coap_client-coapthon-v$(version) \n\
+	automated_iut-coap_server-californium-v$(version) \n\
 	\n\
-	testing_tool-performance-coap-v0.8 \n\
-	testing_tool-interoperability-coap-v0.8 \n\
+	testing_tool-performance-coap-v$(version) \n\
+	testing_tool-interoperability-coap-v$(version) \n\
 	testing_tool-interoperability-coap (alias to last version) \n\
-	testing_tool-conformance-coap-v0.8 \n\
+	testing_tool-conformance-coap-v$(version) \n\
 	testing_tool-conformance-coap (alias to last version) \n\
-	testing_tool-conformance-6tisch-v0.8 \n\
+	testing_tool-conformance-6tisch-v$(version) \n\
 	\n\
 	reference_iut-coap_client (alias) \n\
 	reference_iut-coap_server (alias) \n\
+	******************************************************************************************\n\\n\
 	"""
