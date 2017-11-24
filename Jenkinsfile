@@ -8,8 +8,8 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         stage("Clone repo and submodules"){
             checkout scm
             sh '''
-            git submodule update --init"
-            tree .
+                git submodule update --init
+                tree .
             '''
         }
 
@@ -128,7 +128,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         stage("Clone repo and submodules"){
             checkout scm
             sh '''
-                git submodule update --init"
+                git submodule update --init
                 tree .
             '''
         }
