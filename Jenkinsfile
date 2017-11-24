@@ -5,9 +5,15 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
 
-        stage ("Environment dependencies"){
+        stage("Clone repo and submodules"){
             checkout scm
-            sh 'git submodule update --init'
+            sh '''
+            git submodule update --init"
+            tree .
+            '''
+        }
+
+        stage ("Environment dependencies"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                 sh '''
                 sudo apt-get clean
@@ -21,14 +27,14 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 sudo apt-get install --fix-missing -y libffi-dev
                 sudo apt-get install --fix-missing -y curl tree netcat
                 sudo apt-get install --fix-missing -y rabbitmq-server
+                sudo apt-get install --fix-missing -y make
+
                 echo restarting rmq server and app
                 sudo rabbitmq-server -detached || true
                 sudo rabbitmqctl stop_app || true
                 sudo rabbitmqctl start_app || true
                 '''
 
-            /* Show deployed code */
-            sh "tree ."
           }
       }
 
@@ -36,21 +42,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("Testing Tool dependencies"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
-            sudo apt-get -y install supervisor
-            sudo apt-get -y install tcpdump
-
-            python3 -m pip install pytest --ignore-installed
-            python3 -m pytest --version
-
-            echo installing py2 dependencies
-            python -m pip install -r coap_testing_tool/agent/requirements.txt --upgrade
-
-            echo installing py3 dependencies
-            python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/webserver/requirements.txt --upgrade
+                python3 -m pip install pytest --ignore-installed
+                python3 -m pytest --version
+                echo installing python dependencies...
+                make install-requirements
             '''
             }
         }
@@ -59,10 +54,10 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       stage("unittesting git submodules"){
         gitlabCommitStatus("unittesting git submodules"){
             sh '''
-            echo $AMQP_URL
-            cd coap_testing_tool/test_analysis_tool
-            pwd
-            python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+                echo $AMQP_URL
+                cd coap_testing_tool/test_analysis_tool
+                pwd
+                python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
         }
       }
@@ -70,21 +65,18 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       stage("unittesting components"){
         gitlabCommitStatus("unittesting components"){
             sh '''
-            echo $AMQP_URL
-            echo $(which pytest)
-            pwd
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
+                echo $AMQP_URL
+                echo $(which pytest)
+                pwd
+                python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
+                python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
+                python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
             '''
         }
       }
 
       stage("CoAP testing tool - AMQP API smoke tests"){
-
         env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/supervisor.conf.ini"
-
-
         gitlabCommitStatus("CoAP testing tool - AMQP API smoke tests"){
             try {
                 sh '''
@@ -96,32 +88,142 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
                 '''
           }
-
           catch (e){
             sh '''
-            echo Do you smell the smoke in the room??
-            echo processes logs :
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 tat
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 test-coordinator
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 bootstrap-agent-TT
+                echo Do you smell the smoke in the room??
+                echo processes logs :
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 tat
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 test-coordinator
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 bootstrap-agent-TT
             '''
-
             throw e
           }
-
           finally {
             sh'''
-            sleep 5
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
-            sleep 5
-            sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop all
-            sleep 5
+                sleep 5
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
+                sleep 5
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop all
+                sleep 5
             '''
           }
         }
       }
+    }
+}
+
+
+if(env.JOB_NAME =~ 'CoAP testing tool/'){
+    node('docker'){
+
+        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh '''
+                git submodule update --init"
+                tree .
+            '''
+        }
+
+        stage("Install python and pytest"){
+            gitlabCommitStatus("Install python and pytest"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        #sudo apt-get clean
+                        sudo apt-get update
+                        #sudo apt-get upgrade -y
+                        #sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y build-essential
+                        #sudo apt-get install --fix-missing -y libyaml-dev
+                        #sudo apt-get install --fix-missing -y libssl-dev openssl
+                        #sudo apt-get install --fix-missing -y libffi-dev
+
+                        sudo apt-get install --fix-missing -y make
+
+                        python3 -m pip install pytest --ignore-installed
+                        python3 -m pytest --version
+                    '''
+                }
+            }
+        }
+
+        stage("BUILD docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD docker images (testing tools and automated-iuts)") {
+                sh '''
+                sudo -E make docker-build-all
+                sudo -E docker images
+                '''
+            }
+        }
+
+        stage("RUN CoAP containers for mini-plugtests"){
+            gitlabCommitStatus("RUN CoAP containers for mini-plugtests") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 45
+
+                    sh "echo $AMQP_URL"
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                sudo -E make run-coap-client
+                                sudo -E make run-coap-server
+                                sudo -E make run-coap-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+         }
+
+        stage("execute CoAP mini-plugtests"){
+            gitlabCommitStatus("execute CoAP mini-plugtests") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo 'AMQP PARAMS:'
+                            echo $AMQP_URL
+                            echo $AMQP_EXCHANGE
+                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo 'Do you smell the smoke in the room??'
+                        echo 'docker container logs :'
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+
+        }
     }
 }
