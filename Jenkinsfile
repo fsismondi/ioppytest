@@ -134,10 +134,17 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             gitlabCommitStatus("Install python dependencies"){
                 withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                     sh '''
+                        sudo apt-get clean
                         sudo apt-get update
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
                         sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
                         sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
                         sudo apt-get install --fix-missing -y -qq make
+
                         sudo make install-requirements
                     '''
                 }
