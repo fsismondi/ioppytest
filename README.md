@@ -1,32 +1,246 @@
-CoAP Testing Tool:
-------------------
+ioppytest framework:
+--------------------
 
-This repo contains all necessary software (and their dependencies) for running a
-CoAP interoperability test session.
+ioppytest is a framework for running interoperability tests.
 
-This can be run as standalone software and also integrated to f-interop 
+This initial version tackles technical interoperability testing (CoAP
+and 6LoWPAN interop tests), and effort is being made to implement
+interop semantic tests notably for running tests in the WoT and OneM2M
+context.
+
+This repo contains all necessary software (and their dependencies) for
+running a interoperability test sessions between two implementations
+under test (IUT).
+
+This can be run as standalone software and also integrated to f-interop
 architecture.
 
-### TODO
-- add feat for handling step by step analysis
-- document isntallation of requirements and dependencies
 
-### CoAP Testing tools components
+Implemented test suites in the ioppytest framework:
+---------------------------------------------------
 
-The CoAP testing tool handles the coordination, sniffing, dissection
-and analysis of traces for the tests described in the test description.
-The implemented test description is based on:
+The test suites implemented which are currently supported by the
+framework are:
+
+- CoAP Test Suite (user's IUT vs automated-IUT)
+- CoAP Test Suite (between two users' IUT)
+- 6LoWPAN Test Suite (between two users' IUT) (WIP)
+
+
+
+Test setup:
+-----------
+
+An interop session happens between two implementation under test (IUT),
+the following diagram shows the setup including the IUTs, testing tool
+and auxiliary components needed for running a interop session.
+
+All interactions between components take place using the AMQP event bus
+(AMQP pub/sub mechanism)
+
+```
+                    +----------------------------+             +----------------------------+             +----------------------------+
+                    |                            |             |                            |             |                            |
+                    |    ioppytest Test Tool     |             |     User Interface         |             |     User Interface         |
+                    |(CoAP, 6LoWPAN, OneM2M, etc)|             |         (user 1)           |             |         (user 2)           |
+                    |                            |             |                            |             |                            |
+                    |                            |             |                            |             |                            |
+                    +----------------------------+             +----------------------------+             +----------------------------+
+
+                             ^    +                                     ^    +                                     ^    +
+                             |    |                                     |    |                                     |    |
+                             |    |                                     |    |                                     |    |
+                             |    |                                     |    |                                     |    |
+fromAgent.agent_x.tun.packet |    | toAgent.agent_y.tun.packet          |    |  ui.user1.step_verify.reply         |    |
+                             |    |                                     |    |                                     |    |
+fromAgent.agent_y.tun.packet |    | toAgent.agent_x.tun.packet          |    |                                     |    |
+                             |    |                                     |    |                                     |    |
+                             |    | ui.user1.step_verify.request        |    |                                     |    |
+                             +    v                                     +    v                                     +    v
+
+        +------------------------------------------------------------------------------------------------------------------------------------------------>
+                                                                         AMQP Event Bus
+        <-------------------------------------------------------------------------------------------------------------------------------------------------+
+
+                                                       +     ^                                        +     ^
+                                                       |     | toAgent.agent_x.tun.packetet           |     |  fromAgent.agent_y.tun.packet
+                              data.tun.toAgent.agent_x |     |                                        |     |
+                                                       |     |              toAgent.agent_y.tun.packet|     |
+                                                       v     |                                        v     |
+                                PC        +------------+-----+-------------+              +-----------+-----+--------------+
+                                user 1    |                                |              |                                |
+                                          |      Agent (agent_x)           |              |      Agent (agent_y)           |
+                                          |        (tun mode)              |              |        (tun mode)              |
+                                          |                                |              |                                |
+                                          |                                |              |                                |
+                                          | +-----+tun interface+-------+  |              | +-----+tun interface+-------+  |
+                                          |                                |              |                                |
+                                          | +----------------------------+ |              | +----------------------------+ |
+                                          | |         IPv6+based         | |              | |         IPv6+based         | |
+                                          | |        communicating       | |              | |        communicating       | |
+                                          | |      piece of software     | |              | |      piece of software     | |
+                                          | |      (e.g. coap client)    | |              | |      (e.g. coap server)    | |
+                                          | |                            | |              | |                            | |
+                                          | +----------------------------+ |              | +----------------------------+ |
+                                          |                                |              |                                |
+                                          +--------------------------------+              +--------------------------------+
+```
+
+Event Bus API:
+--------------
+
+All the calls between the components are documented here:
+
+[CORE API doc](http://doc.f-interop.eu/interop/)
+and
+[interop tests API doc](http://doc.f-interop.eu/interop/)
+
+
+
+Running a test suite:
+---------------------
+
+user needs :
+
+- an implementation under test (IUT) of a standard supported/protocol
+by ioppytest framework, which either runs in some specific hardware or
+locally in user's PC
+- [the agent component](http://doc.f-interop.eu/interop/#agent)
+which will route all the packets emitted from the IUT to the backend
+and also to the second IUT (and viceversa)
+- a user interface to help coordinating the tests
+(either GUI or CLI component)
+
+# Running a test suite using F-Interop platform
+
+go to [go.f-interop.eu](go.f-interop.eu) and follow the instructions
+
+# Running a test suite standalone
+
+This mode of execution work for any of the following circustantces
+
+- controls one IUT and wants to run tests against one of the
+automated-IUTs the framework supports
+- controls one IUT and is in direct contact with a second user
+controlling a second IUT
+- controls both implementations (IUTs) taking part in the interop
+session
+
+## Set up up the message broker
+
+The interop testing tool use AMQP for sending messages between its
+components, and the remote ones (like the agent). When running a
+standalone setup the user first needs to have a RMQ broker running..
+
+RMQ broker is a component which is **external** to the testing tool
+and which establish the session and infrastructure so compomnents can
+communicate with each other during the test session.
+
+The options for this are:
+
+- install locally RabbitMQ message broker on local machine,
+create RMQ vhost, user, pass on local machine
+
+    (# TODO add instructions)
+
+- Request a remote vhost and credentials (user,pass) to
+federico.sismondi@inria.fr (recommended)
+
+don't hesitate to contact me, this is a very simple procedure and it's
+free :D
+
+## Export AMQP environment variables
+
+after having a created vhost with its user/password,
+export in the machine where the testing tool is running the following
+env vars:
+
+```
+export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
+export AMQP_EXCHANGE='amq.topic'
+```
+
+## Download the source code (see `Clonning the project` for more info)
+```
+git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
+cd ioppytest
+```
+
+
+## Build the testing tools
+
+(docker, py2 and py3 needs to be installed in the machine)
+```
+make docker-build-all
+```
+
+## Run testing tool (CoAP testing tool example)
+```
+make run-coap-testing-tool
+```
+
+## Connect to the interop session using the CLI
+```
+make run-cli
+```
+
+## Connect the agent to the backend
+
+if user's IUT is a CoAP client:
+
+```
+make run-agent-coap-client
+```
+
+if user's IUT is a CoAP server:
+
+```
+make run-agent-coap-server
+```
+
+## Running a second IUT
+
+### User to user session, second user with his/her own IUT
+
+The second IUT needs to connect to the same VHOST the same way first IUT
+did. For this the RMQ broker needs to be reachable by this second IUT
+ (and it's agent instance).
+
+If this is the case then user 2 should just export the same environment
+ variables as user 1, and launch agent, and CLI just as user 1 did.
+
+### Single user session, agains an automated-IUT
+
+ If the user wants to run test against one of the automated-IUT
+ (~reference implementation) supported by ioppytest:
+
+```
+make run-coap-server
+```
+
+or for a coap client automated implementation:
+
+```
+make run-coap-client
+```
+
+
+## Running the interop session
+
+Simply follow the CLI instructions and enjoy! :)
+
+
+The implemented tests are based on this specification:
 [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)
 
-For description of components please visit: [f-interop doc](doc.f-interop.eu)
 
+Developping a new test suite:
+-----------------------------
 
------------------------------------------------------------------------------
-
-### Clonning the project
+## Clonning the project
 ```
-git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/coap_testing_tool.git
-cd coap_testing_tool
+git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
+cd ioppytest
 ```
 
 ### Attention with the git submodules!
@@ -55,105 +269,17 @@ git commit -m 'updated submodule reference to last commit'
 git push
 ```
 
-### Running CoAP testing tool as standalone mode
 
-(# TODO talk about the CLI, without it you cannot run a session)
+## How to merge new features to upstream branch ?
 
-First thing needed is to have the rabbit running ;)
-For this, you need a server running RabbitMQ message broker for handling the
-messaging between the components taking part in your test session.
+Read CONTRIBUTING.rst document
 
-The options for this are:
+## How can I develop & debug test suites?
 
-- install locally RabbitMQ message broker on local machine,
-create RMQ vhost, user, pass on local machine
-
-    (# TODO add instructions)
-
-- Request a remote vhost and its user, pass credentials to F-Interop developers.
-
-    for this contact federico.sismondi@inria.fr or remy.leone@inria.fr
-
-after having a created vhost with its user/password,
-export in the machine where the testing tool is running the following
-env vars:
-
-    ```
-    export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
-    export AMQP_EXCHANGE='amq.topic'
-    ```
-
----
-#### Building & running the tool
-Now, let's get the testing tool running. Several approaches can be used,
-these are:
-
-( tested with debian based OS & macos )
-
-**1.** Build the testing tool using docker (see Dockerfile) &
-run the testing tool inside a docker container (recommended)
-
-**2.** Install dependencies with ansible in the local machine &
-run the testing tool using supervisor.
-(no agent can be run in the same machine after)
-
-**3.** Install dependencies with ansible in remote machine &
-run the testing tool using supervisor.
-
-**4.** Install everything manually, why not right?
-
----
-
-#### Opt 1 - Building & running CoAP testing tool with docker (recommended)
-
-First, let's install docker. For this just follow this instructions:
-
-https://docs.docker.com/engine/installation/
-
-Don't forget to start it!
-
-Second, **build** the testing tool, from inside coap_testing_tool dir run:
-```
-make docker-build-all # build all tools, TT and automated-iuts
-```
-
-or run the docker build manually
-
-```
-docker build -t testing_tool-interoperability-coap .
-```
-
-for running the coap-testing-tool do
-```
-make run-coap-testing-tool
-```
-
-for verifying that TT is actually running:
+for getting logs from the docker containers you can:
 ```
 make get-logs
 ```
-
-Also, if you are running a session alone (no 2nd user) then you may
-want to use one of the automated-iut or reference implementations,
-for this, if you are testing your coap server:
-
-```
-make run-coap-client
-```
-
-or (if you are testing your coap client)
-```
-run-coap-server
-```
-
-
-If build fails due to a "Failed to fetch http://archive.ubuntu ...."
-then:
-```
-docker build -t testing_tool-interoperability-coap . --no-cache
-```
-
-Go to FAQ, for known errors.
 
 for running coap_testing_tool manually from docker api:
 
@@ -191,58 +317,39 @@ test-coordinator                 RUNNING   pid 26, uptime 0:00:02
 supervisor>
 ```
 
-Run the CLI & Agent and you are ready to launch CoAP tests from your PC!
+or you can also run directly the processes without docker:
+(supervisord needed)
 
+```
+sudo -E supervisord -c routeToConfigurationFileForTheTestSuite
+sudo supervisorctl -c routeToConfigurationFileForTheTestSuite
+```
 
-#### Opt 2 & 3 - Build CoAP testing tool with ansible
+note: use -E when launching supervisor process, it preserves the
+env vars
 
-
-First thing, install ansible:
-
-http://docs.ansible.com/ansible/intro_installation.html
-
-
-Install supervisor (needed for spawning and monitoring processes):
-For this follow this instructions:
-
-http://supervisord.org/installing.html
-
-  
-Now, let's install the testing tool requirements:
-
-**for Opt 2 (local install)**:
-
-- change in ansible/main.yml the variable unix_user from f-interop to your
-unix user, then run ansible script:
-
-    ```
-    ansible-playbook -i ansible/hosts.local ansible/main.yml
-        --ask-become-pass
-    ```
-
-- run CoAP testing tool and monitor processes
-    
-    ```
-    sudo -E supervisord -c supervisor.conf
-    sudo supervisorctl -c supervisor.conf
-    ```
-	note: use -E when launching supervisor process, it preserves the
-	env vars
-
-Run the CLI & Agent and you are ready to launch CoAP tests from your PC!
-
-**for Opt 3 (remote install)**:
-
-TDB
 
 FAQ
 ---
 
-- I have my own CoAP implementation, how can I add it as an
-automated-IUT into CoAP Testing Tool
+- How can I install docker on my machine?
 
-    **TBD**
+    For this just follow this instructions: https://docs.docker.com/engine/installation/
+
+
+- How do I install supervisord on my machine?
+    Install supervisor (needed for spawning and monitoring processes):
+    For this follow this instructions:
+    http://supervisord.org/installing.html
+
+- I have my own CoAP implementation, how can I add it as an
+automated-IUT into CoAP Testing Tool:
+
+    please contact federico.sismondi@inria.fr
+
 
 - Docker build returns a "cannot fetch package" or a "cannot resolve .."
-    -> try using --no-cache for the docker build
-    -> more info http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
+
+    try using ```--no-cache``` for the docker build
+
+    more info http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
