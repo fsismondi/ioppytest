@@ -14,7 +14,7 @@ __version__ = (0, 0, 6)
 
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 
-if os.sep + 'coap_testing_tool' in project_dir:
+if os.sep + 'ioppytest' in project_dir:
     project_dir = os.path.abspath(os.path.join(project_dir, os.pardir))
 
 print('Project dir: %s' % project_dir)
@@ -37,12 +37,12 @@ DATADIR = os.path.join(project_dir, 'data')
 RESULTS_DIR = os.path.join(DATADIR, 'results')
 PCAP_DIR = os.path.join(DATADIR, 'dumps')
 LOGDIR = os.path.join(project_dir, 'log')
-TD_DIR = os.path.join(project_dir, 'coap_testing_tool', 'extended_test_descriptions')
+TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
-AUTO_DISSECTION_FILE = os.path.join(project_dir, 'coap_testing_tool/test_analysis_tool/data/auto_dissection.json')
+AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
 
@@ -89,7 +89,7 @@ print(json.dumps(
 
 try:
     # read config information from manifest file (interoperability_manifest.json)
-    with open(os.path.join(project_dir, 'coap_testing_tool', 'interoperability_manifest.json')) as index_file:
+    with open(os.path.join(project_dir, 'ioppytest', 'interoperability_manifest.json')) as index_file:
         AGENT_NAMES = json.load(index_file)['agent_names']
         print(AGENT_NAMES)
 

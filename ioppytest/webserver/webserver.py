@@ -17,8 +17,8 @@ import posixpath
 import mimetypes
 from jinja2 import Template
 
-from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
-from coap_testing_tool.test_coordinator.testsuite import TestCase
+from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
+from ioppytest.test_coordinator.testsuite import TestCase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 COMPONENT_ID = 'webserver'
@@ -105,16 +105,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
 
         # check if its a testcase in the ones already loaded
-        if self.path.startswith('/tests/') or self.path.startswith('/coap_testing_tool/tests/'):
+        if self.path.startswith('/tests/') or self.path.startswith('/ioppytest/tests/'):
             logger.debug('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
-        elif self.path.startswith('/coap_testing_tool/pcaps'):
+        elif self.path.startswith('/ioppytest/pcaps'):
             logger.debug('Handling PCAP request: %s' % self.path)
             return self.handle_pcaps(self.path)
-        elif self.path.startswith('/coap_testing_tool/results'):
+        elif self.path.startswith('/ioppytest/results'):
             logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
-        elif self.path.startswith('/coap_testing_tool/packets'):
+        elif self.path.startswith('/ioppytest/packets'):
             logger.debug('Handling PACKETS dissection request: %s' % self.path)
             return self.handle_packets(self.path)
 
@@ -151,11 +151,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         assert '/pcaps' in path
 
         if 'IEEE802_15_4' in path:
-            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
         elif 'DLT_RAW' in path:
-            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_RAW.pcap')
+            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_RAW.pcap')
         else:
-            file = os.path.join(PROJECT_DIR, 'coap_testing_tool', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
 
         with open(file, 'rb') as f:
             self.send_response(200)

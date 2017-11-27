@@ -1,9 +1,9 @@
 import unittest, logging, os, pika, json
 from time import sleep
-from coap_testing_tool.utils.messages import *
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
-from coap_testing_tool.test_coordinator.testsuite import import_teds
-from coap_testing_tool.test_coordinator.states_machine import Coordinator
+from ioppytest.utils.messages import *
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
+from ioppytest.test_coordinator.testsuite import import_teds
+from ioppytest.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 # init logging to stnd output and log files
@@ -20,12 +20,12 @@ default_configuration = {
 
 class CoordinatorStateMachineTests(unittest.TestCase):
     """
-    python3 -m unittest coap_testing_tool.test_coordinator.tests.tests.CoordinatorStateMachineTests
+    python3 -m unittest ioppytest.test_coordinator.tests.tests.CoordinatorStateMachineTests
     """
 
     def setUp(self):
         logger.setLevel(logging.DEBUG)
-        from coap_testing_tool import TD_COAP_CFG, TD_COAP
+        from ioppytest import TD_COAP_CFG, TD_COAP
         self.test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                             amqp_exchange=AMQP_EXCHANGE,
                                             ted_config_file=TD_COAP_CFG,

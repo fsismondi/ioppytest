@@ -305,8 +305,8 @@ docker run -it
     testing_tool-interoperability-coap
     bash
 
-root@bab3b2220510:/coap_testing_tool# supervisord -c supervisor.conf
-root@bab3b2220510:/coap_testing_tool# supervisorctl -c supervisor.conf
+root@bab3b2220510:/ioppytest# supervisord -c supervisor.conf
+root@bab3b2220510:/ioppytest# supervisorctl -c supervisor.conf
 agent                            RUNNING   pid 28, uptime 0:00:02
 automated-iut                    STARTING
 bootstrap-agent-TT               RUNNING   pid 19, uptime 0:00:02

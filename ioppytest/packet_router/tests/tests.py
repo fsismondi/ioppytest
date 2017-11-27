@@ -1,12 +1,12 @@
 import unittest, logging, os
 import time, json
 import pika
-from coap_testing_tool.packet_router.packet_router import PacketRouter
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
+from ioppytest.packet_router.packet_router import PacketRouter
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 """
 launch it as
-    python3 -m unittest coap_testing_tool.packet_router.tests.tests.PacketRouterTestCase
+    python3 -m unittest ioppytest.packet_router.tests.tests.PacketRouterTestCase
 for running single a single test:
     python3 -m unittest test_module.TestClass.test_method
 """

@@ -13,16 +13,16 @@ RUN apt-get -y -qq install net-tools
 # upgrade pip
 RUN python3 -m pip install --upgrade pip
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #installing py3 dependencies
-RUN python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-RUN python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-RUN python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-RUN python3 -m pip install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-RUN python3 -m pip install -r coap_testing_tool/webserver/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/test_coordinator/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/test_analysis_tool/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/packet_router/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/sniffer/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/webserver/requirements.txt --upgrade
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap

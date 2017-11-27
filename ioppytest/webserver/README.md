@@ -9,6 +9,6 @@ It's purpose is mainly for:
 
 Excecute as script:
 ```
-cd coap_testing_tool
-python3 -m coap_testing_tool.webserver
+cd ioppytest
+python3 -m ioppytest.webserver
 ```

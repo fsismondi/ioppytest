@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from coap_testing_tool import TMPDIR
+from ioppytest import TMPDIR
 from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST
 from automated_IUTs.automation import *
 

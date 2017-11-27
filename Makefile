@@ -14,7 +14,7 @@ docker-build-all:
 
 run-cli:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m coap_testing_tool.utils.interop_cli repl
+	@python3 -m ioppytest.utils.interop_cli repl
 
 run-coap-testing-tool:
 	@echo "Using env vars:"
@@ -24,11 +24,11 @@ run-coap-testing-tool:
 
 run-agent-coap-client:
 	$(MAKE) _check-sudo
-	cd coap_testing_tool/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd coap_testing_tool/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
 
 run-coap-client:
 	@echo "Using env vars:"
@@ -72,15 +72,15 @@ get-logs:
 
 install-python-dependencies:
 	@echo 'installing py2 dependencies...'
-	@python -m pip -qq install -r coap_testing_tool/agent/requirements.txt
+	@python -m pip -qq install -r ioppytest/agent/requirements.txt
 	@echo 'installing py3 dependencies...'
 	@python3 -m pip -qq install pytest
-	@python3 -m pip -qq install -r coap_testing_tool/test_coordinator/requirements.txt
-	@python3 -m pip -qq install -r coap_testing_tool/test_analysis_tool/requirements.txt
-	@python3 -m pip -qq install -r coap_testing_tool/packet_router/requirements.txt
-	@python3 -m pip -qq install -r coap_testing_tool/sniffer/requirements.txt
-	@python3 -m pip -qq install -r coap_testing_tool/webserver/requirements.txt
-	@python3 -m pip -qq install -r coap_testing_tool/utils/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/test_coordinator/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/packet_router/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/sniffer/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/webserver/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
 
 
 _check-sudo:

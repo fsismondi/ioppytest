@@ -1,6 +1,6 @@
 import logging
 import socket
-from coap_testing_tool.webserver.webserver import *
+from ioppytest.webserver.webserver import *
 
 COMPONENT_ID = 'webserver'
 

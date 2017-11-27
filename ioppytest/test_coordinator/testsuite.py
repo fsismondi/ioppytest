@@ -8,9 +8,9 @@ import logging
 from itertools import cycle
 from collections import OrderedDict
 
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
-from coap_testing_tool.utils.exceptions import TestSuiteError
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest.utils.exceptions import TestSuiteError
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
 

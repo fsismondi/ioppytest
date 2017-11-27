@@ -11,13 +11,13 @@ from transitions import Machine
 from transitions.core import MachineError
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, AMQP_URL, AMQP_EXCHANGE
-from coap_testing_tool.utils.amqp_synch_call import *
-from coap_testing_tool.utils.messages import *
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool.utils.exceptions import CoordinatorError
-from coap_testing_tool.test_coordinator.amqp_connector import CoordinatorAmqpInterface
-from coap_testing_tool.test_coordinator.testsuite import TestSuite
+from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, AMQP_URL, AMQP_EXCHANGE
+from ioppytest.utils.amqp_synch_call import *
+from ioppytest.utils.messages import *
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.utils.exceptions import CoordinatorError
+from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
+from ioppytest.test_coordinator.testsuite import TestSuite
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -751,7 +751,7 @@ if __name__ == '__main__':
     }
 
     logger.setLevel(logging.DEBUG)
-    from coap_testing_tool import TD_COAP_CFG, TD_COAP
+    from ioppytest import TD_COAP_CFG, TD_COAP
 
     test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                    amqp_exchange=AMQP_EXCHANGE,
