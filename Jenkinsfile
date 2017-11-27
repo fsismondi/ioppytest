@@ -44,7 +44,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
                 echo installing python dependencies...
-                make install-requirements
+                make install-python-dependencies
             '''
             }
         }
@@ -145,7 +145,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         sudo apt-get install --fix-missing -y -qq libffi-dev
                         sudo apt-get install --fix-missing -y -qq make
 
-                        sudo make install-requirements
+                        sudo make install-python-dependencies
                     '''
                 }
             }

@@ -1,5 +1,3 @@
-# TODO add run for running testing tool locally (from docker image of supervisor?)
-
 version = 1.0
 
 info:
@@ -14,11 +12,23 @@ docker-build-all:
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
 
+run-cli:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@python3 -m coap_testing_tool.utils.interop_cli repl
+
 run-coap-testing-tool:
 	@echo "Using env vars:"
 	@echo $(AMQP_URL)
 	@echo $(AMQP_EXCHANGE)
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-coap testing_tool-interoperability-coap
+
+run-agent-coap-client:
+	$(MAKE) _check-sudo
+	cd coap_testing_tool/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
+
+run-agent-coap-server:
+	$(MAKE) _check-sudo
+	cd coap_testing_tool/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
 
 run-coap-client:
 	@echo "Using env vars:"
@@ -60,19 +70,25 @@ get-logs:
 	docker logs reference_iut-coap_client ; exit 0
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
-install-requirements:
-	@echo 'installing py2 dependencies'
-	@python -m pip -qq install -r coap_testing_tool/agent/requirements.txt --upgrade
-	@echo 'installing py3 dependencies'
-	@python3 -m pip -qq install pytest --upgrade
-	@python3 -m pip -qq install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-	@python3 -m pip -qq install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-	@python3 -m pip -qq install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-	@python3 -m pip -qq install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-	@python3 -m pip -qq install -r coap_testing_tool/webserver/requirements.txt --upgrade
+install-python-dependencies:
+	@echo 'installing py2 dependencies...'
+	@python -m pip -qq install -r coap_testing_tool/agent/requirements.txt
+	@echo 'installing py3 dependencies...'
+	@python3 -m pip -qq install pytest
+	@python3 -m pip -qq install -r coap_testing_tool/test_coordinator/requirements.txt
+	@python3 -m pip -qq install -r coap_testing_tool/test_analysis_tool/requirements.txt
+	@python3 -m pip -qq install -r coap_testing_tool/packet_router/requirements.txt
+	@python3 -m pip -qq install -r coap_testing_tool/sniffer/requirements.txt
+	@python3 -m pip -qq install -r coap_testing_tool/webserver/requirements.txt
+	@python3 -m pip -qq install -r coap_testing_tool/utils/requirements.txt
 
 
-
+_check-sudo:
+	@runner=`whoami` ;\
+	if test $$runner != "root" ;\
+	then \
+		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
+	fi
 
 _docker-build-coap:
 	@echo "Starting to build coap testing tools.."
