@@ -2,7 +2,7 @@
 # !/usr/bin/env python3
 
 from ioppytest.utils.messages import *
-from `ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.amqp_synch_call import publish_message
 
 from automated_IUTs.automation import UserMock
 from urllib.parse import urlparse
