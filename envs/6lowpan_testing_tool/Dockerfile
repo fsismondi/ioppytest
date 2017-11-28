@@ -1,7 +1,10 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-RUN apt-get update -y -qq
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update
+RUN apt-get -y -qq install apt-utils
 RUN apt-get -y -qq install python3-dev
 RUN apt-get -y -qq install build-essential
 RUN apt-get -y -qq install python3-setuptools
