@@ -104,8 +104,9 @@ user needs :
 
 - an implementation under test (IUT) of a standard supported/protocol
 by ioppytest framework, which either runs in some specific hardware or
-locally in user's PC
-- [the agent component](http://doc.f-interop.eu/interop/#agent)
+locally in user's PC, e.g. a coap client implementation
+- download and run
+[the agent component](http://doc.f-interop.eu/interop/#agent)
 which will route all the packets emitted from the IUT to the backend
 and also to the second IUT (and viceversa)
 - a user interface to help coordinating the tests
@@ -117,13 +118,13 @@ go to [go.f-interop.eu](go.f-interop.eu) and follow the instructions
 
 # Running a test suite standalone
 
-This mode of execution work for any of the following circustantces
+This mode of execution work for any of the following circumstances
 
-- controls one IUT and wants to run tests against one of the
+- user controls one IUT and wants to run tests against one of the
 automated-IUTs the framework supports
-- controls one IUT and is in direct contact with a second user
+- user controls one IUT and is in direct contact with a second user
 controlling a second IUT
-- controls both implementations (IUTs) taking part in the interop
+- user controls both implementations (IUTs) taking part in the interop
 session
 
 ## Set up up the message broker
@@ -322,8 +323,11 @@ or you can also run directly the processes without docker:
 
 ```
 sudo -E supervisord -c routeToConfigurationFileForTheTestSuite
-sudo supervisorctl -c routeToConfigurationFileForTheTestSuite
+sudo -E supervisorctl -c routeToConfigurationFileForTheTestSuite
 ```
+
+you can use for example envs/coap_testing_tool/supervisor.conf.ini
+for using the coap_testing_tool
 
 note: use -E when launching supervisor process, it preserves the
 env vars
