@@ -26,42 +26,42 @@
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/test_coordinator/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/test_coordinator/requirements.txt"
     executable: pip3
 
 - name: Install python requirements for sniffer
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/sniffer/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/sniffer/requirements.txt"
     executable: pip3
 
 - name: Install python requirements for TAT
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/test_analysis_tool/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/test_analysis_tool/requirements.txt"
     executable: pip3
 
 - name: Install python requirements for webserver (serving files)
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/webserver/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/webserver/requirements.txt"
     executable: pip3
 
 - name: Install python3 requirements for agent
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/agent/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/agent/requirements.txt"
     executable: pip3
 
 - name: Install python (2.7) requirements for agent
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/coap_testing_tool/agent/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/agent/requirements.txt"
     executable: pip
 
 - name: Build COAP plugtest server

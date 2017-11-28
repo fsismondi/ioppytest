@@ -1,8 +1,6 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-# docker build -t automated-iut-coap-server-coapthon-v01 ./coap_testing_tool/automated_implementations/coap_server_coapthon/
-
 RUN apt-get update -y -qq && apt-get -y -qq install python3-dev
 RUN apt-get -y install python3-setuptools
 RUN	apt-get -y install python3-pip
@@ -15,12 +13,12 @@ RUN apt-get -y install net-tools
 RUN python -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade pip
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #py2 requirements
-RUN python -m pip install -r coap_testing_tool/agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requirements
 RUN python3 -m pip install -r automated_IUTs/coap_server_coapthon/CoAPthon/requirements.txt

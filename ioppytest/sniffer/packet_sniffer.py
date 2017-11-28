@@ -9,10 +9,10 @@ import base64
 import traceback
 import pika
 import logging
-from coap_testing_tool.utils.amqp_synch_call import publish_message
-from coap_testing_tool import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool.utils.messages import *
+from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_EXCHANGE, AMQP_URL
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.utils.messages import *
 
 COMPONENT_ID = 'packet_sniffer'
 last_capture_name = None

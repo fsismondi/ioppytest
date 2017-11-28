@@ -13,9 +13,9 @@ import signal
 import logging
 import threading
 
-from coap_testing_tool.utils.messages import *
-from coap_testing_tool.utils.amqp_synch_call import publish_message
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
+from ioppytest.utils.messages import *
+from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
 
 
 

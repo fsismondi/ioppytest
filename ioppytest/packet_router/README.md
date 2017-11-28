@@ -15,7 +15,7 @@ TODO
 ## Execution
 
 ```
-python3 -m coap_testing_tool.packet_router
+python3 -m ioppytest.packet_router
 ```
 
 ## TODO

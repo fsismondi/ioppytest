@@ -12,13 +12,13 @@ import logging
 import argparse
 from threading import Timer
 
-from coap_testing_tool import AMQP_URL, AMQP_EXCHANGE
-from coap_testing_tool import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
-from coap_testing_tool import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool.utils.amqp_synch_call import publish_message
-from coap_testing_tool.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
-from coap_testing_tool.test_coordinator.states_machine import Coordinator
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
+from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
+from ioppytest.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator'
 

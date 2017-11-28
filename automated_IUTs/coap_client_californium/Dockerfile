@@ -17,12 +17,12 @@ RUN python3 -m pip install --upgrade pip
 # requirement for californium
 RUN apt-get -y install default-jre
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #py2 requirements
-RUN python -m pip install -r coap_testing_tool/agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requierements
 RUN python3 -m pip install pika

@@ -14,7 +14,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 serverurl=unix:///tmp/supervisor.sock ; use a unix:// URL  for a unix socket
 
 [program:test-coordinator]
-command = python3 -m coap_testing_tool.test_coordinator coap
+command = python3 -m ioppytest.test_coordinator coap
 autorestart=false
 stopsignal=INT
 stopasgroup=true
@@ -30,7 +30,7 @@ stdout_logfile_maxbytes = 10MB
 stdout_logfile_backups = 5
 
 [program:agent]
-directory= ./coap_testing_tool/agent/
+directory= ./ioppytest/agent/
 command = sh -c "sleep 1;python -m agent connect --url %(ENV_AMQP_URL)s --exchange %(ENV_AMQP_EXCHANGE)s --name agent_TT"
 user=root
 stopsignal=INT
@@ -48,7 +48,7 @@ stdout_logfile_maxbytes = 10MB
 stdout_logfile_backups = 5
 
 [program:tat]
-directory= ./coap_testing_tool/test_analysis_tool
+directory= ./ioppytest/test_analysis_tool
 command = sh -c "sleep 2;python3 -m ttproto --protocol coap --dissector --interface amqp "
 autorestart=false
 stopsignal=INT
@@ -66,7 +66,7 @@ stdout_logfile_backups = 5
 
 [program:bootstrap-agent-TT]
 ; we auto bootstrap the agent
-command = sh -c "sleep 4;python3 -m coap_testing_tool.agent.utils.bootstrap_agent agent_TT bbbb :3 --no_forwarding"
+command = sh -c "sleep 4;python3 -m ioppytest.agent.utils.bootstrap_agent agent_TT bbbb :3 --no_forwarding"
 autorestart=false
 stopsignal=INT
 stopasgroup=true
@@ -80,7 +80,7 @@ stderr_logfile_maxbytes=0
 ;stdout_logfile = /var/log/bootstrap_agent_TT-stdout.log
 
 [program:packet-router]
-command = sh -c "sleep 5;python3 -m coap_testing_tool.packet_router.packet_router"
+command = sh -c "sleep 5;python3 -m ioppytest.packet_router.packet_router"
 autorestart=false
 stopsignal=INT
 stopasgroup=true
@@ -96,7 +96,7 @@ stdout_logfile_maxbytes = 10MB
 stdout_logfile_backups = 5
 
 [program:packet-sniffer]
-command = sh -c "sleep 5;python3 -m coap_testing_tool.sniffer.packet_sniffer"
+command = sh -c "sleep 5;python3 -m ioppytest.sniffer.packet_sniffer"
 user=root
 stopsignal=INT
 stopasgroup=true
@@ -113,7 +113,7 @@ stdout_logfile_backups = 5
 redirect_stderr=true
 
 [program:webserver]
-command = sh -c "sleep 5;python3 -m coap_testing_tool.webserver"
+command = sh -c "sleep 5;python3 -m ioppytest.webserver"
 stopsignal=INT
 stopasgroup=true
 ;autorestart=false

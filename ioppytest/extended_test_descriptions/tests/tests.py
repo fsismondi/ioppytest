@@ -1,9 +1,9 @@
-from coap_testing_tool import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
-from coap_testing_tool.test_coordinator.testsuite import import_teds
+from ioppytest import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
+from ioppytest.test_coordinator.testsuite import import_teds
 import unittest
 
 """
-python3 -m  pytest coap_testing_tool/extended_test_descriptions/tests/tests.py
+python3 -m  pytest ioppytest/extended_test_descriptions/tests/tests.py
 """
 
 

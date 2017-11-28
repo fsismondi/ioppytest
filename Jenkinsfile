@@ -54,7 +54,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("unittesting git submodules"){
             sh '''
                 echo $AMQP_URL
-                cd coap_testing_tool/test_analysis_tool
+                cd ioppytest/test_analysis_tool
                 pwd
                 python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
             '''
@@ -65,9 +65,9 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("unittesting components"){
             sh '''
                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
-                python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
-                python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
+                python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py
+                python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py
+                python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py
             '''
         }
       }

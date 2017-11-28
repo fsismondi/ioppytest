@@ -6,14 +6,14 @@ import os
 
 from transitions.core import MachineError
 # TODO fix me! dont do agent stuff in coordinator
-from coap_testing_tool.agent.utils import bootstrap_agent
-from coap_testing_tool.utils.amqp_synch_call import *
-from coap_testing_tool import AMQP_EXCHANGE, AMQP_URL
-from coap_testing_tool import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
-from coap_testing_tool.utils.amqp_synch_call import publish_message, amqp_request
-from coap_testing_tool.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from coap_testing_tool.utils.exceptions import CoordinatorError
-from coap_testing_tool.utils.messages import *
+from ioppytest.agent.utils import bootstrap_agent
+from ioppytest.utils.amqp_synch_call import *
+from ioppytest import AMQP_EXCHANGE, AMQP_URL
+from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
+from ioppytest.utils.amqp_synch_call import publish_message, amqp_request
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.utils.exceptions import CoordinatorError
+from ioppytest.utils.messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs

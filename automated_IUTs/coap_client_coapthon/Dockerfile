@@ -13,12 +13,12 @@ RUN apt-get -y install net-tools
 RUN python -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade pip
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #py2 requirements
-RUN python -m pip install -r coap_testing_tool/agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requirements
 RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt

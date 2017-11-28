@@ -1,8 +1,8 @@
 {
   "_type": "testsuite.manifest",
-  "testing_tool": "CoAP Testing Tool (1 user)",
+  "testing_tool": "CoAP Testing Tool",
   "version": "0.0.8",
-  "test_type": "interoperability",
+  "test_type": "conformance",
   "protocols_under_test": [
     "CoAP",
     "CoAP_CORE",
@@ -14,14 +14,14 @@
       "specification_id": "RFC7252",
       "specification_ref": "https://tools.ietf.org/html/rfc7252",
       "test_description_id": "TD_COAP_CORE",
-      "test_description_ref": "http://doc.f-interop.eu/coap_testing_tool/extended_test_descriptions/TD_COAP_CORE.yaml"
+      "test_description_ref": "http://doc.f-interop.eu/ioppytest/extended_test_descriptions/TD_COAP_CORE.yaml"
     },
     {
       "protocol": "CoAP_OBS",
       "specification_id": "RFC7641",
       "specification_ref": "https://tools.ietf.org/html/rfc7641",
       "test_description_id": "TD_COAP_OBS",
-      "test_description_ref": "http://doc.f-interop.eu/coap_testing_tool/extended_test_descriptions/TD_COAP_OBS.yaml"
+      "test_description_ref": "http://doc.f-interop.eu/ioppytest/extended_test_descriptions/TD_COAP_OBS.yaml"
     }
   ],
   "underlying_supported_protocol": [
@@ -46,8 +46,9 @@
       "description": "Testing Tool Description",
       "type": "text",
       "value": [
-        "Interoperability Testing Tool for testing CoAP interoperability between two IUTs (CoAP client and CoAP server).",
-        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf"
+        "Reference-based interoperability (~conformance) Testing Tool for validating conformance to CoAP RFCs.",
+        "The testing tool uses as reference implementation (golden image) Californium implementation (CoAP client and CoAP server).",
+        "The implementation of the tests are based on ETSI test description [ETSI CoAP test description](http://www.etsi.org/plugtests/CoAP/Document/CoAP_TestDescriptions_v015.pdf)"
       ]
     },
     {
@@ -100,13 +101,11 @@
     },
     {
       "field_name": "testsuite.additional_session_resource",
-      "description": "Automated-IUT selection (optional)",
+      "description": "Reference implementation (mandatory)",
       "type": "selection",
       "value": [
-        "automated_iut-coap_server-californium",
-        "automated_iut-coap_client-californium",
-        "automated_iut-coap_server-coapthon",
-        "automated_iut-coap_client-coapthon"
+        "reference_iut-coap_server",
+        "reference_iut-coap_client"
       ],
       "mandatory": false
     }
