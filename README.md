@@ -210,7 +210,7 @@ did. For this the RMQ broker needs to be reachable by this second IUT
 If this is the case then user 2 should just export the same environment
  variables as user 1, and launch agent, and CLI just as user 1 did.
 
-### Single user session, agains an automated-IUT
+### Single user session, against an automated-IUT
 
  If the user wants to run test against one of the automated-IUT
  (~reference implementation) supported by ioppytest:
@@ -309,7 +309,6 @@ docker run -it
 root@bab3b2220510:/ioppytest# supervisord -c supervisor.conf
 root@bab3b2220510:/ioppytest# supervisorctl -c supervisor.conf
 agent                            RUNNING   pid 28, uptime 0:00:02
-automated-iut                    STARTING
 bootstrap-agent-TT               RUNNING   pid 19, uptime 0:00:02
 packet-router                    RUNNING   pid 24, uptime 0:00:02
 packet-sniffer                   RUNNING   pid 18, uptime 0:00:02

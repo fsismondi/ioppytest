@@ -11,6 +11,7 @@ docker-build-all:
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
+	$(MAKE) _docker-build-6lowpan
 
 run-cli:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -89,6 +90,15 @@ _check-sudo:
 	then \
 		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
 	fi
+
+_docker-build-6lowpan:
+	@echo "Starting to build the 6lowpan testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t testing_tool-interoperability-6lowpan-v$(version) -f envs/6lowpan_testing_tool/Dockerfile .
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-6lowpan-v$(version):latest testing_tool-interoperability-6lowpan
 
 _docker-build-coap:
 	@echo "Starting to build coap testing tools.."
