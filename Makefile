@@ -17,10 +17,13 @@ run-cli:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m ioppytest.utils.interop_cli repl
 
+run-6lowpan-testing-tool:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-6lowpan testing_tool-interoperability-6lowpan
+
+
 run-coap-testing-tool:
-	@echo "Using env vars:"
-	@echo $(AMQP_URL)
-	@echo $(AMQP_EXCHANGE)
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-coap testing_tool-interoperability-coap
 
 run-agent-coap-client:
@@ -32,16 +35,15 @@ run-agent-coap-server:
 	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
 
 run-coap-client:
-	@echo "Using env vars:"
-	@echo $(AMQP_URL)
-	@echo $(AMQP_EXCHANGE)
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_client reference_iut-coap_client
 
 run-coap-server:
-	@echo "Using env vars:"
-	@echo $(AMQP_URL)
-	@echo $(AMQP_EXCHANGE)
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
+
+stop-6lowpan-testing-tool:
+	docker stop testing_tool-interoperability-6lowpan
 
 stop-coap-testing-tool:
 	docker stop testing_tool-interoperability-coap
@@ -55,6 +57,7 @@ stop-coap-client:
 stop-all:
 	# (exit 0) -> so the script continues on errors
 	$(MAKE) stop-coap-testing-tool --keep-going ; exit 0
+	$(MAKE) stop-6lowpan-testing-tool --keep-going ; exit 0
 	$(MAKE) stop-coap-server --keep-going ; exit 0
 	$(MAKE) stop-coap-client --keep-going ; exit 0
 
