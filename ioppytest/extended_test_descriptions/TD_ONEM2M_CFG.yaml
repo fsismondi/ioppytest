@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: M2M_CFG_01
+uri: www.oneM2M.org
+nodes:
+  - coap_client (AE)
+  - coap_server (CSE)
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - coap_client 
+      - coap_server 
+description:
+  - node: coap_server
+    message:
+      - CoAP servers running service at [bbbb::2]:5683
+
+  - node: coap_client
+    message:
+      - No special configuration needed
+      - CoAP client requests
+      - - Destination IP Address = [bbbb::2]
+        - Destination UDP Port = 5683
+
