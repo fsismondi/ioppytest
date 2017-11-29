@@ -1035,8 +1035,7 @@ uri : http://www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE discovers accessible resources residing in Registrar CSE using multiple Filter Criteria.
 pre_conditions:
-  - Two <Container> resources with labels "key1" and "key2" are created in Registrar
-CSE.
+  - Two <Container> resources with labels "key1" and "key2" are created in Registrar CSE.
   - A <Group> resources with labels "key1" and "key2" is created in Registrar CSE.
 notes: null
 references: 'TS-0001, clause 10.2.6 ; TS-0004, clause 7.2.3.13'
