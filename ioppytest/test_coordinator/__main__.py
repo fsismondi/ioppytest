@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan'])
+        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'oneM2M'])
         parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
                             action="store_true")
         args = parser.parse_args()
@@ -71,6 +71,11 @@ if __name__ == '__main__':
         elif testsuite == '6lowpan':
             ted_tc_file = TD_6LOWPAN
             ted_config_file = TD_6LOWPAN_CFG
+
+        elif testsuite == 'oneM2M':
+            ted_tc_file = TD_
+            ted_config_file = TD_6LOWPAN_CFG
+
         else:
             logger.error("Error , please see coordinator help (-h)")
             sys.exit(1)
@@ -136,6 +141,7 @@ if __name__ == '__main__':
             else:
                 pass
 
+
         # bind callback function to signal queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
@@ -144,9 +150,11 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
+
         def timeout_f():
             global timeout
             timeout = True
+
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()

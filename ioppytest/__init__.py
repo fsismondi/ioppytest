@@ -31,6 +31,8 @@ def get_from_environment(variable, default):
 
 
 # # # # # # hard variables # # # # # # # # # #
+
+# project directories
 PROJECT_DIR = project_dir
 TMPDIR = os.path.join(project_dir, 'tmp')
 DATADIR = os.path.join(project_dir, 'data')
@@ -38,10 +40,17 @@ RESULTS_DIR = os.path.join(DATADIR, 'results')
 PCAP_DIR = os.path.join(DATADIR, 'dumps')
 LOGDIR = os.path.join(project_dir, 'log')
 TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
+
+# yaml test descriptions:
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
+
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
+TD_ONEM2M = os.path.join(TD_DIR, "TD_CORE_ONEM2M.yaml")
+TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_CORE_ONEM2M_CFG.yaml")
+
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #

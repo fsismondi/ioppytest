@@ -1,4 +1,4 @@
-from ioppytest import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN
+from ioppytest import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_ONEM2M, TD_ONEM2M_CFG
 from ioppytest.test_coordinator.testsuite import import_teds
 import unittest
 
@@ -66,6 +66,14 @@ class ImportYamlInteropTestCases(unittest.TestCase):
         for tc_config in imported_configs:
             self.validate_config_description(tc_config)
 
+    def test_yaml_testcase_syntax_oneM2M(self):
+        imported_tcs = import_teds(TD_ONEM2M)
+
+        for tc in imported_tcs:
+            self.validate_testcase_description(tc)
+
+            for step in tc.sequence:
+                self.validate_step_description(step)
 
 if __name__ == '__main__':
     c = ImportYamlInteropTestCases()
