@@ -12,7 +12,7 @@ docker-build-all:
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
 	$(MAKE) _docker-build-6lowpan
-	$(MAKE) _docker-build-oneM2M
+	$(MAKE) _docker-build-onem2m
 
 run-cli:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -26,9 +26,9 @@ run-coap-testing-tool:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-coap testing_tool-interoperability-coap
 
-run-oneM2M-testing-tool:
+run-onem2m-testing-tool:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-oneM2M testing_tool-interoperability-oneM2M
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-onem2m
 
 run-agent-coap-client:
 	$(MAKE) _check-sudo
@@ -46,8 +46,8 @@ run-coap-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
 
-stop-oneM2M-testing-tool:
-	docker stop testing_tool-interoperability-oneM2M
+stop-onem2m-testing-tool:
+	docker stop testing_tool-interoperability-onem2m
 
 stop-6lowpan-testing-tool:
 	docker stop testing_tool-interoperability-6lowpan
@@ -101,14 +101,14 @@ _check-sudo:
 		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
 	fi
 
-_docker-build-oneM2M:
+_docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-oneM2M-v$(version) -f envs/oneM2M_testing_tool/Dockerfile .
+	docker build -t testing_tool-interoperability-onem2m-v$(version) -f envs/onem2m_testing_tool/Dockerfile .
 
 	# tag all last version images also with a version-less name
-	docker tag testing_tool-interoperability-oneM2M-v$(version):latest testing_tool-interoperability-oneM2M
+	docker tag testing_tool-interoperability-onem2m-v$(version):latest testing_tool-interoperability-onem2m
 
 _docker-build-6lowpan:
 	@echo "Starting to build the 6lowpan testing tools.."

@@ -2,7 +2,7 @@
 
 --- !configuration
 configuration_id: M2M_CFG_01
-uri: www.oneM2M.org
+uri: www.onem2m.org
 nodes:
   - coap_client (AE)
   - coap_server (CSE)

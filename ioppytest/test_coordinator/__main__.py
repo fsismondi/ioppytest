@@ -13,7 +13,7 @@ import argparse
 from threading import Timer
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
+from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.amqp_synch_call import publish_message
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'oneM2M'])
+        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'onem2m'])
         parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
                             action="store_true")
         args = parser.parse_args()
@@ -72,9 +72,9 @@ if __name__ == '__main__':
             ted_tc_file = TD_6LOWPAN
             ted_config_file = TD_6LOWPAN_CFG
 
-        elif testsuite == 'oneM2M':
-            ted_tc_file = TD_
-            ted_config_file = TD_6LOWPAN_CFG
+        elif testsuite == 'onem2m':
+            ted_tc_file = TD_ONEM2M
+            ted_config_file = TD_ONEM2M_CFG
 
         else:
             logger.error("Error , please see coordinator help (-h)")

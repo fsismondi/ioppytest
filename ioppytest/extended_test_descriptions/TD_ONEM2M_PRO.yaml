@@ -68,7 +68,7 @@ sequence:
       - - Type=0 and Code=2
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}
-        - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-TY=2
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
@@ -135,7 +135,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_07_step_04
@@ -173,7 +173,7 @@ sequence:
       - - Type=0 and Code=3
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/{AE}
-        - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
         - Non-empty Payload
@@ -191,7 +191,7 @@ sequence:
         - - Code=2.04(changed)
           - oneM2M-RSC=2004
           - oneM2M-RQI=CRQI
-          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_08_step_05
@@ -281,7 +281,7 @@ sequence:
       - - Type=0 and Code=2
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <AE> resource 
-        - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-TY=3
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
@@ -301,7 +301,7 @@ sequence:
           - oneM2M-RSC=2001
           - oneM2M-RQI=CRQI
           - Location-Path=Uri of the created resource
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_10_step_05
@@ -349,7 +349,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_11_step_04
@@ -386,7 +386,7 @@ sequence:
       - - Type=0 and Code=3
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <container> resource
-        - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
         - Non-empty Payload
@@ -404,7 +404,7 @@ sequence:
         - - Code=2.04(changed)
           - oneM2M-RSC=2004
           - oneM2M-RQI=CRQI
-          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_12_step_05
@@ -496,7 +496,7 @@ sequence:
       - - Type=0 and Code=2
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <container> resource 
-        - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-TY=4
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
@@ -516,7 +516,7 @@ sequence:
           - oneM2M-RSC=2001
           - oneM2M-RQI=CRQI
           - Location-Path=Uri of the created resource
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_14_step_05
@@ -565,7 +565,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_15_step_04
@@ -757,7 +757,7 @@ sequence:
       - - Type=0 and Code=2
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <container> resource 
-        - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-TY=4
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
@@ -777,7 +777,7 @@ sequence:
           - oneM2M-RSC=2001
           - oneM2M-RQI=CRQI
           - Location-Path=Uri of the created resource
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_51_step_05
@@ -826,7 +826,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_60_step_04
@@ -875,7 +875,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_61_step_04
@@ -922,7 +922,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload=Serialized representation of data object containing addresses of all discovered resources
 
   - step_id: TD_M2M_NH_18_step_04
@@ -971,7 +971,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload=Serialized representation of data object containing the address of the discovered container
 
   - step_id: TD_M2M_NH_19_step_04
@@ -1019,7 +1019,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload=Serialized representation of data object containing at most 2 addresses of discovered resources
 
   - step_id: TD_M2M_NH_20_step_04
@@ -1071,7 +1071,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload=Serialized representation of data object containing the address of one of the <Container> resources. 
 
   - step_id: TD_M2M_NH_21_step_04
@@ -1108,7 +1108,7 @@ sequence:
       - - Type=0 and Code=2
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <container> resource 
-        - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-TY=23
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
@@ -1128,7 +1128,7 @@ sequence:
           - oneM2M-RSC=2001
           - oneM2M-RQI=CRQI
           - Location-Path=Uri of the created resource
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_22_step_05
@@ -1177,7 +1177,7 @@ sequence:
         - - Code = 2.05(Content)
           - oneM2M-RSC=2000
           - oneM2M-RQI=CRQI
-          - content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_23_step_04
@@ -1216,7 +1216,7 @@ sequence:
       - - Type=0 and Code=3
         - Uri-Host = IP address or the FQDN of registrar CSE
         - Uri-Path = {CSEBaseName}/URI of <subscription> resource
-        - Content-Type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json 
+        - Content-Type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
         - oneM2M-FR=AE-ID
         - oneM2M-RQI=token-string (-> CRQI)
         - Non-empty Payload
@@ -1234,7 +1234,7 @@ sequence:
         - - Code=2.04(changed)
           - oneM2M-RSC=2004
           - oneM2M-RQI=CRQI
-          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
           - Non-empty Payload
 
   - step_id: TD_M2M_NH_08_step_05

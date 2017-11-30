@@ -41,4 +41,4 @@ RUN python3 -m pip install -r ioppytest/webserver/requirements.txt --upgrade
 EXPOSE 5671 5672
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "envs/oneM2M_testing_tool/supervisor.docker.conf.ini"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "envs/onem2m_testing_tool/supervisor.docker.conf.ini"]

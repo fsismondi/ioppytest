@@ -66,7 +66,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
         for tc_config in imported_configs:
             self.validate_config_description(tc_config)
 
-    def test_yaml_testcase_syntax_oneM2M(self):
+    def test_yaml_testcase_syntax_onem2m(self):
         imported_tcs = import_teds(TD_ONEM2M)
 
         for tc in imported_tcs:
