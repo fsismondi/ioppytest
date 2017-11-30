@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_M2M_NH_01
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_01
 configuration: M2M_CFG_01
 objective: AE retrieves the CSEBase resource
 pre_conditions:
@@ -42,7 +42,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_06
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_06
 configuration: M2M_CFG_01
 objective: AE registers to its regisrar CSE via an AE Create Request
 pre_conditions:
@@ -99,7 +99,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_07
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_07
 configuration: M2M_CFG_01
 objective: AE retrieves <AE> resource via an AE Retrieve Request
 pre_conditions:
@@ -147,7 +147,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_08
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_08
 configuration: M2M_CFG_01
 objective: AE updates attribute in <AE> resource
 pre_conditions:
@@ -203,7 +203,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_09
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_09
 configuration: M2M_CFG_01
 objective: AE de-registers by deleting <AE> resource via an AE Delete Request
 pre_conditions:
@@ -257,7 +257,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_10
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_10
 configuration: M2M_CFG_01
 objective: AE creates a container resource in registrar CSE via a container Create Request
 pre_conditions:
@@ -313,7 +313,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_11
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_11
 configuration: M2M_CFG_01
 objective: AE retrieves information of a container resource via a container Retrieve Request
 pre_conditions:
@@ -361,7 +361,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_12
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_12
 configuration: M2M_CFG_01
 objective: AE updates attribute in <container> resource
 pre_conditions:
@@ -416,7 +416,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_13
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_13
 configuration: M2M_CFG_01
 objective: AE deletes a specific container resource via a container Delete Request
 pre_conditions:
@@ -470,7 +470,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_14
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_14
 configuration: M2M_CFG_01
 objective: AE adds a contentInstance resource <contentInstance> to a specific container in Registrar CSE via a contentInstance Create Request.
 pre_conditions:
@@ -528,7 +528,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_15
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_15
 configuration: M2M_CFG_01
 objective: AE retrieves information of a contentInstance resource via a contentInstance Retrieve Request.
 pre_conditions:
@@ -577,7 +577,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_17
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_17
 configuration: M2M_CFG_01
 objective: AE deletes contentInstance resource via a contentInstance Delete Request and the Registrar CSE updates the parent <container> resource with currentNrOfInstances, and CurrentByteSize attributes correspondingly.
 pre_conditions:
@@ -638,7 +638,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_49
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_49
 configuration: M2M_CFG_01
 objective: AE deletes a <latest> resource of a <container> and the Registrar CSE points a latest <contentInstance> among the existing contentInstances to the <latest> resource of the <container>.
 pre_conditions:
@@ -686,7 +686,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_50
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_50
 configuration: M2M_CFG_01
 objective: AE deletes a <oldest> resource of a <container> and the Registrar CSE points an oldest <contentInstance> among the existing contentInstances to the <oldest> resource of the <container>.
 pre_conditions:
@@ -734,7 +734,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_51
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_51
 configuration: M2M_CFG_01
 objective: AE sends a <contentInstance> CREATE request to a <container> which contains attribute currentNrOfInstances whose value equals to that of maxNrOfInstances and Registrar CSE deletes the oldest <contentInstance> from the parent <container> and then creates the requested <contentInstance> resource for the originator AE.
 pre_conditions:
@@ -789,7 +789,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_60
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_60
 configuration: M2M_CFG_01
 objective: AE retrieves a <latest> resource of a <container> and the Registrar CSE points a latest <contentInstance> among the existing contentInstances to the <latest> resource of the <container>.
 pre_conditions:
@@ -838,7 +838,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_61
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_61
 configuration: M2M_CFG_01
 objective: AE retrieves a <oldest> resource of a <container> and the Registrar CSE points an oldest <contentInstance> among the existing contentInstances to the <oldest> resource of the <container>.
 pre_conditions:
@@ -887,7 +887,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_18
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_18
 configuration: M2M_CFG_01
 objective: AE discovers all accessible resources from registrar CSE.
 pre_conditions:
@@ -934,7 +934,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_19
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_19
 configuration: M2M_CFG_01
 objective: AE discovers accessible resources residing in Registrar CSE using the label filter criteria.
 pre_conditions:
@@ -983,7 +983,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_20
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_20
 configuration: M2M_CFG_01
 objective: AE discovers accessible resources residing in Registrar CSE limiting the number of matching resources to the specified value.
 pre_conditions:
@@ -1031,7 +1031,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_21
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_21
 configuration: M2M_CFG_01
 objective: AE discovers accessible resources residing in Registrar CSE using multiple Filter Criteria.
 pre_conditions:
@@ -1083,7 +1083,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_22
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_22
 configuration: M2M_CFG_01
 objective: AE creates a subscription to Application Entity resource via subscription Create Request.
 pre_conditions:
@@ -1140,7 +1140,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_23
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_23
 configuration: M2M_CFG_01
 objective: AE retrieves subscription resource from Registrar CSE.
 pre_conditions:
@@ -1189,7 +1189,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_24
-uri : http://www.onem2m.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_24
 configuration: M2M_CFG_01
 objective: AE updates information about a subscription via subscription Update Request.
 pre_conditions:
@@ -1246,7 +1246,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_25
-uri : www.oneM2M.org
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_25
 configuration: M2M_CFG_01
 objective: AE cancels subscription via an subscription Delete Request.
 pre_conditions:

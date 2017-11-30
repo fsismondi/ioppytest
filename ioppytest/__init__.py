@@ -48,8 +48,8 @@ TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
-TD_ONEM2M = os.path.join(TD_DIR, "TD_CORE_ONEM2M.yaml")
-TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_CORE_ONEM2M_CFG.yaml")
+TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
+TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
