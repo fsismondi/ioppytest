@@ -4,20 +4,19 @@
 configuration_id: M2M_CFG_01
 uri: www.onem2m.org
 nodes:
-  - coap_client (AE)
-  - coap_server (CSE)
+  - AE
+  - CSE
 topology:
   - link_id : link_01
     capture_filter: udp
     nodes:
-      - coap_client 
-      - coap_server 
+      - AE
+      - CSE
 description:
-  - node: coap_server
+  - node: CSE
     message:
       - CoAP servers running service at [bbbb::2]:5683
-
-  - node: coap_client
+  - node: AE
     message:
       - No special configuration needed
       - CoAP client requests

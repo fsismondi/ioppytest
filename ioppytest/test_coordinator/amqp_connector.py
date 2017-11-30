@@ -311,11 +311,22 @@ class CoordinatorAmqpInterface(object):
         """
         logger.debug("Let's start the bootstrap the agents")
 
-        # TODO get params from index.json
-        # TODO should this be hanlded by the sniffer? it's related to the data plane, not the control one (which is the one the coordinator works on)
-        agents_config = (AGENT_NAMES[0], ':1', False), (AGENT_NAMES[1], ':2', True), (AGENT_TT_ID, ':3', True)
-        for agent, assigned_ip, ipv6_no_fw in agents_config:
-            bootstrap_agent.bootstrap(AMQP_URL, AMQP_EXCHANGE, agent, assigned_ip, "bbbb", ipv6_no_fw)
+        agent_names = self.testsuite.get_agent_names()
+
+        ipv6_network_prefix = "bbbb"
+        ipv6_host = 0
+
+        for name in agent_names:
+            ipv6_host += 1
+            assigned_ip = ":%s" % ipv6_host
+            bootstrap_agent.bootstrap(
+                amqp_url=AMQP_URL,
+                amqp_exchange=AMQP_EXCHANGE,
+                agent_id=name,
+                ipv6_host=assigned_ip,
+                ipv6_prefix=ipv6_network_prefix,
+                ipv6_no_forwarding=False
+            )
 
     def notify_testsuite_ready(self, received_event):
         pass

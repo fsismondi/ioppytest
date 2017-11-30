@@ -116,13 +116,17 @@ class TestSuite:
         # first let's import the TC configurations
         imported_configs = import_teds(ted_config_file)
         self.tc_configs = OrderedDict()
+        self.agents = set()
+
         for tc_config in imported_configs:
             self.tc_configs[tc_config.id] = tc_config
+            self.agents |= set(tc_config.nodes)
 
         logger.info('Imports: %s TC_CONFIG imported' % len(self.tc_configs))
+        logger.info('Imports: found the following agents from TC_CONFIG %s' % list(self.agents))
+
         for key, val in self.tc_configs.items():
-            logger.info('test configuration imported from YAML into Test Suite: %s' % key)
-            # logger.warning('%s: %s' % (key, repr(val)))
+            logger.info('test configuration imported from YAML: %s' % key)
 
         # lets import TCs and make sure there's a tc config for each one of them
         imported_teds = import_teds(ted_tc_file)
@@ -135,8 +139,7 @@ class TestSuite:
 
         logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
         for key, val in self.teds.items():
-            # logger.warning('%s: %s' % (key, repr(val)))
-            logger.info('test case imported from YAML into Test Suite: %s' % key)
+            logger.info('test case imported from YAML: %s' % key)
 
         # test cases iterator (over the TC objects, not the keys)
         self._ted_it = cycle(self.teds.values())
@@ -275,7 +278,6 @@ class TestSuite:
         self.current_tc = None
 
     def set_iut_configuration(self, node, node_address):
-
         if node and node_address:
             self.get_current_testcase_configuration().update_node_address(node, node_address)
             config = self.get_current_testcase_configuration().to_dict(verbose=True)
@@ -322,7 +324,6 @@ class TestSuite:
         self.session_configuration = configuration
         self.session_selected_tc_list = tc_list_requested
 
-
         # get all TCs
         tc_list_available = self.get_testcases_list()
 
@@ -341,6 +342,9 @@ class TestSuite:
         if len(tc_to_skip) != 0:
             for item in sorted(tc_to_skip):
                 self.skip_testcase(item)
+
+    def get_agent_names(self):
+        return list(self.agents)
 
     def get_testsuite_configuration(self):
 
@@ -664,6 +668,9 @@ class Iut:
 
 
 class TestConfig:
+    """
+    This class is for generating objects containing a copy of the information of the test configuration yaml file
+    """
     def __init__(self, configuration_id, uri, nodes, topology, description):
         self.id = configuration_id
         self.uri = uri
@@ -708,7 +715,7 @@ class TestConfig:
         We assume two nodes per link:
          node & target_node
 
-        If the test conguration defines more that one link, then link argument must be provided.
+        If the test configuration defines more that one link, then link argument must be provided.
 
         :param node: Node origin/source of the communication
         :param link: link which is used by node to contact target_node
@@ -740,7 +747,7 @@ class TestConfig:
         d['configuration_id'] = self.id
         d['addresses_table'] = self.addresses_table
 
-        # TODO deprecate this (returned keys should not be address_coap_client), use address table only
+        # TODO deprecate this (returned keys of the dict should not be address_coap_client), use address table only
         for key, val in self.addresses_table.items():
             d['address_%s' % key] = val
 
@@ -754,11 +761,9 @@ class TestConfig:
 
 
 class Step():
-    # TODO check step id uniqueness
     def __init__(self, step_id, type, description, node=None):
         self.id = step_id
         assert type in ("stimuli", "check", "verify", "feature")
-        # TODO sth else might need to be defined for conformance testing TBD (inject? drop packet?)..
         self.type = type
         self.description = description
 
