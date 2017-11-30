@@ -11,7 +11,7 @@ from transitions import Machine
 from transitions.core import MachineError
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID, AMQP_URL, AMQP_EXCHANGE
+from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest.utils.messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter

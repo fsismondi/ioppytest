@@ -75,7 +75,7 @@ try:
     AMQP_SERVER = p.hostname
     AMQP_VHOST = p.path.strip('/')
 
-    print('Env vars for AMQP connection succesfully imported')
+    #print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
 
@@ -99,17 +99,6 @@ print(json.dumps(
 
 # # # # # # variables coming from index.json # # # # # # # # # #
 
-try:
-    # read config information from manifest file (interoperability_manifest.json)
-    with open(os.path.join(project_dir, 'ioppytest', 'interoperability_manifest.json')) as index_file:
-        AGENT_NAMES = json.load(index_file)['agent_names']
-        print(AGENT_NAMES)
-
-except:
-    print('Cannot retrieve agent config from index file of the testing tool')
-    AGENT_NAMES = []
-
-AGENT_TT_ID = 'agent_TT'
 
 __all__ = [
     __version__,
@@ -120,8 +109,6 @@ __all__ = [
     LOGDIR,
     TD_DIR,
     AMQP_URL,
-    AGENT_NAMES,
-    AGENT_TT_ID,
     INTERACTIVE_SESSION,
     TD_6LOWPAN,
     TD_COAP,

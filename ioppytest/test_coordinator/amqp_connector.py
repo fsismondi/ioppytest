@@ -9,7 +9,7 @@ from transitions.core import MachineError
 from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL
-from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AGENT_NAMES, AGENT_TT_ID
+from ioppytest import RESULTS_DIR
 from ioppytest.utils.amqp_synch_call import publish_message, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.exceptions import CoordinatorError
