@@ -6,27 +6,42 @@ info:
 version:
 	@echo ioppytest v$(version)
 
-docker-build-all:
+
+help: ## Help dialog.
+	@IFS=$$'\n' ; \
+	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//'`); \
+	for help_line in $${help_lines[@]}; do \
+		IFS=$$'#' ; \
+		help_split=($$help_line) ; \
+		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		printf "%-30s %s\n" $$help_command $$help_info ; \
+	done
+
+docker-build-all: ## Build all testing tool in docker images
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
 	$(MAKE) _docker-build-6lowpan
 
-run-cli:
+run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m ioppytest.utils.interop_cli repl
 
-run-6lowpan-testing-tool:
+run-6lowpan-testing-tool: ## Run 6LoWPAN testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-6lowpan testing_tool-interoperability-6lowpan
 
-
-run-coap-testing-tool:
+run-coap-testing-tool: ## Run CoAP testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-coap testing_tool-interoperability-coap
 
-run-agent-coap-client:
+run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-onem2m
+
+run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
 	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
 
@@ -54,17 +69,25 @@ stop-coap-server:
 stop-coap-client:
 	docker stop reference_iut-coap_client
 
-stop-all:
+stop-all: ## Stop testing tools running as docker containers
 	# (exit 0) -> so the script continues on errors
 	$(MAKE) stop-coap-testing-tool --keep-going ; exit 0
 	$(MAKE) stop-6lowpan-testing-tool --keep-going ; exit 0
 	$(MAKE) stop-coap-server --keep-going ; exit 0
 	$(MAKE) stop-coap-client --keep-going ; exit 0
 
-get-logs:
+get-logs: ## Get logs from the running containers
 	@echo ">>>>> start logs testing_tool-interoperability-coap"
 	docker logs testing_tool-interoperability-coap ; exit 0
 	@echo "<<<<< end logs testing_tool-interoperability-coap \n"
+
+	@echo ">>>>> start logs testing_tool-interoperability-6lowpan"
+	docker logs testing_tool-interoperability-6lowpan ; exit 0
+	@echo "<<<<< end logs testing_tool-interoperability-6lowpan \n"
+
+	@echo ">>>>> start logs testing_tool-interoperability-onem2m"
+	docker logs testing_tool-interoperability-onem2m ; exit 0
+	@echo "<<<<< end logs testing_tool-interoperability-onem2m \n"
 
 	@echo ">>>>> start logs reference_iut-coap_server"
 	docker logs reference_iut-coap_server ; exit 0

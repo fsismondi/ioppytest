@@ -105,12 +105,16 @@ user needs :
 - an implementation under test (IUT) of a standard supported/protocol
 by ioppytest framework, which either runs in some specific hardware or
 locally in user's PC, e.g. a coap client implementation
-- download and run
+-  run
 [the agent component](http://doc.f-interop.eu/interop/#agent)
 which will route all the packets emitted from the IUT to the backend
 and also to the second IUT (and viceversa)
 - a user interface to help coordinating the tests
 (either GUI or CLI component)
+
+For simplifing the access to CLI, agent and other components, ioppytest
+inlcudes a Makefile, with it you can use `make cmd`,
+for more information execute `make help`
 
 # Running a test suite using F-Interop platform
 
