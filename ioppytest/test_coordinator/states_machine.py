@@ -43,7 +43,7 @@ IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # # default handler
 # sh = logging.StreamHandler()
