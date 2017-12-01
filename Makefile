@@ -26,6 +26,10 @@ docker-build-all: ## Build all testing tool in docker images
 	$(MAKE) _docker-build-6lowpan
 	$(MAKE) _docker-build-onem2m
 
+sniff-bus: ## Listen and echo all messages in the event bus
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@python3 -m ioppytest.utils.interop_cli connect
+
 run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m ioppytest.utils.interop_cli repl

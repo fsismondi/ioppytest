@@ -112,7 +112,7 @@ and also to the second IUT (and viceversa)
 - a user interface to help coordinating the tests
 (either GUI or CLI component)
 
-For simplifing the access to CLI, agent and other components, ioppytest
+For simplifying the access to CLI, agent and other components, ioppytest
 inlcudes a Makefile, with it you can use `make cmd`,
 for more information execute `make help`
 
