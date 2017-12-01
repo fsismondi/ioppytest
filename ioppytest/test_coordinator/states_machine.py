@@ -43,17 +43,18 @@ IUT_CONFIGURATION_TIMEOUT = 5  # seconds
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
-
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.INFO)
+
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
+
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)

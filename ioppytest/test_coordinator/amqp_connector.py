@@ -36,17 +36,18 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'amqp_connector')
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
-
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.INFO)
+
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
+
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -61,36 +62,12 @@ class CoordinatorAmqpInterface(object):
     """
 
     def __init__(self, amqp_url, amqp_exchange):
-        self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-        self.channel = self.connection.channel()
-        self.channel.basic_qos(prefetch_count=1)
 
-        self.services_q_name = 'services@%s' % self.component_id
-        self.events_q_name = 'events@%s' % self.component_id
+        self.amqp_url = amqp_url
+        self.amqp_exchange = amqp_exchange
 
-        # declare services and events queues
-        self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
-        self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
-
-        self.channel.queue_bind(exchange=amqp_exchange,
-                                queue=self.services_q_name,
-                                routing_key='control.testcoordination.service')
-
-        self.channel.queue_bind(exchange=amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.testcoordination')
-
-        self.channel.queue_bind(exchange=amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.session')
-
-        self.channel.basic_consume(self.handle_service,
-                                   queue=self.services_q_name,
-                                   no_ack=False)
-
-        self.channel.basic_consume(self.handle_control,
-                                   queue=self.events_q_name,
-                                   no_ack=False)
+        self.amqp_connect()
+        self.amqp_create_queues_bind_and_susbcribe()
 
         #  callbacks to coordinator methods (~services to other components)
         self.service_reponse_callbacks = {
@@ -112,6 +89,39 @@ class CoordinatorAmqpInterface(object):
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseSkip: 'skip_testcase',
         }
+
+    def amqp_connect(self):
+        self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
+        self.channel = self.connection.channel()
+        self.channel.basic_qos(prefetch_count=1)
+
+    def amqp_create_queues_bind_and_susbcribe(self):
+        self.services_q_name = 'services@%s' % self.component_id
+        self.events_q_name = 'events@%s' % self.component_id
+
+        # declare services and events queues
+        self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
+        self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
+
+        self.channel.queue_bind(exchange=self.amqp_exchange,
+                                queue=self.services_q_name,
+                                routing_key='control.testcoordination.service')
+
+        self.channel.queue_bind(exchange=self.amqp_exchange,
+                                queue=self.events_q_name,
+                                routing_key='control.testcoordination')
+
+        self.channel.queue_bind(exchange=self.amqp_exchange,
+                                queue=self.events_q_name,
+                                routing_key='control.session')
+
+        self.channel.basic_consume(self.handle_service,
+                                   queue=self.services_q_name,
+                                   no_ack=False)
+
+        self.channel.basic_consume(self.handle_control,
+                                   queue=self.events_q_name,
+                                   no_ack=False)
 
     def run(self):
         logger.info('starting to consume events from the bus..')
@@ -257,6 +267,7 @@ class CoordinatorAmqpInterface(object):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         config = self.testsuite.get_current_testcase_configuration().to_dict(verbose=True)
         config_id = self.testsuite.get_current_testcase_configuration_id()
+        target_node = None
         try:
             target_node = self.testsuite.get_current_step_target_address()
         except Exception as e:
