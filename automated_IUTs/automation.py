@@ -25,6 +25,7 @@ STIMULI_HANDLER_TOUT = 10
 COMPONENT_ID = 'automation'
 
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.INFO)
 
 
 @property
@@ -198,7 +199,7 @@ class UserMock(threading.Thread):
     component_id = 'user_mock'
 
     # e.g. for TD COAP CORE from 1 to 31
-    #DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
+    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
     def __init__(self, iut_testcases=None):
 
@@ -211,10 +212,10 @@ class UserMock(threading.Thread):
         self.message_count = 0
         # queues & default exchange declaration
 
-        # if iut_testcases:
-        #     self.implemented_testcases_list = iut_testcases
-        # else:
-        #     self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
+        if iut_testcases:
+            self.implemented_testcases_list = iut_testcases
+        else:
+            self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
         services_queue_name = 'services_queue@%s' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
@@ -264,18 +265,18 @@ class UserMock(threading.Thread):
             logging.info('Event received %s' % event._type)
             logging.info('Event description %s' % event.description)
 
-            m = MsgTestCaseStart()
-            publish_message(self.connection, m)
+            # m = MsgTestCaseStart()
+            # publish_message(self.connection, m)
 
-            # if event.testcase_id in self.implemented_testcases_list:
-            #     m = MsgTestCaseStart()
-            #     publish_message(self.connection, m)
-            #
-            #     logging.info('Event pushed %s' % m)
-            # else:
-            #     m = MsgTestCaseSkip(testcase_id=event.testcase_id)
-            #     publish_message(self.connection, m)
-            #     logging.info('Event pushed %s' % m)
+            if event.testcase_id in self.implemented_testcases_list:
+                m = MsgTestCaseStart()
+                publish_message(self.connection, m)
+
+                logging.info('Event pushed %s' % m)
+            else:
+                m = MsgTestCaseSkip(testcase_id=event.testcase_id)
+                publish_message(self.connection, m)
+                logging.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseVerdict):
             logging.info('Event received %s' % event._type)
