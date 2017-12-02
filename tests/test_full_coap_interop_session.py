@@ -89,7 +89,7 @@ class SessionMockTests(unittest.TestCase):
 
             report_type = MsgTestSuiteReport()._type
 
-            logging.error("EVENTS: %s" % event_types_sniffed_on_bus)
+            logging.info("EVENTS: %s" % event_types_sniffed_on_bus)
             logging.info(events_sniffed_on_bus[report_type])
 
             assert report_type in event_types_sniffed_on_bus, "Testing tool didnt emit any report"
