@@ -28,6 +28,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         from ioppytest import TD_COAP_CFG, TD_COAP
         self.test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                             amqp_exchange=AMQP_EXCHANGE,
+                                            testsuite_name='coap',
                                             ted_config_file=TD_COAP_CFG,
                                             ted_tc_file=TD_COAP)
         self.test_coordinator.bootstrap()

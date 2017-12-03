@@ -68,8 +68,9 @@ class CustomStateMachine(Machine):
 class Coordinator(CoordinatorAmqpInterface):
     component_id = 'test_coordinator'
 
-    def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file):
+    def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file, testsuite_name):
         self.event = None
+        self.testsuite_name = testsuite_name
 
         # testsuite init
         self.testsuite = TestSuite(ted_tc_file, ted_config_file)
@@ -259,11 +260,14 @@ class Coordinator(CoordinatorAmqpInterface):
 
                     # Forwards PCAP to TAT to get CHECKs results
                     try:
-                        tat_response = self.call_service_testcase_analysis(testcase_id=tc_id,
-                                                                           testcase_ref=tc_ref,
-                                                                           file_enc="pcap_base64",
-                                                                           filename=tc_id + ".pcap",
-                                                                           value=pcap_file_base64)
+                        tat_response = self.call_service_testcase_analysis(
+                            protocol=self.testsuite_name,
+                            testcase_id=tc_id,
+                            testcase_ref=tc_ref,
+                            file_enc="pcap_base64",
+                            filename=tc_id + ".pcap",
+                            value=pcap_file_base64)
+
                     except AmqpSynchCallTimeoutError as e:
                         error_msg += "TAT didnt answer to the analysis request"
                         logger.error(error_msg)
@@ -756,6 +760,7 @@ if __name__ == '__main__':
 
     test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                    amqp_exchange=AMQP_EXCHANGE,
+                                   testsuite_name='coap',
                                    ted_config_file=TD_COAP_CFG,
                                    ted_tc_file=TD_COAP)
     machine = CustomStateMachine(model=test_coordinator,

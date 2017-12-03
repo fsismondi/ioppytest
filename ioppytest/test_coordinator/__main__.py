@@ -179,7 +179,7 @@ if __name__ == '__main__':
     # lets start the test coordination
     try:
         logger.info('Starting test-coordinator for test suite: %s' % testsuite)
-        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
+        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file, testsuite)
         coordinator.bootstrap()
         publish_message(connection, MsgTestingToolReady())
 
