@@ -90,6 +90,9 @@ class CoordinatorAmqpInterface(object):
             MsgTestCaseSkip: 'skip_testcase',
         }
 
+    def get_new_amqp_connection(self):
+        return pika.BlockingConnection(pika.URLParameters(self.amqp_url))
+
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
         self.channel = self.connection.channel()
@@ -226,7 +229,8 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestingToolConfigured(
             **self.testsuite.get_testsuite_configuration()
         )
-        publish_message(self.connection, event)
+
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_finished(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -235,7 +239,8 @@ class CoordinatorAmqpInterface(object):
             description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
+
 
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -245,7 +250,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_report)
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_ready(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -260,7 +265,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestCaseReady(
             **msg_fields
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
@@ -306,14 +311,14 @@ class CoordinatorAmqpInterface(object):
             logger.warning('CMD Step check or CMD step very not yet implemented')
             return  # not implemented
 
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_started(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         event = MsgTestCaseStarted(
             **tc_info_dict
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_tun_interfaces_start(self, received_event):
         """
@@ -345,13 +350,13 @@ class CoordinatorAmqpInterface(object):
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
             **self.testsuite.get_report()
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_tescase_configuration(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -368,7 +373,7 @@ class CoordinatorAmqpInterface(object):
                 description=description,
                 **tc_info_dict
             )
-            publish_message(self.connection, event)
+            publish_message(self.get_new_amqp_connection(), event)
 
             # TODO how new way of config for 6lo handling is implemented in the FSM?
 

@@ -19,27 +19,21 @@ from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
 from ioppytest.test_coordinator.testsuite import TestSuite
 
-# TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
-COAP_CLIENT_IUT_MODE = 'user-assisted'
-COAP_SERVER_IUT_MODE = 'automated'
-ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
+ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
 
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
-SNIFFER_FILTER_IF = 'tun0'
+SNIFFER_FILTER_IF = 'tun0' # TODO test suite param?
 
 # TODO 6lo FIX ME !
 # - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
 # - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
-# - COAP_CLIENT_IUT_MODE, COAP_SERVER_IUT_MODE , this should not exist in the code of the coord
-# - change all TESTCASES_ID so they dont contain a vXX at the end,  this doesnt make any sense
-
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
-STEP_TIMEOUT = 300  # seconds
-IUT_CONFIGURATION_TIMEOUT = 5  # seconds
+STEP_TIMEOUT = 300  # seconds   # TODO test suite param?
+IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
@@ -58,6 +52,8 @@ logger.setLevel(logging.DEBUG)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
+
+logging.getLogger('transitions').setLevel(logging.DEBUG)
 
 
 @add_state_features(Tags, Timeout)
@@ -78,7 +74,7 @@ class Coordinator(CoordinatorAmqpInterface):
         # init amqp interface
         super(Coordinator, self).__init__(amqp_url, amqp_exchange)
 
-        machine = CustomStateMachine(model=self,
+        self.machine = CustomStateMachine(model=self,
                                      states=states,
                                      transitions=transitions,
                                      initial='null')
