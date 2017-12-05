@@ -29,8 +29,8 @@
     "udp"
   ],
   "agent_names": [
-    "coap_client_agent",
-    "coap_server_agent"
+    "coap_client",
+    "coap_server"
   ],
   "iut_roles": [
     "coap_client",

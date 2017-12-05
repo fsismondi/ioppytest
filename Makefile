@@ -49,11 +49,11 @@ run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
 
 run-coap-client:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
