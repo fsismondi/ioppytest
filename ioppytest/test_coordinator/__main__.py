@@ -20,26 +20,29 @@ from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from ioppytest.test_coordinator.states_machine import Coordinator
 
-COMPONENT_ID = 'test_coordinator'
-
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+COMPONENT_ID = 'test_coordinator|main'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.INFO)
 
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
 
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.DEBUG)
+
+
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
+
 
 TT_check_list = [
     'dissection',
@@ -80,7 +83,7 @@ if __name__ == '__main__':
             logger.error("Error , please see coordinator help (-h)")
             sys.exit(1)
     except Exception as e:
-        print(e)
+        logger.error(e)
 
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR, RESULTS_DIR, PCAP_DIR:
@@ -176,7 +179,7 @@ if __name__ == '__main__':
     # lets start the test coordination
     try:
         logger.info('Starting test-coordinator for test suite: %s' % testsuite)
-        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
+        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file, testsuite)
         coordinator.bootstrap()
         publish_message(connection, MsgTestingToolReady())
 

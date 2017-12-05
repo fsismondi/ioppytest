@@ -25,6 +25,7 @@ STIMULI_HANDLER_TOUT = 10
 COMPONENT_ID = 'automation'
 
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.INFO)
 
 
 @property
@@ -263,6 +264,9 @@ class UserMock(threading.Thread):
         elif isinstance(event, MsgTestCaseReady):
             logging.info('Event received %s' % event._type)
             logging.info('Event description %s' % event.description)
+
+            # m = MsgTestCaseStart()
+            # publish_message(self.connection, m)
 
             if event.testcase_id in self.implemented_testcases_list:
                 m = MsgTestCaseStart()

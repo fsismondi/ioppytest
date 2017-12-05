@@ -19,44 +19,41 @@ from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
 from ioppytest.test_coordinator.testsuite import TestSuite
 
-# TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
-COAP_CLIENT_IUT_MODE = 'user-assisted'
-COAP_SERVER_IUT_MODE = 'automated'
-ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
+ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
 
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
-SNIFFER_FILTER_IF = 'tun0'
+SNIFFER_FILTER_IF = 'tun0' # TODO test suite param?
 
 # TODO 6lo FIX ME !
 # - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
 # - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
-# - COAP_CLIENT_IUT_MODE, COAP_SERVER_IUT_MODE , this should not exist in the code of the coord
-# - change all TESTCASES_ID so they dont contain a vXX at the end,  this doesnt make any sense
-
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
-STEP_TIMEOUT = 300  # seconds
-IUT_CONFIGURATION_TIMEOUT = 5  # seconds
+STEP_TIMEOUT = 300  # seconds   # TODO test suite param?
+IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.DEBUG)
 
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.INFO)
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
+
+logging.getLogger('transitions').setLevel(logging.DEBUG)
 
 
 @add_state_features(Tags, Timeout)
@@ -67,8 +64,9 @@ class CustomStateMachine(Machine):
 class Coordinator(CoordinatorAmqpInterface):
     component_id = 'test_coordinator'
 
-    def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file):
+    def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file, testsuite_name):
         self.event = None
+        self.testsuite_name = testsuite_name
 
         # testsuite init
         self.testsuite = TestSuite(ted_tc_file, ted_config_file)
@@ -76,7 +74,7 @@ class Coordinator(CoordinatorAmqpInterface):
         # init amqp interface
         super(Coordinator, self).__init__(amqp_url, amqp_exchange)
 
-        machine = CustomStateMachine(model=self,
+        self.machine = CustomStateMachine(model=self,
                                      states=states,
                                      transitions=transitions,
                                      initial='null')
@@ -258,11 +256,14 @@ class Coordinator(CoordinatorAmqpInterface):
 
                     # Forwards PCAP to TAT to get CHECKs results
                     try:
-                        tat_response = self.call_service_testcase_analysis(testcase_id=tc_id,
-                                                                           testcase_ref=tc_ref,
-                                                                           file_enc="pcap_base64",
-                                                                           filename=tc_id + ".pcap",
-                                                                           value=pcap_file_base64)
+                        tat_response = self.call_service_testcase_analysis(
+                            protocol=self.testsuite_name,
+                            testcase_id=tc_id,
+                            testcase_ref=tc_ref,
+                            file_enc="pcap_base64",
+                            filename=tc_id + ".pcap",
+                            value=pcap_file_base64)
+
                     except AmqpSynchCallTimeoutError as e:
                         error_msg += "TAT didnt answer to the analysis request"
                         logger.error(error_msg)
@@ -755,6 +756,7 @@ if __name__ == '__main__':
 
     test_coordinator = Coordinator(amqp_url=AMQP_URL,
                                    amqp_exchange=AMQP_EXCHANGE,
+                                   testsuite_name='coap',
                                    ted_config_file=TD_COAP_CFG,
                                    ted_tc_file=TD_COAP)
     machine = CustomStateMachine(model=test_coordinator,
