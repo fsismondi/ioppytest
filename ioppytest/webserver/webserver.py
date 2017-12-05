@@ -17,7 +17,7 @@ import posixpath
 import mimetypes
 from jinja2 import Template
 
-from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
+from ioppytest import TEST_DESCRIPTIONS , RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
 from ioppytest.test_coordinator.testsuite import TestCase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -35,18 +35,12 @@ tail = """
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
 
-
-with open(TD_COAP, "r", encoding="utf-8") as stream:
-    yaml_docs = yaml.load_all(stream)
-    for yaml_doc in yaml_docs:
-        if type(yaml_doc) is TestCase:
-            td_list.append(yaml_doc)
-
-with open(TD_6LOWPAN, "r", encoding="utf-8") as stream:
-    yaml_docs = yaml.load_all(stream)
-    for yaml_doc in yaml_docs:
-        if type(yaml_doc) is TestCase:
-            td_list.append(yaml_doc)
+for TD in TEST_DESCRIPTIONS:
+    with open(TD, "r", encoding="utf-8") as stream:
+        yaml_docs = yaml.load_all(stream)
+        for yaml_doc in yaml_docs:
+            if type(yaml_doc) is TestCase:
+                td_list.append(yaml_doc)
 
 
 def create_html_test_results():

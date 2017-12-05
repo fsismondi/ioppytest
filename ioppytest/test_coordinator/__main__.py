@@ -13,33 +13,36 @@ import argparse
 from threading import Timer
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG
+from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from ioppytest.test_coordinator.states_machine import Coordinator
 
-COMPONENT_ID = 'test_coordinator'
-
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+COMPONENT_ID = 'test_coordinator|main'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.INFO)
 
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
 
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.DEBUG)
+
+
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
+
 
 TT_check_list = [
     'dissection',
@@ -56,7 +59,7 @@ if __name__ == '__main__':
 
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan'])
+        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'onem2m'])
         parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
                             action="store_true")
         args = parser.parse_args()
@@ -71,11 +74,16 @@ if __name__ == '__main__':
         elif testsuite == '6lowpan':
             ted_tc_file = TD_6LOWPAN
             ted_config_file = TD_6LOWPAN_CFG
+
+        elif testsuite == 'onem2m':
+            ted_tc_file = TD_ONEM2M
+            ted_config_file = TD_ONEM2M_CFG
+
         else:
             logger.error("Error , please see coordinator help (-h)")
             sys.exit(1)
     except Exception as e:
-        print(e)
+        logger.error(e)
 
     # generate dirs
     for d in TMPDIR, DATADIR, LOGDIR, RESULTS_DIR, PCAP_DIR:
@@ -136,6 +144,7 @@ if __name__ == '__main__':
             else:
                 pass
 
+
         # bind callback function to signal queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
@@ -144,9 +153,11 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
+
         def timeout_f():
             global timeout
             timeout = True
+
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()
@@ -168,7 +179,7 @@ if __name__ == '__main__':
     # lets start the test coordination
     try:
         logger.info('Starting test-coordinator for test suite: %s' % testsuite)
-        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file)
+        coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file, testsuite)
         coordinator.bootstrap()
         publish_message(connection, MsgTestingToolReady())
 

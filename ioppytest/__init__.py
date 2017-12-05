@@ -31,6 +31,8 @@ def get_from_environment(variable, default):
 
 
 # # # # # # hard variables # # # # # # # # # #
+
+# project directories
 PROJECT_DIR = project_dir
 TMPDIR = os.path.join(project_dir, 'tmp')
 DATADIR = os.path.join(project_dir, 'data')
@@ -38,10 +40,20 @@ RESULTS_DIR = os.path.join(DATADIR, 'results')
 PCAP_DIR = os.path.join(DATADIR, 'dumps')
 LOGDIR = os.path.join(project_dir, 'log')
 TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
+
+# yaml test descriptions:
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
+
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
+TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
+TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
+
+TEST_DESCRIPTIONS = [TD_COAP, TD_6LOWPAN, TD_ONEM2M]
+TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG, TD_6LOWPAN_CFG, TD_ONEM2M_CFG]
+
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
@@ -63,7 +75,7 @@ try:
     AMQP_SERVER = p.hostname
     AMQP_VHOST = p.path.strip('/')
 
-    print('Env vars for AMQP connection succesfully imported')
+    #print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
 
@@ -87,17 +99,6 @@ print(json.dumps(
 
 # # # # # # variables coming from index.json # # # # # # # # # #
 
-try:
-    # read config information from manifest file (interoperability_manifest.json)
-    with open(os.path.join(project_dir, 'ioppytest', 'interoperability_manifest.json')) as index_file:
-        AGENT_NAMES = json.load(index_file)['agent_names']
-        print(AGENT_NAMES)
-
-except:
-    print('Cannot retrieve agent config from index file of the testing tool')
-    AGENT_NAMES = []
-
-AGENT_TT_ID = 'agent_TT'
 
 __all__ = [
     __version__,
@@ -108,8 +109,6 @@ __all__ = [
     LOGDIR,
     TD_DIR,
     AMQP_URL,
-    AGENT_NAMES,
-    AGENT_TT_ID,
     INTERACTIVE_SESSION,
     TD_6LOWPAN,
     TD_COAP,

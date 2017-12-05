@@ -1,56 +1,45 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 import pika
+import yaml
 import threading
 import sys
+import argparse
 import logging
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, AGENT_NAMES, AGENT_TT_ID
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_CONFIGS
+from ioppytest.test_coordinator.testsuite import TestConfig
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
 
 COMPONENT_ID = 'packet_router'
 
-AGENT_1_ID = AGENT_NAMES[0]
-AGENT_2_ID = AGENT_NAMES[1]
-AGENT_TT_ID = AGENT_TT_ID
-
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 
-# default handler
-sh = logging.StreamHandler()
-logger.addHandler(sh)
+# # default handler
+# sh = logging.StreamHandler()
+# logger.addHandler(sh)
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
+# # AMQP log handler with f-interop's json formatter
+# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+# json_formatter = JsonFormatter()
+# rabbitmq_handler.setFormatter(json_formatter)
+# logger.addHandler(rabbitmq_handler)
+# logger.setLevel(logging.DEBUG)
 
 
 class PacketRouter(threading.Thread):
-    DEFAULT_ROUTING = {
-        'data.tun.fromAgent.%s' % AGENT_1_ID: ['data.tun.toAgent.%s' % AGENT_2_ID,
-                                               'data.tun.toAgent.%s' % AGENT_TT_ID
-                                               ],
 
-        'data.tun.fromAgent.%s' % AGENT_2_ID: ['data.tun.toAgent.%s' % AGENT_1_ID,
-                                               'data.tun.toAgent.%s' % AGENT_TT_ID
-                                               ],
-    }
+    def __init__(self, amqp_url, amqp_exchange, routing_table):
+        assert routing_table
 
-    def __init__(self, amqp_url, amqp_exchange, routing_table=None):
         threading.Thread.__init__(self)
 
         self.exchange_name = amqp_exchange
         self.url = amqp_url
 
-        if routing_table:
-            self.routing_table = routing_table
-        else:
-            self.routing_table = PacketRouter.DEFAULT_ROUTING
+        self.routing_table = routing_table
 
         logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
@@ -171,38 +160,94 @@ class PacketRouter(threading.Thread):
         self.shutdown_notification()
 
 
-###############################################################################
+def generate_routing_table_from_test_configuration(testconfig: TestConfig):
+    assert testconfig.nodes
+    assert len(testconfig.nodes) >= 2
 
-if __name__ == '__main__':
+    agent_tt = 'agent_TT'
 
-    # routing tables for between agents' TUNs interfaces and also between agents' serial interfaces
-    iut_routing_table_serial = {
-        'data.serial.fromAgent.%s' % AGENT_1_ID: ['data.serial.toAgent.%s' % AGENT_2_ID,
-                                                  'data.serial.toAgent.%s' % AGENT_TT_ID
-                                                  ],
-        'data.serial.fromAgent.%s' % AGENT_2_ID: ['data.serial.toAgent.%s' % AGENT_1_ID,
-                                                  'data.serial.toAgent.%s' % AGENT_TT_ID
-                                                  ],
-    }
+    for link in testconfig.topology:
+        # I assume node to node links (this MUST be like this for any ioppytest interop test)
+        assert len(link['nodes']) == 2
 
-    iut_routing_table_tun = {
-        'data.tun.fromAgent.%s' % AGENT_1_ID: ['data.tun.toAgent.%s' % AGENT_2_ID,
-                                               'data.tun.toAgent.%s' % AGENT_TT_ID
-                                               ],
-        'data.tun.fromAgent.%s' % AGENT_2_ID: ['data.tun.toAgent.%s' % AGENT_1_ID,
-                                               'data.tun.toAgent.%s' % AGENT_TT_ID
-                                               ],
-    }
+        nodes = link['nodes']
 
-    routing_table = dict()
-    routing_table.update(iut_routing_table_serial)
-    routing_table.update(iut_routing_table_tun)
+        logging.info("Configuring routing tables for nodes: %s" %nodes)
+
+        # routes for agents' serial interfaces (802.15.4 nodes)
+        serial_routes = {
+            'data.serial.fromAgent.%s' % nodes[0]:
+                [
+                    'data.serial.toAgent.%s' % nodes[1],
+                    'data.serial.toAgent.%s' % 'agent_TT',
+                ],
+            'data.serial.fromAgent.%s' % nodes[1]:
+                [
+                    'data.serial.toAgent.%s' % nodes[0],
+                    'data.serial.toAgent.%s' % 'agent_TT',
+                ],
+        }
+
+        # routes for agents' TUNs interfaces (ipv6 nodes)
+        tun_routes = {
+            'data.tun.fromAgent.%s' % nodes[0]:
+                [
+                    'data.tun.toAgent.%s' % nodes[1],
+                    'data.tun.toAgent.%s' % 'agent_TT',
+                ],
+            'data.tun.fromAgent.%s' % nodes[1]:
+                [
+                    'data.tun.toAgent.%s' % nodes[0],
+                    'data.tun.toAgent.%s' % 'agent_TT',
+                ],
+        }
+
+        routing_table = dict()
+        routing_table.update(serial_routes)
+        routing_table.update(tun_routes)
+
+        return routing_table
+
+
+def main():
+    td_config = {}
+
+    for TD in TEST_DESCRIPTIONS_CONFIGS:
+        with open(TD, "r", encoding="utf-8") as stream:
+            configs = yaml.load_all(stream)
+            for c in configs:
+                logging.info("Configuration found: %s" % c.id)
+                td_config[c.id] = c
+
+    if len(td_config) == 0:
+        raise Exception('No test case configuration files found!')
+
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "td_configuration_id",
+            help="Test case configuration ID as indicated in yaml file",
+            choices=list(td_config)
+        )
+
+        args = parser.parse_args()
+
+    except Exception as e:
+        print(e)
+
+    testcase_config = td_config[args.td_configuration_id]
+    agents_routing_table = generate_routing_table_from_test_configuration(testcase_config)
 
     # start amqp router thread
-    r = PacketRouter(AMQP_URL, AMQP_EXCHANGE, routing_table)
+    r = PacketRouter(AMQP_URL, AMQP_EXCHANGE, agents_routing_table)
     try:
         r.start()
         r.join()
     except (KeyboardInterrupt, SystemExit):
         logger.info('got SIGINT. Bye bye!')
         r.stop()
+
+###############################################################################
+
+if __name__ == '__main__':
+    main()

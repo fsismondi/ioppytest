@@ -24,6 +24,11 @@ docker-build-all: ## Build all testing tool in docker images
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
 	$(MAKE) _docker-build-6lowpan
+	$(MAKE) _docker-build-onem2m
+
+sniff-bus: ## Listen and echo all messages in the event bus
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@python3 -m ioppytest.utils.interop_cli connect
 
 run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -32,6 +37,7 @@ run-cli: ## Run interactive shell
 run-6lowpan-testing-tool: ## Run 6LoWPAN testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-6lowpan testing_tool-interoperability-6lowpan
+
 
 run-coap-testing-tool: ## Run CoAP testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -43,11 +49,11 @@ run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
 
 run-coap-client:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -56,6 +62,9 @@ run-coap-client:
 run-coap-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
+
+stop-onem2m-testing-tool:
+	docker stop testing_tool-interoperability-onem2m
 
 stop-6lowpan-testing-tool:
 	docker stop testing_tool-interoperability-6lowpan
@@ -116,6 +125,15 @@ _check-sudo:
 	then \
 		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
 	fi
+
+_docker-build-onem2m:
+	@echo "Starting to build the oneM2M testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t testing_tool-interoperability-onem2m-v$(version) -f envs/onem2m_testing_tool/Dockerfile .
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-onem2m-v$(version):latest testing_tool-interoperability-onem2m
 
 _docker-build-6lowpan:
 	@echo "Starting to build the 6lowpan testing tools.."
