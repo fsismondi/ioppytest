@@ -267,9 +267,9 @@ def _launch_sniffer(filename, filter_if, filter_proto):
         pass
 
     if sys_type == 'Darwin':  # macos port of tcpdump bugs when using -U  option and filters :/
-        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -w ' + filename
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 1518 ' + ' -w ' + filename
     else:
-        cmd = 'tcpdump -K -i ' + filter_if + ' -s 200 ' + ' -U -w ' + filename + ' ' + filter_proto
+        cmd = 'tcpdump -K -i ' + filter_if + ' -s 1518 ' + ' -U -w ' + filename + ' ' + filter_proto
 
     logger.info('spawning process with : %s' % str(cmd))
 
