@@ -23,7 +23,6 @@ class CoapthonCoapClient(AutomatedIUT):
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
 
-
     # mapping message's stimuli id -> CoAPthon (coap client) commands
     stimuli_cmd_dict = {
         'TD_COAP_CORE_01_step_01': iut_cmd + ['test_td_coap_core_01'],
@@ -69,9 +68,14 @@ class CoapthonCoapClient(AutomatedIUT):
         except subprocess.TimeoutExpired as tout:
             logging.warning('Process timeout. info: %s' % str(tout))
 
+        except Exception as e:
+            logging.error('Error found on automated-iut while tryning to execute stimuli %s' % stimuli_step_id)
+            logging.error(e)
+
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
         return coap_host_address
+
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
