@@ -3,6 +3,7 @@
 
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
+from tests import MessageGenerator
 
 from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
@@ -197,7 +198,12 @@ class ApiTests(unittest.TestCase):
         messages += user_sequence
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
-        thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
+        thread_msg_gen = MessageGenerator(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            messages_list=messages,
+            wait_time_between_pubs=MESSAGES_WAIT_INTERVAL
+        )
         logger.debug("Starting Message Generator thread ")
 
         publish_message(self.conn, MsgSessionConfiguration(
@@ -300,7 +306,12 @@ class ApiTests(unittest.TestCase):
         messages += service_api_calls
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
-        thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
+        thread_msg_gen = MessageGenerator(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            messages_list=messages,
+            wait_time_between_pubs=MESSAGES_WAIT_INTERVAL
+        )
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
 
         publish_message(self.conn, MsgSessionConfiguration(
@@ -439,36 +450,3 @@ def validate_message(ch, method, props, body):
             print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
             print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
             raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
-
-
-class MessageGenerator(threading.Thread):
-    keepOnRunning = True
-
-    def __init__(self, amqp_url, amqp_exchange, messages_list):
-        threading.Thread.__init__(self)
-        self.messages = messages_list
-        self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-        self.channel = self.connection.channel()
-        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
-
-    def run(self):
-        global MESSAGES_WAIT_INTERVAL
-        logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
-                    "(for a coap client)" % (self.__class__.__name__))
-
-        try:
-            while self.keepOnRunning:
-                time.sleep(MESSAGES_WAIT_INTERVAL)
-                m = self.messages.pop(0)
-                publish_message(self.connection, m)
-                logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
-        except IndexError:
-            # list finished, lets wait so all messages are sent and processed
-            time.sleep(5)
-            pass
-        except pika.exceptions.ChannelClosed:
-            pass
-
-    def stop(self):
-        self.keepOnRunning = False
-        self.connection.close()

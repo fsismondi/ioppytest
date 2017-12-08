@@ -3,8 +3,8 @@
 
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
-
 from automated_IUTs.automation import UserMock
+
 from urllib.parse import urlparse
 import logging
 
@@ -149,37 +149,6 @@ def check_for_bus_error(ch, method, props, body):
             err = 'audited component %s pushed an error into the bus. messsage: %s' % (c, body)
             logger.error(err)
             raise Exception(err)
-
-
-class MessageGenerator(threading.Thread):
-    keepOnRunning = True
-
-    def __init__(self, amqp_url, amqp_exchange, messages_list):
-        threading.Thread.__init__(self)
-        self.messages = messages_list
-        self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-        self.channel = self.connection.channel()
-        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
-
-    def run(self):
-        logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
-                    "(for a coap client)" % (self.__class__.__name__))
-        try:
-            while self.keepOnRunning:
-                time.sleep(MESSAGES_WAIT_INTERVAL)
-                m = self.messages.pop(0)
-                publish_message(self.connection, m)
-                logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
-        except IndexError:
-            # list finished, lets wait so all messages are sent and processed
-            time.sleep(5)
-            pass
-        except pika.exceptions.ChannelClosed:
-            pass
-
-    def stop(self):
-        self.keepOnRunning = False
-        self.connection.close()
 
 
 class EventListener(threading.Thread):
