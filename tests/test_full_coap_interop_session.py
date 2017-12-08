@@ -89,11 +89,13 @@ class SessionMockTests(unittest.TestCase):
 
             report_type = MsgTestSuiteReport()._type
 
-            logging.info("EVENTS: %s" % event_types_sniffed_on_bus)
-            logging.info(events_sniffed_on_bus[report_type])
+            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus)
 
             assert report_type in event_types_sniffed_on_bus, "Testing tool didnt emit any report"
             assert report_type in events_sniffed_on_bus, "Testing tool didnt emit any report"
+
+            logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
+            logging.info('report: %s' % repr(events_sniffed_on_bus[report_type]))
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
@@ -200,6 +202,9 @@ class EventListener(threading.Thread):
 
         except NonCompliantMessageFormatError as e:
             logger.warning("[%s] Non compliant message found: %s" % (self.__class__.__name__, e))
+
+        except Exception as e:
+            logging.error(e, exc_info=True)
 
     def run(self):
         self.channel.start_consuming()

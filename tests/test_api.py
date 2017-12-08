@@ -216,7 +216,7 @@ class ApiTests(unittest.TestCase):
             self.channel.start_consuming()
         except Exception as e:
             thread_msg_gen.stop()
-            assert False, str(e)
+            logging.error(e, exc_info=True)
 
     def test_testing_tool_internal_services(self):
         """
@@ -265,14 +265,14 @@ class ApiTests(unittest.TestCase):
                     services_mid_backlog.remove(props.correlation_id)
                     services_events_tracelog.append((msg_type, props.correlation_id))
                 else:
-                    assert False, 'got a reply but theres no request in the backlog'
+                    raise Exception('got a reply but theres no request in the backlog')
 
             elif '.service' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
                 services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
-                assert False, 'error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type)
+                raise Exception('error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type))
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (
@@ -323,14 +323,15 @@ class ApiTests(unittest.TestCase):
             thread_msg_gen.start()
             self.channel.start_consuming()
             if len(services_mid_backlog) > 0:
-                assert False, 'A least one of the services request was not answered. backlog: %s. History: %s' \
-                              % (
-                                  services_mid_backlog,
-                                  services_events_tracelog
-                              )
+                raise Exception('A least one of the services request was not answered. backlog: %s. History: %s' \
+                                % (
+                                    services_mid_backlog,
+                                    services_events_tracelog
+                                )
+                                )
         except Exception as e:
             thread_msg_gen.stop()
-            assert False, str(e)
+            logging.error(e, exc_info=True)
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
