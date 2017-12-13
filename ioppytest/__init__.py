@@ -45,14 +45,17 @@ TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 
+TD_COMI = os.path.join(TD_DIR, "TD_COMI.yaml")
+TD_COMI_CFG = os.path.join(TD_DIR, "TD_COMI_CFG.yaml")
+
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
-TEST_DESCRIPTIONS = [TD_COAP, TD_6LOWPAN, TD_ONEM2M]
-TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG, TD_6LOWPAN_CFG, TD_ONEM2M_CFG]
+TEST_DESCRIPTIONS = [TD_COAP, TD_6LOWPAN, TD_ONEM2M, TD_COMI]
+TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG, TD_6LOWPAN_CFG, TD_ONEM2M_CFG, TD_COMI_CFG]
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
@@ -111,6 +114,11 @@ __all__ = [
     AMQP_URL,
     INTERACTIVE_SESSION,
     TD_6LOWPAN,
+    TD_6LOWPAN_CFG,
+    TD_ONEM2M,
+    TD_ONEM2M_CFG,
+    TD_COMI,
+    TD_COMI_CFG,
     TD_COAP,
     TD_COAP_CFG
 ]

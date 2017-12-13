@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: COMI_CFG_01
+uri: http://doc.f-interop.eu/tests/COMI_CFG_01
+nodes:
+  - comi_client
+  - comi_server
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - comi_client
+      - comi_server
+description:
+  - node: comi_client
+    message:
+      - CoMI servers running service at [bbbb::2]:5683
+      - CoMI servers are requested to offer the following resources
+      - - /test
+        - Default test resource
+        - Should not exceed 64bytes
+
+  - node: comi_server
+    message:
+      - No special configuration needed
+      - CoMI client requests
+      - - Destination IP Address = [bbbb::2]
+        - Destination UDP Port = 5683
