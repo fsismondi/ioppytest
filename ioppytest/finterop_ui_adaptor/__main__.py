@@ -9,7 +9,6 @@ from ioppytest.utils.tabulate import tabulate
 from ioppytest.utils.event_bus_utils import AmqpListener
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
-
 COMPONENT_ID = 'ui_adaptor'
 
 try:
@@ -22,7 +21,6 @@ try:
     print('Env vars for AMQP connection succesfully imported')
 except KeyError:
     AMQP_URL = "amqp://guest:guest@localhost/"
-
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
@@ -323,10 +321,10 @@ class MessageFactory(object):
             MsgStepVerifyExecute: self._echo_message_steps,
             MsgStepVerifyExecuted: self._echo_message_highlighted_description,
             MsgConfigurationExecute: self._echo_testcase_configure,
-            MsgTestSuiteReport: self._echo_test_suite_results,
 
-            # verdicts
+            # verdicts and results
             MsgTestCaseVerdict: self._echo_testcase_verdict,
+            MsgTestSuiteReport: self._echo_test_suite_results,
 
             # important messages
             MsgTestingToolTerminate: self._echo_message_highlighted_description,
@@ -701,8 +699,28 @@ class MessageFactory(object):
         )
 
     def _echo_test_suite_results(self, message):
-        ret = self._echo_message_as_table(message)
-        ret.tags = {'results': ' '}
+        report_dict = message.to_dict()
+
+        testcases = [(k, v) for k, v in report_dict.items() if k.lower().startswith('td')]
+
+        for tc_name, tc_report in testcases:
+            table = []
+            if tc_report:
+                table.append(("Testcase ID", 'Final verdict', 'Description'))
+                table.append((tc_name, tc_report['verdict'], tc_report['description']))
+
+        msg_ret = MsgUiDisplay(
+            level='highlighted',
+            tags={'report': ' '},
+            fields=[
+                {
+                    'type': 'p',
+                    'value': tabulate(table, tablefmt="grid").replace('\n', ' \n\n ')
+                }
+            ]
+        )
+
+        return msg_ret
 
     def _echo_message_description_and_component(self, message):
         fields = [
@@ -1109,7 +1127,6 @@ DEFAULT_NODE_TO_USER_MAPPING = {
 
 
 def main():
-
     logging.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
 
     try:
