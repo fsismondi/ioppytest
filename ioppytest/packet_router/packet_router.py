@@ -30,7 +30,6 @@ logger.setLevel(logging.DEBUG)
 
 
 class PacketRouter(threading.Thread):
-
     def __init__(self, amqp_url, amqp_exchange, routing_table):
         assert routing_table
 
@@ -142,13 +141,14 @@ class PacketRouter(threading.Thread):
     def shutdown_notification(self):
 
         # FINISHING... let's send a goodbye message
-        msg = {
-            'message': '{component} is out! Bye bye..'.format(component=COMPONENT_ID),
-            "_type": '{component}.shutdown'.format(component=COMPONENT_ID)
-        }
+        msg = MsgTestingToolComponentShutdown(
+            component=COMPONENT_ID,
+            description="%s is out!. Bye!" % COMPONENT_ID
+        )
+
         self.channel.basic_publish(
-            body=json.dumps(msg),
-            routing_key='control.session.info',
+            body=msg.to_json(),
+            routing_key=msg.routing_key,
             exchange=self.exchange_name,
             properties=pika.BasicProperties(
                 content_type='application/json',
@@ -172,7 +172,7 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
 
         nodes = link['nodes']
 
-        logging.info("Configuring routing tables for nodes: %s" %nodes)
+        logging.info("Configuring routing tables for nodes: %s" % nodes)
 
         # routes for agents' serial interfaces (802.15.4 nodes)
         serial_routes = {
@@ -246,6 +246,7 @@ def main():
     except (KeyboardInterrupt, SystemExit):
         logger.info('got SIGINT. Bye bye!')
         r.stop()
+
 
 ###############################################################################
 
