@@ -43,12 +43,12 @@ logger.setLevel(logging.DEBUG)
 # sh = logging.StreamHandler()
 # logger.addHandler(sh)
 
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -117,45 +117,30 @@ class Coordinator(CoordinatorAmqpInterface):
 
         logging.info(" Interop session configuration received : %s" % received_event)
 
-        if isinstance(received_event, MsgInteropSessionConfiguration):
-            # TODO deprecate this in favour of MsgSessionConfiguration
-            try:
-                for test in received_event.tests:
-                    test_url = urlparse(test['testcase_ref'])
-                    tc_id = str(test_url.path).lstrip("/tests/")
-                    session_tc_list.append(tc_id)
-            except Exception as e:
-                error_msg = "Wrong message format sent for session configuration."
-                raise CoordinatorError(message=error_msg)
+        try:
+            event_tc_list = received_event.configuration['testsuite.testcases']
+            assert type(event_tc_list) is list, 'Testcases list expected'
+            for t in event_tc_list:
+                test_url = urlparse(t)
+                session_tc_list.append(str(test_url.path).lstrip("/tests/"))
 
-            try:
-                session_id = received_event.session_id
-                session_users = received_event.users
-                session_config = received_event.configuration
-            except:
-                logger.warning("Missing fields in message configuration: %s" % received_event)
+        except KeyError as e:
+            error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
+            logging.warning(error_msg)
+            session_tc_list = self.testsuite.get_testcases_list()
 
-            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
+        except Exception as e:
+            error_msg = "Wrong message format sent for session configuration."
+            raise CoordinatorError(message=error_msg)
 
-        elif isinstance(received_event, MsgSessionConfiguration):
-            try:
-                event_tc_list = received_event.configuration['testsuite.testcases']
-                assert type(event_tc_list) is list, 'Testcases list expected'
-                for t in event_tc_list:
-                    test_url = urlparse(t)
-                    session_tc_list.append(str(test_url.path).lstrip("/tests/"))
-            except Exception as e:
-                error_msg = "Wrong message format sent for session configuration."
-                raise CoordinatorError(message=error_msg)
+        try:
+            session_id = received_event.session_id
+            session_users = received_event.users
+            session_config = received_event.configuration
+        except:
+            logger.warning("Missing fields in message configuration: %s" % received_event)
 
-            try:
-                session_id = received_event.session_id
-                session_users = received_event.users
-                session_config = received_event.configuration
-            except:
-                logger.warning("Missing fields in message configuration: %s" % received_event)
-
-            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
+        self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
 
     def handle_step_executed(self, received_event):
         logger.info("Handling step executed %s" % type(received_event))

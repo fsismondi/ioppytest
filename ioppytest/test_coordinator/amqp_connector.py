@@ -42,12 +42,12 @@ logger.setLevel(logging.INFO)
 # sh = logging.StreamHandler()
 # logger.addHandler(sh)
 
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.INFO)
@@ -78,8 +78,6 @@ class CoordinatorAmqpInterface(object):
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
             MsgSessionConfiguration: 'configure_testsuite',
-            MsgInteropSessionConfiguration: 'configure_testsuite',
-            # TODO deprecate this, use generic MsgSessionConfiguration
             MsgConfigurationExecuted: 'iut_configuration_executed',
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',

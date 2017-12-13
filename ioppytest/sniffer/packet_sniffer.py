@@ -29,12 +29,12 @@ logger = logging.getLogger(COMPONENT_ID)
 # sh = logging.StreamHandler()
 # logger.addHandler(sh)
 
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.DEBUG)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.DEBUG)
 
 # in seconds
 TIME_WAIT_FOR_TCPDUMP_STARTUP = 5

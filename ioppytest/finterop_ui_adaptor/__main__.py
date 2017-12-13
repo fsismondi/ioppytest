@@ -5,23 +5,43 @@ import argparse
 import threading
 import traceback
 from ioppytest.utils.messages import *
-from ioppytest.utils.event_bus_utils import AmqpListener
 from ioppytest.utils.tabulate import tabulate
+from ioppytest.utils.event_bus_utils import AmqpListener
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
+
+COMPONENT_ID = 'ui_adaptor'
+
+try:
+    AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+except KeyError:
+    AMQP_EXCHANGE = "amq.topic"
+
+try:
+    AMQP_URL = str(os.environ['AMQP_URL'])
+    print('Env vars for AMQP connection succesfully imported')
+except KeyError:
+    AMQP_URL = "amqp://guest:guest@localhost/"
+
+
+# init logging to stnd output and log files
+logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(logging.DEBUG)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
+logger.setLevel(logging.INFO)
 
 logging.getLogger('pika').setLevel(logging.WARNING)
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(levelname)s] (%(threadName)-10s): %(message)s', )
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     MsgTestSuiteStart.routing_key,
     MsgTestingToolTerminate.routing_key,
     '#.fromAgent.#',
 ]
-
-AMQP_URL = os.environ.get('AMQP_URL')
-AMQP_EXCHANGE = os.environ.get('AMQP_EXCHANGE')
 
 STDOUT_MAX_STRING_LENGTH = 70
 
@@ -1089,19 +1109,8 @@ DEFAULT_NODE_TO_USER_MAPPING = {
 
 
 def main():
-    try:
-        amqp_exchange = str(os.environ['AMQP_EXCHANGE'])
-    except KeyError:
-        amqp_exchange = "amq.topic"
 
-    try:
-        amqp_url = str(os.environ['AMQP_URL'])
-        print('Env vars for AMQP connection succesfully imported')
-
-    except KeyError:
-        amqp_url = "amqp://guest:guest@localhost/"
-
-    logging.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (amqp_url, amqp_exchange))
+    logging.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
 
     try:
         parser = argparse.ArgumentParser()
@@ -1121,7 +1130,7 @@ def main():
     except KeyError:
         logging.error("Error launching test suite: %s" % args.test_suite)
 
-    connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     channel = connection.channel()
 
     lock = threading.RLock()
@@ -1260,14 +1269,14 @@ def main():
         logging.debug("LOCK released")
 
     tt_amqp_listener_thread = AmqpListener(
-        amqp_url=amqp_url,
-        amqp_exchange=amqp_exchange,
+        amqp_url=AMQP_URL,
+        amqp_exchange=AMQP_EXCHANGE,
         topics=TESTING_TOOL_TOPIC_SUBSCRIPTIONS,
         callback=get_lock_and_dispatch_tt_message)
 
     ui_amqp_listener_thread = AmqpListener(
-        amqp_url=amqp_url,
-        amqp_exchange=amqp_exchange,
+        amqp_url=AMQP_URL,
+        amqp_exchange=AMQP_EXCHANGE,
         topics=UI_REPLY_TOPICS,
         callback=get_lock_and_dispatch_ui_message)
 
