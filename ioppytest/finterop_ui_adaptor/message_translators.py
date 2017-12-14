@@ -427,7 +427,8 @@ class GenericBidirectonalTranslator(object):
         msg_ret = self.tag_message(msg_ret)
         return msg_ret
 
-    def transform_string_to_ui_markdown_display(self, text=None):
+    @classmethod
+    def transform_string_to_ui_markdown_display(cls, text=None):
 
         msg = MsgUiDisplayMarkdownText()
 
