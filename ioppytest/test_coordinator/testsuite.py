@@ -700,6 +700,7 @@ class TestConfig:
         self.id = configuration_id
         self.uri = uri
         self.nodes = nodes
+        self.nodes_configured = set()
         self.description = description
 
         # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
@@ -727,6 +728,7 @@ class TestConfig:
         assert type(node) is str
         assert type(address) is tuple
         self.addressing_table.update({node: address})
+        self.nodes_configured.add(node)
 
     def get_nodes_on_link(self, link=None):
         nodes_on_link = []
@@ -771,14 +773,7 @@ class TestConfig:
         return self.get_node_address(target_node)
 
     def check_all_iut_nodes_configured(self):
-        # checking that both "node" and "node_address" have a defined value
-        for node in self.get_nodes_on_link():
-            if node is None:
-                return False
-            if self.get_node_address(node) is None:
-                return False
-
-        return True
+        return len(self.nodes_configured) == len(self.get_nodes_on_link())
 
     def to_dict(self, verbose=None):
         d = OrderedDict()
