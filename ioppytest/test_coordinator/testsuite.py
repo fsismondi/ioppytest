@@ -723,8 +723,9 @@ class TestConfig:
         return json.dumps(self.to_dict(True))
 
     def update_node_address(self, node, address):
-        assert node is str
-        assert address is tuple
+        # TODO drop these assertions later on
+        assert type(node) is str
+        assert type(address) is tuple
         self.addressing_table.update({node: address})
 
     def get_nodes_on_link(self, link=None):
