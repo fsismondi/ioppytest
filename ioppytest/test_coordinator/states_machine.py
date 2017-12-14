@@ -24,7 +24,7 @@ ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test 
 
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
-SNIFFER_FILTER_IF = 'tun0' # TODO test suite param?
+SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # TODO 6lo FIX ME !
 # - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
@@ -75,9 +75,9 @@ class Coordinator(CoordinatorAmqpInterface):
         super(Coordinator, self).__init__(amqp_url, amqp_exchange)
 
         self.machine = CustomStateMachine(model=self,
-                                     states=states,
-                                     transitions=transitions,
-                                     initial='null')
+                                          states=states,
+                                          transitions=transitions,
+                                          initial='null')
 
     def _set_received_event(self, event=None):
         if event is None:
@@ -173,7 +173,14 @@ class Coordinator(CoordinatorAmqpInterface):
         self.testsuite.abort_current_testcase()
 
     def handle_iut_configuration_executed(self, received_event):
-        self.testsuite.set_iut_configuration(received_event.node, received_event.ipv6_address)
+        if received_event.ipv6_address:
+            # fixme this only supports bbbb::1 , bbbb::2, etc format of addresses
+            address_tuple = tuple(received_event.ipv6_address.split('::'))
+            if len(address_tuple) != 2:
+                raise CoordinatorError('Received a wrong formatted address')
+            self.testsuite.set_iut_configuration(received_event.node, address_tuple)
+        else:
+            pass  # use default address
 
         if self.testsuite.check_all_iut_nodes_configured():
             self.trigger('_all_iut_configuration_executed', None)
