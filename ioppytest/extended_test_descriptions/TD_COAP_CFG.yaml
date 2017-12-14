@@ -13,7 +13,6 @@ addressing:
     - node: coap_server
       ipv6_prefix : bbbb
       ipv6_host: 2
-
 topology:
   - link_id : link_01
     capture_filter: udp
@@ -52,7 +51,6 @@ description:
       - - /.well-known/core
         - CoRE Link Format
         - may require usage of Block options
-
   - node: coap_client
     message:
       - No special configuration needed
@@ -119,7 +117,6 @@ description:
     - - /.well-known/core
       - CoRE Link Format
       - may require usage of Block options
-
   - node: coap_client
     message:
       - No special configuration needed
