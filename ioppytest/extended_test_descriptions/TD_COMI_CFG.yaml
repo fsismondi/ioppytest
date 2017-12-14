@@ -12,6 +12,13 @@ topology:
     nodes:
       - comi_client
       - comi_server
+addressing:
+    - node: comi_client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: comi_server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
 description:
   - node: comi_client
     message:

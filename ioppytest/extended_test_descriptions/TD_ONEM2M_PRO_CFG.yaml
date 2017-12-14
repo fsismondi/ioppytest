@@ -12,6 +12,13 @@ topology:
     nodes:
       - AE
       - CSE
+addressing:
+    - node: AE
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: CSE
+      ipv6_prefix : bbbb
+      ipv6_host: 2
 description:
   - node: CSE
     message:

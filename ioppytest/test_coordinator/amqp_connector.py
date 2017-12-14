@@ -239,7 +239,6 @@ class CoordinatorAmqpInterface(object):
         )
         publish_message(self.get_new_amqp_connection(), event)
 
-
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         tc_report = self.testsuite.get_testcase_report()
@@ -278,15 +277,13 @@ class CoordinatorAmqpInterface(object):
             pass
 
         msg_fields = {}
-        # put step info
-        msg_fields.update(step_info_dict)
-        # put tc info
-        msg_fields.update(tc_info_dict)
-        # # put iut info
-        # if self.current_tc.current_step.iut:
+        msg_fields.update(step_info_dict)  # put step info
+        msg_fields.update(tc_info_dict)  # put tc info
+
+        # if self.current_tc.current_step.iut: # put iut info
         #     msg_fields.update(self.current_tc.current_step.iut.to_dict())
-        # put some extra description
-        description_message = ['Please execute step: %s' % step_info_dict['step_id']]
+
+        description_message = ['Please execute step: %s' % step_info_dict['step_id']]  # put some extra UI description
         description_message += ['Step description: %s' % step_info_dict['step_info']]
 
         if step_info_dict['step_type'] == "stimuli":
@@ -320,23 +317,24 @@ class CoordinatorAmqpInterface(object):
 
     def notify_tun_interfaces_start(self, received_event):
         """
-        Starts tun interface in agent1, agent2 and agent TT.
+        Starts tun interface in user's agents agent TT.
         This is best effort approach, no exception is raised if the bootstrapping fails
         """
         logger.debug("Let's start the bootstrap the agents")
 
-        agent_names = self.testsuite.get_agent_names()
+        # fixme desable this for tests that dont require TUNs
+        nodes = self.testsuite.get_agents_addressing_from_configurations()
 
-        ipv6_network_prefix = "bbbb"
-        ipv6_host = 0
-
-        for name in agent_names:
-            ipv6_host += 1
+        for node_name, address_tuple in nodes.items():
+            # convention -> agents are named the same as the node roles (coap_client, etc..)
+            ipv6_network_prefix = address_tuple[0]
+            ipv6_host = address_tuple[1]
             assigned_ip = ":%s" % ipv6_host
+
             bootstrap_agent.bootstrap(
                 amqp_url=AMQP_URL,
                 amqp_exchange=AMQP_EXCHANGE,
-                agent_id=name,
+                agent_id=node_name,
                 ipv6_host=assigned_ip,
                 ipv6_prefix=ipv6_network_prefix,
                 ipv6_no_forwarding=False

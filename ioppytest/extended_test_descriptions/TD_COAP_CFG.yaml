@@ -6,6 +6,13 @@ uri: http://doc.f-interop.eu/tests/CoAP_CFG_01
 nodes:
   - coap_client
   - coap_server
+addressing:
+    - node: coap_client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: coap_server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
 topology:
   - link_id : link_01
     capture_filter: udp
@@ -44,7 +51,6 @@ description:
       - - /.well-known/core
         - CoRE Link Format
         - may require usage of Block options
-
   - node: coap_client
     message:
       - No special configuration needed
@@ -59,6 +65,16 @@ nodes:
   - coap_client
   - coap_server
   - gateway
+addressing:
+    - node: coap_client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: coap_server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+    - node: gateway
+      ipv6_prefix : bbbb
+      ipv6_host: 3
 topology:
   - link_id : link_01
     capture_filter: udp
@@ -101,7 +117,6 @@ description:
     - - /.well-known/core
       - CoRE Link Format
       - may require usage of Block options
-
   - node: coap_client
     message:
       - No special configuration needed

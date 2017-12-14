@@ -12,6 +12,13 @@ topology:
     nodes:
       - eut1
       - eut2
+addressing:
+    - node: eut1
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: eut2
+      ipv6_prefix : bbbb
+      ipv6_host: 2
 description:
   - node: eut1
     message:
@@ -33,6 +40,13 @@ topology:
     nodes:
       - 6LR
       - Host
+addressing:
+    - node: 6LR
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: Host
+      ipv6_prefix : bbbb
+      ipv6_host: 2
 description:
   - node: 6LR
     message:
