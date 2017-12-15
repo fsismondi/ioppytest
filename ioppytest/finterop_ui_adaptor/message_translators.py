@@ -1,6 +1,7 @@
 import os
 import logging
 import traceback
+import textwrap
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
@@ -163,10 +164,13 @@ def translate_ioppytest_description_format_to_tabulate(ls):
     ret = []
     for item in ls:
         if type(item) is str:
-            ret.append([item])
+            ret.append([textwrap.fill(item, width=30)]) # textwrap puts <\n> per each X chars
         elif type(item) is list:
             for subitem in item:
-                ret.append([' ', subitem])
+                if type(subitem) is str:
+                    ret.append([' ', textwrap.fill(subitem, width=40)])  # textwrap puts <\n> per each X chars
+                else:
+                    ret.append([' ', subitem])
         else:
             logger.warning("Got unexpected table format %s" % type(item))
 
@@ -377,7 +381,7 @@ class GenericBidirectonalTranslator(object):
     def tag_message(self, msg):
         """
             Updates message tags of message before being sent to UI. Every message to UI needs to be passed to this
-            method before being piublished
+            method before being published
         """
         if msg and not msg.tags:
 
@@ -833,7 +837,9 @@ class GenericBidirectonalTranslator(object):
         fields.append({
             'type': 'p',
             'value': '%s' %
-                     tabulate(translate_ioppytest_description_format_to_tabulate(message.step_info))
+                     tabulate(
+                         translate_ioppytest_description_format_to_tabulate(message.step_info),
+                         tablefmt="grid")
         })
 
         return MsgUiDisplayMarkdownText(
@@ -881,9 +887,9 @@ class GenericBidirectonalTranslator(object):
         fields.append({
             'type': 'p',
             'value': '%s' %
-                     (
-                         tabulate(translate_ioppytest_description_format_to_tabulate(message.description))
-                     )
+                     (tabulate(
+                         translate_ioppytest_description_format_to_tabulate(message.description),
+                         tablefmt="grid"))
         })
 
         return MsgUiDisplayMarkdownText(
@@ -1106,7 +1112,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.tags = {"config:": "agents"}
         return message_ui_request
 
-    # # # # # # # DESCRIBE THE MESSAGES FOR TT # # # # # # # # # # # # # #
+    # # # # # # # TT Messages # # # # # # # # # # # # # #
 
     def _tt_message_testsuite_start(self, user_input):
         return MsgTestSuiteStart()
@@ -1133,7 +1139,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         elif type(user_input) is bool:
             pass
         else:
-            logger.error("Couln't process user input %s" % user_input)
+            logger.error("Couldn't process user input %s" % user_input)
             return
 
         return MsgStepVerifyExecuted(
@@ -1150,20 +1156,24 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             node_execution_mode="user_assisted",
         )
 
-    # # # # # # # DESCRIBE THE MESSAGES FOR GUI # # # # # # # # # # # # # #
+    # # # # # # # UI Messages # # # # # # # # # # # # # #
 
     def _ui_request_testsuite_start(self, message_from_tt):
-        message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you want to start the TEST SUITE?"
-        )
-        message_ui_request.fields = [
+
+        fields = [
             {
                 "name": "ts_start",
                 "type": "button",
                 "value": True
             },
         ]
-        return message_ui_request
+
+        return MsgUiRequestConfirmationButton(
+            title="Do you want to start the TEST SUITE?",
+            fields=fields,
+            tags={"testsuite": ""}
+
+        )
 
     def _ui_request_testcase_start(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
