@@ -611,10 +611,9 @@ class GenericBidirectonalTranslator(object):
             table.append(temp)
 
         # prepare fields
-        markdown_string = tabulate(table, tablefmt="grid").replace('\n', ' \n\n ')
         msg_ret.fields = [{
             'type': 'p',
-            'value': markdown_string
+            'value': tabulate(table)
         }]
 
         return msg_ret
@@ -834,7 +833,7 @@ class GenericBidirectonalTranslator(object):
         fields.append({
             'type': 'p',
             'value': '%s' %
-                     tabulate(translate_ioppytest_description_format_to_tabulate(message.step_info), tablefmt="grid", )
+                     tabulate(translate_ioppytest_description_format_to_tabulate(message.step_info))
         })
 
         return MsgUiDisplayMarkdownText(
@@ -883,8 +882,7 @@ class GenericBidirectonalTranslator(object):
             'type': 'p',
             'value': '%s' %
                      (
-                         tabulate(translate_ioppytest_description_format_to_tabulate(message.description),
-                                  tablefmt="grid", )
+                         tabulate(translate_ioppytest_description_format_to_tabulate(message.description))
                      )
         })
 
