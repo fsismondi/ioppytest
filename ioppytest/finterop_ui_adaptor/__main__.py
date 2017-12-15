@@ -31,6 +31,7 @@ logger.addHandler(rabbitmq_handler)
 logging.getLogger('pika').setLevel(logging.WARNING)
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
+    MsgSessionLog.routing_key,
     MsgTestSuiteStart.routing_key,
     MsgTestingToolTerminate.routing_key,
     '#.fromAgent.#',
@@ -86,12 +87,12 @@ DEFAULT_NODE_TO_USER_MAPPING = {
     'coap_server': '2',
 }
 
-queue_messages_from_tt = Queue()
-queue_messages_from_ui = Queue()
-queue_messages_to_tt = Queue()
-queue_messages_display_to_ui = Queue()
-queue_messages_request_to_ui = Queue()
-
+# see doc from GenericBidirectonalTranslator.__doc__
+queue_messages_display_to_ui = Queue(maxsize=100)
+queue_messages_request_to_ui = Queue(maxsize=100)
+queue_messages_from_tt = Queue(maxsize=100)
+queue_messages_from_ui = Queue(maxsize=100)
+queue_messages_to_tt = Queue(maxsize=100)
 
 queues = [
     queue_messages_to_tt,
@@ -383,9 +384,6 @@ def main():
         ui_amqp_listener_thread.stop()  # thread
         tt_amqp_listener_thread.join()
         ui_amqp_listener_thread.join()
-
-
-
 
 if __name__ == '__main__':
     main()
