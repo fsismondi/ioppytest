@@ -12,7 +12,7 @@ import logging
 import argparse
 from threading import Timer
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS, LOGGER_FORMAT
 from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -21,11 +21,11 @@ from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponen
 from ioppytest.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator|main'
+logging.basicConfig(format=LOGGER_FORMAT)
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
-
+logger.setLevel(logging.DEBUG)
 
 # # default handler
 # sh = logging.StreamHandler()
@@ -38,11 +38,8 @@ rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 logger.setLevel(logging.DEBUG)
 
-
-#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.WARNING)
-
 
 TT_check_list = [
     'dissection',

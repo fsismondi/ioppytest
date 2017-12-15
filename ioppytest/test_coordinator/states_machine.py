@@ -279,7 +279,7 @@ class Coordinator(CoordinatorAmqpInterface):
                         for item in tat_response.partial_verdicts:
                             # let's partial verdict id
                             step_count += 1
-                            p = ("post_mortem_analysis_check_%d" % step_count, item[0], item[1])
+                            p = ("tat_check_%d" % step_count, item[0], item[1])
                             partial_verd.append(p)
                             logger.debug("Processing partical verdict received from TAT: %s" % str(p))
 
