@@ -19,8 +19,7 @@ from ioppytest.finterop_ui_adaptor.message_translators import (CoMISessionMessag
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
-logger.setLevel(logging.DEBUG)
-logging.basicConfig(level=logging.DEBUG, format='%(name)s [%(threadName)s] %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
 
 
 # AMQP log handler with f-interop's json formatter
@@ -87,11 +86,12 @@ DEFAULT_NODE_TO_USER_MAPPING = {
     'coap_server': '2',
 }
 
+queue_messages_from_tt = Queue()
+queue_messages_from_ui = Queue()
 queue_messages_to_tt = Queue()
 queue_messages_display_to_ui = Queue()
 queue_messages_request_to_ui = Queue()
-queue_messages_from_tt = Queue()
-queue_messages_from_ui = Queue()
+
 
 queues = [
     queue_messages_to_tt,
@@ -144,6 +144,16 @@ class AmqpMessagePublisher:
                 content_type='application/json',
             )
         )
+
+    def stop(self):
+
+        if self.channel:
+            self.channel.close()
+            self.channel = None
+
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
     def publish_ui_display(self, message: Message, user_id=None, level=None):
 
@@ -313,58 +323,68 @@ def main():
 
     # this loop processes all incoming messages and dispatches them to its corresponding handler
     loop_count = 0
-    while True:
 
-        # get next message from TT
-        if not queue_messages_from_tt.empty():
-            msg_from_tt = queue_messages_from_tt.get()
-            process_message_from_testing_tool(msg_from_tt)  # this populates the *_to_ui queues
+    try:
+        while True:
 
-        # publish all pending display messages to UIs
-        while not queue_messages_display_to_ui.empty():
-            msg_ui_to_display = queue_messages_display_to_ui.get()
-            amqp_message_publisher.publish_ui_display(msg_ui_to_display)
+            # get next message from TT
+            if not queue_messages_from_tt.empty():
+                msg_from_tt = queue_messages_from_tt.get()
+                process_message_from_testing_tool(msg_from_tt)  # this populates the *_to_ui queues
 
-        # get and publish next request for UI (just one at a time)
-        # TODO implement a mechanism for not publish messages until previous one has been replied,
-        # how to handle the ui.user.request cancel command tho?
+            # publish all pending display messages to UIs
+            while not queue_messages_display_to_ui.empty():
+                msg_ui_to_display = queue_messages_display_to_ui.get()
+                amqp_message_publisher.publish_ui_display(msg_ui_to_display)
 
-        if not queue_messages_request_to_ui.empty():
-            # get next request
-            request = queue_messages_request_to_ui.get()
-            # publish it
-            amqp_message_publisher.publish_ui_request(request)
-            # prepare the entry for still-pending-responses table
-            requested_fields = GenericBidirectonalTranslator.get_field_keys_from_ui_request(request)
-            message_translator.add_pending_response(
-                corr_id=request.correlation_id,
-                request_message=request,
-                requested_field_name_list=requested_fields,
-            )
+            # get and publish next request for UI (just one at a time)
+            # TODO implement a mechanism for not publish messages until previous one has been replied,
+            # how to handle the ui.user.request cancel command tho?
 
-        # get next message reply from UI
-        if not queue_messages_from_ui.empty():
-            process_message_from_ui(queue_messages_from_ui.get())  # this populates the *_to_tt queue
+            if not queue_messages_request_to_ui.empty():
+                # get next request
+                request = queue_messages_request_to_ui.get()
+                # publish it
+                amqp_message_publisher.publish_ui_request(request)
+                # prepare the entry for still-pending-responses table
+                requested_fields = GenericBidirectonalTranslator.get_field_keys_from_ui_request(request)
+                message_translator.add_pending_response(
+                    corr_id=request.correlation_id,
+                    request_message=request,
+                    requested_field_name_list=requested_fields,
+                )
 
-        # publish all pending messages to TT (there shouldn't not be more than one at a time)
-        while not queue_messages_to_tt.empty():
-            message_translator.print_table_of_pending_messages()
-            msg_to_tt = queue_messages_to_tt.get()
-            amqp_message_publisher.publish_tt_chained_message(msg_to_tt)
+            # get next message reply from UI
+            if not queue_messages_from_ui.empty():
+                process_message_from_ui(queue_messages_from_ui.get())  # this populates the *_to_tt queue
 
-        if loop_count == 1000:
-            for q in queues:
-                logger.info("queue %s size: %s" % (repr(q), q.qsize()))
-            loop_count = 0
-        else:
-            loop_count += 1
-        time.sleep(0.1)
+            # publish all pending messages to TT (there shouldn't not be more than one at a time)
+            while not queue_messages_to_tt.empty():
+                message_translator.print_table_of_pending_messages()
+                msg_to_tt = queue_messages_to_tt.get()
+                amqp_message_publisher.publish_tt_chained_message(msg_to_tt)
 
-    tt_amqp_listener_thread.stop()
-    ui_amqp_listener_thread.stop()
-    tt_amqp_listener_thread.join()
-    ui_amqp_listener_thread.join()
-    logger.info('ui adaptor stopping..')
+            if loop_count == 1000:
+                for q in queues:
+                    logger.info("queue %s size: %s" % (repr(q), q.qsize()))
+                loop_count = 0
+            else:
+                loop_count += 1
+            time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        logger.info('user interruption captured, exiting..')
+
+    finally:
+
+        logger.info('ui adaptor stopping..')
+        amqp_message_publisher.stop()  # not a thread
+        tt_amqp_listener_thread.stop()  # thread
+        ui_amqp_listener_thread.stop()  # thread
+        tt_amqp_listener_thread.join()
+        ui_amqp_listener_thread.join()
+
+
 
 
 if __name__ == '__main__':
