@@ -19,8 +19,7 @@ from ioppytest.finterop_ui_adaptor.message_translators import (CoMISessionMessag
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
-
+logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
@@ -31,10 +30,11 @@ logger.addHandler(rabbitmq_handler)
 logging.getLogger('pika').setLevel(logging.WARNING)
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
+    MsgDissectionAutoDissect.routing_key,
     MsgSessionLog.routing_key,
     MsgTestSuiteStart.routing_key,
     MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',
+    '#.fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
 
 UI_REPLY_TOPICS = [
@@ -324,7 +324,6 @@ def main():
 
     # this loop processes all incoming messages and dispatches them to its corresponding handler
     loop_count = 0
-
     try:
         while True:
 
@@ -367,10 +366,11 @@ def main():
 
             if loop_count == 1000:
                 for q in queues:
-                    logger.info("queue %s size: %s" % (repr(q), q.qsize()))
+                    logger.debug("queue %s size: %s" % (repr(q), q.qsize()))
                 loop_count = 0
             else:
                 loop_count += 1
+
             time.sleep(0.1)
 
     except KeyboardInterrupt:
@@ -384,6 +384,7 @@ def main():
         ui_amqp_listener_thread.stop()  # thread
         tt_amqp_listener_thread.join()
         ui_amqp_listener_thread.join()
+
 
 if __name__ == '__main__':
     main()
