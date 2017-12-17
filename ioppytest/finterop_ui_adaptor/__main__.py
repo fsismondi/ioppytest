@@ -7,15 +7,14 @@ import threading
 from queue import Queue
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest.utils.event_bus_utils import AmqpListener
+from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH, MESSAGES_NOT_TO_BE_ECHOED
 from ioppytest.finterop_ui_adaptor.message_translators import (CoMISessionMessageTranslator,
                                                                CoAPSessionMessageTranslator,
                                                                SixLoWPANSessionMessageTranslator,
-                                                               OneM2MSessionMessageTranslator,
-                                                               GenericBidirectonalTranslator)
+                                                               OneM2MSessionMessageTranslator)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
@@ -212,6 +211,14 @@ class AmqpMessagePublisher:
                        message.routing_key,
                        message.correlation_id if hasattr(message, 'correlation_id') else None))
 
+    def synch_request(self, request, timeout=30):
+        """
+        :param message: request Message
+        :param timeout: Timeout in seconds, else expection is raised
+        :return: Reply message
+        """
+        return amqp_request(self.connection, request, COMPONENT_ID, retries=timeout*2)
+
 
 def main():
     logger.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
@@ -313,14 +320,12 @@ def main():
 
     tt_amqp_listener_thread.setName('TT_listener_thread')
     ui_amqp_listener_thread.setName('UI_listener_thread')
-
     tt_amqp_listener_thread.start()
     ui_amqp_listener_thread.start()
+    logger.info("UI adaptor is up and listening on the bus ..")
 
-    logger.info('UI adaptor is up and listening on the bus ..')
-
-    queue_messages_request_to_ui.put(message_translator.get_amqp_url_connection_message())
-    queue_messages_display_to_ui.put(message_translator.get_welcome_message())
+    logger.info("message translator's bootstrapping sequence starting..")
+    message_translator.bootstrap(amqp_message_publisher)
 
     # this loop processes all incoming messages and dispatches them to its corresponding handler
     loop_count = 0
@@ -347,7 +352,7 @@ def main():
                 # publish it
                 amqp_message_publisher.publish_ui_request(request)
                 # prepare the entry for still-pending-responses table
-                requested_fields = GenericBidirectonalTranslator.get_field_keys_from_ui_request(request)
+                requested_fields = message_translator.get_field_keys_from_ui_request(request)
                 message_translator.add_pending_response(
                     corr_id=request.correlation_id,
                     request_message=request,

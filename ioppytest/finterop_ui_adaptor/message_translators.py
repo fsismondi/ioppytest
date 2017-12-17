@@ -103,6 +103,8 @@ INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/ses
 INFO:connectors.core:Backend ready to consume data
 
 ------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+## After clicking in "Test Suite Start" you should be able to test the agent:
 
 ### Test1 : check the tun interface was created (unless agent was runned in --serial mode) 
 \n\n
@@ -164,7 +166,7 @@ def translate_ioppytest_description_format_to_tabulate(ls):
     ret = []
     for item in ls:
         if type(item) is str:
-            ret.append([textwrap.fill(item, width=30)]) # textwrap puts <\n> per each X chars
+            ret.append([textwrap.fill(item, width=30)])  # textwrap puts <\n> per each X chars
         elif type(item) is list:
             for subitem in item:
                 if type(subitem) is str:
@@ -340,6 +342,11 @@ class GenericBidirectonalTranslator(object):
             MsgConfigurationExecuted: self._echo_message_highlighted_description,
         }
 
+        # init:
+        # 1. receive Msg TT confiured -> action _ui_request_env_config
+        # 2. received OK for ENV config -> request agent config
+        # 3. received OK for agen conf -> _ui_request_testsuite_start
+
         self.tt_to_ui_message_translation = {
             MsgTestingToolConfigured: self._ui_request_testsuite_start,
             MsgTestCaseReady: self._ui_request_testcase_start,
@@ -358,6 +365,21 @@ class GenericBidirectonalTranslator(object):
             'verify_executed': self._tt_message_step_verify_executed,
             'stimuli_executed': self._tt_message_step_stimuli_executed,
         }
+
+    def bootstrap(self, amqp_connector):
+        """
+        Bootstrap is executed before the main thead enters the main loop.
+        During this phase the class get's to update all it's configuration by asking the user directly
+        Only during bootstrap Translators are allowed to send and receive messages directly, this is why
+        bootstrap receives connection as param.
+        Every child class should implement this, at least for printing a Hello World message in GUI!
+
+        only the following API calls should be used from bootstrap method:
+            amqp_connector.synch_request(self, request, timeout)
+            amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
+
+        """
+        raise NotImplementedError()
 
     def update_state(self, message):
         """
@@ -779,7 +801,7 @@ class GenericBidirectonalTranslator(object):
             }
         ]
 
-        return MsgUiDisplayMarkdownText(level='highlighted', tags={"config:": 'misc.'}, fields=fields)
+        return MsgUiDisplayMarkdownText(level='highlighted', tags={"testsuite": ""}, fields=fields)
 
     def _echo_message_steps(self, message):
         """
@@ -1081,53 +1103,106 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
     def __init__(self):
         super().__init__()
 
-    @classmethod
-    def get_amqp_url_connection_message(cls):
-        message_ui_request = MsgUiRequestConfirmationButton()
-        message_ui_request.fields = [
-            {
+    def bootstrap(self, amqp_connector):
+        """
+        see doc of overriden method
+
+        only the following API calls should be used from bootstrap method:
+            amqp_connector.synch_request(self, request, timeout)
+            amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
+        """
+
+        # user needs to export ENV VARS:
+
+        disp = MsgUiDisplay(
+            tags={"bootstrapping": ""},
+            fields=[{
                 "type": "p",
                 "value": env_vars_export
-            },
-            {
-                "name": "Done",
+            }]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm that variables have been exported",
+            tags={"bootstrapping": ""},
+            fields=[{
+                "name": "confirm",
                 "type": "button",
                 "value": True
-            },
-        ]
-        message_ui_request.tags = {"config:": "environment variables"}
-        return message_ui_request
+            }, ]
+        )
 
-    @classmethod
-    def get_welcome_message(cls):
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=60,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # user needs to config AGENT:
+
         agents_kickstart_help = agents_IP_tunnel_config
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', cls.AGENT_NAMES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', cls.AGENT_NAMES[1])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.AGENT_NAMES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.AGENT_NAMES[1])
 
-        message_ui_request = MsgUiDisplay()
-        message_ui_request.fields = [{
-            "type": "p",
-            "value": agents_kickstart_help
-        }, ]
-        message_ui_request.tags = {"config:": "agents"}
-        return message_ui_request
+        disp = MsgUiDisplay(
+            tags={"bootstrapping": ""},
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm that agent component has been executed",
+            tags={"bootstrapping": ""},
+            fields=[{
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=60,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        return True
+
 
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
     def _tt_message_testsuite_start(self, user_input):
         return MsgTestSuiteStart()
 
+
     def _tt_message_testsuite_abort(self, user_input):
         return MsgTestSuiteAbort()
+
 
     def _tt_message_testcase_start(self, user_input):
         return MsgTestCaseStart(testcase_id=self._current_tc)
 
+
     def _tt_message_testcase_restart(self, user_input):
         return MsgTestCaseRestart()
 
+
     def _tt_message_testcase_skip(self, user_input):
         return MsgTestCaseSkip()
+
 
     def _tt_message_step_verify_executed(self, user_input):
         logger.info("processing: %s | %s" % (user_input, type(user_input)))
@@ -1149,17 +1224,17 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
-    def _tt_message_step_stimuli_executed(self, user_input):
 
+    def _tt_message_step_stimuli_executed(self, user_input):
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
         )
 
+
     # # # # # # # UI Messages # # # # # # # # # # # # # #
 
     def _ui_request_testsuite_start(self, message_from_tt):
-
         fields = [
             {
                 "name": "ts_start",
@@ -1167,13 +1242,11 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 "value": True
             },
         ]
-
         return MsgUiRequestConfirmationButton(
             title="Do you want to start the TEST SUITE?",
             fields=fields,
-            tags={"testsuite": ""}
+            tags={"testsuite": ""})
 
-        )
 
     def _ui_request_testcase_start(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
@@ -1188,6 +1261,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         ]
         return message_ui_request
 
+
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
             title="Do you confirm executing the STIMULI \n(%s)? " % self._current_step
@@ -1200,6 +1274,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             },
         ]
         return message_ui_request
+
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
@@ -1242,6 +1317,21 @@ class OneM2MSessionMessageTranslator(object):
 class SixLoWPANSessionMessageTranslator(object):
     # fixme import names directy from yaml files
     pass
+
+
+class DummySessionMessageTranslator(object):
+    def bootstrap(self):
+        pass
+
+        # def example_1(self):
+        #     # EXAMPLE ON REQUEST REPLY FOR UI BUTTONS:
+        #     con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+        #     channel = con.channel()
+        #
+        #     ui_request = MsgUiRequestConfirmationButton()
+        #     print("publishing .. %s" % repr(ui_request))
+        #     ui_reply = amqp_request(con, ui_request, 'dummy_component')
+        #     print(repr(ui_reply))
 
 
 __all__ = [
