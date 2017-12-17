@@ -23,8 +23,9 @@ docker-build-all: ## Build all testing tool in docker images
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
-	$(MAKE) _docker-build-6lowpan
+	#$(MAKE) _docker-build-6lowpan
 	$(MAKE) _docker-build-onem2m
+	$(MAKE) _docker-build-comi
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
