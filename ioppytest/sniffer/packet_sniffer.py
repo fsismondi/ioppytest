@@ -24,7 +24,7 @@ from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 VERSION = '0.0.2'
 # -----------------
 # -----------------
-COMPONENT_ID = '6Lowpan_packet_sniffer'
+COMPONENT_ID = 'packet_sniffer'
 last_capture_name = None
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -53,9 +53,8 @@ TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION = 2
 #Global scope var
 connection = None
 pcap_dumper = None
-process_global = None
-pcap_dumper_global = None
-test1 = 1
+process = None
+
 
 def main():
     # generate dirs
@@ -69,21 +68,6 @@ def main():
     # connection setup
 
     global connection
-
-    global test1
-    tests1=1
-
-    global process_global
-    process_global = None
-    print("PROCESS_G0 = %s" % process_global)
-
-    global pcap_dumper
-    pcap_dumper = None
-    print("DUMPER_G0 = %s" % pcap_dumper)
-
-    global pcap_dumper_global
-    pcap_dumper_global = None
-    print("DUMPER_Glo_0 = %s" % pcap_dumper_global)
 
     try:
 
@@ -166,21 +150,11 @@ class AmqpDataPacketDumper:
     NETWORK_DUMPS_TEMP = [DEFAULT_RAWIP_DUMP_FILENAME_WR, DEFAULT_802154_DUMP_FILENAME_WR]
 
     QUANTITY_MESSAGES_PER_PCAP = 100
-    print("PCAP_DUMPER_6 = %s" % pcap_dumper)
-    print("PCAP_DUMPER_6 = %s" % pcap_dumper_global)
-
-
 
     def __init__(self, dump_dir, filename, amqp_url=None, amqp_exchange=None, topics=None):
         self.messages_dumped = 0
         self.url = amqp_url
         self.exchange = amqp_exchange
-
-        global pcap_dumper
-        global pcap_dumper_global
-
-        print("PCAP_DUMPER_5 = %s" % pcap_dumper)
-        print("PCAP_DUMPER_5 = %s" % pcap_dumper_global)
 
         if dump_dir:
             self.dump_dir = dump_dir
@@ -323,8 +297,6 @@ class AmqpDataPacketDumper:
                 )
 
     def stop(self):
-        global pcap_dumper
-        global pcap_dumper_global
         logger.info("Stopping sniffer...")
         self.channel.queue_delete(self.data_queue_name)
         self.channel.stop_consuming()
@@ -383,13 +355,7 @@ class AmqpDataPacketDumper:
             logger.error("Message: %s, body: %s" % (json.dumps(req_body_dict), str(body)))
 
     def run(self):
-
-        global pcap_dumper
-        global pcap_dumper_global
         print("Starting thread listening on the event bus")
-        print("PCAP_DUMPER_1 = %s" % pcap_dumper)
-        pcap_dumper_global = pcap_dumper
-        print("PCAP_DUMPER_glo_1 = %s" % pcap_dumper_global)
         self.channel.start_consuming()
         print('Bye byes!')
 
@@ -409,20 +375,7 @@ def on_request(ch, method, props, body):
     global last_capture_name
     global connection
     global process
-    global process_global
     global pcap_dumper
-    global pcap_dumper_global
-    global tests1
-
-    print("PROCESS_G = %s" % process_global)
-    print("DUMPER_G = %s" % pcap_dumper_global)
-    
-    if process_global is not None:
-        process = process_global
-        print("DUMPER = %s" % pcap_dumper_global)
-        print("PROCESS = %s" % process)
-    else:
-        process = None
 
     logger.info('Identifying request...')
 
@@ -573,8 +526,7 @@ def on_request(ch, method, props, body):
             process = multiprocessing.Process(target=launch_amqp_data_to_pcap_dumper, args=(TMPDIR, filename))
             process.start()
             print("START et %s" % process)
-            
-            process_global = process
+
 
         except:
             logger.error('Didnt succeed starting the capture')
@@ -586,20 +538,10 @@ def on_request(ch, method, props, body):
 
     elif isinstance(request, MsgSniffingStop):
 
-        print("PCAP_DUMPER_02 = %s" % pcap_dumper_global)
-        logger.info('Processing request: %s' % repr(request))
-        print("PCAP_DUMPER_03 = %s" % pcap_dumper)
-
         try:
             time.sleep(TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION)  # to avoid race conditions
             # _stop_sniffer()
-            # A voir s'il ne faut pas ajouter le SIGINT pour stoper la capture lors d'un Ctrl+C
-            print("STOP")
-            print("STOP et %s" % pcap_dumper)
-            print("STOP et %s" % process)
-            if pcap_dumper:
-                print("pcap_dumper stop")
-                pcap_dumper.stop()
+
             if process is not None:
                 print("Process terminated")
                 process.terminate()
@@ -616,18 +558,13 @@ def on_request(ch, method, props, body):
 def launch_amqp_data_to_pcap_dumper(dump_dir= None, filename = None, amqp_url=None, amqp_exchange=None, topics=None):
     
     global pcap_dumper
-    global pcap_dumper_global
 
     def signal_int_handler(self, frame):
         logger.info('got SIGINT, stopping sniffer..')
 
-        if pcap_dumper:
+        if pcap_dumper is not None:
             pcap_dumper.stop()
 
-    print("LAUNCH et %s" % dump_dir)
-    print("LAUNCH et %s" % filename)
-    print("LAUNCH et %s" % pcap_dumper)
-    print("LAUNCH et %s" % pcap_dumper_global)
     signal.signal(signal.SIGINT, signal_int_handler)
 
     if amqp_url and amqp_exchange:
@@ -656,10 +593,10 @@ def launch_amqp_data_to_pcap_dumper(dump_dir= None, filename = None, amqp_url=No
             amqp_url = "amqp://{0}:{1}@{2}/{3}".format("guest", "guest", "localhost", "/")
 
     if topics:
-        print("Topics importés")
+        print("Imported Topics")
         pcap_amqp_topic_subscriptions = topics
     else:
-        print("Topics par défaut")
+        print("Default Topics")
         pcap_amqp_topic_subscriptions = ['data.tun.fromAgent.*',
                                          'data.serial.fromAgent.*']
 
@@ -671,11 +608,8 @@ def launch_amqp_data_to_pcap_dumper(dump_dir= None, filename = None, amqp_url=No
         amqp_exchange=amqp_exchange,
         topics=pcap_amqp_topic_subscriptions
     )
-    pcap_dumper_global = pcap_dumper
-    print("PCAP_DUMPER_0 = %s" % pcap_dumper)
     # start pcap_dumper
     pcap_dumper.run()
-    print("PCAP_DUMPER_10 = %s" % pcap_dumper)
 
 
 if __name__ == '__main__':
