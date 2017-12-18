@@ -3,156 +3,14 @@ import logging
 import traceback
 import textwrap
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
 from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
+from ioppytest.finterop_ui_adaptor.user_help_text import *
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
 logger.setLevel(logging.DEBUG)
-
-env_vars_export = """
-Export environment variables: 
-
-`export AMQP_URL=%s`
-
-`export AMQP_EXCHANGE=%s`
-""" % (AMQP_URL, AMQP_EXCHANGE)
-
-agents_IP_tunnel_config = """
-
-### Please download the agent component (python script):
-
-`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
-
-------------------------------------------------------------------------------
-
-### Install dependencies:
-
-`pip install -r requirements.txt`
-
-------------------------------------------------------------------------------
-### Run (choose if either SomeAgentName1 or SomeAgentName2):
-
-`sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
-
-or
-
-`sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
-
-------------------------------------------------------------------------------
-
-### What is this for?
-
-The agent creates a tun interface in your PC which allows you to comminicate with other implementations, the 
-solution goes more or less like this:
-```
-                          +----------------+
-                          |                |
-                          |   AMQP broker  |
-                          |                |
-                          +----------------+
-                                ^     +
-                                |     |
-data.tun.fromAgent.agent_name   |     |  data.tun.toAgent.agent_name
-                                |     |
-                                +     v
-                 +---------------------------------+
-                 |                                 |
-                 |             Agent               |
-                 |           (tun mode)            |
-                 |                                 |
-                 |   +------tun interface--------+ |
-                 |  +----------------------------+ |
-                 |  |         IPv6-based         | |
-                 |  |        communicating       | |
-                 |  |      piece of software     | |
-                 |  |      (e.g. coap client)    | |
-                 |  +----------------------------+ |
-                 +---------------------------------+
-```
-
-------------------------------------------------------------------------------
-
-### How do I know it's working?
-
-If everything goes well you should see in your terminal sth like this:
-
-fsismondi@carbonero250:~/dev/agent$ sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
-Password:
-
-      ______    _____       _                       
-     |  ____|  |_   _|     | |                      
-     | |__ ______| |  _ __ | |_ ___ _ __ ___  _ __  
-     |  __|______| | | '_ \| __/ _ \ '__/ _ \| '_ \ 
-     | |        _| |_| | | | ||  __/ | | (_) | |_) |
-     |_|       |_____|_| |_|\__\___|_|  \___/| .__/ 
-                                             | |    
-                                             |_|    
-
-INFO:__main__:Try to connect with {'session': u'session05', 'user': u'paul', (...)
-INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/session05
-INFO:connectors.tun:tun listening to control plane 
-INFO:connectors.tun:Queue: control.tun@coap_client 
-INFO:connectors.tun:Topic: control.tun.toAgent.coap_client
-INFO:connectors.tun:tun listening to data plane
-INFO:connectors.tun:Queue: data.tun@coap_client
-INFO:connectors.tun:Topic: data.tun.toAgent.coap_client
-INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/session05
-INFO:connectors.core:Backend ready to consume data
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
-## After clicking in "Test Suite Start" you should be able to test the agent:
-
-### Test1 : check the tun interface was created (unless agent was runned in --serial mode) 
-\n\n
-Then after the user triggers **test suite start** should see a new network interface in your PC:
-\n\n
-`fsismondi@carbonero250:~$ ifconfig`
-\n\n
-should show:
-\n\n
-```
-    tun0: flags=8851<UP,POINTOPOINT,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-        inet6 fe80::aebc:32ff:fecd:f38b%tun0 prefixlen 64 scopeid 0xc 
-        inet6 bbbb::1 prefixlen 64 
-        inet6 fe80::1%tun0 prefixlen 64 scopeid 0xc 
-        nd6 options=201<PERFORMNUD,DAD>
-        open (pid 7627)
-```
-
-----------------------------------------------------------------------------
-
-### Test2 : ping the other device (unless agent was runned in --serial mode) 
-\n\n
-Now you could try ping6 the other implementation in the VPN:
-\n\n
-`fsismondi@carbonero250:~$ ping6 bbbb::2`
-\n\n
-should show:
-\n\n
-```
-    fsismondi@carbonero250:~$ ping6 bbbb::2
-    PING6(56=40+8+8 bytes) bbbb::1 --> bbbb::2
-    16 bytes from bbbb::2, icmp_seq=0 hlim=64 time=65.824 ms
-    16 bytes from bbbb::2, icmp_seq=1 hlim=64 time=69.990 ms
-    16 bytes from bbbb::2, icmp_seq=2 hlim=64 time=63.770 ms
-    ^C
-    --- bbbb::2 ping6 statistics ---
-    3 packets transmitted, 3 packets received, 0.0% packet loss
-    round-trip min/avg/max/std-dev = 63.770/66.528/69.990/2.588 ms
-```
-
-----------------------------------------------------------------------------
-
-### More about the agent component:
-
-[link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
-
-\n\n
-"""
 
 
 def translate_ioppytest_description_format_to_tabulate(ls):
@@ -1181,28 +1039,22 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         return True
 
-
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
     def _tt_message_testsuite_start(self, user_input):
         return MsgTestSuiteStart()
 
-
     def _tt_message_testsuite_abort(self, user_input):
         return MsgTestSuiteAbort()
-
 
     def _tt_message_testcase_start(self, user_input):
         return MsgTestCaseStart(testcase_id=self._current_tc)
 
-
     def _tt_message_testcase_restart(self, user_input):
         return MsgTestCaseRestart()
 
-
     def _tt_message_testcase_skip(self, user_input):
         return MsgTestCaseSkip()
-
 
     def _tt_message_step_verify_executed(self, user_input):
         logger.info("processing: %s | %s" % (user_input, type(user_input)))
@@ -1224,13 +1076,11 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
-
     def _tt_message_step_stimuli_executed(self, user_input):
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
         )
-
 
     # # # # # # # UI Messages # # # # # # # # # # # # # #
 
@@ -1247,7 +1097,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             fields=fields,
             tags={"testsuite": ""})
 
-
     def _ui_request_testcase_start(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
             title="Do you want to start the TEST CASE \n(%s)?" % self._current_tc
@@ -1261,7 +1110,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         ]
         return message_ui_request
 
-
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
             title="Do you confirm executing the STIMULI \n(%s)? " % self._current_step
@@ -1274,7 +1122,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             },
         ]
         return message_ui_request
-
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
@@ -1320,18 +1167,125 @@ class SixLoWPANSessionMessageTranslator(object):
 
 
 class DummySessionMessageTranslator(object):
-    def bootstrap(self):
-        pass
+    def bootstrap(self, amqp_connector):
+        import inspect
 
-        # def example_1(self):
-        #     # EXAMPLE ON REQUEST REPLY FOR UI BUTTONS:
-        #     con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        #     channel = con.channel()
-        #
-        #     ui_request = MsgUiRequestConfirmationButton()
-        #     print("publishing .. %s" % repr(ui_request))
-        #     ui_reply = amqp_request(con, ui_request, 'dummy_component')
-        #     print(repr(ui_reply))
+        snippets = [self.snippet_1, self.snippet_2]
+        self.basic_display("This will demonstrate the basic calls for using the UI by using the <utils> library",
+                           tags={"tutorial": ""})
+
+        for example in snippets:
+            time.sleep(10)
+            markdown_text = ""
+            markdown_text += ("\n-----------\n")
+            markdown_text += inspect.getdoc(example)
+            markdown_text += ("\n-----------\n")
+            markdown_text += ("\n-----------\n")
+            markdown_text += ("the souce code is:\n")
+            markdown_text += ("\n```\n")
+            markdown_text += (inspect.getsource(example))
+            markdown_text += ("\n```\n")
+            markdown_text += ("\n-----------\n")
+
+            self.basic_display(markdown_text, tags={"tutorial": ""})
+            markdown_text2 = ("the example will executed in 10 seconds, "
+                              "you can navegate through the tags by clicking on the timeline on the top left..")
+            self.basic_display(markdown_text2, tags={"tutorial": ""})
+
+            time.sleep(10)
+            example()
+
+    def snippet_1(self):
+        """
+        This snippet shows how to display a messsage to all users (ui.user.all.display), using the <utils> library
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        message = MsgUiDisplayMarkdownText(
+            title="Hello world Title!",
+            level='highlighted',
+            tags={"snippet": "1"},
+            fields=[
+                {
+                    'type': 'p',
+                    'value': "## Hello world message using MD :)"
+                }
+            ]
+        )
+        publish_message(connection, message)
+
+    def snippet_2(self):
+        """
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the <utils>
+        library. This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        syncrhonous calls tho :P
+
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        ui_request = MsgUiRequestConfirmationButton(
+            title="Hello world Title!",
+            level='highlighted',
+            tags={"snippet": "2"},
+            fields=[
+                {
+                    "name": "confirmation_button",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        try:
+            ui_reply = amqp_request(connection,
+                                    ui_request,
+                                    'dummy_component',
+                                    retries=30)  # fixme change retries by timeout
+        except AmqpSynchCallTimeoutError:
+            self.basic_display("The message request (timeout = 30 seconds) ): %s" % repr(ui_request),
+                               tags={"snippet": "2"}, )
+            self.basic_display("The message reply was never received :/ did you click on the confirmation button?",
+                               tags={"snippet": "2"}, )
+            return
+
+        self.basic_display("The message request: %s" % repr(ui_request),
+                           tags={"snippet": "2"}, )
+        self.basic_display("The message reply: %s" % repr(ui_reply),
+                           tags={"snippet": "2"}, )
+
+    def basic_display(self, text: str, tags={}):
+        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
+        from ioppytest.utils.event_bus_utils import publish_message
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        message = MsgUiDisplayMarkdownText(
+            tags=tags,
+            fields=[
+                {
+                    'type': 'p',
+                    'value': "%s" % text
+                }
+            ]
+        )
+        publish_message(connection, message)
 
 
 __all__ = [

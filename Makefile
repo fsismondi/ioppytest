@@ -21,11 +21,13 @@ help: ## Help dialog.
 docker-build-all: ## Build all testing tool in docker images
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
+	$(MAKE) _docker-build-dummy-gui-adaptor
 	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
 	#$(MAKE) _docker-build-6lowpan
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-comi
+
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -126,6 +128,12 @@ _check-sudo:
 	then \
 		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
 	fi
+
+_docker-build-dummy-gui-adaptor:
+	@echo "Starting to build the dummy-gui-adaptor.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t dummy-gui-adaptor -f envs/dummy_testing_tool/Dockerfile .
 
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."

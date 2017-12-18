@@ -11,7 +11,8 @@ from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH, MESSAGES_NOT_TO_BE_ECHOED
-from ioppytest.finterop_ui_adaptor.message_translators import (CoMISessionMessageTranslator,
+from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
+                                                               CoMISessionMessageTranslator,
                                                                CoAPSessionMessageTranslator,
                                                                SixLoWPANSessionMessageTranslator,
                                                                OneM2MSessionMessageTranslator)
@@ -75,6 +76,7 @@ def publish_message(connection, message):
 
 
 mapping_testsuite_to_message_translator = {
+    'dummy': DummySessionMessageTranslator,
     'coap': CoAPSessionMessageTranslator,
     'onem2m': OneM2MSessionMessageTranslator,
     '6lowpan': SixLoWPANSessionMessageTranslator,
@@ -217,7 +219,7 @@ class AmqpMessagePublisher:
         :param timeout: Timeout in seconds, else expection is raised
         :return: Reply message
         """
-        return amqp_request(self.connection, request, COMPONENT_ID, retries=timeout*2)
+        return amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
 
 
 def main():
