@@ -325,6 +325,11 @@ class AmqpDataPacketDumper:
             if isinstance(m, MsgTestingToolTerminate):
                 ch.stop_consuming()
                 self.stop()
+                logger.info('Sniffer terminated...')
+
+            if isinstance(m, MsgSniffingStop):
+                ch.stop_consuming()
+                self.stop()
                 logger.info('Sniffer stopped...')
                 
 
@@ -598,7 +603,7 @@ def launch_amqp_data_to_pcap_dumper(dump_dir= None, filename = None, amqp_url=No
     else:
         print("Default Topics")
         pcap_amqp_topic_subscriptions = ['data.tun.fromAgent.*',
-                                         'data.serial.fromAgent.*']
+                                         'data.serial.fromAgent.*','control.sniffing.service']
 
     # init pcap_dumper
     pcap_dumper = AmqpDataPacketDumper(
