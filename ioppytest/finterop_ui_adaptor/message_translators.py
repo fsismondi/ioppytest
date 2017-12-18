@@ -1177,11 +1177,10 @@ class DummySessionMessageTranslator(object):
         for example in snippets:
             time.sleep(10)
             markdown_text = ""
+            #markdown_text += ("\n-----------\n")
+            #markdown_text += inspect.getdoc(example)
+            #markdown_text += ("\n-----------\n")
             markdown_text += ("\n-----------\n")
-            markdown_text += inspect.getdoc(example)
-            markdown_text += ("\n-----------\n")
-            markdown_text += ("\n-----------\n")
-            markdown_text += ("the souce code is:\n")
             markdown_text += ("\n```\n")
             markdown_text += (inspect.getsource(example))
             markdown_text += ("\n```\n")
@@ -1256,15 +1255,15 @@ class DummySessionMessageTranslator(object):
                                     'dummy_component',
                                     retries=30)  # fixme change retries by timeout
         except AmqpSynchCallTimeoutError:
-            self.basic_display("The message request (timeout = 30 seconds) ): %s" % repr(ui_request),
+            self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "2"}, )
             self.basic_display("The message reply was never received :/ did you click on the confirmation button?",
                                tags={"snippet": "2"}, )
             return
 
-        self.basic_display("The message request: %s" % repr(ui_request),
+        self.basic_display("The message request: \n`%s`" % repr(ui_request),
                            tags={"snippet": "2"}, )
-        self.basic_display("The message reply: %s" % repr(ui_reply),
+        self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
                            tags={"snippet": "2"}, )
 
     def basic_display(self, text: str, tags={}):
