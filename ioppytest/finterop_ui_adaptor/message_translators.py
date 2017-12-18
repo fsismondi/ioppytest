@@ -1171,7 +1171,8 @@ class DummySessionMessageTranslator(object):
         import inspect
 
         snippets = [self.snippet_1, self.snippet_2]
-        self.basic_display("This will demonstrate the basic calls for using the UI by using the <utils> library",
+        self.basic_display("This will demonstrate the basic calls for using the UI by using the "
+                           "[utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library",
                            tags={"tutorial": ""})
 
         for example in snippets:
@@ -1196,7 +1197,8 @@ class DummySessionMessageTranslator(object):
 
     def snippet_1(self):
         """
-        This snippet shows how to display a messsage to all users (ui.user.all.display), using the <utils> library
+        This snippet shows how to display a messsage to all users (ui.user.all.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library
         """
         # this imports are absolute, for your case these will probably change
         from ioppytest.utils.messages import MsgUiDisplayMarkdownText
@@ -1222,8 +1224,11 @@ class DummySessionMessageTranslator(object):
 
     def snippet_2(self):
         """
-        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the <utils>
-        library. This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
+        library.
+
+        (!) This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
         syncrhonous calls tho :P
 
         """
