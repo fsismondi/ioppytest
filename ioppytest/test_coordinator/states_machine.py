@@ -48,7 +48,7 @@ logger.addHandler(rabbitmq_handler)
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.WARNING)
 
-logging.getLogger('transitions').setLevel(logging.DEBUG)
+logging.getLogger('transitions').setLevel(logging.INFO)
 
 
 @add_state_features(Tags, Timeout)

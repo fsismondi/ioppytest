@@ -36,7 +36,6 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
 
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.WARNING)
