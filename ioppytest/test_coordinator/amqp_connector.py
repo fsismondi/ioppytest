@@ -8,7 +8,7 @@ from transitions.core import MachineError
 # TODO fix me! dont do agent stuff in coordinator
 from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
-from ioppytest import AMQP_EXCHANGE, AMQP_URL
+from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
 from ioppytest.utils.amqp_synch_call import publish_message, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -36,21 +36,16 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'amqp_connector')
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
-
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
+logger.setLevel(LOG_LEVEL)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 TOUT_waiting_for_iut_configuration_executed = 5
 

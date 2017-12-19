@@ -11,7 +11,7 @@ from transitions import Machine
 from transitions.core import MachineError
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE
+from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest.utils.messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -37,21 +37,16 @@ IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.DEBUG)
-
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
+logger.setLevel(LOG_LEVEL)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.INFO)
 
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 logging.getLogger('transitions').setLevel(logging.DEBUG)
 

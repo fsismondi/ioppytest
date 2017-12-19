@@ -7,7 +7,7 @@ import sys
 import argparse
 import logging
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_CONFIGS
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import TestConfig
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
@@ -16,17 +16,13 @@ COMPONENT_ID = 'packet_router'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
+logger.setLevel(LOG_LEVEL)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-logger.setLevel(logging.DEBUG)
 
 
 class PacketRouter(threading.Thread):

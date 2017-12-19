@@ -15,7 +15,7 @@ import threading
 
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
 
 
@@ -25,7 +25,7 @@ STIMULI_HANDLER_TOUT = 10
 COMPONENT_ID = 'automation'
 
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
+logger.setLevel(LOG_LEVEL)
 
 
 @property
@@ -108,18 +108,18 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        logging.info('Event received: %s' % repr(event))
+        logger.info('Event received: %s' % repr(event))
 
         if isinstance(event, MsgTestCaseReady):
             if event.testcase_id not in self.implemented_testcases_list:
                 time.sleep(0.1)
-                logging.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
+                logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
                 publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
             else:
-                logging.info('IUT %s ready to execute testcase' % self.component_id)
+                logger.info('IUT %s ready to execute testcase' % self.component_id)
 
         elif isinstance(event, MsgStepStimuliExecute):
-            logging.info('event.node %s,%s' % (event.node, self.node))
+            logger.info('event.node %s,%s' % (event.node, self.node))
             if event.node == self.node and event.step_id in self.stimuli_cmd_dict:
                 # TODO Fix me: No  need to go fetch CMD to child object, just call as _execute_simuli(step_id,target_address)
                 cmd = self.stimuli_cmd_dict[event.step_id]
@@ -130,7 +130,7 @@ class AutomatedIUT(threading.Thread):
                                           addr)  # this should be a blocking call until stimuli has been executed
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
-                logging.info('Event received and ignored: %s (node: %s - step: %s)' %
+                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                              (
                                  event._type,
                                  event.node,
@@ -146,7 +146,7 @@ class AutomatedIUT(threading.Thread):
                                                                     node=self.node
                                                                     ))
             else:
-                logging.info('Event received and ignored: %s (node: %s - step: %s)' %
+                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                              (
                                  event._type,
                                  event.node,
@@ -154,16 +154,16 @@ class AutomatedIUT(threading.Thread):
                              ))
 
         elif isinstance(event, MsgTestSuiteReport):
-            logging.info('Test suite finished, final report: %s' % event.to_json())
+            logger.info('Test suite finished, final report: %s' % event.to_json())
 
         elif isinstance(event, MsgTestingToolTerminate):
-            logging.info('Test terminate signal received. Quitting..')
+            logger.info('Test terminate signal received. Quitting..')
             time.sleep(2)
             self._exit
 
         elif isinstance(event, MsgConfigurationExecute):
             if event.node == self.node:
-                logging.info('Configure test case %s', event.testcase_id)
+                logger.info('Configure test case %s', event.testcase_id)
                 # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
                 ipaddr = self._execute_configuration(event.testcase_id,
                                                      event.node)  # this should be a blocking call until configuration has been done
@@ -171,7 +171,7 @@ class AutomatedIUT(threading.Thread):
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.connection, m)
         else:
-            logging.info('Event received and ignored: %s' % event._type)
+            logger.info('Event received and ignored: %s' % event._type)
 
     def _exit(self):
         m = MsgTestingToolComponentShutdown(component=self.component_id)
@@ -257,13 +257,13 @@ class UserMock(threading.Thread):
         elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
             publish_message(self.connection, m)
-            logging.info('Event received %s' % event._type)
-            logging.info('Event description %s' % event.description)
-            logging.info('Event pushed %s' % m)
+            logger.info('Event received %s' % event._type)
+            logger.info('Event description %s' % event.description)
+            logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseReady):
-            logging.info('Event received %s' % event._type)
-            logging.info('Event description %s' % event.description)
+            logger.info('Event received %s' % event._type)
+            logger.info('Event description %s' % event.description)
 
             # m = MsgTestCaseStart()
             # publish_message(self.connection, m)
@@ -272,16 +272,16 @@ class UserMock(threading.Thread):
                 m = MsgTestCaseStart()
                 publish_message(self.connection, m)
 
-                logging.info('Event pushed %s' % m)
+                logger.info('Event pushed %s' % m)
             else:
                 m = MsgTestCaseSkip(testcase_id=event.testcase_id)
                 publish_message(self.connection, m)
-                logging.info('Event pushed %s' % m)
+                logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseVerdict):
-            logging.info('Event received %s' % event._type)
-            logging.info('Event description %s' % event.description)
-            logging.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
+            logger.info('Event received %s' % event._type)
+            logger.info('Event description %s' % event.description)
+            logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
 
             #  Save verdict
             json_file = os.path.join(
@@ -292,36 +292,36 @@ class UserMock(threading.Thread):
                 f.write(event.to_json())
 
         elif isinstance(event, MsgTestSuiteReport):
-            logging.info('Test suite finished, final report: %s' % event.to_json())
+            logger.info('Test suite finished, final report: %s' % event.to_json())
             time.sleep(2)
             m = MsgTestingToolTerminate()
             publish_message(self.connection, m)
             time.sleep(2)
 
         elif isinstance(event, MsgTestingToolTerminate):
-            logging.info('Event received %s' % event._type)
-            logging.info('Event description %s' % event.description)
-            logging.info('Terminating execution.. ')
+            logger.info('Event received %s' % event._type)
+            logger.info('Event description %s' % event.description)
+            logger.info('Terminating execution.. ')
             time.sleep(2)
             self.stop()
 
         elif isinstance(event, MsgStepStimuliExecute):
-            logging.info('Message received %s . IUT node: %s ' % (event._type, event.node))
-            logging.info('Event description %s' % event.description)
+            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logger.info('Event description %s' % event.description)
 
         elif isinstance(event, MsgStepVerifyExecute):
-            logging.info('Message received %s . IUT node: %s ' % (event._type, event.node))
-            logging.info('Event description %s' % event.description)
+            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logger.info('Event description %s' % event.description)
 
         elif isinstance(event, MsgTestingToolComponentReady) or isinstance(event, MsgTestingToolComponentShutdown):
-            logging.info('Message received %s . Component: %s ' % (event._type, event.component))
+            logger.info('Message received %s . Component: %s ' % (event._type, event.component))
 
         else:
 
             if hasattr(event, 'description'):
-                logging.info('Event received and ignored < %s >  %s' % (event._type, event.description))
+                logger.info('Event received and ignored < %s >  %s' % (event._type, event.description))
             else:
-                logging.info('Event received and ignored: %s' % event._type)
+                logger.info('Event received and ignored: %s' % event._type)
 
     def stop(self):
         self.shutdown = True

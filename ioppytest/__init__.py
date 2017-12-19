@@ -33,6 +33,9 @@ LOGGER_FORMAT = '%(levelname)s %(name)s [%(threadName)s] %(message)s'
 
 # # # # # # hard variables # # # # # # # # # #
 
+# python configs
+LOG_LEVEL = 30  # logging.INFO -> 20, logging.WARNING -> 30
+
 # project directories
 PROJECT_DIR = project_dir
 TMPDIR = os.path.join(project_dir, 'tmp')

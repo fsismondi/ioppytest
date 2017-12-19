@@ -17,13 +17,15 @@ import posixpath
 import mimetypes
 from jinja2 import Template
 
-from ioppytest import TEST_DESCRIPTIONS , RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR
+from ioppytest import TEST_DESCRIPTIONS, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR, LOG_LEVEL
 from ioppytest.test_coordinator.testsuite import TestCase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
 COMPONENT_ID = 'webserver'
 
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(LOG_LEVEL)
 
 td_list = []
 FILENAME_HTML_REPORT = 'testsuite_results.html'
@@ -57,6 +59,7 @@ def create_html_test_results():
         resp = template_test_vedict.render(items=items)
         file.write(resp)
     return resp
+
 
 # TODO server config files too
 

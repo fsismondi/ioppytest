@@ -6,7 +6,7 @@ import shutil
 import logging
 from datetime import time, datetime
 
-from ioppytest import TMPDIR
+from ioppytest import TMPDIR, LOG_LEVEL
 from ioppytest.utils.messages import *
 from ioppytest.utils.pure_pcapy import DLT_RAW, DLT_IEEE802_15_4_NOFCS, Dumper, Pkthdr
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -97,7 +97,7 @@ class AmqpDataPacketDumper:
         rabbitmq_handler.setFormatter(json_formatter)
 
         self.logger.addHandler(rabbitmq_handler)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(LOG_LEVEL)
 
         # subscribe to data plane channels
         if topics is None:

@@ -6,7 +6,7 @@ import argparse
 import threading
 from queue import Queue
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
@@ -19,7 +19,7 @@ from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessa
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
-logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
+logging.basicConfig(level=LOG_LEVEL, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
@@ -236,7 +236,8 @@ def main():
         args = parser.parse_args()
 
     except Exception as e:
-        print(e)
+        logger.error(e)
+        return
 
     try:
         message_translator = mapping_testsuite_to_message_translator[args.test_suite]()

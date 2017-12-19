@@ -3,6 +3,7 @@ import logging
 import traceback
 import textwrap
 
+from ioppytest import LOG_LEVEL
 from ioppytest.utils.messages import *
 from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
@@ -10,7 +11,7 @@ from ioppytest.finterop_ui_adaptor.user_help_text import *
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 
 def translate_ioppytest_description_format_to_tabulate(ls):
@@ -256,7 +257,7 @@ class GenericBidirectonalTranslator(object):
         # print states table
         status_table = [['current testcase id', 'current test step id']]
         status_table.append([self._current_tc, self._current_step])
-        print(tabulate(status_table, tablefmt="grid", headers="firstrow"))
+        logger.debug(tabulate(status_table, tablefmt="grid", headers="firstrow"))
 
     def tag_message(self, msg):
         """
@@ -390,7 +391,7 @@ class GenericBidirectonalTranslator(object):
             ]
             table.append(entry)
 
-        print(tabulate(table, tablefmt="grid", headers="firstrow"))
+        logger.debug(tabulate(table, tablefmt="grid", headers="firstrow"))
 
     def get_pending_messages_correlation_id(self):
         return list(self._pending_responses.keys())

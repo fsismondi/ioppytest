@@ -12,7 +12,7 @@ import traceback
 import multiprocessing
 from datetime import time
 
-from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE
+from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest.utils.pure_pcapy import DLT_RAW, DLT_IEEE802_15_4_NOFCS
 from ioppytest.utils.messages import *
@@ -50,7 +50,7 @@ class Sniffer:
 
         # init logging to stnd output and log files
         self.logger = logging.getLogger(self.COMPONENT_ID)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(LOG_LEVEL)
 
     def connect(self):
 

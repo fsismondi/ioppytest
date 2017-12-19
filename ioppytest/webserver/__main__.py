@@ -1,10 +1,12 @@
 import logging
 import socket
+from ioppytest import LOG_LEVEL
 from ioppytest.webserver.webserver import *
 
 COMPONENT_ID = 'webserver'
 
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(LOG_LEVEL)
 
 
 class HTTPServerV6(HTTPServer):
