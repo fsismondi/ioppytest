@@ -118,7 +118,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
     node('docker'){
 
         /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
-        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session?socket_timeout=1"
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000

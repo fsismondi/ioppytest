@@ -997,7 +997,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         try:
             resp = amqp_connector.synch_request(
                 request=req,
-                timeout=60,
+                timeout=300,
             )
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
@@ -1033,7 +1033,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         try:
             resp = amqp_connector.synch_request(
                 request=req,
-                timeout=60,
+                timeout=300,
             )
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass

@@ -2,7 +2,9 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 
 env_vars_export = """
-Export environment variables: 
+Please open a Terminal where to execute the agent component (VPN client)
+and export environment variables: 
+
 
 `export AMQP_URL=%s`
 
