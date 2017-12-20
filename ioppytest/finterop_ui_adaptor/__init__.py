@@ -20,4 +20,3 @@ try:
     print('Env vars for AMQP connection succesfully imported')
 except KeyError:
     AMQP_URL = "amqp://guest:guest@localhost/"
-

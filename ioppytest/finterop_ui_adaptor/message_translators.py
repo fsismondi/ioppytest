@@ -704,7 +704,7 @@ class GenericBidirectonalTranslator(object):
          response_type          bool
 
         """
-        fields_to_translate = ['step_id', 'node', 'target_address', 'testcase_ref']
+        fields_to_translate = ['step_id', 'step_type', 'node', 'target_address', 'testcase_ref']
         fields = []
         for f in fields_to_translate:
             try:
@@ -713,7 +713,7 @@ class GenericBidirectonalTranslator(object):
                     'value': '%s: %s' % (f, getattr(message, f))
                 })
             except AttributeError as ae:
-                logger.error(ae)
+                logger.debug(ae)
 
         fields.append({
             'type': 'p',
@@ -724,7 +724,7 @@ class GenericBidirectonalTranslator(object):
         })
 
         return MsgUiDisplayMarkdownText(
-            title="Please execute/verify the STEP: %s" % message.step_id,
+            title="Please execute the %s STEP: %s" % (message.step_type, message.step_id),
             level='info',
             fields=fields
         )
@@ -1179,9 +1179,9 @@ class DummySessionMessageTranslator(object):
         for example in snippets:
             time.sleep(10)
             markdown_text = ""
-            #markdown_text += ("\n-----------\n")
-            #markdown_text += inspect.getdoc(example)
-            #markdown_text += ("\n-----------\n")
+            # markdown_text += ("\n-----------\n")
+            # markdown_text += inspect.getdoc(example)
+            # markdown_text += ("\n-----------\n")
             markdown_text += ("\n-----------\n")
             markdown_text += ("\n```\n")
             markdown_text += (inspect.getsource(example))
