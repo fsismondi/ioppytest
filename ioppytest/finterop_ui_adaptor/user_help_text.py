@@ -1,4 +1,4 @@
-from ioppytest.finterop_ui_adaptor import AMQP_URL,AMQP_EXCHANGE
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 
 env_vars_export = """

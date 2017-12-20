@@ -86,6 +86,10 @@ class CoordinatorAmqpInterface(object):
     def get_new_amqp_connection(self):
         return pika.BlockingConnection(pika.URLParameters(self.amqp_url))
 
+    # def component_heart_beat(self):
+    #     if self.connection and self.connection.is_open:
+    #         publish_message(self.connection,MsgTest())
+
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
         self.channel = self.connection.channel()
@@ -126,6 +130,10 @@ class CoordinatorAmqpInterface(object):
         # getting a lot of ConnectionResetByPeerErrors then implement our own loop
         # using pika.procese_events.thingy
         try:
+            # while True:
+            #     self.connection.process_data_events()
+            #     self.component_heart_beat()
+            #     self.connection.sleep(0.5)
             self.channel.start_consuming()
         except KeyboardInterrupt:
             self.channel.stop_consuming()

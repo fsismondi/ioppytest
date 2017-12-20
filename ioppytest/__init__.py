@@ -34,7 +34,8 @@ LOGGER_FORMAT = '%(levelname)s %(name)s [%(threadName)s] %(message)s'
 # # # # # # hard variables # # # # # # # # # #
 
 # python configs
-LOG_LEVEL = 30  # logging.INFO -> 20, logging.WARNING -> 30
+LOG_LEVEL = 20  # logging.INFO -> 20, logging.WARNING -> 30
+AMQP_LOG_LEVEL = 30
 
 # project directories
 PROJECT_DIR = project_dir
@@ -75,14 +76,26 @@ except KeyError as e:
     AMQP_EXCHANGE = "amq.topic"
 
 try:
-    AMQP_URL = str(os.environ['AMQP_URL'])
+
+    # append to URL AMQP connection parameters
+    env_url = str(os.environ['AMQP_URL'])
+    if 'heartbeat_interval' not in env_url:
+        AMQP_URL = '%s?%s&%s&%s&%s&%s' % (
+            env_url,
+            "heartbeat_interval=0",
+            "blocked_connection_timeout=300",
+            "retry_delay=1",
+            "socket_timeout=1",
+            "connection_attempts=3"
+        )
+    else:
+        AMQP_URL = env_url
+
     p = urlparse(AMQP_URL)
     AMQP_USER = p.username
     AMQP_PASS = p.password
     AMQP_SERVER = p.hostname
     AMQP_VHOST = p.path.strip('/')
-
-    #print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
 

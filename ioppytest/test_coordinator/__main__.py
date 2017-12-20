@@ -196,6 +196,8 @@ if __name__ == '__main__':
 
     # # # RUN TEST COORDINATION COMPONENT # # #
 
+    connection.close()
+
     try:
         logger.info('Starting coordinator..')
         # start consuming messages

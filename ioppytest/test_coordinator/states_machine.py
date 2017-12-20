@@ -512,7 +512,9 @@ states = [
     {
         'name': 'waiting_for_testcase_start',
         'on_enter': [],
-        'on_exit': []
+        'on_exit': [],
+        # for ignoring "Can't trigger event _all_iut_configuration_executed from state waiting_for_testcase_start!"
+        'ignore_invalid_triggers': True
     },
     {
         'name': 'preparing_next_step',  # dummy state used for factorizing several transitions
@@ -663,6 +665,11 @@ transitions = [
         'before': '_set_received_event',
         'after': 'notify_testcase_ready'
     },
+    # {
+    #     'trigger': '_all_iut_configuration_executed',
+    #     'source': 'waiting_for_iut_configuration_executed',
+    #     'dest': 'waiting_for_testcase_start',
+    # },
     {
         'trigger': '_timeout_waiting_step_executed',
         'source': 'waiting_for_step_executed',
