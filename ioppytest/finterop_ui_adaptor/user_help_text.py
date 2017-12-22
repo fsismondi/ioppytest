@@ -6,7 +6,7 @@ Please open a Terminal where to execute the agent component (VPN client)
 and export environment variables: 
 
 
-`export AMQP_URL=%s`
+`export AMQP_URL="%s"`
 
 `export AMQP_EXCHANGE=%s`
 """ % (AMQP_URL, AMQP_EXCHANGE)
@@ -25,6 +25,10 @@ agents_IP_tunnel_config = """
 
 ------------------------------------------------------------------------------
 ### Run (choose if either SomeAgentName1 or SomeAgentName2):
+
+
+(from inside agent repo)
+
 
 `sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
 
