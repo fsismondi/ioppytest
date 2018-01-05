@@ -18,15 +18,21 @@ help: ## Help dialog.
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
 
-docker-build-all: ## Build all testing tool in docker images
+tools:
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-dummy-gui-adaptor
 	$(MAKE) _docker-build-coap
-	$(MAKE) _docker-build-coap-additional-resources
-	#$(MAKE) _docker-build-6lowpan
+	$(MAKE) _docker-build-6lowpan
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-comi
+
+
+docker-build-all: ## Build all testing tool in docker images
+	@echo $(info_message)
+	@echo "Starting to build docker images.. "
+	$(MAKE) _docker-build-coap-additional-resources
+	$(MAKE) tools
 
 
 sniff-bus: ## Listen and echo all messages in the event bus

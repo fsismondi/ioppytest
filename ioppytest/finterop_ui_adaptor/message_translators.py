@@ -1162,9 +1162,12 @@ class OneM2MSessionMessageTranslator(object):
     pass
 
 
-class SixLoWPANSessionMessageTranslator(object):
-    # fixme import names directy from yaml files
-    pass
+class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
+
+    AGENT_NAMES = ['eut1', 'eut2']
+
+    def __init__(self):
+        super().__init__()
 
 
 class DummySessionMessageTranslator(object):

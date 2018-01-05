@@ -5,10 +5,15 @@ env_vars_export = """
 Please open a Terminal where to execute the agent component (VPN client)
 and export environment variables: 
 
+------------------------------------------------------------------------------
 
 `export AMQP_URL="%s"`
 
+------------------------------------------------------------------------------
+
 `export AMQP_EXCHANGE=%s`
+
+------------------------------------------------------------------------------
 """ % (AMQP_URL, AMQP_EXCHANGE)
 
 agents_IP_tunnel_config = """
