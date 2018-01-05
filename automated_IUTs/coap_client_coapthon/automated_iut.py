@@ -71,9 +71,14 @@ class CoapthonCoapClient(AutomatedIUT):
         except subprocess.TimeoutExpired as tout:
             logger.warning('Process timeout. info: %s' % str(tout))
 
+        except Exception as e:
+            logging.error('Error found on automated-iut while tryning to execute stimuli %s' % stimuli_step_id)
+            logging.error(e)
+
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
         return coap_host_address
+
 
 if __name__ == '__main__':
     iut = CoapthonCoapClient()

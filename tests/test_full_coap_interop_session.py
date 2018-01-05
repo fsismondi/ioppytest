@@ -3,8 +3,8 @@
 
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
-
 from automated_IUTs.automation import UserMock
+
 from urllib.parse import urlparse
 import logging
 
@@ -92,11 +92,13 @@ class SessionMockTests(unittest.TestCase):
 
             report_type = MsgTestSuiteReport()._type
 
-            logging.info("EVENTS: %s" % event_types_sniffed_on_bus)
-            logging.info(events_sniffed_on_bus[report_type])
+            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus)
 
             assert report_type in event_types_sniffed_on_bus, "Testing tool didnt emit any report"
             assert report_type in events_sniffed_on_bus, "Testing tool didnt emit any report"
+
+            logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
+            logging.info('report: %s' % repr(events_sniffed_on_bus[report_type]))
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
@@ -154,37 +156,6 @@ def check_for_bus_error(ch, method, props, body):
             raise Exception(err)
 
 
-class MessageGenerator(threading.Thread):
-    keepOnRunning = True
-
-    def __init__(self, amqp_url, amqp_exchange, messages_list):
-        threading.Thread.__init__(self)
-        self.messages = messages_list
-        self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-        self.channel = self.connection.channel()
-        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
-
-    def run(self):
-        logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
-                    "(for a coap client)" % (self.__class__.__name__))
-        try:
-            while self.keepOnRunning:
-                time.sleep(MESSAGES_WAIT_INTERVAL)
-                m = self.messages.pop(0)
-                publish_message(self.connection, m)
-                logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
-        except IndexError:
-            # list finished, lets wait so all messages are sent and processed
-            time.sleep(5)
-            pass
-        except pika.exceptions.ChannelClosed:
-            pass
-
-    def stop(self):
-        self.keepOnRunning = False
-        self.connection.close()
-
-
 class EventListener(threading.Thread):
     COMPONENT_ID = __name__
 
@@ -234,6 +205,9 @@ class EventListener(threading.Thread):
 
         except NonCompliantMessageFormatError as e:
             logger.warning("[%s] Non compliant message found: %s" % (self.__class__.__name__, e))
+
+        except Exception as e:
+            logging.error(e, exc_info=True)
 
     def run(self):
         self.channel.start_consuming()

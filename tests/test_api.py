@@ -3,6 +3,7 @@
 
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
+from tests import MessageGenerator
 
 from tests.pcap_base64_examples import *
 from urllib.parse import urlparse
@@ -196,7 +197,12 @@ class ApiTests(unittest.TestCase):
         messages += user_sequence
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
-        thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
+        thread_msg_gen = MessageGenerator(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            messages_list=messages,
+            wait_time_between_pubs=MESSAGES_WAIT_INTERVAL
+        )
         logger.debug("Starting Message Generator thread ")
 
         publish_message(
@@ -219,7 +225,7 @@ class ApiTests(unittest.TestCase):
             self.channel.start_consuming()
         except Exception as e:
             thread_msg_gen.stop()
-            assert False, str(e)
+            logging.error(e, exc_info=True)
 
     def test_testing_tool_internal_services(self):
         """
@@ -268,14 +274,14 @@ class ApiTests(unittest.TestCase):
                     services_mid_backlog.remove(props.correlation_id)
                     services_events_tracelog.append((msg_type, props.correlation_id))
                 else:
-                    assert False, 'got a reply but theres no request in the backlog'
+                    raise Exception('got a reply but theres no request in the backlog')
 
             elif '.service' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
                 services_events_tracelog.append((msg_type, props.correlation_id))
 
             else:
-                assert False, 'error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type)
+                raise Exception('error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type))
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (
@@ -309,7 +315,12 @@ class ApiTests(unittest.TestCase):
         messages += service_api_calls
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
-        thread_msg_gen = MessageGenerator(AMQP_URL, AMQP_EXCHANGE, messages)
+        thread_msg_gen = MessageGenerator(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            messages_list=messages,
+            wait_time_between_pubs=MESSAGES_WAIT_INTERVAL
+        )
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
 
         publish_message(
@@ -328,10 +339,17 @@ class ApiTests(unittest.TestCase):
 
         try:
             thread_msg_gen.start()
-            self.channel.start_consuming()  # returns from loop when MsgTestingToolTerminate is received
+            self.channel.start_consuming()
+            if len(services_mid_backlog) > 0:
+                raise Exception('A least one of the services request was not answered. backlog: %s. History: %s' \
+                                % (
+                                    services_mid_backlog,
+                                    services_events_tracelog
+                                )
+                                )
         except Exception as e:
             thread_msg_gen.stop()
-            assert False, str(e)
+            logging.error(e, exc_info=True)
 
         if len(services_mid_backlog) > 0:
             assert False, 'A least one of the services request was not answered. backlog: %s. History: %s' \

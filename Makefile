@@ -73,19 +73,19 @@ run-coap-server:
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
 
 stop-onem2m-testing-tool:
-	docker stop testing_tool-interoperability-onem2m
+	docker stop testing_tool-interoperability-onem2m --keep-going ; exit 0
 
 stop-6lowpan-testing-tool:
-	docker stop testing_tool-interoperability-6lowpan
+	docker stop testing_tool-interoperability-6lowpan --keep-going ; exit 0
 
 stop-coap-testing-tool:
-	docker stop testing_tool-interoperability-coap
+	docker stop testing_tool-interoperability-coap --keep-going ; exit 0
 
 stop-coap-server:
-	docker stop reference_iut-coap_server
+	docker stop reference_iut-coap_server --keep-going ; exit 0
 
 stop-coap-client:
-	docker stop reference_iut-coap_client
+	docker stop reference_iut-coap_client --keep-going ; exit 0
 
 stop-all: ## Stop testing tools running as docker containers
 	# (exit 0) -> so the script continues on errors
