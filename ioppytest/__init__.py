@@ -29,7 +29,7 @@ def get_from_environment(variable, default):
         print("Using default variable %s=%s" % (variable, default))
     return v
 
-LOGGER_FORMAT = '%(levelname)s %(name)s [%(threadName)s] %(message)s'
+LOGGER_FORMAT = '%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s'
 
 # # # # # # hard variables # # # # # # # # # #
 
