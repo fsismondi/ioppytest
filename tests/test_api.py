@@ -50,7 +50,6 @@ PRE-CONDITIONS:
 # for a typical user input, for a user (coap client) vs automated-iut ( coap server) session type:
 user_sequence = [
     MsgTestSuiteGetStatus(),
-    MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
@@ -206,12 +205,22 @@ class ApiTests(unittest.TestCase):
         )
         logger.debug("Starting Message Generator thread ")
 
-        publish_message(self.conn, MsgSessionConfiguration(
-            configuration=default_configuration))  # this prepares the FSM of the coordinator
-        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        publish_message(
+            self.conn,
+            MsgSessionConfiguration(
+                configuration=default_configuration
+            )
+        )  # this prepares test suite's FSM
+
+        publish_message(
+            self.conn,
+            MsgTestSuiteStart()
+        )  # this starts test suite's FSM
+
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
         thread_msg_gen.start()
+
         try:
             self.channel.start_consuming()
         except Exception as e:
@@ -314,9 +323,18 @@ class ApiTests(unittest.TestCase):
         )
         logger.debug("[%s] Starting Message Generator thread " % sys._getframe().f_code.co_name)
 
-        publish_message(self.conn, MsgSessionConfiguration(
-            configuration=default_configuration))  # this prepares the FSM of the coordinator
-        publish_message(self.conn, MsgTestSuiteStart())  # this prepares the FSM of the coordinator
+        publish_message(
+            self.conn,
+            MsgSessionConfiguration(
+                configuration=default_configuration
+            )
+        )  # this prepares test suite's FSM
+
+        publish_message(
+            self.conn,
+            MsgTestSuiteStart()
+        )  # this starts test suite's FSM
+
         time.sleep(10)  # wait for the testing tool to enter test suite ready state
 
         try:
@@ -332,6 +350,13 @@ class ApiTests(unittest.TestCase):
         except Exception as e:
             thread_msg_gen.stop()
             logging.error(e, exc_info=True)
+
+        if len(services_mid_backlog) > 0:
+            assert False, 'A least one of the services request was not answered. backlog: %s. History: %s' \
+                          % (
+                              services_mid_backlog,
+                              services_events_tracelog
+                          )
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
@@ -451,3 +476,49 @@ def validate_message(ch, method, props, body):
             print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
             print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
             raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
+
+
+class MessageGenerator(threading.Thread):
+    keepOnRunning = True
+
+    def __init__(self, amqp_url, amqp_exchange, messages_list):
+        threading.Thread.__init__(self)
+        self.messages = messages_list
+
+        self.url = amqp_url
+        self.exchage = amqp_exchange
+        self.connection = None
+        self.channel = None
+        self.connect()
+        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
+
+    def connect(self):
+        self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
+        self.channel = self.connection.channel()
+
+    def run(self):
+        global MESSAGES_WAIT_INTERVAL
+        logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
+                    %(self.__class__.__name__))
+
+        while self.keepOnRunning:
+
+            try:
+                time.sleep(MESSAGES_WAIT_INTERVAL)
+                m = self.messages.pop(0)
+                publish_message(self.connection, m)
+                logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
+
+            except IndexError:
+                logger.info("[%s] No more messages in the messages queue, finishing.." % (self.__class__.__name__))
+                # list finished, lets wait so all messages are sent and processed
+                time.sleep(5)
+                break
+
+            except (pika.exceptions.ChannelClosed,pika.exceptions.ConnectionClosed):
+                self.connect()
+                self.messages.insert(0, m)  # re-queue message as next
+
+    def stop(self):
+        self.keepOnRunning = False
+        self.connection.close()

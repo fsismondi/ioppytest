@@ -12,8 +12,8 @@ import logging
 import argparse
 from threading import Timer
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS, LOGGER_FORMAT, LOG_LEVEL
+from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.amqp_synch_call import publish_message
@@ -21,28 +21,24 @@ from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponen
 from ioppytest.test_coordinator.states_machine import Coordinator
 
 COMPONENT_ID = 'test_coordinator|main'
+logging.basicConfig(format=LOGGER_FORMAT)
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
-
+logger.setLevel(LOG_LEVEL)
 
 # # default handler
 # sh = logging.StreamHandler()
 # logger.addHandler(sh)
 
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.DEBUG)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
-
-#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # make pika logger less verbose
 logging.getLogger('pika').setLevel(logging.WARNING)
-
 
 TT_check_list = [
     'dissection',
@@ -57,9 +53,14 @@ READY_SIGNAL_TOUT = 20
 
 if __name__ == '__main__':
 
+    no_component_checks = None
+    testsuite = None
+    ted_tc_file = None
+    ted_config_file = None
+
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'onem2m'])
+        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'onem2m', 'comi'])
         parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
                             action="store_true")
         args = parser.parse_args()
@@ -78,6 +79,10 @@ if __name__ == '__main__':
         elif testsuite == 'onem2m':
             ted_tc_file = TD_ONEM2M
             ted_config_file = TD_ONEM2M_CFG
+
+        elif testsuite == 'comi':
+            ted_tc_file = TD_COMI
+            ted_config_file = TD_COMI_CFG
 
         else:
             logger.error("Error , please see coordinator help (-h)")
@@ -144,7 +149,6 @@ if __name__ == '__main__':
             else:
                 pass
 
-
         # bind callback function to signal queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
@@ -191,6 +195,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # # # RUN TEST COORDINATION COMPONENT # # #
+
+    connection.close()
 
     try:
         logger.info('Starting coordinator..')

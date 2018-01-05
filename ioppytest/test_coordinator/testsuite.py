@@ -8,7 +8,7 @@ import logging
 from itertools import cycle
 from collections import OrderedDict
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
 from ioppytest.utils.exceptions import TestSuiteError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
@@ -16,20 +16,15 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
+logger.setLevel(LOG_LEVEL)
 
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 # # # YAML parser methods # # #
@@ -283,12 +278,25 @@ class TestSuite:
         if node and node_address:
             self.get_current_testcase_configuration().update_node_address(node, node_address)
             config = self.get_current_testcase_configuration().to_dict(verbose=True)
-            logger.info('IUT/EUT addresses updated: %s, topology: %s' % (config['addresses_table'], config['topology']))
+            logger.info(
+                'IUT/EUT addresses updated: %s, topology: %s' % (config['addressing_table'], config['topology']))
         else:
-            raise TestSuiteError('Expected node_id and node_address, but got %s , %s ' % (node, node_address))
+            raise TestSuiteError('Expected node_id and node_address (%s), but got %s , %s ' %
+                                 (
+                                     str(type(node_address)),
+                                     node,
+                                     node_address
+                                 ))
 
     def get_current_step_target_address(self):
-        return self.get_current_testcase_configuration().get_target_address(self.current_tc.current_step.iut.node)
+        # should return using format bbbb::1 , bbbb::2 , etc..
+        node = self.current_tc.current_step.iut.node
+        config = self.get_current_testcase_configuration()
+        address_tuple = config.get_target_address(node)
+
+        assert len(address_tuple) == 2
+
+        return "%s::%s" % address_tuple
 
     def check_all_iut_nodes_configured(self):
         current_config = self.get_current_testcase_configuration()
@@ -439,6 +447,15 @@ class TestSuite:
             return self.current_tc.state
         except Exception:
             return None
+
+    def get_agents_addressing_from_configurations(self):
+        # attention! TD configuration addresses overwrite themselves so keep the coherence at the yaml level!
+        testsuite_agents_config = {}
+
+        for tc_conf in self.tc_configs.values():
+            testsuite_agents_config.update(tc_conf.get_addressing_table())
+
+        return testsuite_agents_config
 
     def get_current_testcase_configuration(self):
         try:
@@ -673,28 +690,40 @@ class TestConfig:
     """
     This class is for generating objects containing a copy of the information of the test configuration yaml file
     """
-    def __init__(self, configuration_id, uri, nodes, topology, description):
+
+    def __init__(self, configuration_id, uri, nodes, topology, addressing, description):
         self.id = configuration_id
         self.uri = uri
         self.nodes = nodes
+        self.nodes_configured = set()
         self.description = description
 
         # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
         # see test configuration yaml file
         self.topology = topology
 
-        # initialize addresses table
-        self.addresses_table = dict()
-        for node in self.nodes:
-            self.addresses_table.update({node: None})
+        # default addressing table
+        self.addressing_table = dict()
+        for item in addressing:
+            self.addressing_table.update(
+                {
+                    item['node']:
+                        (
+                            item['ipv6_prefix'],
+                            item['ipv6_host']
+                        )
+                }
+            )
 
     def __repr__(self):
         return json.dumps(self.to_dict(True))
 
     def update_node_address(self, node, address):
-        assert node
-        assert address
-        self.addresses_table.update({node: address})
+        # TODO drop these assertions later on
+        assert type(node) is str
+        assert type(address) is tuple
+        self.addressing_table.update({node: address})
+        self.nodes_configured.add(node)
 
     def get_nodes_on_link(self, link=None):
         nodes_on_link = []
@@ -709,8 +738,12 @@ class TestConfig:
 
         return nodes_on_link
 
+    # TODO depricate all addresses related API calls in favour of this one
+    def get_addressing_table(self):
+        return self.addressing_table
+
     def get_node_address(self, node):
-        return self.addresses_table[node]
+        return self.addressing_table[node]
 
     def get_target_address(self, node, link=None):
         """
@@ -735,23 +768,17 @@ class TestConfig:
         return self.get_node_address(target_node)
 
     def check_all_iut_nodes_configured(self):
-        # checking that both "node" and "node_address" have a defined value
-        for node in self.get_nodes_on_link():
-            if node is None:
-                return False
-            if self.get_node_address(node) is None:
-                return False
-
-        return True
+        return len(self.nodes_configured) == len(self.get_nodes_on_link())
 
     def to_dict(self, verbose=None):
         d = OrderedDict()
         d['configuration_id'] = self.id
-        d['addresses_table'] = self.addresses_table
+        d['addressing_table'] = self.addressing_table
 
         # TODO deprecate this (returned keys of the dict should not be address_coap_client), use address table only
-        for key, val in self.addresses_table.items():
-            d['address_%s' % key] = val
+        # TODO deprecate sixlowpan automated iut may be using this
+        for key, val in self.addressing_table.items():
+            d['address_%s' % key] = "%s::%s" % val
 
         if verbose:
             d['configuration_ref'] = self.uri

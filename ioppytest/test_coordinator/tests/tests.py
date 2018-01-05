@@ -63,13 +63,13 @@ class CoordinatorStateMachineTests(unittest.TestCase):
 
         self.test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
             node="coap_server",
-            ipv6_address="someAddress"  # example of pixit
+            ipv6_address="someAddressFor::coap_server"  # example of pixit
         ))
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
 
         self.test_coordinator.iut_configuration_executed(MsgConfigurationExecuted(
             node="coap_client",
-            ipv6_address="someAddress"  # example of pixit
+            ipv6_address="someAddressFor::coap_server"  # example of pixit
         ))
         print(self.test_coordinator.state)
         assert self.test_coordinator.state == 'waiting_for_testcase_start'

@@ -4,10 +4,11 @@ import os
 import subprocess
 
 from ioppytest import TMPDIR
-from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST
+from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
 from automated_IUTs.automation import *
 
 logger = logging.getLogger()
+logger.setLevel(LOG_LEVEL)
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
@@ -58,7 +59,6 @@ class CaliforniumCoapServer(AutomatedIUT):
         return server_base_url
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
     iut = CaliforniumCoapServer()
     iut.start()
     iut.join()

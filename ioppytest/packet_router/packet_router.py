@@ -7,7 +7,7 @@ import sys
 import argparse
 import logging
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_CONFIGS
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import TestConfig
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
@@ -16,21 +16,16 @@ COMPONENT_ID = 'packet_router'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
+logger.setLevel(LOG_LEVEL)
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.DEBUG)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 class PacketRouter(threading.Thread):
-
     def __init__(self, amqp_url, amqp_exchange, routing_table):
         assert routing_table
 
@@ -142,13 +137,14 @@ class PacketRouter(threading.Thread):
     def shutdown_notification(self):
 
         # FINISHING... let's send a goodbye message
-        msg = {
-            'message': '{component} is out! Bye bye..'.format(component=COMPONENT_ID),
-            "_type": '{component}.shutdown'.format(component=COMPONENT_ID)
-        }
+        msg = MsgTestingToolComponentShutdown(
+            component=COMPONENT_ID,
+            description="%s is out!. Bye!" % COMPONENT_ID
+        )
+
         self.channel.basic_publish(
-            body=json.dumps(msg),
-            routing_key='control.session.info',
+            body=msg.to_json(),
+            routing_key=msg.routing_key,
             exchange=self.exchange_name,
             properties=pika.BasicProperties(
                 content_type='application/json',
@@ -172,7 +168,7 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
 
         nodes = link['nodes']
 
-        logging.info("Configuring routing tables for nodes: %s" %nodes)
+        logging.info("Configuring routing tables for nodes: %s" % nodes)
 
         # routes for agents' serial interfaces (802.15.4 nodes)
         serial_routes = {
@@ -246,6 +242,7 @@ def main():
     except (KeyboardInterrupt, SystemExit):
         logger.info('got SIGINT. Bye bye!')
         r.stop()
+
 
 ###############################################################################
 

@@ -1,9 +1,13 @@
-from ioppytest import TD_DIR, TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_ONEM2M, TD_ONEM2M_CFG
+from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import import_teds
 import unittest
 
 """
 python3 -m  pytest ioppytest/extended_test_descriptions/tests/tests.py
+
+or verbose unitest:
+
+python3 -m unittest ioppytest/extended_test_descriptions/tests/tests.py
 """
 
 
@@ -44,37 +48,19 @@ class ImportYamlInteropTestCases(unittest.TestCase):
         for field in tc_config_must_have_non_null_fields:
             assert getattr(config, field) is not None, 'TC yaml file must contain NOT NULL %s field' % field
 
-    def test_yaml_testcase_syntax_coap(self):
-        imported_tcs = import_teds(TD_COAP)
-        for tc in imported_tcs:
-            self.validate_testcase_description(tc)
+    def test_validate_test_descriptions(self):
+        for td in TEST_DESCRIPTIONS:
+            imported_tcs = import_teds(td)
+            for tc in imported_tcs:
+                print('validating %s (...)' % str(tc)[:70])
+                self.validate_testcase_description(tc)
 
-            for step in tc.sequence:
-                self.validate_step_description(step)
+                for step in tc.sequence:
+                    self.validate_step_description(step)
 
-    def test_yaml_testcase_syntax_6lowpan(self):
-        imported_tcs = import_teds(TD_6LOWPAN)
-
-        for tc in imported_tcs:
-            self.validate_testcase_description(tc)
-
-            for step in tc.sequence:
-                self.validate_step_description(step)
-
-    def test_yaml_testcase_configuration_syntax_coap(self):
-        imported_configs = import_teds(TD_COAP_CFG)
-        for tc_config in imported_configs:
-            self.validate_config_description(tc_config)
-
-    def test_yaml_testcase_syntax_onem2m(self):
-        imported_tcs = import_teds(TD_ONEM2M)
-
-        for tc in imported_tcs:
-            self.validate_testcase_description(tc)
-
-            for step in tc.sequence:
-                self.validate_step_description(step)
-
-if __name__ == '__main__':
-    c = ImportYamlInteropTestCases()
-    c.test_yaml_testcase_syntax()
+    def test_validate_test_description_configurations(self):
+        for td in TEST_DESCRIPTIONS_CONFIGS:
+            imported_configs = import_teds(td)
+            for tc_config in imported_configs:
+                print('validating %s (...)' % str(tc_config)[:70])
+                self.validate_config_description(tc_config)

@@ -2,9 +2,10 @@
 # !/usr/bin/env python3
 
 from automated_IUTs.automation import *
-from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
+from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 
 logger = logging.getLogger()
+logger.setLevel(LOG_LEVEL)
 
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
@@ -22,14 +23,13 @@ class CoapthonCoapServer(AutomatedIUT):
         'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py ',
     ]
 
-
     def __init__(self):
         super().__init__(self.node)
-        logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
+        logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
         # process is spawned by supervisord
 
     def _execute_verify(self, verify_step_id, ):
-        logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
+        logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_configuration(self, testcase_id, node):
         # shoud we restart californium process?
@@ -37,7 +37,6 @@ class CoapthonCoapServer(AutomatedIUT):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
     iut = CoapthonCoapServer()
     iut.start()
     iut.join()

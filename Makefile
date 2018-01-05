@@ -18,13 +18,22 @@ help: ## Help dialog.
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
 
+tools:
+	@echo $(info_message)
+	@echo "Starting to build docker images.. "
+	$(MAKE) _docker-build-dummy-gui-adaptor
+	$(MAKE) _docker-build-coap
+	$(MAKE) _docker-build-6lowpan
+	$(MAKE) _docker-build-onem2m
+	$(MAKE) _docker-build-comi
+
+
 docker-build-all: ## Build all testing tool in docker images
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
-	$(MAKE) _docker-build-coap
 	$(MAKE) _docker-build-coap-additional-resources
-	$(MAKE) _docker-build-6lowpan
-	$(MAKE) _docker-build-onem2m
+	$(MAKE) tools
+
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -49,11 +58,11 @@ run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_agent
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client_server
+	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
 
 run-coap-client:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -126,6 +135,12 @@ _check-sudo:
 		echo "(!) You are not root. This command requires 'sudo -E' \n"; \
 	fi
 
+_docker-build-dummy-gui-adaptor:
+	@echo "Starting to build the dummy-gui-adaptor.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t dummy-gui-adaptor -f envs/dummy_testing_tool/Dockerfile .
+
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
 
@@ -143,6 +158,15 @@ _docker-build-6lowpan:
 
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-6lowpan-v$(version):latest testing_tool-interoperability-6lowpan
+
+_docker-build-comi:
+	@echo "Starting to build CoMI testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build -t testing_tool-interoperability-comi-v$(version) -f envs/comi_testing_tool/Dockerfile .
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-comi-v$(version):latest testing_tool-interoperability-comi
 
 _docker-build-coap:
 	@echo "Starting to build coap testing tools.."

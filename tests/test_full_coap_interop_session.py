@@ -32,6 +32,9 @@ events_sniffed_on_bus = {}  # the dict allows us to index last received messages
 event_types_sniffed_on_bus = []  # the list allows us to monitor the order of events
 
 """
+EXECUTE AS:
+    python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment
 - Have CoAP testing tool running & listening to the bus

@@ -8,7 +8,7 @@ from transitions.core import MachineError
 # TODO fix me! dont do agent stuff in coordinator
 from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
-from ioppytest import AMQP_EXCHANGE, AMQP_URL
+from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
 from ioppytest.utils.amqp_synch_call import publish_message, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -36,21 +36,16 @@ COMPONENT_ID = '%s|%s' % ('test_coordinator', 'amqp_connector')
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.INFO)
+logger.setLevel(LOG_LEVEL)
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 TOUT_waiting_for_iut_configuration_executed = 5
 
@@ -78,8 +73,6 @@ class CoordinatorAmqpInterface(object):
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
             MsgSessionConfiguration: 'configure_testsuite',
-            MsgInteropSessionConfiguration: 'configure_testsuite',
-            # TODO deprecate this, use generic MsgSessionConfiguration
             MsgConfigurationExecuted: 'iut_configuration_executed',
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',
@@ -89,6 +82,13 @@ class CoordinatorAmqpInterface(object):
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseSkip: 'skip_testcase',
         }
+
+    def get_new_amqp_connection(self):
+        return pika.BlockingConnection(pika.URLParameters(self.amqp_url))
+
+    # def component_heart_beat(self):
+    #     if self.connection and self.connection.is_open:
+    #         publish_message(self.connection,MsgTest())
 
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
@@ -130,6 +130,10 @@ class CoordinatorAmqpInterface(object):
         # getting a lot of ConnectionResetByPeerErrors then implement our own loop
         # using pika.procese_events.thingy
         try:
+            # while True:
+            #     self.connection.process_data_events()
+            #     self.component_heart_beat()
+            #     self.connection.sleep(0.5)
             self.channel.start_consuming()
         except KeyboardInterrupt:
             self.channel.stop_consuming()
@@ -226,7 +230,8 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestingToolConfigured(
             **self.testsuite.get_testsuite_configuration()
         )
-        publish_message(self.connection, event)
+
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_finished(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -235,7 +240,7 @@ class CoordinatorAmqpInterface(object):
             description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -245,7 +250,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_report)
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_ready(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -260,7 +265,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestCaseReady(
             **msg_fields
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
@@ -275,15 +280,13 @@ class CoordinatorAmqpInterface(object):
             pass
 
         msg_fields = {}
-        # put step info
-        msg_fields.update(step_info_dict)
-        # put tc info
-        msg_fields.update(tc_info_dict)
-        # # put iut info
-        # if self.current_tc.current_step.iut:
+        msg_fields.update(step_info_dict)  # put step info
+        msg_fields.update(tc_info_dict)  # put tc info
+
+        # if self.current_tc.current_step.iut: # put iut info
         #     msg_fields.update(self.current_tc.current_step.iut.to_dict())
-        # put some extra description
-        description_message = ['Please execute step: %s' % step_info_dict['step_id']]
+
+        description_message = ['Please execute step: %s' % step_info_dict['step_id']]  # put some extra UI description
         description_message += ['Step description: %s' % step_info_dict['step_info']]
 
         if step_info_dict['step_type'] == "stimuli":
@@ -306,34 +309,35 @@ class CoordinatorAmqpInterface(object):
             logger.warning('CMD Step check or CMD step very not yet implemented')
             return  # not implemented
 
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testcase_started(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         event = MsgTestCaseStarted(
             **tc_info_dict
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_tun_interfaces_start(self, received_event):
         """
-        Starts tun interface in agent1, agent2 and agent TT.
+        Starts tun interface in user's agents agent TT.
         This is best effort approach, no exception is raised if the bootstrapping fails
         """
         logger.debug("Let's start the bootstrap the agents")
 
-        agent_names = self.testsuite.get_agent_names()
+        # fixme desable this for tests that dont require TUNs
+        nodes = self.testsuite.get_agents_addressing_from_configurations()
 
-        ipv6_network_prefix = "bbbb"
-        ipv6_host = 0
-
-        for name in agent_names:
-            ipv6_host += 1
+        for node_name, address_tuple in nodes.items():
+            # convention -> agents are named the same as the node roles (coap_client, etc..)
+            ipv6_network_prefix = address_tuple[0]
+            ipv6_host = address_tuple[1]
             assigned_ip = ":%s" % ipv6_host
+
             bootstrap_agent.bootstrap(
                 amqp_url=AMQP_URL,
                 amqp_exchange=AMQP_EXCHANGE,
-                agent_id=name,
+                agent_id=node_name,
                 ipv6_host=assigned_ip,
                 ipv6_prefix=ipv6_network_prefix,
                 ipv6_no_forwarding=False
@@ -345,13 +349,13 @@ class CoordinatorAmqpInterface(object):
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
             **self.testsuite.get_report()
         )
-        publish_message(self.connection, event)
+        publish_message(self.get_new_amqp_connection(), event)
 
     def notify_tescase_configuration(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -368,7 +372,7 @@ class CoordinatorAmqpInterface(object):
                 description=description,
                 **tc_info_dict
             )
-            publish_message(self.connection, event)
+            publish_message(self.get_new_amqp_connection(), event)
 
             # TODO how new way of config for 6lo handling is implemented in the FSM?
 

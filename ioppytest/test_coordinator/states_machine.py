@@ -11,7 +11,7 @@ from transitions import Machine
 from transitions.core import MachineError
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE
+from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest.utils.messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -19,45 +19,36 @@ from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
 from ioppytest.test_coordinator.testsuite import TestSuite
 
-# TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
-COAP_CLIENT_IUT_MODE = 'user-assisted'
-COAP_SERVER_IUT_MODE = 'automated'
-ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
+ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
 
 # if left empty => packet_sniffer chooses the loopback
 # TODO send flag to sniffer telling him to look for a tun interface instead!
-SNIFFER_FILTER_IF = 'tun0'
+SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # TODO 6lo FIX ME !
 # - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
 # - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
-# - COAP_CLIENT_IUT_MODE, COAP_SERVER_IUT_MODE , this should not exist in the code of the coord
-# - change all TESTCASES_ID so they dont contain a vXX at the end,  this doesnt make any sense
-
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
-STEP_TIMEOUT = 300  # seconds
-IUT_CONFIGURATION_TIMEOUT = 5  # seconds
+STEP_TIMEOUT = 300  # seconds   # TODO test suite param?
+IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-
-# # AMQP log handler with f-interop's json formatter
-# rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-# json_formatter = JsonFormatter()
-# rabbitmq_handler.setFormatter(json_formatter)
-# logger.addHandler(rabbitmq_handler)
-# logger.setLevel(logging.INFO)
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 # make pika logger less verbose
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
+
+logging.getLogger('transitions').setLevel(logging.INFO)
 
 
 @add_state_features(Tags, Timeout)
@@ -78,10 +69,10 @@ class Coordinator(CoordinatorAmqpInterface):
         # init amqp interface
         super(Coordinator, self).__init__(amqp_url, amqp_exchange)
 
-        machine = CustomStateMachine(model=self,
-                                     states=states,
-                                     transitions=transitions,
-                                     initial='null')
+        self.machine = CustomStateMachine(model=self,
+                                          states=states,
+                                          transitions=transitions,
+                                          initial='null')
 
     def _set_received_event(self, event=None):
         if event is None:
@@ -121,45 +112,30 @@ class Coordinator(CoordinatorAmqpInterface):
 
         logging.info(" Interop session configuration received : %s" % received_event)
 
-        if isinstance(received_event, MsgInteropSessionConfiguration):
-            # TODO deprecate this in favour of MsgSessionConfiguration
-            try:
-                for test in received_event.tests:
-                    test_url = urlparse(test['testcase_ref'])
-                    tc_id = str(test_url.path).lstrip("/tests/")
-                    session_tc_list.append(tc_id)
-            except Exception as e:
-                error_msg = "Wrong message format sent for session configuration."
-                raise CoordinatorError(message=error_msg)
+        try:
+            event_tc_list = received_event.configuration['testsuite.testcases']
+            assert type(event_tc_list) is list, 'Testcases list expected'
+            for t in event_tc_list:
+                test_url = urlparse(t)
+                session_tc_list.append(str(test_url.path).lstrip("/tests/"))
 
-            try:
-                session_id = received_event.session_id
-                session_users = received_event.users
-                session_config = received_event.configuration
-            except:
-                logger.warning("Missing fields in message configuration: %s" % received_event)
+        except KeyError as e:
+            error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
+            logging.warning(error_msg)
+            session_tc_list = self.testsuite.get_testcases_list()
 
-            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
+        except Exception as e:
+            error_msg = "Wrong message format sent for session configuration."
+            raise CoordinatorError(message=error_msg)
 
-        elif isinstance(received_event, MsgSessionConfiguration):
-            try:
-                event_tc_list = received_event.configuration['testsuite.testcases']
-                assert type(event_tc_list) is list, 'Testcases list expected'
-                for t in event_tc_list:
-                    test_url = urlparse(t)
-                    session_tc_list.append(str(test_url.path).lstrip("/tests/"))
-            except Exception as e:
-                error_msg = "Wrong message format sent for session configuration."
-                raise CoordinatorError(message=error_msg)
+        try:
+            session_id = received_event.session_id
+            session_users = received_event.users
+            session_config = received_event.configuration
+        except:
+            logger.warning("Missing fields in message configuration: %s" % received_event)
 
-            try:
-                session_id = received_event.session_id
-                session_users = received_event.users
-                session_config = received_event.configuration
-            except:
-                logger.warning("Missing fields in message configuration: %s" % received_event)
-
-            self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
+        self.testsuite.configure_testsuite(session_tc_list, session_id, session_users, session_config)
 
     def handle_step_executed(self, received_event):
         logger.info("Handling step executed %s" % type(received_event))
@@ -192,7 +168,14 @@ class Coordinator(CoordinatorAmqpInterface):
         self.testsuite.abort_current_testcase()
 
     def handle_iut_configuration_executed(self, received_event):
-        self.testsuite.set_iut_configuration(received_event.node, received_event.ipv6_address)
+        if received_event.ipv6_address:
+            # fixme this only supports bbbb::1 , bbbb::2, etc format of addresses
+            address_tuple = tuple(received_event.ipv6_address.split('::'))
+            if len(address_tuple) != 2:
+                raise CoordinatorError('Received a wrong formatted address')
+            self.testsuite.set_iut_configuration(received_event.node, address_tuple)
+        else:
+            pass  # use default address
 
         if self.testsuite.check_all_iut_nodes_configured():
             self.trigger('_all_iut_configuration_executed', None)
@@ -291,7 +274,7 @@ class Coordinator(CoordinatorAmqpInterface):
                         for item in tat_response.partial_verdicts:
                             # let's partial verdict id
                             step_count += 1
-                            p = ("post_mortem_analysis_check_%d" % step_count, item[0], item[1])
+                            p = ("tat_check_%d" % step_count, item[0], item[1])
                             partial_verd.append(p)
                             logger.debug("Processing partical verdict received from TAT: %s" % str(p))
 
@@ -529,7 +512,9 @@ states = [
     {
         'name': 'waiting_for_testcase_start',
         'on_enter': [],
-        'on_exit': []
+        'on_exit': [],
+        # for ignoring "Can't trigger event _all_iut_configuration_executed from state waiting_for_testcase_start!"
+        'ignore_invalid_triggers': True
     },
     {
         'name': 'preparing_next_step',  # dummy state used for factorizing several transitions
@@ -680,6 +665,11 @@ transitions = [
         'before': '_set_received_event',
         'after': 'notify_testcase_ready'
     },
+    # {
+    #     'trigger': '_all_iut_configuration_executed',
+    #     'source': 'waiting_for_iut_configuration_executed',
+    #     'dest': 'waiting_for_testcase_start',
+    # },
     {
         'trigger': '_timeout_waiting_step_executed',
         'source': 'waiting_for_step_executed',

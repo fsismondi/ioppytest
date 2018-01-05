@@ -29,8 +29,13 @@ def get_from_environment(variable, default):
         print("Using default variable %s=%s" % (variable, default))
     return v
 
+LOGGER_FORMAT = '%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s'
 
 # # # # # # hard variables # # # # # # # # # #
+
+# python configs
+LOG_LEVEL = 20  # logging.INFO -> 20, logging.WARNING -> 30
+AMQP_LOG_LEVEL = 30
 
 # project directories
 PROJECT_DIR = project_dir
@@ -45,14 +50,17 @@ TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 
+TD_COMI = os.path.join(TD_DIR, "TD_COMI.yaml")
+TD_COMI_CFG = os.path.join(TD_DIR, "TD_COMI_CFG.yaml")
+
 TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
-TEST_DESCRIPTIONS = [TD_COAP, TD_6LOWPAN, TD_ONEM2M]
-TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG, TD_6LOWPAN_CFG, TD_ONEM2M_CFG]
+TEST_DESCRIPTIONS = [TD_COAP, TD_6LOWPAN, TD_ONEM2M, TD_COMI]
+TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG, TD_6LOWPAN_CFG, TD_ONEM2M_CFG, TD_COMI_CFG]
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
@@ -68,14 +76,26 @@ except KeyError as e:
     AMQP_EXCHANGE = "amq.topic"
 
 try:
-    AMQP_URL = str(os.environ['AMQP_URL'])
+
+    # append to URL AMQP connection parameters
+    env_url = str(os.environ['AMQP_URL'])
+    if 'heartbeat_interval' not in env_url:
+        AMQP_URL = '%s?%s&%s&%s&%s&%s' % (
+            env_url,
+            "heartbeat_interval=0",
+            "blocked_connection_timeout=300",
+            "retry_delay=1",
+            "socket_timeout=1",
+            "connection_attempts=3"
+        )
+    else:
+        AMQP_URL = env_url
+
     p = urlparse(AMQP_URL)
     AMQP_USER = p.username
     AMQP_PASS = p.password
     AMQP_SERVER = p.hostname
     AMQP_VHOST = p.path.strip('/')
-
-    #print('Env vars for AMQP connection succesfully imported')
 
 except KeyError as e:
 
@@ -111,6 +131,12 @@ __all__ = [
     AMQP_URL,
     INTERACTIVE_SESSION,
     TD_6LOWPAN,
+    TD_6LOWPAN_CFG,
+    TD_ONEM2M,
+    TD_ONEM2M_CFG,
+    TD_COMI,
+    TD_COMI_CFG,
     TD_COAP,
-    TD_COAP_CFG
+    TD_COAP_CFG,
+    LOGGER_FORMAT
 ]

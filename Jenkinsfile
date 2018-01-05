@@ -68,6 +68,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py
                 python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py
                 python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py
+                python3 -m pytest -p no:cacheprovider ioppytest/sniffer/tests/__init__.py
             '''
         }
       }
