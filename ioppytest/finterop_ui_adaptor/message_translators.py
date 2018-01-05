@@ -1174,7 +1174,13 @@ class DummySessionMessageTranslator(object):
     def bootstrap(self, amqp_connector):
         import inspect
 
-        snippets = [self.snippet_1, self.snippet_2]
+        snippets = [self.snippet_display_markdown,
+                    self.snippet_request_button,
+                    self.snippet_request_radio,
+                    self.snippet_request_checkbox,
+                    self.snippet_request_select,
+                    self.snippet_request_file]
+
         self.basic_display("This will demonstrate the basic calls for using the UI by using the "
                            "[utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library",
                            tags={"tutorial": ""})
@@ -1193,15 +1199,15 @@ class DummySessionMessageTranslator(object):
 
             self.basic_display(markdown_text, tags={"tutorial": ""})
             markdown_text2 = ("the example will executed in 10 seconds, "
-                              "you can navegate through the tags by clicking on the timeline on the top left..")
+                              "you can navigate through the tags by clicking on the timeline on the top left..")
             self.basic_display(markdown_text2, tags={"tutorial": ""})
 
             time.sleep(10)
             example()
 
-    def snippet_1(self):
+    def snippet_display_markdown(self):
         """
-        This snippet shows how to display a messsage to all users (ui.user.all.display), using the
+        This snippet shows how to display a message to all users (ui.user.all.display), using the
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library
         """
         # this imports are absolute, for your case these will probably change
@@ -1216,7 +1222,7 @@ class DummySessionMessageTranslator(object):
         message = MsgUiDisplayMarkdownText(
             title="Hello world Title!",
             level='highlighted',
-            tags={"snippet": "1"},
+            tags={"snippet": "display_markdown"},
             fields=[
                 {
                     'type': 'p',
@@ -1226,7 +1232,7 @@ class DummySessionMessageTranslator(object):
         )
         publish_message(connection, message)
 
-    def snippet_2(self):
+    def snippet_request_button(self):
         """
         This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
@@ -1248,7 +1254,7 @@ class DummySessionMessageTranslator(object):
         ui_request = MsgUiRequestConfirmationButton(
             title="Hello world Title!",
             level='highlighted',
-            tags={"snippet": "2"},
+            tags={"snippet": "button"},
             fields=[
                 {
                     "name": "confirmation_button",
@@ -1265,15 +1271,180 @@ class DummySessionMessageTranslator(object):
                                     retries=30)  # fixme change retries by timeout
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
-                               tags={"snippet": "2"}, )
+                               tags={"snippet": "button"})
+
             self.basic_display("The message reply was never received :/ did you click on the confirmation button?",
-                               tags={"snippet": "2"}, )
+                               tags={"snippet": "button"})
             return
 
         self.basic_display("The message request: \n`%s`" % repr(ui_request),
-                           tags={"snippet": "2"}, )
+                           tags={"snippet": "button"})
         self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
-                           tags={"snippet": "2"}, )
+                           tags={"snippet": "button"})
+
+    def snippet_request_radio(self):
+        """
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
+        library.
+
+        (!) This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        syncrhonous calls tho :P
+
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        ui_request = MsgUiRequestQuestionRadio(
+            title="This is a question",
+            tags={"snippet": "radio"}
+        )
+
+        try:
+            ui_reply = amqp_request(connection,
+                                    ui_request,
+                                    'dummy_component',
+                                    retries=30)  # fixme change retries by timeout
+        except AmqpSynchCallTimeoutError:
+            self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                               tags={"snippet": "radio"})
+            self.basic_display("The message reply was never received :/",
+                               tags={"snippet": "radio"})
+            return
+
+        self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                           tags={"snippet": "radio"})
+        self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
+                           tags={"snippet": "radio"})
+
+    def snippet_request_checkbox(self):
+        """
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
+        library.
+
+        (!) This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        syncrhonous calls tho :P
+
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        ui_request = MsgUiRequestQuestionCheckbox(
+            title="It's a matter of choice",
+            tags={"snippet": "checkbox"}
+        )
+
+        try:
+            ui_reply = amqp_request(connection,
+                                    ui_request,
+                                    'dummy_component',
+                                    retries=30)  # fixme change retries by timeout
+        except AmqpSynchCallTimeoutError:
+            self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                               tags={"snippet": "checkbox"})
+            self.basic_display("The message reply was never received :/",
+                               tags={"snippet": "checkbox"})
+            return
+
+        self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                           tags={"snippet": "checkbox"})
+        self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
+                           tags={"snippet": "checkbox"})
+
+    def snippet_request_select(self):
+        """
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
+        library.
+
+        (!) This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        syncrhonous calls tho :P
+
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        ui_request = MsgUiRequestQuestionSelect(
+            title="It's a matter of choice",
+            tags={"snippet": "select"}
+        )
+
+        try:
+            ui_reply = amqp_request(connection,
+                                    ui_request,
+                                    'dummy_component',
+                                    retries=30)  # fixme change retries by timeout
+        except AmqpSynchCallTimeoutError:
+            self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                               tags={"snippet": "select"})
+            self.basic_display("The message reply was never received :/",
+                               tags={"snippet": "select"})
+            return
+
+        self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                           tags={"snippet": "select"})
+        self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
+                           tags={"snippet": "select"})
+
+    def snippet_request_file(self):
+        """
+        This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
+        [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
+        library.
+
+        (!) This is using a synchronous approach with a timeout. Dont expect to build your whole UI doing
+        syncrhonous calls tho :P
+
+        """
+        # this imports are absolute, for your case these will probably change
+        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
+        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        import pika
+
+        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
+        AMQP_URL = str(os.environ['AMQP_URL'])
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+        ui_request = MsgUiRequestUploadFile(
+            title="Give me your file!",
+            tags={"snippet": "file"}
+        )
+
+        try:
+            ui_reply = amqp_request(connection,
+                                    ui_request,
+                                    'dummy_component',
+                                    retries=30)  # fixme change retries by timeout
+        except AmqpSynchCallTimeoutError:
+            self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                               tags={"snippet": "file_upload"})
+            self.basic_display("The message reply was never received :/",
+                               tags={"snippet": "file_upload"})
+            return
+
+        self.basic_display("The message request: \n`%s`" % repr(ui_request),
+                           tags={"snippet": "file_upload"})
+        self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
+                           tags={"snippet": "file_upload"})
 
     def basic_display(self, text: str, tags={}):
         from ioppytest.utils.messages import MsgUiDisplayMarkdownText
