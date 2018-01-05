@@ -1148,30 +1148,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         ]
         return message_ui_request
 
-    def _ui_request_(self, message_from_tt):
-        message_ui_request = MsgUiRequestConfirmationButton(
-            title="Please VERIFY the information regarding the STEP \n(%s)" % self._current_step
-        )
-        message_ui_request.fields = [
-            {
-                "type": "p",
-                "value": "Please provide VERIFY step response"
-            },
-            {
-                "label": "OK",
-                "name": "verify_executed",
-                "type": "radio",
-                "value": True
-            },
-            {
-                "label": "Not OK",
-                "name": "verify_executed",
-                "type": "radio",
-                "value": False
-            },
-        ]
-        return message_ui_request
-
 
 class CoMISessionMessageTranslator(CoAPSessionMessageTranslator):
     # fixme import names directy from yaml files
@@ -1195,7 +1171,13 @@ class DummySessionMessageTranslator(object):
     def bootstrap(self, amqp_connector):
         import inspect
 
-        snippets = [self.snippet_1, self.snippet_2, self.snippet_request_radio, self.snippet_request_checkbox, self.snippet_request_select, self.snippet_request_file]
+        snippets = [self.snippet_display_markdown,
+                    self.snippet_request_button,
+                    self.snippet_request_radio,
+                    self.snippet_request_checkbox,
+                    self.snippet_request_select,
+                    self.snippet_request_file]
+
         self.basic_display("This will demonstrate the basic calls for using the UI by using the "
                            "[utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library",
                            tags={"tutorial": ""})
@@ -1220,9 +1202,9 @@ class DummySessionMessageTranslator(object):
             time.sleep(10)
             example()
 
-    def snippet_1(self):
+    def snippet_display_markdown(self):
         """
-        This snippet shows how to display a messsage to all users (ui.user.all.display), using the
+        This snippet shows how to display a message to all users (ui.user.all.display), using the
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library
         """
         # this imports are absolute, for your case these will probably change
@@ -1237,7 +1219,7 @@ class DummySessionMessageTranslator(object):
         message = MsgUiDisplayMarkdownText(
             title="Hello world Title!",
             level='highlighted',
-            tags={"snippet": "1"},
+            tags={"snippet": "display_markdown"},
             fields=[
                 {
                     'type': 'p',
@@ -1247,7 +1229,7 @@ class DummySessionMessageTranslator(object):
         )
         publish_message(connection, message)
 
-    def snippet_2(self):
+    def snippet_request_button(self):
         """
         This snippet shows how to request a confirmation to a users (any) (ui.user.any.display), using the
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils)
@@ -1269,7 +1251,7 @@ class DummySessionMessageTranslator(object):
         ui_request = MsgUiRequestConfirmationButton(
             title="Hello world Title!",
             level='highlighted',
-            tags={"snippet": "2"},
+            tags={"snippet": "button"},
             fields=[
                 {
                     "name": "confirmation_button",
@@ -1286,15 +1268,16 @@ class DummySessionMessageTranslator(object):
                                     retries=30)  # fixme change retries by timeout
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
-                               tags={"snippet": "2"}, )
+                               tags={"snippet": "button"})
+
             self.basic_display("The message reply was never received :/ did you click on the confirmation button?",
-                               tags={"snippet": "2"}, )
+                               tags={"snippet": "button"})
             return
 
         self.basic_display("The message request: \n`%s`" % repr(ui_request),
-                           tags={"snippet": "2"}, )
+                           tags={"snippet": "button"})
         self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
-                           tags={"snippet": "2"}, )
+                           tags={"snippet": "button"})
 
     def snippet_request_radio(self):
         """
@@ -1324,7 +1307,7 @@ class DummySessionMessageTranslator(object):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                retries=30)  # fixme change retries by timeout
+                                    retries=30)  # fixme change retries by timeout
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "radio"})
@@ -1370,7 +1353,7 @@ class DummySessionMessageTranslator(object):
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "checkbox"})
             self.basic_display("The message reply was never received :/",
-                           tags={"snippet": "checkbox"})
+                               tags={"snippet": "checkbox"})
             return
 
         self.basic_display("The message request: \n`%s`" % repr(ui_request),
@@ -1411,7 +1394,7 @@ class DummySessionMessageTranslator(object):
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "select"})
             self.basic_display("The message reply was never received :/",
-                           tags={"snippet": "select"})
+                               tags={"snippet": "select"})
             return
 
         self.basic_display("The message request: \n`%s`" % repr(ui_request),
@@ -1452,14 +1435,13 @@ class DummySessionMessageTranslator(object):
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "file_upload"})
             self.basic_display("The message reply was never received :/",
-                           tags={"snippet": "file_upload"})
+                               tags={"snippet": "file_upload"})
             return
 
         self.basic_display("The message request: \n`%s`" % repr(ui_request),
                            tags={"snippet": "file_upload"})
         self.basic_display("The message reply: \n`%s`" % repr(ui_reply),
                            tags={"snippet": "file_upload"})
-
 
     def basic_display(self, text: str, tags={}):
         from ioppytest.utils.messages import MsgUiDisplayMarkdownText
