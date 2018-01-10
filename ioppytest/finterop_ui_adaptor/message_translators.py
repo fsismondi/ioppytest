@@ -11,7 +11,6 @@ from ioppytest.finterop_ui_adaptor.user_help_text import *
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
-logger.setLevel(LOG_LEVEL)
 
 
 def translate_ioppytest_description_format_to_tabulate(ls):
@@ -104,7 +103,7 @@ class GenericBidirectonalTranslator(object):
 
     -----------------------------------------------------------------
      for chained actions like the one triggered by <stimuli execute>
-     -----------------------------------------------------------------
+    -----------------------------------------------------------------
 
 
      UI            Translator          TT
@@ -1163,7 +1162,6 @@ class OneM2MSessionMessageTranslator(object):
 
 
 class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
-
     AGENT_NAMES = ['eut1', 'eut2']
 
     def __init__(self):
@@ -1186,17 +1184,14 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
                            tags={"tutorial": ""})
 
         for example in snippets:
+            logging.info('demoing %s' % example.__name__)
             time.sleep(10)
             markdown_text = ""
-            # markdown_text += ("\n-----------\n")
-            # markdown_text += inspect.getdoc(example)
-            # markdown_text += ("\n-----------\n")
             markdown_text += ("\n-----------\n")
             markdown_text += ("\n```\n")
             markdown_text += (inspect.getsource(example))
             markdown_text += ("\n```\n")
             markdown_text += ("\n-----------\n")
-
             self.basic_display(markdown_text, tags={"tutorial": ""})
             markdown_text2 = ("the example will executed in 10 seconds, "
                               "you can navigate through the tags by clicking on the timeline on the top left..")
