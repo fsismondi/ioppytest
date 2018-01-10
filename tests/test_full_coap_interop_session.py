@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 logging.getLogger('pika').setLevel(logging.INFO)
 
 # queue which tracks all non answered services requests
-events_sniffed_on_bus = {}  # the dict allows us to index last received messages of each type
-event_types_sniffed_on_bus = []  # the list allows us to monitor the order of events
+events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
+event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
 
 """
 EXECUTE AS:
@@ -52,13 +52,15 @@ class SessionMockTests(unittest.TestCase):
         self.connection.close()
 
     def test_testcase_report_issue_at_end_of_session(self):
-        global event_types_sniffed_on_bus
-        global events_sniffed_on_bus
+        global event_types_sniffed_on_bus_list
+        global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
 
         tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
         u = UserMock(tc_list)
         e = EventListener(AMQP_URL)
+        u.setName(u.__class__.__name__)
+        e.setName(u.__class__.__name__)
 
         try:
             u.start()
@@ -77,7 +79,7 @@ class SessionMockTests(unittest.TestCase):
             u.join(THREAD_JOIN_TIMEOUT)  # waits THREAD_JOIN_TIMEOUT for the session to terminate
 
         except Exception as e:
-            assert False, "Exception encountered %s" % e
+            self.fail("Exception encountered %s" % e)
 
         finally:
 
@@ -90,15 +92,13 @@ class SessionMockTests(unittest.TestCase):
             if e.is_alive():
                 e.join()
 
-            report_type = MsgTestSuiteReport()._type
+            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus_list)
 
-            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus)
-
-            assert report_type in event_types_sniffed_on_bus, "Testing tool didnt emit any report"
-            assert report_type in events_sniffed_on_bus, "Testing tool didnt emit any report"
+            assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
+            assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
 
             logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
-            logging.info('report: %s' % repr(events_sniffed_on_bus[report_type]))
+            logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
@@ -160,8 +160,8 @@ class EventListener(threading.Thread):
     COMPONENT_ID = __name__
 
     def __init__(self, amqp_url):
-        global event_types_sniffed_on_bus
-        global events_sniffed_on_bus
+        global event_types_sniffed_on_bus_list
+        global events_sniffed_on_bus_dict
 
         threading.Thread.__init__(self)
         self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
@@ -184,8 +184,8 @@ class EventListener(threading.Thread):
         self.channel.basic_consume(self.update_events_seen_on_bus_list, queue=all_messages_queue)
 
     def update_events_seen_on_bus_list(self, ch, method, props, body):
-        global event_types_sniffed_on_bus
-        global events_sniffed_on_bus
+        global event_types_sniffed_on_bus_list
+        global events_sniffed_on_bus_dict
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -196,12 +196,12 @@ class EventListener(threading.Thread):
                 logger.error("[%s] Couldnt get message yet did not raise error: %s" %
                              (self.__class__.__name__, str(body)))
                 return
-            logger.info("[%s] Message received type: %s" % (self.__class__.__name__, m._type))
+            logger.info("[%s] Message received type: %s" % (self.__class__.__name__, type(m)))
             if isinstance(m, MsgTestingToolTerminate):
                 self.stop()
             else:
-                events_sniffed_on_bus[m._type] = m
-                event_types_sniffed_on_bus.append(m._type)
+                events_sniffed_on_bus_dict[type(m)] = m
+                event_types_sniffed_on_bus_list.append(type(m))
 
         except NonCompliantMessageFormatError as e:
             logger.warning("[%s] Non compliant message found: %s" % (self.__class__.__name__, e))
