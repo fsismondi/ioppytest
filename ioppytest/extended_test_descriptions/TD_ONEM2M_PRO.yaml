@@ -1340,7 +1340,7 @@ sequence:
     type: verify
     node: ADN
     description:
-        - 'Check if possible that the <accessControlPolicy> resource is deleted in registrar CSE.'
+        - 'Check if possible that the <accessControlPolicy> resource is created in registrar CSE.'
 
   - step_id: TD_M2M_NH_26_step_04
     type: check
@@ -1622,6 +1622,8 @@ sequence:
   - step_id: 'TD_M2M_NH_31_step_05'
     type: verify
     node: ADN
+    description: 
+	- 'AE indicates successful operation'
 
 --- !testcase
 
