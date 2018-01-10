@@ -453,13 +453,13 @@ def validate_message(ch, method, props, body):
         print(tab + "props.content_type : " + str(props.content_type))
         print(tab + "application/json was expected")
         print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-        raise Exception
+        raise Exception('api messages validation error')
 
     if '_type' not in req_body_dict.keys():
         print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
         print(tab + "no < _type > field found")
         print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-        raise Exception
+        raise Exception('api messages validation error')
 
     # lets check messages against the messaging library
     list_of_messages_to_check = list(message_types_dict.keys())
@@ -476,49 +476,3 @@ def validate_message(ch, method, props, body):
             print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
             print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
             raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
-
-
-class MessageGenerator(threading.Thread):
-    keepOnRunning = True
-
-    def __init__(self, amqp_url, amqp_exchange, messages_list):
-        threading.Thread.__init__(self)
-        self.messages = messages_list
-
-        self.url = amqp_url
-        self.exchage = amqp_exchange
-        self.connection = None
-        self.channel = None
-        self.connect()
-        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
-
-    def connect(self):
-        self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
-        self.channel = self.connection.channel()
-
-    def run(self):
-        global MESSAGES_WAIT_INTERVAL
-        logger.info("[%s] lets start 'blindly' generating the messages which take part on a coap session "
-                    %(self.__class__.__name__))
-
-        while self.keepOnRunning:
-
-            try:
-                time.sleep(MESSAGES_WAIT_INTERVAL)
-                m = self.messages.pop(0)
-                publish_message(self.connection, m)
-                logger.info("[%s] Publishing in the bus: %s" % (self.__class__.__name__, repr(m)))
-
-            except IndexError:
-                logger.info("[%s] No more messages in the messages queue, finishing.." % (self.__class__.__name__))
-                # list finished, lets wait so all messages are sent and processed
-                time.sleep(5)
-                break
-
-            except (pika.exceptions.ChannelClosed,pika.exceptions.ConnectionClosed):
-                self.connect()
-                self.messages.insert(0, m)  # re-queue message as next
-
-    def stop(self):
-        self.keepOnRunning = False
-        self.connection.close()

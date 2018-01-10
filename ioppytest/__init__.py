@@ -34,7 +34,7 @@ LOGGER_FORMAT = '%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s
 # # # # # # hard variables # # # # # # # # # #
 
 # python configs
-LOG_LEVEL = 20  # logging.INFO -> 20, logging.WARNING -> 30
+LOG_LEVEL = 10  # DEBUG = 10, INFO = 20, WARNING = 30
 AMQP_LOG_LEVEL = 30
 
 # project directories
@@ -83,7 +83,7 @@ try:
         AMQP_URL = '%s?%s&%s&%s&%s&%s' % (
             env_url,
             "heartbeat_interval=0",
-            "blocked_connection_timeout=300",
+            "blocked_connection_timeout=2",
             "retry_delay=1",
             "socket_timeout=1",
             "connection_attempts=3"
