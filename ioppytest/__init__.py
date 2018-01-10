@@ -83,7 +83,7 @@ try:
         AMQP_URL = '%s?%s&%s&%s&%s&%s' % (
             env_url,
             "heartbeat_interval=0",
-            "blocked_connection_timeout=300",
+            "blocked_connection_timeout=10",
             "retry_delay=1",
             "socket_timeout=1",
             "connection_attempts=3"

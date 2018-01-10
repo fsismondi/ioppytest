@@ -3,7 +3,7 @@ import logging
 import traceback
 import textwrap
 
-from ioppytest import LOG_LEVEL
+from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
 from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
@@ -1170,7 +1170,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         super().__init__()
 
 
-class DummySessionMessageTranslator(object):
+class DummySessionMessageTranslator(GenericBidirectonalTranslator):
     def bootstrap(self, amqp_connector):
         import inspect
 
