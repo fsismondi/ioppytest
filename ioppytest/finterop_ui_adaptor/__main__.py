@@ -6,7 +6,7 @@ import argparse
 import threading
 from queue import Queue
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
@@ -17,17 +17,21 @@ from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessa
                                                                SixLoWPANSessionMessageTranslator,
                                                                OneM2MSessionMessageTranslator)
 
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOGGER_FORMAT
+)
+
+logging.getLogger('pika').setLevel(logging.WARNING)
+
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
-logging.basicConfig(level=LOG_LEVEL, format='%(levelname)s %(name)s [%(threadName)s] %(message)s')
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-
-logging.getLogger('pika').setLevel(logging.WARNING)
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     MsgDissectionAutoDissect.routing_key,
@@ -53,13 +57,26 @@ def publish_message(connection, message):
     """
     channel = None
 
-    logger.debug('[PUBLISHING] %s' % repr(connection))
-    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))  # this doesnt overwrite connection argument!
+    logger.debug('publishing..')
+    properties = pika.BasicProperties(**message.get_properties())
+
     try:
         channel = connection.channel()
+        channel.basic_publish(
+            exchange=AMQP_EXCHANGE,
+            routing_key=message.routing_key,
+            properties=properties,
+            body=message.to_json(),
+        )
 
-        properties = pika.BasicProperties(**message.get_properties())
+    except (pika.exceptions.ConnectionClosed, BrokenPipeError):
 
+        print("Log handler connection closed. Reconnecting..")
+
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))  # this doesnt overwrite connection argument!
+        channel = connection.channel()
+
+        # send retry
         channel.basic_publish(
             exchange=AMQP_EXCHANGE,
             routing_key=message.routing_key,
@@ -245,6 +262,8 @@ def main():
         logger.error("Error launching test suite: %s" % args.test_suite)
         return
 
+    # auxiliary functions
+
     def process_message_from_ui(message_received):
         logger.info("routing TT <- UI: %s | r_key: %s | corr_id %s"
                     % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
@@ -305,9 +324,16 @@ def main():
             ui_request_message = message_translator.tag_message(ui_request_message)
             queue_messages_request_to_ui.put(ui_request_message)
 
+    # start of UI adaptor flow control
     amqp_message_publisher = AmqpMessagePublisher(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE)
+
+    logger.info("UI adaptor bootstrapping..")
+    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    message_translator.bootstrap(amqp_message_publisher)
+
+    logger.info("UI adaptor entering test suite execution phase..")
 
     tt_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
@@ -326,9 +352,6 @@ def main():
     tt_amqp_listener_thread.start()
     ui_amqp_listener_thread.start()
     logger.info("UI adaptor is up and listening on the bus ..")
-
-    logger.info("message translator's bootstrapping sequence starting..")
-    message_translator.bootstrap(amqp_message_publisher)
 
     # this loop processes all incoming messages and dispatches them to its corresponding handler
     loop_count = 0
@@ -376,17 +399,18 @@ def main():
                 for q in queues:
                     logger.debug("queue %s size: %s" % (repr(q), q.qsize()))
                 loop_count = 0
+                logger.debug("reset loop count")
             else:
                 loop_count += 1
 
-            time.sleep(0.1)
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         logger.info('user interruption captured, exiting..')
 
     finally:
 
-        logger.info('ui adaptor stopping..')
+        logger.info('UI adaptor stopping..')
         amqp_message_publisher.stop()  # not a thread
         tt_amqp_listener_thread.stop()  # thread
         ui_amqp_listener_thread.stop()  # thread

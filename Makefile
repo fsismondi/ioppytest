@@ -73,19 +73,19 @@ run-coap-server:
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
 
 stop-onem2m-testing-tool:
-	docker stop testing_tool-interoperability-onem2m --keep-going ; exit 0
+	docker stop testing_tool-interoperability-onem2m
 
 stop-6lowpan-testing-tool:
-	docker stop testing_tool-interoperability-6lowpan --keep-going ; exit 0
+	docker stop testing_tool-interoperability-6lowpan
 
 stop-coap-testing-tool:
-	docker stop testing_tool-interoperability-coap --keep-going ; exit 0
+	docker stop testing_tool-interoperability-coap
 
 stop-coap-server:
-	docker stop reference_iut-coap_server --keep-going ; exit 0
+	docker stop reference_iut-coap_server
 
 stop-coap-client:
-	docker stop reference_iut-coap_client --keep-going ; exit 0
+	docker stop reference_iut-coap_client
 
 stop-all: ## Stop testing tools running as docker containers
 	# (exit 0) -> so the script continues on errors
@@ -139,13 +139,13 @@ _docker-build-dummy-gui-adaptor:
 	@echo "Starting to build the dummy-gui-adaptor.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t dummy-gui-adaptor -f envs/dummy_testing_tool/Dockerfile .
+	docker build --quiet -t  dummy-gui-adaptor -f envs/dummy_testing_tool/Dockerfile .
 
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-onem2m-v$(version) -f envs/onem2m_testing_tool/Dockerfile .
+	docker build --quiet -t testing_tool-interoperability-onem2m-v$(version) -f envs/onem2m_testing_tool/Dockerfile .
 
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-onem2m-v$(version):latest testing_tool-interoperability-onem2m
@@ -154,7 +154,7 @@ _docker-build-6lowpan:
 	@echo "Starting to build the 6lowpan testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-6lowpan-v$(version) -f envs/6lowpan_testing_tool/Dockerfile .
+	docker build --quiet -t testing_tool-interoperability-6lowpan-v$(version) -f envs/6lowpan_testing_tool/Dockerfile .
 
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-6lowpan-v$(version):latest testing_tool-interoperability-6lowpan
@@ -163,7 +163,7 @@ _docker-build-comi:
 	@echo "Starting to build CoMI testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-comi-v$(version) -f envs/comi_testing_tool/Dockerfile .
+	docker build --quiet -t testing_tool-interoperability-comi-v$(version) -f envs/comi_testing_tool/Dockerfile .
 
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-comi-v$(version):latest testing_tool-interoperability-comi
@@ -172,7 +172,7 @@ _docker-build-coap:
 	@echo "Starting to build coap testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build -t testing_tool-interoperability-coap-v$(version) -f envs/coap_testing_tool/Dockerfile .
+	docker build --quiet -t testing_tool-interoperability-coap-v$(version) -f envs/coap_testing_tool/Dockerfile .
 
 	# the testing tool for interop and conformance are the same, so lets tag it as such
 	docker tag testing_tool-interoperability-coap-v$(version):latest testing_tool-conformance-coap-v$(version)
@@ -185,10 +185,10 @@ _docker-build-coap-additional-resources:
 	@echo "Starting to build coap-additional-resources.. "
 
 	# let's build the automated/reference IUT images used by F-Interop platform
-	docker build -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
-	docker build -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
-	docker build -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
-	docker build -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
+	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
+	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
 
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
 	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
