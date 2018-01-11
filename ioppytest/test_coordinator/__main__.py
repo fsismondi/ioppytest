@@ -133,7 +133,7 @@ if __name__ == '__main__':
         def on_ready_signal(ch, method, props, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-            event = Message.from_json(body)
+            event = Message.load_from_pika(method, props, body)
 
             if isinstance(event, MsgTestingToolComponentReady):
                 component = event.component

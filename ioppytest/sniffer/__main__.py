@@ -87,19 +87,7 @@ class Sniffer:
         self.logger.info('Identifying request...')
 
         try:
-            props_dict = {
-                'content_type': props.content_type,
-                'delivery_mode': props.delivery_mode,
-                'correlation_id': props.correlation_id,
-                'reply_to': props.reply_to,
-                'message_id': props.message_id,
-                'timestamp': props.timestamp,
-                'user_id': props.user_id,
-                'app_id': props.app_id,
-            }
-            request = Message.from_json(body)
-            request.update_properties(**props_dict)
-
+            request = Message.load_from_pika(method, props, body)
         except Exception as e:
             self.logger.info(str(e))
             return

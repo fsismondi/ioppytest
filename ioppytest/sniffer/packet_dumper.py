@@ -239,19 +239,7 @@ class AmqpDataPacketDumper:
 
         try:
 
-            props_dict = {
-                'content_type': props.content_type,
-                'delivery_mode': props.delivery_mode,
-                'correlation_id': props.correlation_id,
-                'reply_to': props.reply_to,
-                'message_id': props.message_id,
-                'timestamp': props.timestamp,
-                'user_id': props.user_id,
-                'app_id': props.app_id,
-            }
-
-            m = Message.from_json(body)
-            m.update_properties(**props_dict)
+            m = Message.load_from_pika(method, props, body)
             self.logger.info('got event: %s' % type(m))
 
             if isinstance(m, MsgTestingToolTerminate):

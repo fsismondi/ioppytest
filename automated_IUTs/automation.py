@@ -90,18 +90,7 @@ class AutomatedIUT(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        props_dict = {
-            'content_type': props.content_type,
-            'delivery_mode': props.delivery_mode,
-            'correlation_id': props.correlation_id,
-            'reply_to': props.reply_to,
-            'message_id': props.message_id,
-            'timestamp': props.timestamp,
-            'user_id': props.user_id,
-            'app_id': props.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
+        event = Message.load_from_pika(method, props, body)
 
         self.message_count += 1
 
@@ -236,18 +225,7 @@ class UserMock(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        props_dict = {
-            'content_type': props.content_type,
-            'delivery_mode': props.delivery_mode,
-            'correlation_id': props.correlation_id,
-            'reply_to': props.reply_to,
-            'message_id': props.message_id,
-            'timestamp': props.timestamp,
-            'user_id': props.user_id,
-            'app_id': props.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
+        event = Message.load_from_pika(method, props, body)
 
         self.message_count += 1
 

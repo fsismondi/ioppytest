@@ -144,24 +144,12 @@ class CoordinatorAmqpInterface(object):
         self.channel.close()
         self.connection.close()
 
-    def handle_service(self, ch, method, properties, body):
+    def handle_service(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
-            'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
-        }
-        request = Message.from_json(body)
-        request.update_properties(**props_dict)
-        logger.info('Service request received: %s' % request._type)
+        request = Message.load_from_pika(method, props, body)
+        logger.info('Service request received: %s' % type(request))
 
         # let's process request
         if type(request) in self.service_reponse_callbacks:
@@ -184,23 +172,11 @@ class CoordinatorAmqpInterface(object):
         else:
             logger.debug('Ignoring service request: %s' % repr(request))
 
-    def handle_control(self, ch, method, properties, body):
+    def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
-            'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
+        event = Message.load_from_pika(method, props, body)
         logger.info('Event received: %s' % event._type)
 
         # let's process request

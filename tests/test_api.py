@@ -403,7 +403,7 @@ def check_for_bus_error(ch, method, props, body):
     logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
 
     try:
-        msg = Message.from_json(body)
+        msg = Message.load_from_pika(method, props, body)
         if isinstance(msg, MsgTestingToolTerminate):
             ch.stop_consuming()
             return
@@ -438,41 +438,36 @@ def validate_message(ch, method, props, body):
     message_count += 1
 
     logger.info('[%s] Checking valid format for message %s' % (sys._getframe().f_code.co_name, props.message_id))
+    # TODO re-implement this using Messages' classes API
 
-    print('\n' + tab + '* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
-    print(tab + "TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
-    print(tab + "ROUTING_KEY: %s" % method.routing_key)
-    print(tab + "MESSAGE ID: %s" % props.message_id)
-    if hasattr(props, 'correlation_id'):
-        print(tab + "CORRELATION ID: %s" % props.correlation_id)
-    print(tab + 'EVENT %s' % (req_body_dict['_type']))
-    print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
+    # print('\n' + tab + '* * * * * * MESSAGE SNIFFED by INSPECTOR (%s) * * * * * * *' % message_count)
+    # print(tab + "TIME: %s" % datetime.datetime.time(datetime.datetime.now()))
+    # print(tab + "ROUTING_KEY: %s" % method.routing_key)
+    # print(tab + "MESSAGE ID: %s" % props.message_id)
+    # if hasattr(props, 'correlation_id'):
+    #     print(tab + "CORRELATION ID: %s" % props.correlation_id)
+    # print(tab + 'EVENT %s' % (req_body_dict['_type']))
+    # print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n')
+    #
+    # if props.content_type != "application/json":
+    #     print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
+    #     print(tab + "props.content_type : " + str(props.content_type))
+    #     print(tab + "application/json was expected")
+    #     print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+    #     raise Exception('api messages validation error')
 
-    if props.content_type != "application/json":
-        print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-        print(tab + "props.content_type : " + str(props.content_type))
-        print(tab + "application/json was expected")
-        print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-        raise Exception('api messages validation error')
-
-    if '_type' not in req_body_dict.keys():
-        print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-        print(tab + "no < _type > field found")
-        print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-        raise Exception('api messages validation error')
-
-    # lets check messages against the messaging library
-    list_of_messages_to_check = list(message_types_dict.keys())
-    if req_body_dict['_type'] in list_of_messages_to_check:
-        m = Message.from_json(body)
-        try:
-            if isinstance(m, MsgTestingToolTerminate):
-                ch.stop_consuming()
-                stop_generator()
-            else:
-                logger.debug(repr(m))
-        except NonCompliantMessageFormatError as e:
-            print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
-            print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
-            print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
-            raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
+    # # lets check messages against the messaging library
+    # list_of_messages_to_check = list(message_types_dict.keys())
+    # if req_body_dict['_type'] in list_of_messages_to_check:
+    #     m = Message.load_from_pika(method, props, body)
+    #     try:
+    #         if isinstance(m, MsgTestingToolTerminate):
+    #             ch.stop_consuming()
+    #             stop_generator()
+    #         else:
+    #             logger.debug(repr(m))
+    #     except NonCompliantMessageFormatError as e:
+    #         print(tab + '* * * * * * API VALIDATION ERROR * * * * * * * ')
+    #         print(tab + "AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
+    #         print(tab + '* * * * * * * * * * * * * * * * * * * * * * * * *  \n')
+    #         raise NonCompliantMessageFormatError("AMQP MESSAGE LIBRARY COULD PROCESS JSON MESSAGE")
