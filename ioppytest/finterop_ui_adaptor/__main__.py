@@ -10,7 +10,14 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
-from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH, MESSAGES_NOT_TO_BE_ECHOED
+
+# TODO synthesise imports in __all__
+from ioppytest.finterop_ui_adaptor import (UiResponseError,
+                                           COMPONENT_ID,
+                                           STDOUT_MAX_STRING_LENGTH,
+                                           MESSAGES_NOT_TO_BE_ECHOED,
+                                           TESTING_TOOL_TOPIC_SUBSCRIPTIONS,
+                                           UI_REPLY_TOPICS)
 from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
                                                                CoMISessionMessageTranslator,
                                                                CoAPSessionMessageTranslator,
@@ -33,18 +40,30 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
-TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
-    MsgDissectionAutoDissect.routing_key,
-    MsgSessionLog.routing_key,
-    MsgTestSuiteStart.routing_key,
-    MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
-]
+# globals
+iut_role_to_user_id_mapping = {}
 
-UI_REPLY_TOPICS = [
-    'ui.user.1.reply',
-    'ui.user.2.reply',
-    'ui.user.all.reply',
+mapping_testsuite_to_message_translator = {
+    'dummy': DummySessionMessageTranslator,
+    'coap': CoAPSessionMessageTranslator,
+    'onem2m': OneM2MSessionMessageTranslator,
+    '6lowpan': SixLoWPANSessionMessageTranslator,
+    'comi': CoMISessionMessageTranslator
+}
+
+# see doc from GenericBidirectonalTranslator.__doc__
+queue_messages_display_to_ui = Queue(maxsize=100)
+queue_messages_request_to_ui = Queue(maxsize=100)
+queue_messages_from_tt = Queue(maxsize=100)
+queue_messages_from_ui = Queue(maxsize=100)
+queue_messages_to_tt = Queue(maxsize=100)
+
+queues = [
+    queue_messages_to_tt,
+    queue_messages_display_to_ui,
+    queue_messages_request_to_ui,
+    queue_messages_from_tt,
+    queue_messages_from_ui
 ]
 
 
@@ -91,46 +110,17 @@ def publish_message(connection, message):
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-
-mapping_testsuite_to_message_translator = {
-    'dummy': DummySessionMessageTranslator,
-    'coap': CoAPSessionMessageTranslator,
-    'onem2m': OneM2MSessionMessageTranslator,
-    '6lowpan': SixLoWPANSessionMessageTranslator,
-    'comi': CoMISessionMessageTranslator
-}
-
-DEFAULT_NODE_TO_USER_MAPPING = {
-    'coap_client': '1',
-    'coap_server': '2',
-}
-
-# see doc from GenericBidirectonalTranslator.__doc__
-queue_messages_display_to_ui = Queue(maxsize=100)
-queue_messages_request_to_ui = Queue(maxsize=100)
-queue_messages_from_tt = Queue(maxsize=100)
-queue_messages_from_ui = Queue(maxsize=100)
-queue_messages_to_tt = Queue(maxsize=100)
-
-queues = [
-    queue_messages_to_tt,
-    queue_messages_display_to_ui,
-    queue_messages_request_to_ui,
-    queue_messages_from_tt,
-    queue_messages_from_ui
-]
-
-
 class AmqpMessagePublisher:
     DEFAULT_EXCHAGE = 'amq.topic'
     DEFAULT_AMQP_URL = 'amqp://guest:guest@locahost/'
 
-    def __init__(self, amqp_url, amqp_exchange):
+    def __init__(self, amqp_url, amqp_exchange, iut_role_to_user_id_mapping):
 
         self.COMPONENT_ID = 'amqp_publisher_%s' % str(uuid.uuid4())[:8]
 
         self.connection = None
         self.channel = None
+        self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
 
         if amqp_exchange:
             self.exchange = amqp_exchange
@@ -143,6 +133,9 @@ class AmqpMessagePublisher:
             self.amqp_url = self.DEFAULT_AMQP_URL
 
         self.amqp_connect()
+
+    def update_iut_role_to_user_id_mapping(self, iut_role_to_user_id_mapping=dict):
+        self.iut_role_to_user_id_mapping.update(iut_role_to_user_id_mapping)
 
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
@@ -183,7 +176,7 @@ class AmqpMessagePublisher:
         if user_id:
             message.routing_key = "ui.user.%s.display" % user_id
         elif hasattr(message, "node"):
-            message.routing_key = "ui.user.%s.display" % DEFAULT_NODE_TO_USER_MAPPING['node']
+            message.routing_key = "ui.user.%s.display" % iut_role_to_user_id_mapping[message.node]
         else:
             raise Exception('Not enough information to know where to route message')
 
@@ -207,8 +200,8 @@ class AmqpMessagePublisher:
             message.routing_key = "ui.user.%s.request" % user_id
             message.reply_to = "ui.user.%s.reply" % user_id
         elif hasattr(message, "node"):
-            message.routing_key = "ui.user.%s.request" % DEFAULT_NODE_TO_USER_MAPPING['node']
-            message.reply_to = "ui.user.%s.reply" % DEFAULT_NODE_TO_USER_MAPPING['node']
+            message.routing_key = "ui.user.%s.request" % iut_role_to_user_id_mapping[message.node]
+            message.reply_to = "ui.user.%s.reply" % iut_role_to_user_id_mapping[message.node]
         else:
             raise Exception('Not enough information to know where to route message')
 
@@ -239,8 +232,132 @@ class AmqpMessagePublisher:
         return amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
 
 
+# auxiliary functions
+def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher):
+    iut_roles = message_translator.get_iut_roles()
+    roles_to_user_mapping = {}
+
+    logger.info('requesting session information to UI API    ')
+    resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
+
+    while resp and resp.ok and hasattr(resp, 'users') and len(resp.users) <2:
+        info_msg = 'Waiting for at least 2 users to join the session..'
+        amqp_publisher.publish_ui_display(info_msg)
+        logger.warning(info_msg)
+        time.sleep(5)
+        resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
+
+    logger.warning("Both users connected: %s" %resp.users)
+
+
+
+    for iut_role in iut_roles:
+        # user 1 id
+        m = MsgUiRequestTextInput(
+            title="What's your user id driving %s? " % iut_role,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "you can get the user id by clicking in info button (top right of screen) -> "
+                             "'Users connected to the session'"
+                },
+                {
+                    "name": "user_id",
+                    "type": "text"
+                },
+                {
+                    "name": "submit",
+                    "type": "button",
+                    "value": True
+                },
+                {
+                    "name": " none ",
+                    "type": "button",
+                    "value": True
+                },
+
+            ]
+        )
+        resp = amqp_publisher.synch_request(m)
+
+        logger.warning("||".join([str(type(resp)),str(type(resp.fields)),repr(resp)]))
+        if resp.ok and 'user_id' in str(resp.fields):
+            roles_to_user_mapping.update({iut_role, resp.fields['user_id']})
+        elif resp.ok and 'none' in str(resp.fields):
+            roles_to_user_mapping.update({iut_role, None})
+        else:
+            raise UiResponseError('received from the UI: %s' % repr(resp))
+
+
+    logger.warning(roles_to_user_mapping)
+
+
+def process_message_from_ui(message_translator, message_received):
+    logger.info("routing TT <- UI: %s | r_key: %s | corr_id %s"
+                % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
+                   message_received.routing_key,
+                   message_received.correlation_id))
+
+    # 0. print pending responses table
+    message_translator.print_table_of_pending_messages()
+
+    # 1. echo user's response to every user in session
+    text_message = 'User replied to request: %s' % repr(message_received.fields)
+    message = message_translator.transform_string_to_ui_markdown_display(text_message)
+    queue_messages_display_to_ui.put(message)
+
+    # 2. Handle reply from user
+    if message_translator.is_pending_response(message_received):
+        logger.info('got reply to previous request, r_key: %s corr id %s, message %s'
+                    % (
+                        message_received.routing_key,
+                        message_received.correlation_id,
+                        repr(message_received),
+                    ))
+
+        response_to_tt = message_translator.translate_ui_to_tt_message(message_received)
+
+        # 3. Some replies are just confirmations , no chained TT actions associated to them
+        if response_to_tt is None:
+            return
+
+        logger.info("publishing:%s routing_key: %s"
+                    % (repr(response_to_tt)[:STDOUT_MAX_STRING_LENGTH],
+                       response_to_tt.routing_key))
+
+        # 4. we have a chained response for the TT
+        queue_messages_to_tt.put(response_to_tt)
+
+    else:
+        logger.info("Not in responses pending list. Duplication? Two users replied to same request?")
+
+
+def process_message_from_testing_tool(message_translator, message_received):
+    logger.info("routing TT -> UI: %s | r_key: %s | corr_id %s"
+                % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
+                   message_received.routing_key,
+                   message_received.correlation_id if hasattr(message_received, 'correlation_id') else None))
+
+    # 0. update message factory states
+    message_translator.update_state(message_received)
+
+    # 1. echo message to user (if applicable)
+    if type(message_received) not in MESSAGES_NOT_TO_BE_ECHOED:
+        ui_display_message = message_translator.transform_message_to_ui_markdown_display(message_received)
+        if ui_display_message:
+            queue_messages_display_to_ui.put(ui_display_message)
+
+    # 2. request input from user (if applicable)
+    ui_request_message = message_translator.get_ui_request_action_message(message_received)
+    if ui_request_message:
+        ui_request_message = message_translator.tag_message(ui_request_message)
+        queue_messages_request_to_ui.put(ui_request_message)
+
+
 def main():
     logger.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
+
+    # parse ARGS -> define which test suite we are executing
 
     try:
         parser = argparse.ArgumentParser()
@@ -262,75 +379,17 @@ def main():
         logger.error("Error launching test suite: %s" % args.test_suite)
         return
 
-    # auxiliary functions
-
-    def process_message_from_ui(message_received):
-        logger.info("routing TT <- UI: %s | r_key: %s | corr_id %s"
-                    % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
-                       message_received.routing_key,
-                       message_received.correlation_id))
-
-        # 0. print pending responses table
-        message_translator.print_table_of_pending_messages()
-
-        # 1. echo user's response to every user in session
-        text_message = 'User replied to request: %s' % repr(message_received.fields)
-        message = message_translator.transform_string_to_ui_markdown_display(text_message)
-        queue_messages_display_to_ui.put(message)
-
-        # 2. Handle reply from user
-        if message_translator.is_pending_response(message_received):
-            logger.info('got reply to previous request, r_key: %s corr id %s, message %s'
-                        % (
-                            message_received.routing_key,
-                            message_received.correlation_id,
-                            repr(message_received),
-                        ))
-
-            response_to_tt = message_translator.translate_ui_to_tt_message(message_received)
-
-            # 3. Some replies are just confirmations , no chained TT actions associated to them
-            if response_to_tt is None:
-                return
-
-            logger.info("publishing:%s routing_key: %s"
-                        % (repr(response_to_tt)[:STDOUT_MAX_STRING_LENGTH],
-                           response_to_tt.routing_key))
-
-            # 4. we have a chained response for the TT
-            queue_messages_to_tt.put(response_to_tt)
-
-        else:
-            logger.info("Not in responses pending list. Duplication? Two users replied to same request?")
-
-    def process_message_from_testing_tool(message_received):
-        logger.info("routing TT -> UI: %s | r_key: %s | corr_id %s"
-                    % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
-                       message_received.routing_key,
-                       message_received.correlation_id if hasattr(message_received, 'correlation_id') else None))
-
-        # 0. update message factory states
-        message_translator.update_state(message_received)
-
-        # 1. echo message to user (if applicable)
-        if type(message_received) not in MESSAGES_NOT_TO_BE_ECHOED:
-            ui_display_message = message_translator.transform_message_to_ui_markdown_display(message_received)
-            if ui_display_message:
-                queue_messages_display_to_ui.put(ui_display_message)
-
-        # 2. request input from user (if applicable)
-        ui_request_message = message_translator.get_ui_request_action_message(message_received)
-        if ui_request_message:
-            ui_request_message = message_translator.tag_message(ui_request_message)
-            queue_messages_request_to_ui.put(ui_request_message)
-
     # start of UI adaptor flow control
     amqp_message_publisher = AmqpMessagePublisher(
         amqp_url=AMQP_URL,
-        amqp_exchange=AMQP_EXCHANGE)
+        amqp_exchange=AMQP_EXCHANGE,
+        iut_role_to_user_id_mapping=None)
 
     logger.info("UI adaptor bootstrapping..")
     # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    get_user_ids_and_roles_from_ui(message_translator, amqp_message_publisher)
+    return  # TODO
+
     message_translator.bootstrap(amqp_message_publisher)
 
     logger.info("UI adaptor entering test suite execution phase..")
@@ -361,7 +420,7 @@ def main():
             # get next message from TT
             if not queue_messages_from_tt.empty():
                 msg_from_tt = queue_messages_from_tt.get()
-                process_message_from_testing_tool(msg_from_tt)  # this populates the *_to_ui queues
+                process_message_from_testing_tool(message_translator, msg_from_tt)  # this populates the *_to_ui queues
 
             # publish all pending display messages to UIs
             while not queue_messages_display_to_ui.empty():
@@ -387,7 +446,8 @@ def main():
 
             # get next message reply from UI
             if not queue_messages_from_ui.empty():
-                process_message_from_ui(queue_messages_from_ui.get())  # this populates the *_to_tt queue
+                process_message_from_ui(message_translator,
+                                        queue_messages_from_ui.get())  # this populates the *_to_tt queue
 
             # publish all pending messages to TT (there shouldn't not be more than one at a time)
             while not queue_messages_to_tt.empty():
