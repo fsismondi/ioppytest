@@ -1306,7 +1306,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_26
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE creates an accessControlPolicy resource.
 pre_conditions:
@@ -1362,7 +1362,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_27
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE retrieves accessControlPolicy resource.
 pre_conditions:
@@ -1411,7 +1411,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_28
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE updates attribute in accessControlPolicy resource.
 pre_conditions:
@@ -1466,7 +1466,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_29
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE deletes accessControlPolicy resource.
 pre_conditions:
@@ -1519,7 +1519,7 @@ CSE.'
 --- !testcase
 
 testcase_id : TD_M2M_NH_30
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE delete request is rejected due to accessControlPolicy.
 pre_conditions:
@@ -1574,7 +1574,7 @@ CSE.'
 --- !testcase
 
 testcase_id : TD_M2M_NH_31
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE creates a group resource.
 pre_conditions:
@@ -1622,13 +1622,13 @@ sequence:
   - step_id: 'TD_M2M_NH_31_step_05'
     type: verify
     node: ADN
-    description: 
-	- 'AE indicates successful operation'
+    description:
+        - 'AE indicates successful operation'
 
 --- !testcase
 
 testcase_id : TD_M2M_NH_32
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE retrieves group resource.
 pre_conditions:
@@ -1675,7 +1675,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_33
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE updates attribute in group resource.
 pre_conditions:
@@ -1728,7 +1728,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_34
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE deletes group resource.
 pre_conditions:
@@ -1777,7 +1777,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_35
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE creates a node resource.
 pre_conditions: 
@@ -1830,7 +1830,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_36
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE retrieves node resource.
 pre_conditions: 
@@ -1875,7 +1875,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_37
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE updates attribute in node resource.
 pre_conditions: 
@@ -1928,7 +1928,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_M2M_NH_38
-uri : 
+uri : www.onem2m.org
 configuration: M2M_CFG_01
 objective: AE deletes node resource.
 pre_conditions: 
