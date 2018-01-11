@@ -253,7 +253,7 @@ class ApiTests(unittest.TestCase):
             global services_events_tracelog
 
             body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
-            msg_type = body_dict['_type']
+            msg_key = method.routing_key
 
             logger.info(
                 '[%s] Checking correlated request/response for message %s'
@@ -261,27 +261,27 @@ class ApiTests(unittest.TestCase):
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-            if msg_type == 'testingtool.terminate':
+            if msg_key == MsgTestingToolTerminate.routing_key:
                 ch.stop_consuming()
                 return
 
-            if msg_type in events_to_ignore:
+            if msg_key in events_to_ignore:
                 # forget about these.. we are checking services and services reply only
                 return
 
-            if '.service.reply' in method.routing_key:
+            if '.reply' in method.routing_key:
                 if props.correlation_id in services_mid_backlog:
                     services_mid_backlog.remove(props.correlation_id)
-                    services_events_tracelog.append((msg_type, props.correlation_id))
+                    services_events_tracelog.append((msg_key, props.correlation_id))
                 else:
                     raise Exception('got a reply but theres no request in the backlog')
 
-            elif '.service' in method.routing_key:
+            elif '.request' in method.routing_key:
                 services_mid_backlog.append(props.correlation_id)
-                services_events_tracelog.append((msg_type, props.correlation_id))
+                services_events_tracelog.append((msg_key, props.correlation_id))
 
             else:
-                raise Exception('error! unexpected routing key: %s or event: %s' % (method.routing_key, msg_type))
+                raise Exception('error! unexpected routing key: %s' % (method.routing_key))
 
             logging.info("[%s] current backlog: %s . history: %s"
                          % (

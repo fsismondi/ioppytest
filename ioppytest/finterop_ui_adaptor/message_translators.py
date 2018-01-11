@@ -507,7 +507,6 @@ class GenericBidirectonalTranslator(object):
     def _echo_testcase_verdict(self, message):
         verdict = message.to_dict()
         # fixme find a way of managing the "printable" fields, in a generic way
-        verdict.pop('_type')
         verdict.pop('_api_version')
 
         partial_verdict = verdict.pop('partial_verdicts')
@@ -845,7 +844,6 @@ class GenericBidirectonalTranslator(object):
                     fields.append({
                         'type': 'p',
                         'value': '%s:%s\n%s' % (
-                            protocol_layer_dict.pop('_type'),
                             protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
                             tabulate(protocol_layer_dict.items())
                         )

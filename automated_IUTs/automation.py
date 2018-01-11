@@ -121,7 +121,7 @@ class AutomatedIUT(threading.Thread):
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                              (
-                                 event._type,
+                                 type(event),
                                  event.node,
                                  event.step_id,
                              ))
@@ -137,7 +137,7 @@ class AutomatedIUT(threading.Thread):
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                              (
-                                 event._type,
+                                 type(event),
                                  event.node,
                                  event.step_id,
                              ))
@@ -160,7 +160,7 @@ class AutomatedIUT(threading.Thread):
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.connection, m)
         else:
-            logger.info('Event received and ignored: %s' % event._type)
+            logger.info('Event received and ignored: %s' % type(event))
 
     def _exit(self):
         m = MsgTestingToolComponentShutdown(component=self.component_id)
@@ -235,12 +235,12 @@ class UserMock(threading.Thread):
         elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
             publish_message(self.connection, m)
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseReady):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
 
             # m = MsgTestCaseStart()
@@ -257,7 +257,7 @@ class UserMock(threading.Thread):
                 logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseVerdict):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
 
@@ -277,29 +277,29 @@ class UserMock(threading.Thread):
             time.sleep(2)
 
         elif isinstance(event, MsgTestingToolTerminate):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Terminating execution.. ')
             time.sleep(2)
             self.stop()
 
         elif isinstance(event, MsgStepStimuliExecute):
-            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logger.info('Message received %s . IUT node: %s ' % (type(event), event.node))
             logger.info('Event description %s' % event.description)
 
         elif isinstance(event, MsgStepVerifyExecute):
-            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
+            logger.info('Message received %s . IUT node: %s ' % (type(event), event.node))
             logger.info('Event description %s' % event.description)
 
         elif isinstance(event, MsgTestingToolComponentReady) or isinstance(event, MsgTestingToolComponentShutdown):
-            logger.info('Message received %s . Component: %s ' % (event._type, event.component))
+            logger.info('Message received %s . Component: %s ' % (type(event), event.component))
 
         else:
 
             if hasattr(event, 'description'):
-                logger.info('Event received and ignored < %s >  %s' % (event._type, event.description))
+                logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
             else:
-                logger.info('Event received and ignored: %s' % event._type)
+                logger.info('Event received and ignored: %s' % type(event))
 
     def stop(self):
         self.shutdown = True

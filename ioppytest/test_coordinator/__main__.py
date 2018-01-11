@@ -223,10 +223,9 @@ if __name__ == '__main__':
             body=json.dumps({
                 'traceback': traceback.format_exc(),
                 'message': error_msg,
-                '_type': 'testcoordination.error',
             }),
             exchange=AMQP_EXCHANGE,
-            routing_key='control.session.error',
+            routing_key='error',
             properties=pika.BasicProperties(
                 content_type='application/json',
             )
