@@ -44,7 +44,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
 
-    def complete_integration_test(self):
+    def test_complete_interop_test_cycle(self):
         global event_types_sniffed_on_bus_list
         global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
