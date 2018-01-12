@@ -44,7 +44,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
                 echo installing python dependencies...
-                make install-python-dependencies
+                sudo -H make install-python-dependencies
             '''
             }
         }
@@ -64,7 +64,6 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             sh '''
                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                 make tests
-
             '''
         }
       }
