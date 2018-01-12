@@ -17,7 +17,7 @@ class SnifferTestCase(unittest.TestCase):
     def setUp(self):
         logging.info('using AMQP vars: %s, %s' % (AMQP_URL, AMQP_EXCHANGE,))
         self.capture_id = "test_capture_id"
-        self.routing_key_data_packet = 'fromAgent.some_random_constiuation_of_rkye_terms'
+        self.routing_key_data_packet = 'fromAgent.someRandomIutRole.ip.tun.packet.raw'
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
