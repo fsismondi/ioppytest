@@ -67,11 +67,11 @@ class AutomatedIUT(threading.Thread):
         self.message_count = 0
 
         # queues & default exchange declaration
-        services_queue_name = 'services_queue@%s' % self.component_id
+        services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
-                                routing_key='control.testcoordination')
+                                routing_key='testsuite.#')
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -206,16 +206,20 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        services_queue_name = 'services_queue@%s' % self.component_id
+        services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
-                                routing_key='control.testcoordination')
+                                routing_key='testsuite.#')
 
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=services_queue_name,
-                                routing_key='control.session')
+                                routing_key='testingtool.#')
+
+        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                queue=services_queue_name,
+                                routing_key='session.#')
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)

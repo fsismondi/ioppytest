@@ -38,7 +38,7 @@ class AmqpDataPacketDumper:
             orig_len differ, the actually saved packet size was limited by snaplen.
     """
 
-    DEFAULT_TOPICS = ['#.fromAgent.#']
+    DEFAULT_TOPICS = ['#.fromAgent.#', 'fromAgent.#']
     DEFAULT_DUMP_DIR = TMPDIR
     DEFAULT_FILENAME = "DLT_RAW.pcap"
     DEFAULT_FILENAME_WR = "DLT_RAW.pcap~"

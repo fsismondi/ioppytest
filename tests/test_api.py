@@ -165,13 +165,10 @@ class ApiTests(unittest.TestCase):
         self.channel.queue_delete(queue=errors_queue_name)
 
         self.channel.queue_declare(queue=errors_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=errors_queue_name,
-                                routing_key='log.error.*')
-
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=errors_queue_name,
-                                routing_key='control.session.error')
+        for rk in ['error', '#.error', 'error.#']:
+            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                    queue=errors_queue_name,
+                                    routing_key=rk)
 
         # for getting the terminate signal
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,

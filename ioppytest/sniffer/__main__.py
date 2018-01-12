@@ -34,7 +34,11 @@ for d in TMPDIR, DATADIR, LOGDIR:
 
 
 class Sniffer:
-    DEFAULT_TOPICS = ['#.fromAgent.#', 'control.sniffing.service']
+    # fixme! deprecate old rkeys from API v1.0
+    DEFAULT_TOPICS = ['#.fromAgent.#',
+                      'fromAgent.#',
+                      'sniffing.#',
+                      'control.sniffing.service']
 
     def __init__(self, traffic_dlt, amqp_url, amqp_exchange):
         self.traffic_dlt = traffic_dlt
@@ -274,7 +278,7 @@ class Sniffer:
         publish_message(self.connection, msg)
 
         try:
-            self.logger.info("Awaiting AMQP requests on topic: control.sniffing.service")
+            self.logger.info("Awaiting AMQP requests on bus")
             self.channel.start_consuming()
         except pika.exceptions.ConnectionClosed as cc:
             self.logger.error(' AMQP connection closed: %s' % str(cc))
