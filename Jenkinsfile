@@ -147,10 +147,11 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
-        stage("BUILD docker images (testing tools and automated-iuts)"){
-            gitlabCommitStatus("BUILD docker images (testing tools and automated-iuts)") {
+        stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
                 sh '''
-                    sudo -E make build-all
+                    sudo -E make _docker-build-coap
+                    sudo -E make _docker-build-coap-additional-resources
                     sudo -E docker images
                 '''
             }
