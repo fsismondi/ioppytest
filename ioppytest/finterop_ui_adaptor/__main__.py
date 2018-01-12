@@ -38,8 +38,10 @@ TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     MsgSessionLog.routing_key,
     MsgTestSuiteStart.routing_key,
     MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
+    '#.fromAgent.#',  # fixme deprecate this
+    'fromAgent.#', # do not subscribe to toAgent else we will have duplication in GUI
 ]
+
 
 UI_REPLY_TOPICS = [
     'ui.user.1.reply',

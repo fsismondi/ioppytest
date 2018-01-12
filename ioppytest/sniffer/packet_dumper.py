@@ -37,7 +37,7 @@ class AmqpDataPacketDumper:
         orig_len: the length of the packet as it appeared on the network when it was captured. If incl_len and
             orig_len differ, the actually saved packet size was limited by snaplen.
     """
-
+    # fixme deprecate old rkey fromats
     DEFAULT_TOPICS = ['#.fromAgent.#', 'fromAgent.#']
     DEFAULT_DUMP_DIR = TMPDIR
     DEFAULT_FILENAME = "DLT_RAW.pcap"
