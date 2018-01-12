@@ -151,7 +151,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         stage("BUILD docker images (testing tools and automated-iuts)"){
             gitlabCommitStatus("BUILD docker images (testing tools and automated-iuts)") {
                 sh '''
-                    sudo -E make docker-build-all
+                    sudo -E make build-all
                     sudo -E docker images
                 '''
             }
