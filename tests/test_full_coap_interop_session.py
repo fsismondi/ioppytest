@@ -27,7 +27,7 @@ event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order 
 
 """
 EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
 
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment
@@ -36,7 +36,7 @@ PRE-CONDITIONS:
 """
 
 
-class SessionMockTests(unittest.TestCase):
+class CompleteFunctionalCoapSessionTests(unittest.TestCase):
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
@@ -44,7 +44,7 @@ class SessionMockTests(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
 
-    def test_testcase_report_issue_at_end_of_session(self):
+    def complete_integration_test(self):
         global event_types_sniffed_on_bus_list
         global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
@@ -60,7 +60,7 @@ class SessionMockTests(unittest.TestCase):
         e = AmqpListener(
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
-            callback=on_message_received_actions,
+            callback=run_checks_on_message_received,
             topics=['#'],
             use_message_typing=True
         )
@@ -107,18 +107,20 @@ class SessionMockTests(unittest.TestCase):
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
 
 
-# # # # # # AUXILIARY METHODS # # # # # # #
-
-def on_message_received_actions(message: Message):
+def run_checks_on_message_received(message: Message):
     assert message
     logger.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:70]))
     update_events_seen_on_bus_list(message)
     check_if_message_is_an_error_message(message)
     publish_terminate_signal_on_report_received(message)
+    check_api_version(message)
 
+
+# # # # # # AUXILIARY METHODS # # # # # # #
 
 def publish_terminate_signal_on_report_received(message: Message):
     if isinstance(message, MsgTestSuiteReport):
+        logger.info('Got final report %s' % repr(message))
         connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         publish_message(
             connection,
@@ -139,3 +141,13 @@ def update_events_seen_on_bus_list(message: Message):
     global events_sniffed_on_bus_dict
     events_sniffed_on_bus_dict[type(message)] = message
     event_types_sniffed_on_bus_list.append(type(message))
+
+
+def check_api_version(message: Message):
+    try:
+        assert message._api_version, 'Message didnt enclude API version metadata'
+    except:
+        logger.warning('Message didnt enclude API version metadata')
+        return
+
+    assert message._api_version.startswith("1"), "Running incompatible version of API"
