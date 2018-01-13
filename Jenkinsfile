@@ -207,7 +207,9 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo make stop-all
+                        sudo -E make stop-coap-client
+                        sudo -E make stop-coap-server
+                        sudo -E make stop-coap-testing-tool
                         sudo -E docker ps
                     '''
                 }
