@@ -96,24 +96,22 @@ class CoordinatorAmqpInterface(object):
         self.channel.basic_qos(prefetch_count=1)
 
     def amqp_create_queues_bind_and_susbcribe(self):
-        self.services_q_name = 'services@%s' % self.component_id
-        self.events_q_name = 'events@%s' % self.component_id
+        self.services_q_name = '%s::requests_replies' % self.component_id
+        self.events_q_name = '%s::events' % self.component_id
 
         # declare services and events queues
         self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
         self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
-        self.channel.queue_bind(exchange=self.amqp_exchange,
+        for msg in self.service_reponse_callbacks.keys():
+            self.channel.queue_bind(exchange=self.amqp_exchange,
                                 queue=self.services_q_name,
-                                routing_key='control.testcoordination.service')
+                                routing_key=msg.routing_key)
 
-        self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.testcoordination')
-
-        self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.session')
+        for msg in self.control_events_triggers.keys():
+            self.channel.queue_bind(exchange=self.amqp_exchange,
+                                    queue=self.events_q_name,
+                                    routing_key=msg.routing_key)
 
         self.channel.basic_consume(self.handle_service,
                                    queue=self.services_q_name,
