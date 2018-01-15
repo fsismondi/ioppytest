@@ -113,13 +113,13 @@ if __name__ == '__main__':
     bootstrap_q_name = 'bootstrapping'
     bootstrap_q = channel.queue_declare(queue=bootstrap_q_name, auto_delete=True)
 
+    # starting verification of the testing tool components
     channel.queue_bind(
         exchange=AMQP_EXCHANGE,
         queue='bootstrapping',
-        routing_key='control.session',
+        routing_key=MsgTestingToolComponentReady.routing_key,
     )
 
-    # starting verification of the testing tool components
     msg = MsgTestingToolComponentReady(
         component='testcoordination'
     )

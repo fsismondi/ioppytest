@@ -103,11 +103,13 @@ class CoordinatorAmqpInterface(object):
         self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
         self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
+        # subscribe to all events request/replies messages concerning the testsuite coordination
         for msg in self.service_reponse_callbacks.keys():
             self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.services_q_name,
-                                routing_key=msg.routing_key)
+                                    queue=self.services_q_name,
+                                    routing_key=msg.routing_key)
 
+        # subscribe to all events FSM related messages
         for msg in self.control_events_triggers.keys():
             self.channel.queue_bind(exchange=self.amqp_exchange,
                                     queue=self.events_q_name,

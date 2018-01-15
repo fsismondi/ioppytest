@@ -113,7 +113,7 @@ class AmqpDataPacketDumper:
         # subscribe to channel where the terminate session message is published
         self.channel.queue_bind(exchange=self.exchange,
                                 queue=self.data_queue_name,
-                                routing_key='control.session')
+                                routing_key=MsgTestingToolTerminate.routing_key)
 
         # publish Hello message in bus
         msg = MsgTestingToolComponentReady(
