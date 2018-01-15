@@ -172,6 +172,7 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
 
         # routes for agents' serial interfaces (802.15.4 nodes)
         serial_routes = {
+            # TODO deprecate API v0.1
             'data.serial.fromAgent.%s' % nodes[0]:
                 [
                     'data.serial.toAgent.%s' % nodes[1],
@@ -182,10 +183,23 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
                     'data.serial.toAgent.%s' % nodes[0],
                     'data.serial.toAgent.%s' % 'agent_TT',
                 ],
+
+            # API v.1.0 [toAgent|fromAgent.*.802154.serial.packet.raw]
+            'fromAgent.%s.802154.serial.packet.raw' % nodes[0]:
+                [
+                    'toAgent.%s.802154.serial.packet.raw' % nodes[1],
+                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
+                ],
+            'fromAgent.%s.802154.serial.packet.raw' % nodes[1]:
+                [
+                    'toAgent.%s.802154.serial.packet.raw' % nodes[0],
+                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
+                ],
         }
 
         # routes for agents' TUNs interfaces (ipv6 nodes)
         tun_routes = {
+            # TODO deprecate API v0.1
             'data.tun.fromAgent.%s' % nodes[0]:
                 [
                     'data.tun.toAgent.%s' % nodes[1],
@@ -196,8 +210,18 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
                     'data.tun.toAgent.%s' % nodes[0],
                     'data.tun.toAgent.%s' % 'agent_TT',
                 ],
+            # API v.1.0 [toAgent|fromAgent.*.ip.tun.packet.raw]
+            'fromAgent.%s.ip.tun.packet.raw' % nodes[0]:
+                [
+                    'toAgent.%s.ip.tun.packet.raw' % nodes[1],
+                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
+                ],
+            'fromAgent.%s.ip.tun.packet.raw' % nodes[1]:
+                [
+                    'toAgent.%s.ip.tun.packet.raw' % nodes[0],
+                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
+                ],
         }
-
         routing_table = dict()
         routing_table.update(serial_routes)
         routing_table.update(tun_routes)
