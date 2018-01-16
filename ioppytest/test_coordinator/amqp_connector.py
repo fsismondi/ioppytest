@@ -61,9 +61,6 @@ class CoordinatorAmqpInterface(object):
         self.amqp_url = amqp_url
         self.amqp_exchange = amqp_exchange
 
-        self.amqp_connect()
-        self.amqp_create_queues_bind_and_susbcribe()
-
         #  callbacks to coordinator methods (~services to other components)
         self.request_reply_handlers = {
             MsgTestSuiteGetTestCases: self.get_testcases_basic,
@@ -82,6 +79,10 @@ class CoordinatorAmqpInterface(object):
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseSkip: 'skip_testcase',
         }
+
+        # amqp connect to bus & subscribe to events
+        self.amqp_connect()
+        self.amqp_create_queues_bind_and_susbcribe()
 
     def get_new_amqp_connection(self):
         return pika.BlockingConnection(pika.URLParameters(self.amqp_url))
