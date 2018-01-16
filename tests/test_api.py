@@ -234,7 +234,8 @@ class ApiTests(unittest.TestCase):
                 i += 1
                 logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
-            # finally check
+            # finally checks
+            check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)
             check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
 
 
@@ -255,9 +256,23 @@ def stop_generator():
     stop_generator_signal = True
 
 
+def check_request_with_no_correlation_id(events_tracelog):
+    non_compiant = []
+    for ev in events_tracelog:
+        if ".request" in ev.routing_key:
+            if not hasattr(ev,'correlation_id'):
+                non_compiant.append(ev)
+
+    if len(non_compiant) > 0:
+        m = "Request with no correlation id: %s"%len(non_compiant)
+        logging.warning(m)
+        for i in non_compiant:
+            logging.warning("Request with no correlation id: %s" % repr(i)[:MAX_LINE_LENGTH])
+        raise Exception(m)
+
+
 def check_every_request_has_a_reply(events_tracelog):
     for ev in events_tracelog:
-
         if ".request" in ev.routing_key:
             corr_id = ev.correlation_id
             found_correlated_message = False
