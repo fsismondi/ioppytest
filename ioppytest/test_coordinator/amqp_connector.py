@@ -65,7 +65,7 @@ class CoordinatorAmqpInterface(object):
         self.amqp_create_queues_bind_and_susbcribe()
 
         #  callbacks to coordinator methods (~services to other components)
-        self.service_reponse_callbacks = {
+        self.request_reply_handlers = {
             MsgTestSuiteGetTestCases: self.get_testcases_basic,
             MsgTestSuiteGetStatus: self.get_states_summary
         }
@@ -96,17 +96,17 @@ class CoordinatorAmqpInterface(object):
         self.channel.basic_qos(prefetch_count=1)
 
     def amqp_create_queues_bind_and_susbcribe(self):
-        self.services_q_name = '%s::requests_replies' % self.component_id
+        self.requests_replies_q_name = '%s::requests_replies' % self.component_id
         self.events_q_name = '%s::events' % self.component_id
 
         # declare services and events queues
-        self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
+        self.channel.queue_declare(queue=self.requests_replies_q_name, auto_delete=True)
         self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
         # subscribe to all events request/replies messages concerning the testsuite coordination
-        for msg in self.service_reponse_callbacks.keys():
+        for msg in self.request_reply_handlers.keys():
             self.channel.queue_bind(exchange=self.amqp_exchange,
-                                    queue=self.services_q_name,
+                                    queue=self.requests_replies_q_name,
                                     routing_key=msg.routing_key)
 
         # subscribe to all events FSM related messages
@@ -116,7 +116,7 @@ class CoordinatorAmqpInterface(object):
                                     routing_key=msg.routing_key)
 
         self.channel.basic_consume(self.handle_service,
-                                   queue=self.services_q_name,
+                                   queue=self.requests_replies_q_name,
                                    no_ack=False)
 
         self.channel.basic_consume(self.handle_control,
@@ -139,7 +139,7 @@ class CoordinatorAmqpInterface(object):
             self.channel.stop_consuming()
 
         # clean up
-        self.channel.queue_delete(queue=self.services_q_name)
+        self.channel.queue_delete(queue=self.requests_replies_q_name)
         self.channel.queue_delete(queue=self.events_q_name)
         self.channel.close()
         self.connection.close()
@@ -152,10 +152,10 @@ class CoordinatorAmqpInterface(object):
         logger.info('Service request received: %s' % type(request))
 
         # let's process request
-        if type(request) in self.service_reponse_callbacks:
+        if type(request) in self.request_reply_handlers:
 
             logger.info('Processing request: %s' % type(request))
-            callback = self.service_reponse_callbacks[type(request)]
+            callback = self.request_reply_handlers[type(request)]
 
             try:
                 response_data = callback()
