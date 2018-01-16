@@ -118,11 +118,11 @@ class AutomatedIUT(threading.Thread):
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                             (
-                                 type(event),
-                                 event.node,
-                                 event.step_id,
-                             ))
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
 
         elif isinstance(event, MsgStepVerifyExecute):
 
@@ -130,15 +130,13 @@ class AutomatedIUT(threading.Thread):
                 step = event.step_id
                 self._execute_verify(step)
                 publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
-                                                                    node=self.node
-                                                                    ))
+                                                                       node=self.node
+                                                                       ))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                             (
-                                 type(event),
-                                 event.node,
-                                 event.step_id,
-                             ))
+                            (type(event),
+                             event.node,
+                             event.step_id,))
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Test suite finished, final report: %s' % event.to_json())
@@ -146,7 +144,7 @@ class AutomatedIUT(threading.Thread):
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Test terminate signal received. Quitting..')
             time.sleep(2)
-            self._exit
+            self._exit()
 
         elif isinstance(event, MsgConfigurationExecute):
             if event.node == self.node:
@@ -234,7 +232,7 @@ class UserMock(threading.Thread):
         if event is None:
             return
 
-        elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
+        elif isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
             publish_message(self.connection, m)
             logger.info('Event received %s' % type(event))
