@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+
+import os
+import sys
+import pika
+import logging
+import unittest
+from urllib.parse import urlparse
+
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 from automated_IUTs.automation import UserMock
 
-from urllib.parse import urlparse
-import logging
-import unittest
-import pika
-import sys
-import os
+from tests import check_if_message_is_an_error_message, publish_terminate_signal_on_report_received, check_api_version
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 300
@@ -109,31 +112,11 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logger.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:70]))
+    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:70]))
     update_events_seen_on_bus_list(message)
     check_if_message_is_an_error_message(message)
     publish_terminate_signal_on_report_received(message)
     check_api_version(message)
-
-
-# # # # # # AUXILIARY METHODS # # # # # # #
-
-def publish_terminate_signal_on_report_received(message: Message):
-    if isinstance(message, MsgTestSuiteReport):
-        logger.info('Got final report %s' % repr(message))
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
-        publish_message(
-            connection,
-            MsgTestingToolTerminate(description="Received report, functional test finished..")
-        )
-
-
-def check_if_message_is_an_error_message(message: Message):
-    logger.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
-    assert 'error' not in message.routing_key, 'Got an error %s' % repr(message)
-    assert not isinstance(message, MsgErrorReply), 'Got an error reply %s' % repr(message)
-    assert not (isinstance(message, MsgReply) and message.ok == False), 'Got a reply with a NOK reponse %s' % repr(
-        message)
 
 
 def update_events_seen_on_bus_list(message: Message):
@@ -141,13 +124,3 @@ def update_events_seen_on_bus_list(message: Message):
     global events_sniffed_on_bus_dict
     events_sniffed_on_bus_dict[type(message)] = message
     event_types_sniffed_on_bus_list.append(type(message))
-
-
-def check_api_version(message: Message):
-    try:
-        assert message._api_version, 'Message didnt enclude API version metadata'
-    except:
-        logger.warning('Message didnt enclude API version metadata')
-        return
-
-    assert message._api_version.startswith("1"), "Running incompatible version of API"
