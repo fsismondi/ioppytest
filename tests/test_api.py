@@ -143,9 +143,17 @@ user_sequence = [
 
 class ApiTests(unittest.TestCase):
     """
-    python3 -m unittest tests/test_api.py -vvv
-    """
+    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
 
+    EXECUTE AS:
+    python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
+    or
+    python3 -m unittest tests/test_api.py -vvv
+
+    PRE-CONDITIONS:
+    - Export AMQP_URL in the running environment
+    - Have CoAP testing tool running & listening to the bus
+    """
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
@@ -277,7 +285,7 @@ def check_every_request_has_a_reply(events_tracelog):
             corr_id = ev.correlation_id
             found_correlated_message = False
             for ev_request_finder in events_tracelog:
-                if ".reply" in ev.routing_key and corr_id == ev_request_finder.correlation_id:
+                if ".reply" in ev_request_finder.routing_key and corr_id == ev_request_finder.correlation_id:
                     found_correlated_message = True
                     logging.info('[%s]: found request and its reply %s / %s ' % (
                         sys._getframe().f_code.co_name,

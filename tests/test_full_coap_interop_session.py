@@ -28,18 +28,21 @@ logging.getLogger('pika').setLevel(logging.INFO)
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
 
-"""
-EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
-
-PRE-CONDITIONS:
-- Export AMQP_URL in the running environment
-- Have CoAP testing tool running & listening to the bus
-- Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
-"""
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
+    """
+    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
+
+    EXECUTE AS:
+    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
+
+    PRE-CONDITIONS:
+    - Export AMQP_URL in the running environment
+    - Have CoAP testing tool running & listening to the bus
+    - Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
+    """
+
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
