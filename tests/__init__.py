@@ -24,12 +24,13 @@ def publish_terminate_signal_on_report_received(message: Message):
         )
 
 
-def check_if_message_is_an_error_message(message: Message):
+def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=True):
     logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
     assert 'error' not in message.routing_key, 'Got an error %s' % repr(message)
     assert not isinstance(message, MsgErrorReply), 'Got an error reply %s' % repr(message)
-    assert not (isinstance(message, MsgReply) and message.ok == False), 'Got a reply with a NOK reponse %s' % repr(
-        message)
+    if fail_on_reply_nok:
+        assert not (isinstance(message, MsgReply) and message.ok == False), \
+            'Got a reply with a NOK reponse %s' % repr(message)
 
 
 def check_api_version(message: Message):

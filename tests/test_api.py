@@ -25,6 +25,7 @@ from tests import check_if_message_is_an_error_message, publish_terminate_signal
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
 
+MAX_LINE_LENGTH = 100
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 90
 
@@ -231,7 +232,7 @@ class ApiTests(unittest.TestCase):
             i = 0
             for ev in event_types_sniffed_on_bus_list:
                 i += 1
-                logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:70]))
+                logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
             # finally check
             check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
@@ -239,10 +240,10 @@ class ApiTests(unittest.TestCase):
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:70]))
-    update_events_seen_on_bus_list(message)
-    check_if_message_is_an_error_message(message)
-    check_api_version(message)
+    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+    update_events_seen_on_bus_list(message=message)
+    check_if_message_is_an_error_message(message=message, fail_on_reply_nok=False)
+    check_api_version(message=message)
 
 
 # # # # # # AUXILIARY METHODS # # # # # # #
@@ -265,8 +266,8 @@ def check_every_request_has_a_reply(events_tracelog):
                     found_correlated_message = True
                     logging.info('[%s]: found request and its reply %s / %s ' % (
                         sys._getframe().f_code.co_name,
-                        repr(ev)[:70],
-                        repr(ev_request_finder)[:70]
+                        repr(ev)[:MAX_LINE_LENGTH],
+                        repr(ev_request_finder)[:MAX_LINE_LENGTH]
                     ))
                     break
 
