@@ -54,6 +54,15 @@ class AutomatedIUT(threading.Thread):
     component_id = NotImplementedField
     node = NotImplementedField
 
+    EVENTS = [
+        MsgTestCaseReady,
+        MsgTestCaseConfiguration,
+        MsgStepVerifyExecute,
+        MsgStepStimuliExecute,
+        MsgTestSuiteReport,
+        MsgTestingToolTerminate,
+    ]
+
     def __init__(self, node):
 
         self.node = node
@@ -67,9 +76,11 @@ class AutomatedIUT(threading.Thread):
         # queues & default exchange declaration
         services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='testsuite.#')
+
+        for ev in self.EVENTS:
+            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                    queue=services_queue_name,
+                                    routing_key=ev.routing_key)
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -186,6 +197,16 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
+    EVENTS = [
+        MsgTestCaseReady,
+        MsgTestingToolReady,
+        MsgTestingToolConfigured,
+        MsgTestCaseConfiguration,
+        MsgTestCaseVerdict,
+        MsgTestSuiteReport,
+        MsgTestingToolTerminate,
+    ]
+
     def __init__(self, iut_testcases=None):
 
         threading.Thread.__init__(self)
@@ -205,17 +226,10 @@ class UserMock(threading.Thread):
         services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
 
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='testsuite.#')
-
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='testingtool.#')
-
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='session.#')
+        for ev in self.EVENTS:
+            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                    queue=services_queue_name,
+                                    routing_key=ev.routing_key)
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -234,13 +248,13 @@ class UserMock(threading.Thread):
 
         elif isinstance(event, MsgTestingToolReady):
             m = MsgSessionConfiguration(
-                    configuration={
-                        "testsuite.testcases": [
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-                        ]
-                    }
+                configuration={
+                    "testsuite.testcases": [
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+                    ]
+                }
             )  # from TC1 to TC3
 
             publish_message(self.connection, m)
@@ -298,19 +312,7 @@ class UserMock(threading.Thread):
             time.sleep(2)
             self.stop()
 
-        elif isinstance(event, MsgStepStimuliExecute):
-            logger.info('Message received %s . IUT node: %s ' % (type(event), event.node))
-            logger.info('Event description %s' % event.description)
-
-        elif isinstance(event, MsgStepVerifyExecute):
-            logger.info('Message received %s . IUT node: %s ' % (type(event), event.node))
-            logger.info('Event description %s' % event.description)
-
-        elif isinstance(event, MsgTestingToolComponentReady) or isinstance(event, MsgTestingToolComponentShutdown):
-            logger.info('Message received %s . Component: %s ' % (type(event), event.component))
-
         else:
-
             if hasattr(event, 'description'):
                 logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
             else:
@@ -330,4 +332,6 @@ class UserMock(threading.Thread):
         while self.shutdown is False:
             self.connection.process_data_events()
             time.sleep(0.3)
+
+        logger.info('%s shutting down..' % self.component_id)
         self.exit()

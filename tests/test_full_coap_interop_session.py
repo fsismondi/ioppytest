@@ -75,6 +75,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         e.setName(u.__class__.__name__)
 
         try:
+            self.connection.close()
             e.start()
             u.start()
 
@@ -88,7 +89,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         finally:
             if u.is_alive():
                 u.stop()
-
             if e.is_alive():
                 e.stop()
 
