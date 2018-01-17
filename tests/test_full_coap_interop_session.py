@@ -18,6 +18,7 @@ from tests import check_if_message_is_an_error_message, publish_terminate_signal
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 300
+MAX_LINE_LENGTH = 100
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -27,7 +28,6 @@ logging.getLogger('pika').setLevel(logging.INFO)
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
-
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
@@ -77,6 +77,10 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         try:
             u.start()
             e.start()
+
+            while not u.is_alive():
+                time.sleep(0.1)
+
             publish_message(
                 connection=self.connection,
                 message=MsgSessionConfiguration(
@@ -104,7 +108,11 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             if e.is_alive():
                 e.stop()
 
-            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus_list)
+            logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+            i = 0
+            for ev in event_types_sniffed_on_bus_list:
+                i += 1
+                logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
@@ -115,7 +123,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:70]))
+    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
     update_events_seen_on_bus_list(message)
     check_if_message_is_an_error_message(message)
     publish_terminate_signal_on_report_received(message)
