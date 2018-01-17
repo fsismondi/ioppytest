@@ -78,7 +78,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                     sleep 15
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE
                     sleep 2
-                    python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
+                    python3 -m pytest -p no:cacheprovider tests/test_api.py -v
                 '''
           }
           catch (e){
@@ -193,7 +193,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
                         '''
                     }
                 }
