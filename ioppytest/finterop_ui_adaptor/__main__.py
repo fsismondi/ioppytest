@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import signal
 import pika
@@ -34,14 +37,12 @@ rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
-    MsgDissectionAutoDissect.routing_key,
-    MsgSessionLog.routing_key,
-    MsgTestSuiteStart.routing_key,
-    MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',  # fixme deprecate this
-    'fromAgent.#', # do not subscribe to toAgent else we will have duplication in GUI
+    'testsuite.#',
+    'testingtool.#',
+    'session.#',
+    'log.#'
+    'fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
-
 
 UI_REPLY_TOPICS = [
     'ui.user.1.reply',
