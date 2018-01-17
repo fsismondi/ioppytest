@@ -5,6 +5,7 @@ import os
 import logging
 import traceback
 import textwrap
+import datetime
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
@@ -611,32 +612,44 @@ class GenericBidirectonalTranslator(object):
 
         for tc_name, tc_report in testcases:
 
-            partial_verdicts = None
-            try:
-                partial_verdicts = tc_report.pop('partial_verdicts')
-            except KeyError:
-                pass
+            if tc_name and tc_report is None:
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     tc_name,
+                                     "No report for this testcase."
+                                 )
+                    })
+            else:
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 tc_name,
-                                 tabulate(tc_report.items()) if tc_report else "No report for this testcase."
-                             )
-                }
-            )
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 "Partial verdicts",
-                                 tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
-                             )
-                }
-            )
+                partial_verdicts = None
+                try:
+                    partial_verdicts = tc_report.pop('partial_verdicts')
+                except KeyError:
+                    pass
+
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     tc_name,
+                                     tabulate(tc_report.items()) if type(tc_report) is dict else "Oops.."
+                                 )
+                    }
+                )
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     "Partial verdicts",
+                                     tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
+                                 )
+                    }
+                )
 
         return MsgUiDisplay(
             level='highlighted',
@@ -828,30 +841,51 @@ class GenericBidirectonalTranslator(object):
         """
 
         fields = []
-
+        frames_as_list_of_strings = message.frames_simple_text
         for frame_dict in message.frames:
             frame_header = []
             try:
-                for attribute in ['timestamp', 'id', 'error']:
-                    frame_header.append([attribute, frame_dict[attribute]])
+
+                attribute_name = 'timestamp'
+                attribute_value = datetime.datetime.fromtimestamp(int(frame_dict[attribute_name])).strftime(
+                    '%Y-%m-%d %H:%M:%S')
+                frame_header.append([attribute_name, attribute_value])
+
+                for attribute_name in ['id', 'error']:
+                    frame_header.append([attribute_name, frame_dict[attribute_name]])
+
             except KeyError as ae:
                 logging.error("Some attribute was not found: %s" % str(frame_dict))
-
-            fields.append({
-                'type': 'p',
-                'value': 'Frame header:\n%s' % tabulate(frame_header)
-            })
-
             try:
-                for protocol_layer_dict in frame_dict['protocol_stack']:
-                    fields.append({
-                        'type': 'p',
-                        'value': '%s:%s\n%s' % (
-                            protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
-                            tabulate(protocol_layer_dict.items())
-                        )
-                    })
+                fields.append({
+                    'type': 'p',
+                    'value': '-' * 70
+                })
+                fields.append({
+                    'type': 'p',
+                    'value': 'Frame header:\n%s' % tabulate(frame_header)
+                })
 
+                # for protocol_layer_dict in frame_dict['protocol_stack']:
+                #     fields.append({
+                #         'type': 'p',
+                #         'value': 'Frame header:\n%s' % tabulate(frame_header)
+                #     })
+                #
+                #     try:
+                #         for protocol_layer_dict in frame_dict['protocol_stack']:
+                #             fields.append({
+                #                 'type': 'p',
+                #                 'value': '%s:%s\n%s' % (
+                #                     protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
+                #                     tabulate(protocol_layer_dict.items())
+                #                 )
+                #             })
+
+                fields.append({
+                    'type': 'p',
+                    'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
+                })
             except KeyError as ae:
                 logging.error("Some attrubute was not found in protocol stack dict: %s" % str(frame_dict))
 
