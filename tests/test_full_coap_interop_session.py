@@ -78,8 +78,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             u.start()
             e.start()
 
-            while not u.is_alive():
-                time.sleep(0.1)
+            time.sleep(10)  # wait for testing tool and threads to be up and ready
 
             publish_message(
                 connection=self.connection,
