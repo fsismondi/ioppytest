@@ -58,11 +58,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
 
         # thread
-        u = UserMock(
-            iut_testcases=tc_list
-        )
-
-        # thread
         e = AmqpListener(
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
@@ -71,27 +66,17 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             use_message_typing=True
         )
 
+        # thread
+        u = UserMock(
+            iut_testcases=tc_list
+        )
+
         u.setName(u.__class__.__name__)
         e.setName(u.__class__.__name__)
 
         try:
-            u.start()
             e.start()
-
-            time.sleep(10)  # wait for testing tool and threads to be up and ready
-
-            publish_message(
-                connection=self.connection,
-                message=MsgSessionConfiguration(
-                    configuration={
-                        "testsuite.testcases": [
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-                        ]
-                    }
-                )  # from TC1 to TC3
-            )
+            u.start()
 
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
             u.join(THREAD_JOIN_TIMEOUT)
