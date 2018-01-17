@@ -31,7 +31,7 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap-additional-resources
-	$(MAKE) tools
+	$(MAKE) build-tools
 
 
 sniff-bus: ## Listen and echo all messages in the event bus
