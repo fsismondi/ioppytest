@@ -195,6 +195,20 @@ class AmqpMessagePublisher:
         logger.info(
             "publishing: %s routing_key: %s" % (repr(message)[:STDOUT_MAX_STRING_LENGTH], message.routing_key))
 
+    def publish_message(self, message):
+        """
+        Generic publish message which uses class connection
+
+        :param message:
+        :return:
+        """
+        publish_message(self.connection, message)
+
+        logger.info("publishing:%s routing_key: %s correlation_id %s"
+                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
+                       message.routing_key,
+                       message.correlation_id if hasattr(message, 'correlation_id') else None))
+
     def publish_ui_request(self, message, user_id=None):
         """
         :param message:
@@ -215,12 +229,7 @@ class AmqpMessagePublisher:
         else:
             raise Exception('Not enough information to know where to route message')
 
-        publish_message(self.connection, message)
-
-        logger.info("publishing:%s routing_key: %s correlation_id %s"
-                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
-                       message.routing_key,
-                       message.correlation_id))
+        self.publish_message(message)
 
     def publish_tt_chained_message(self, message):
         """
@@ -271,7 +280,7 @@ def main():
         logger.info("routing TT <- UI: %s | r_key: %s | corr_id %s"
                     % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
                        message_received.routing_key,
-                       message_received.correlation_id))
+                       message_received.correlation_id if hasattr(message_received, 'correlation_id') else None))
 
         # 0. print pending responses table
         message_translator.print_table_of_pending_messages()
@@ -286,7 +295,7 @@ def main():
             logger.info('got reply to previous request, r_key: %s corr id %s, message %s'
                         % (
                             message_received.routing_key,
-                            message_received.correlation_id,
+                            message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
                             repr(message_received),
                         ))
 

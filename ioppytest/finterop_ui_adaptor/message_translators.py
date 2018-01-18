@@ -158,6 +158,8 @@ class GenericBidirectonalTranslator(object):
 
     def __init__(self):
 
+        logger.info("Starting UI message tanslator..")
+
         self._current_tc = None
         self._current_step = None
         self._report = None
@@ -241,6 +243,45 @@ class GenericBidirectonalTranslator(object):
             amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
 
         """
+
+        # for specialized request, displays etc for each type of test suite
+        self._bootstrap(amqp_connector)
+
+        # all test suites using ioppytest require the session configuration
+        req = MsgUiRequestSessionConfiguration()
+        logger.info("bootstrapping..")
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=10,
+            )
+
+            assert resp
+
+            logger.info("got session configuration from UI  %s" % repr(resp))
+
+            tt_config_message = MsgSessionConfiguration(**resp.to_dict())
+            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
+
+            amqp_connector.publish_message(tt_config_message)
+
+        except Exception as e:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            logger.error("Couldnt retrieve SESSION CONFIGURATION from UI, going into default configuration")
+            tt_config_message = MsgSessionConfiguration(
+                session_id=None,
+                configuration={},
+                testing_tools=None,
+                users=[],
+            )
+            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
+
+            amqp_connector.publish_message(tt_config_message)
+
+    def _bootstrap(self, amqp_connector):
+        """
+        to be implemented by child class  (if no bootstrap need then just "pass"
+        """
+
         raise NotImplementedError()
 
     def update_state(self, message):
@@ -996,7 +1037,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
     def __init__(self):
         super().__init__()
 
-    def bootstrap(self, amqp_connector):
+    def _bootstrap(self, amqp_connector):
         """
         see doc of overriden method
 
@@ -1204,7 +1245,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
-    def bootstrap(self, amqp_connector):
+    def _bootstrap(self, amqp_connector):
         import inspect
 
         snippets = [self.snippet_display_markdown,
