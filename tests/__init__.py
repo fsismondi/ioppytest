@@ -14,6 +14,13 @@ logging.basicConfig(level=logging.INFO,
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
 
+def connect_and_publish_message(message: Message):
+    connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+    publish_message(
+        connection,
+        message
+    )
+
 def publish_terminate_signal_on_report_received(message: Message):
     if isinstance(message, MsgTestSuiteReport):
         logging.info('Got final report %s' % repr(message))

@@ -73,11 +73,14 @@ class AmqpMessagePublisher:
     def __init__(self,
                  amqp_url='amqp://guest:guest@locahost/',
                  amqp_exchange='amq.topic',
-                 iut_role_to_user_id_mapping=dict()):
+                 iut_role_to_user_id_mapping=None):
 
         self.COMPONENT_ID = 'amqp_publisher_%s' % str(uuid.uuid4())[:8]
 
-        self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
+        if iut_role_to_user_id_mapping:
+            self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
+        else:
+            self.iut_role_to_user_id_mapping = dict()
 
         self.amqp_url = amqp_url
         self.exchange = amqp_exchange
@@ -217,8 +220,6 @@ class AmqpMessagePublisher:
         """
         logger.info("publishing message for TT")
         self.publish_message(message)
-
-
 
     def synch_request(self, request, timeout=30):
         """
@@ -440,11 +441,12 @@ def main():
                                                                  session_configuration)
     logger.info("IUTs roles to Users id mapping: %s" % repr(iut_role_to_user_id_mapping))
 
-    # in case of user_to_user AmqpMessagePublisher publishes to UI1 or UI2 or both, depending on what the message that
-    # has been passed to publish() looks like, this is why amqp_message_publisher needs to be fed with this info
+    # in case of user_to_user session AmqpMessagePublisher publishes to UI1 or UI2 or both, depending on what the
+    # message that has been passed to publish() looks like, this is why amqp_message_publisher needs to be fed with
+    # this mapping info
     amqp_message_publisher.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
 
-    # we need to start queuing all TT messsages from beginning of session
+    # we need to start queuing all TT messages from beginning of session
     tt_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,
@@ -455,11 +457,10 @@ def main():
     tt_amqp_listener_thread.start()
 
     logger.info("UI adaptor bootstrapping..")
-    # bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    # bootstrap(producer) call blocks until it has done its thing
     message_translator.bootstrap(amqp_message_publisher)
 
     logger.info("UI adaptor entering test suite execution phase..")
-
     ui_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,

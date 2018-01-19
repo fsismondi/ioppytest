@@ -88,6 +88,14 @@ class GenericBidirectonalTranslator(object):
     This class acts as a transformation filter between TT messages and UI messages, and as a UI messages
     creator for certain generic session user actions.
 
+                        _______________________
+                        |                      |
+    UI from/to messages |                      |   TT from/to messages
+    <----------------   |   BiDict translator  |    <----------------
+    ---------------->   |                      |    ---------------->
+                        |______________________|
+
+
     This component is stateful, it saves all pending request already sent to UI,
     so then UI replies can be translated into TT chained actions.
     It also preserves some states related to the testcase and step under execution.

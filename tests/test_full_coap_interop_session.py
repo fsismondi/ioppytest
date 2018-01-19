@@ -14,7 +14,10 @@ from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 from automated_IUTs.automation import UserMock
 
-from tests import check_if_message_is_an_error_message, publish_terminate_signal_on_report_received, check_api_version
+from tests import (check_if_message_is_an_error_message,
+                   publish_terminate_signal_on_report_received,
+                   check_api_version,
+                   connect_and_publish_message)
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 300
@@ -58,7 +61,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
 
         # thread
-        e = AmqpListener(
+        msg_validator = AmqpListener(
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
             callback=run_checks_on_message_received,
@@ -67,30 +70,50 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         )
 
         # thread
-        u = UserMock(
+        ui_stub = AmqpListener(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            callback=reply_to_ui_configuration_request_stub,
+            topics=[
+                MsgUiRequestSessionConfiguration.routing_key,
+                MsgTestingToolTerminate.routing_key,
+            ],
+            use_message_typing=True
+        )
+
+        # thread
+        user_stub = UserMock(
             iut_testcases=tc_list
         )
 
-        u.setName(u.__class__.__name__)
-        e.setName(u.__class__.__name__)
+        user_stub.setName('user_mock')
+        msg_validator.setName('message_validator')
+        ui_stub.setName('ui_stub')
+
+        threads = [
+            user_stub,
+            msg_validator,
+            ui_stub,
+        ]
 
         try:
             self.connection.close()
-            e.start()
-            u.start()
+
+            for th in threads:
+                th.start()
 
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
-            u.join(THREAD_JOIN_TIMEOUT)
-            e.join(THREAD_JOIN_TIMEOUT)
+
+            for th in threads:
+                th.join(THREAD_JOIN_TIMEOUT)
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
 
         finally:
-            if u.is_alive():
-                u.stop()
-            if e.is_alive():
-                e.stop()
+            for th in threads:
+                if th.is_alive():
+                    th.stop()
 
             logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
             i = 0
@@ -103,6 +126,17 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
             logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
+
+
+def reply_to_ui_configuration_request_stub(message: Message):
+    resp = {
+        "configuration": {}
+    }
+    m = MsgUiSessionConfigurationReply(
+        message,
+        **resp
+    )
+    connect_and_publish_message(m)
 
 
 def run_checks_on_message_received(message: Message):
