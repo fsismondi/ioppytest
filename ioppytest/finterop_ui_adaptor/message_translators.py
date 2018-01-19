@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import logging
 import traceback
 import textwrap
+import datetime
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
@@ -154,6 +158,8 @@ class GenericBidirectonalTranslator(object):
 
     def __init__(self):
 
+        logger.info("Starting UI message tanslator..")
+
         self._current_tc = None
         self._current_step = None
         self._report = None
@@ -237,6 +243,45 @@ class GenericBidirectonalTranslator(object):
             amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
 
         """
+
+        # for specialized request, displays etc for each type of test suite
+        self._bootstrap(amqp_connector)
+
+        # all test suites using ioppytest require the session configuration
+        req = MsgUiRequestSessionConfiguration()
+        logger.info("bootstrapping..")
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=10,
+            )
+
+            assert resp
+
+            logger.info("got session configuration from UI  %s" % repr(resp))
+
+            tt_config_message = MsgSessionConfiguration(**resp.to_dict())
+            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
+
+            amqp_connector.publish_message(tt_config_message)
+
+        except Exception as e:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            logger.error("Couldnt retrieve SESSION CONFIGURATION from UI, going into default configuration")
+            tt_config_message = MsgSessionConfiguration(
+                session_id=None,
+                configuration={},
+                testing_tools=None,
+                users=[],
+            )
+            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
+
+            amqp_connector.publish_message(tt_config_message)
+
+    def _bootstrap(self, amqp_connector):
+        """
+        to be implemented by child class  (if no bootstrap need then just "pass"
+        """
+
         raise NotImplementedError()
 
     def update_state(self, message):
@@ -507,18 +552,28 @@ class GenericBidirectonalTranslator(object):
     def _echo_testcase_verdict(self, message):
         verdict = message.to_dict()
         # fixme find a way of managing the "printable" fields, in a generic way
-        verdict.pop('_type')
-        verdict.pop('_api_version')
-
+        verdict.pop('_api_version')  # we dont want to display the api version in UI
         partial_verdict = verdict.pop('partial_verdicts')
         ui_fields = []
         table_result = []
+        display_color = 'warning'  # 'warning' is yellow, 'highlighted' is green, and 'error' is red
 
         for key, value in verdict.items():
+
             if type(value) is list:
+                # flatten lists and fill in table to display
                 temp = [key, list_to_str(value)]
             else:
+
+                # fill in table to display
                 temp = [key, value]
+
+                # try to set the color of the box using the verdict
+                if 'verdict' in key and 'pass' in value:
+                    display_color = 'highlighted'
+                elif 'verdict' in key and value in ['fail','error','none']:
+                    display_color = 'error'
+
             table_result.append(temp)
 
         ui_fields.append(
@@ -549,7 +604,7 @@ class GenericBidirectonalTranslator(object):
             ui_fields.append(
                 {
                     'type': 'p',
-                    'value': "Frames:\n%s" % tabulate(frames)
+                    'value': "Analysis (CHECKs):\n%s" % tabulate(frames)
                 }
             )
 
@@ -562,7 +617,7 @@ class GenericBidirectonalTranslator(object):
 
         return MsgUiDisplayMarkdownText(
             title="Verdict on TEST CASE: %s" % self._current_tc,
-            level='highlighted',
+            level=display_color,
             fields=ui_fields
         )
 
@@ -609,32 +664,44 @@ class GenericBidirectonalTranslator(object):
 
         for tc_name, tc_report in testcases:
 
-            partial_verdicts = None
-            try:
-                partial_verdicts = tc_report.pop('partial_verdicts')
-            except KeyError:
-                pass
+            if tc_name and tc_report is None:
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     tc_name,
+                                     "No report for this testcase."
+                                 )
+                    })
+            else:
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 tc_name,
-                                 tabulate(tc_report.items()) if tc_report else "No report for this testcase."
-                             )
-                }
-            )
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 "Partial verdicts",
-                                 tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
-                             )
-                }
-            )
+                partial_verdicts = None
+                try:
+                    partial_verdicts = tc_report.pop('partial_verdicts')
+                except KeyError:
+                    pass
+
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     tc_name,
+                                     tabulate(tc_report.items()) if type(tc_report) is dict else "Oops.."
+                                 )
+                    }
+                )
+                fields.append(
+                    {
+                        'type': 'p',
+                        'value': "%s:\n%s" %
+                                 (
+                                     "Partial verdicts",
+                                     tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
+                                 )
+                    }
+                )
 
         return MsgUiDisplay(
             level='highlighted',
@@ -826,31 +893,51 @@ class GenericBidirectonalTranslator(object):
         """
 
         fields = []
-
+        frames_as_list_of_strings = message.frames_simple_text
         for frame_dict in message.frames:
             frame_header = []
             try:
-                for attribute in ['timestamp', 'id', 'error']:
-                    frame_header.append([attribute, frame_dict[attribute]])
+
+                attribute_name = 'timestamp'
+                attribute_value = datetime.datetime.fromtimestamp(int(frame_dict[attribute_name])).strftime(
+                    '%Y-%m-%d %H:%M:%S')
+                frame_header.append([attribute_name, attribute_value])
+
+                for attribute_name in ['id', 'error']:
+                    frame_header.append([attribute_name, frame_dict[attribute_name]])
+
             except KeyError as ae:
                 logging.error("Some attribute was not found: %s" % str(frame_dict))
-
-            fields.append({
-                'type': 'p',
-                'value': 'Frame header:\n%s' % tabulate(frame_header)
-            })
-
             try:
-                for protocol_layer_dict in frame_dict['protocol_stack']:
-                    fields.append({
-                        'type': 'p',
-                        'value': '%s:%s\n%s' % (
-                            protocol_layer_dict.pop('_type'),
-                            protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
-                            tabulate(protocol_layer_dict.items())
-                        )
-                    })
+                fields.append({
+                    'type': 'p',
+                    'value': '-' * 70
+                })
+                fields.append({
+                    'type': 'p',
+                    'value': 'Frame header:\n%s' % tabulate(frame_header)
+                })
 
+                # for protocol_layer_dict in frame_dict['protocol_stack']:
+                #     fields.append({
+                #         'type': 'p',
+                #         'value': 'Frame header:\n%s' % tabulate(frame_header)
+                #     })
+                #
+                #     try:
+                #         for protocol_layer_dict in frame_dict['protocol_stack']:
+                #             fields.append({
+                #                 'type': 'p',
+                #                 'value': '%s:%s\n%s' % (
+                #                     protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
+                #                     tabulate(protocol_layer_dict.items())
+                #                 )
+                #             })
+
+                fields.append({
+                    'type': 'p',
+                    'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
+                })
             except KeyError as ae:
                 logging.error("Some attrubute was not found in protocol stack dict: %s" % str(frame_dict))
 
@@ -961,7 +1048,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
     def __init__(self):
         super().__init__()
 
-    def bootstrap(self, amqp_connector):
+    def _bootstrap(self, amqp_connector):
         """
         see doc of overriden method
 
@@ -1099,7 +1186,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_testcase_start(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you want to start the TEST CASE \n(%s)?" % self._current_tc
+            title="Do you want to start the TEST CASE <%s>?" % self._current_tc
         )
         message_ui_request.fields = [
             {
@@ -1112,7 +1199,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you confirm executing the STIMULI \n(%s)? " % self._current_step
+            title="Do you confirm executing the STIMULI  <%s> ? " % self._current_step
         )
         message_ui_request.fields = [
             {
@@ -1125,7 +1212,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Please VERIFY the information regarding the STEP \n(%s)" % self._current_step
+            title="Please VERIFY the information regarding the STEP  <%s>`" % self._current_step
         )
         message_ui_request.fields = [
             {
@@ -1169,7 +1256,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
-    def bootstrap(self, amqp_connector):
+    def _bootstrap(self, amqp_connector):
         import inspect
 
         snippets = [self.snippet_display_markdown,

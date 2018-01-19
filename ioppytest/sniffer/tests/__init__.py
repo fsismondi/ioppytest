@@ -12,10 +12,12 @@ launch it as
     python3 -m unittest ioppytest.sniffer.tests.SnifferTestCase
 """
 
+
 class SnifferTestCase(unittest.TestCase):
     def setUp(self):
         logging.info('using AMQP vars: %s, %s' % (AMQP_URL, AMQP_EXCHANGE,))
         self.capture_id = "test_capture_id"
+        self.routing_key_data_packet = 'fromAgent.someRandomIutRole.ip.tun.packet.raw'
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
@@ -63,7 +65,7 @@ class SnifferTestCase(unittest.TestCase):
     def _02_get_capture_with_id(self):
         time.sleep(5)
         forged_agent_raw_packet = MsgPacketSniffedRaw()
-        forged_agent_raw_packet.routing_key = 'blabla.fromAgent.blabla'
+        forged_agent_raw_packet.routing_key = self.routing_key_data_packet
 
         publish_message(self.connection, forged_agent_raw_packet)
         publish_message(self.connection, forged_agent_raw_packet)
@@ -73,7 +75,7 @@ class SnifferTestCase(unittest.TestCase):
         response = amqp_request(
             connection=self.connection,
             request_message=MsgSniffingGetCapture(
-                capture_id = self.capture_id
+                capture_id=self.capture_id
             ),
             component_id=self.__class__.__name__,
             retries=10
@@ -86,7 +88,7 @@ class SnifferTestCase(unittest.TestCase):
     def _03_get_capture(self):
         time.sleep(5)
         forged_agent_raw_packet = MsgPacketSniffedRaw()
-        forged_agent_raw_packet.routing_key = 'blabla.fromAgent.blabla'
+        forged_agent_raw_packet.routing_key = self.routing_key_data_packet
 
         publish_message(self.connection, forged_agent_raw_packet)
         publish_message(self.connection, forged_agent_raw_packet)

@@ -176,7 +176,7 @@ cd ioppytest
 
 (docker, py2 and py3 needs to be installed in the machine)
 ```
-make docker-build-all
+make build-all
 ```
 
 ## Run testing tool (CoAP testing tool example)

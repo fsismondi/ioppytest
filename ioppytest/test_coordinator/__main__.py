@@ -113,13 +113,13 @@ if __name__ == '__main__':
     bootstrap_q_name = 'bootstrapping'
     bootstrap_q = channel.queue_declare(queue=bootstrap_q_name, auto_delete=True)
 
+    # starting verification of the testing tool components
     channel.queue_bind(
         exchange=AMQP_EXCHANGE,
         queue='bootstrapping',
-        routing_key='control.session',
+        routing_key=MsgTestingToolComponentReady.routing_key,
     )
 
-    # starting verification of the testing tool components
     msg = MsgTestingToolComponentReady(
         component='testcoordination'
     )
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         def on_ready_signal(ch, method, props, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-            event = Message.from_json(body)
+            event = Message.load_from_pika(method, props, body)
 
             if isinstance(event, MsgTestingToolComponentReady):
                 component = event.component
@@ -223,10 +223,9 @@ if __name__ == '__main__':
             body=json.dumps({
                 'traceback': traceback.format_exc(),
                 'message': error_msg,
-                '_type': 'testcoordination.error',
             }),
             exchange=AMQP_EXCHANGE,
-            routing_key='control.session.error',
+            routing_key='error',
             properties=pika.BasicProperties(
                 content_type='application/json',
             )

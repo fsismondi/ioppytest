@@ -17,8 +17,6 @@ from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
-
-
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 10
 
@@ -56,6 +54,15 @@ class AutomatedIUT(threading.Thread):
     component_id = NotImplementedField
     node = NotImplementedField
 
+    EVENTS = [
+        MsgTestCaseReady,
+        MsgTestCaseConfiguration,
+        MsgStepVerifyExecute,
+        MsgStepStimuliExecute,
+        MsgTestSuiteReport,
+        MsgTestingToolTerminate,
+    ]
+
     def __init__(self, node):
 
         self.node = node
@@ -67,11 +74,13 @@ class AutomatedIUT(threading.Thread):
         self.message_count = 0
 
         # queues & default exchange declaration
-        services_queue_name = 'services_queue@%s' % self.component_id
+        services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='control.testcoordination')
+
+        for ev in self.EVENTS:
+            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                    queue=services_queue_name,
+                                    routing_key=ev.routing_key)
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -90,18 +99,7 @@ class AutomatedIUT(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        props_dict = {
-            'content_type': props.content_type,
-            'delivery_mode': props.delivery_mode,
-            'correlation_id': props.correlation_id,
-            'reply_to': props.reply_to,
-            'message_id': props.message_id,
-            'timestamp': props.timestamp,
-            'user_id': props.user_id,
-            'app_id': props.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
+        event = Message.load_from_pika(method, props, body)
 
         self.message_count += 1
 
@@ -131,11 +129,11 @@ class AutomatedIUT(threading.Thread):
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                             (
-                                 event._type,
-                                 event.node,
-                                 event.step_id,
-                             ))
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
 
         elif isinstance(event, MsgStepVerifyExecute):
 
@@ -143,15 +141,13 @@ class AutomatedIUT(threading.Thread):
                 step = event.step_id
                 self._execute_verify(step)
                 publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
-                                                                    node=self.node
-                                                                    ))
+                                                                       node=self.node
+                                                                       ))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                             (
-                                 event._type,
-                                 event.node,
-                                 event.step_id,
-                             ))
+                            (type(event),
+                             event.node,
+                             event.step_id,))
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Test suite finished, final report: %s' % event.to_json())
@@ -159,7 +155,7 @@ class AutomatedIUT(threading.Thread):
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Test terminate signal received. Quitting..')
             time.sleep(2)
-            self._exit
+            self._exit()
 
         elif isinstance(event, MsgConfigurationExecute):
             if event.node == self.node:
@@ -171,7 +167,7 @@ class AutomatedIUT(threading.Thread):
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.connection, m)
         else:
-            logger.info('Event received and ignored: %s' % event._type)
+            logger.info('Event received and ignored: %s' % type(event))
 
     def _exit(self):
         m = MsgTestingToolComponentShutdown(component=self.component_id)
@@ -201,6 +197,16 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
+    EVENTS = [
+        MsgTestCaseReady,
+        MsgTestingToolReady,
+        MsgTestingToolConfigured,
+        MsgTestCaseConfiguration,
+        MsgTestCaseVerdict,
+        MsgTestSuiteReport,
+        MsgTestingToolTerminate,
+    ]
+
     def __init__(self, iut_testcases=None):
 
         threading.Thread.__init__(self)
@@ -217,16 +223,13 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        services_queue_name = 'services_queue@%s' % self.component_id
+        services_queue_name = '%s::testsuiteEvents' % self.component_id
         self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
 
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='control.testcoordination')
-
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=services_queue_name,
-                                routing_key='control.session')
+        for ev in self.EVENTS:
+            self.channel.queue_bind(exchange=AMQP_EXCHANGE,
+                                    queue=services_queue_name,
+                                    routing_key=ev.routing_key)
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
@@ -236,33 +239,37 @@ class UserMock(threading.Thread):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        props_dict = {
-            'content_type': props.content_type,
-            'delivery_mode': props.delivery_mode,
-            'correlation_id': props.correlation_id,
-            'reply_to': props.reply_to,
-            'message_id': props.message_id,
-            'timestamp': props.timestamp,
-            'user_id': props.user_id,
-            'app_id': props.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
+        event = Message.load_from_pika(method, props, body)
 
         self.message_count += 1
 
         if event is None:
             return
 
-        elif isinstance(event, MsgTestingToolReady) or isinstance(event, MsgTestingToolConfigured):
+        elif isinstance(event, MsgTestingToolReady):
+            m = MsgSessionConfiguration(
+                configuration={
+                    "testsuite.testcases": [
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+                    ]
+                }
+            )  # from TC1 to TC3
+
+            publish_message(self.connection, m)
+            logger.info('Event received %s' % type(event))
+            logger.info('Event pushed %s' % m)
+
+        elif isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()
             publish_message(self.connection, m)
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseReady):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
 
             # m = MsgTestCaseStart()
@@ -279,7 +286,7 @@ class UserMock(threading.Thread):
                 logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestCaseVerdict):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
 
@@ -299,29 +306,17 @@ class UserMock(threading.Thread):
             time.sleep(2)
 
         elif isinstance(event, MsgTestingToolTerminate):
-            logger.info('Event received %s' % event._type)
+            logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Terminating execution.. ')
             time.sleep(2)
             self.stop()
 
-        elif isinstance(event, MsgStepStimuliExecute):
-            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
-            logger.info('Event description %s' % event.description)
-
-        elif isinstance(event, MsgStepVerifyExecute):
-            logger.info('Message received %s . IUT node: %s ' % (event._type, event.node))
-            logger.info('Event description %s' % event.description)
-
-        elif isinstance(event, MsgTestingToolComponentReady) or isinstance(event, MsgTestingToolComponentShutdown):
-            logger.info('Message received %s . Component: %s ' % (event._type, event.component))
-
         else:
-
             if hasattr(event, 'description'):
-                logger.info('Event received and ignored < %s >  %s' % (event._type, event.description))
+                logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
             else:
-                logger.info('Event received and ignored: %s' % event._type)
+                logger.info('Event received and ignored: %s' % type(event))
 
     def stop(self):
         self.shutdown = True
@@ -337,4 +332,6 @@ class UserMock(threading.Thread):
         while self.shutdown is False:
             self.connection.process_data_events()
             time.sleep(0.3)
+
+        logger.info('%s shutting down..' % self.component_id)
         self.exit()

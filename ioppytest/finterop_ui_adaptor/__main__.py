@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import signal
 import pika
@@ -34,11 +37,11 @@ rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
-    MsgDissectionAutoDissect.routing_key,
-    MsgSessionLog.routing_key,
-    MsgTestSuiteStart.routing_key,
-    MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
+    'testsuite.#',
+    'testingtool.#',
+    'session.#',
+    'log.#'
+    'fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
 
 UI_REPLY_TOPICS = [
@@ -192,6 +195,20 @@ class AmqpMessagePublisher:
         logger.info(
             "publishing: %s routing_key: %s" % (repr(message)[:STDOUT_MAX_STRING_LENGTH], message.routing_key))
 
+    def publish_message(self, message):
+        """
+        Generic publish message which uses class connection
+
+        :param message:
+        :return:
+        """
+        publish_message(self.connection, message)
+
+        logger.info("publishing:%s routing_key: %s correlation_id %s"
+                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
+                       message.routing_key,
+                       message.correlation_id if hasattr(message, 'correlation_id') else None))
+
     def publish_ui_request(self, message, user_id=None):
         """
         :param message:
@@ -212,12 +229,7 @@ class AmqpMessagePublisher:
         else:
             raise Exception('Not enough information to know where to route message')
 
-        publish_message(self.connection, message)
-
-        logger.info("publishing:%s routing_key: %s correlation_id %s"
-                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
-                       message.routing_key,
-                       message.correlation_id))
+        self.publish_message(message)
 
     def publish_tt_chained_message(self, message):
         """
@@ -268,7 +280,7 @@ def main():
         logger.info("routing TT <- UI: %s | r_key: %s | corr_id %s"
                     % (repr(message_received)[:STDOUT_MAX_STRING_LENGTH],
                        message_received.routing_key,
-                       message_received.correlation_id))
+                       message_received.correlation_id if hasattr(message_received, 'correlation_id') else None))
 
         # 0. print pending responses table
         message_translator.print_table_of_pending_messages()
@@ -283,7 +295,7 @@ def main():
             logger.info('got reply to previous request, r_key: %s corr id %s, message %s'
                         % (
                             message_received.routing_key,
-                            message_received.correlation_id,
+                            message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
                             repr(message_received),
                         ))
 
@@ -329,17 +341,21 @@ def main():
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE)
 
-    logger.info("UI adaptor bootstrapping..")
-    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
-    message_translator.bootstrap(amqp_message_publisher)
-
-    logger.info("UI adaptor entering test suite execution phase..")
-
+    # we need to queuing all TT messsages from begining of session
     tt_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,
         topics=TESTING_TOOL_TOPIC_SUBSCRIPTIONS,
         callback=queue_messages_from_tt.put)
+
+    tt_amqp_listener_thread.setName('TT_listener_thread')
+    tt_amqp_listener_thread.start()
+
+    logger.info("UI adaptor bootstrapping..")
+    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    message_translator.bootstrap(amqp_message_publisher)
+
+    logger.info("UI adaptor entering test suite execution phase..")
 
     ui_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
@@ -347,9 +363,7 @@ def main():
         topics=UI_REPLY_TOPICS,
         callback=queue_messages_from_ui.put)
 
-    tt_amqp_listener_thread.setName('TT_listener_thread')
     ui_amqp_listener_thread.setName('UI_listener_thread')
-    tt_amqp_listener_thread.start()
     ui_amqp_listener_thread.start()
     logger.info("UI adaptor is up and listening on the bus ..")
 
