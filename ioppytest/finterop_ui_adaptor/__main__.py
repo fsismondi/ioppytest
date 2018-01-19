@@ -341,17 +341,21 @@ def main():
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE)
 
-    logger.info("UI adaptor bootstrapping..")
-    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
-    message_translator.bootstrap(amqp_message_publisher)
-
-    logger.info("UI adaptor entering test suite execution phase..")
-
+    # we need to queuing all TT messsages from begining of session
     tt_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,
         topics=TESTING_TOOL_TOPIC_SUBSCRIPTIONS,
         callback=queue_messages_from_tt.put)
+
+    tt_amqp_listener_thread.setName('TT_listener_thread')
+    tt_amqp_listener_thread.start()
+
+    logger.info("UI adaptor bootstrapping..")
+    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    message_translator.bootstrap(amqp_message_publisher)
+
+    logger.info("UI adaptor entering test suite execution phase..")
 
     ui_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
@@ -359,9 +363,7 @@ def main():
         topics=UI_REPLY_TOPICS,
         callback=queue_messages_from_ui.put)
 
-    tt_amqp_listener_thread.setName('TT_listener_thread')
     ui_amqp_listener_thread.setName('UI_listener_thread')
-    tt_amqp_listener_thread.start()
     ui_amqp_listener_thread.start()
     logger.info("UI adaptor is up and listening on the bus ..")
 

@@ -552,17 +552,28 @@ class GenericBidirectonalTranslator(object):
     def _echo_testcase_verdict(self, message):
         verdict = message.to_dict()
         # fixme find a way of managing the "printable" fields, in a generic way
-        verdict.pop('_api_version')
-
+        verdict.pop('_api_version')  # we dont want to display the api version in UI
         partial_verdict = verdict.pop('partial_verdicts')
         ui_fields = []
         table_result = []
+        display_color = 'warning'  # 'warning' is yellow, 'highlighted' is green, and 'error' is red
 
         for key, value in verdict.items():
+
             if type(value) is list:
+                # flatten lists and fill in table to display
                 temp = [key, list_to_str(value)]
             else:
+
+                # fill in table to display
                 temp = [key, value]
+
+                # try to set the color of the box using the verdict
+                if 'verdict' in key and 'pass' in value:
+                    display_color = 'highlighted'
+                elif 'verdict' in key and value in ['fail','error','none']:
+                    display_color = 'error'
+
             table_result.append(temp)
 
         ui_fields.append(
@@ -606,7 +617,7 @@ class GenericBidirectonalTranslator(object):
 
         return MsgUiDisplayMarkdownText(
             title="Verdict on TEST CASE: %s" % self._current_tc,
-            level='highlighted',
+            level=display_color,
             fields=ui_fields
         )
 
@@ -1175,7 +1186,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_testcase_start(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you want to start the TEST CASE \n(%s)?" % self._current_tc
+            title="Do you want to start the TEST CASE <%s>?" % self._current_tc
         )
         message_ui_request.fields = [
             {
@@ -1188,7 +1199,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you confirm executing the STIMULI \n(%s)? " % self._current_step
+            title="Do you confirm executing the STIMULI  <%s> ? " % self._current_step
         )
         message_ui_request.fields = [
             {
@@ -1201,7 +1212,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Please VERIFY the information regarding the STEP \n(%s)" % self._current_step
+            title="Please VERIFY the information regarding the STEP  <%s>`" % self._current_step
         )
         message_ui_request.fields = [
             {
