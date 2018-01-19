@@ -190,7 +190,7 @@ class GenericBidirectonalTranslator(object):
 
             # tagged as debugging
             MsgSessionConfiguration: self._echo_as_debug_messages,
-            MsgSessionLog: self._echo_as_debug_messages,
+            #MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
             MsgAgentConfigured: self._echo_as_debug_messages,
             MsgAgentTunStart: self._echo_as_debug_messages,
@@ -1113,7 +1113,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that agent component has been executed",
+            title="Confirm that agent component is up and running",
             tags={"bootstrapping": ""},
             fields=[{
                 "name": "confirm",

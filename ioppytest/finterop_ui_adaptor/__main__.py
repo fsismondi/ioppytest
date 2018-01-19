@@ -43,9 +43,6 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
-# globals
-iut_role_to_user_id_mapping = {}
-
 mapping_testsuite_to_message_translator = {
     'dummy': DummySessionMessageTranslator,
     'coap': CoAPSessionMessageTranslator,
@@ -55,11 +52,11 @@ mapping_testsuite_to_message_translator = {
 }
 
 # see doc from GenericBidirectonalTranslator.__doc__
-queue_messages_display_to_ui = Queue(maxsize=100)
-queue_messages_request_to_ui = Queue(maxsize=100)
-queue_messages_from_tt = Queue(maxsize=100)
-queue_messages_from_ui = Queue(maxsize=100)
-queue_messages_to_tt = Queue(maxsize=100)
+queue_messages_display_to_ui = Queue(maxsize=10)
+queue_messages_request_to_ui = Queue(maxsize=10)
+queue_messages_from_tt = Queue(maxsize=10)
+queue_messages_from_ui = Queue(maxsize=10)
+queue_messages_to_tt = Queue(maxsize=10)
 
 queues = [
     queue_messages_to_tt,
@@ -70,75 +67,36 @@ queues = [
 ]
 
 
-# TODO import this from event bus utils once we have sth stable regarding threaded uses of connections
-def publish_message(connection, message):
-    """
-    Publishes message into the correct topic (uses Message object metadata)
-    Creates temporary channel on it's own
-    Connection must be a pika.BlockingConnection
-    """
-    channel = None
-
-    logger.debug('publishing..')
-    properties = pika.BasicProperties(**message.get_properties())
-
-    try:
-        channel = connection.channel()
-        channel.basic_publish(
-            exchange=AMQP_EXCHANGE,
-            routing_key=message.routing_key,
-            properties=properties,
-            body=message.to_json(),
-        )
-
-    except (pika.exceptions.ConnectionClosed, BrokenPipeError):
-
-        print("Log handler connection closed. Reconnecting..")
-
-        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))  # this doesnt overwrite connection argument!
-        channel = connection.channel()
-
-        # send retry
-        channel.basic_publish(
-            exchange=AMQP_EXCHANGE,
-            routing_key=message.routing_key,
-            properties=properties,
-            body=message.to_json(),
-        )
-
-    finally:
-        if channel and channel.is_open:
-            channel.close()
-
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 class AmqpMessagePublisher:
-    DEFAULT_EXCHAGE = 'amq.topic'
-    DEFAULT_AMQP_URL = 'amqp://guest:guest@locahost/'
-
-    def __init__(self, amqp_url, amqp_exchange, iut_role_to_user_id_mapping):
+    def __init__(self,
+                 amqp_url='amqp://guest:guest@locahost/',
+                 amqp_exchange='amq.topic',
+                 iut_role_to_user_id_mapping=dict()):
 
         self.COMPONENT_ID = 'amqp_publisher_%s' % str(uuid.uuid4())[:8]
 
-        self.connection = None
-        self.channel = None
         self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
 
-        if amqp_exchange:
-            self.exchange = amqp_exchange
-        else:
-            self.exchange = self.DEFAULT_EXCHAGE
-
-        if amqp_url:
-            self.amqp_url = amqp_url
-        else:
-            self.amqp_url = self.DEFAULT_AMQP_URL
-
+        self.amqp_url = amqp_url
+        self.exchange = amqp_exchange
+        self.connection = None
+        self.channel = None
         self.amqp_connect()
 
-    def update_iut_role_to_user_id_mapping(self, iut_role_to_user_id_mapping=dict):
-        self.iut_role_to_user_id_mapping.update(iut_role_to_user_id_mapping)
+    def update_iut_role_to_user_id_mapping(self, iut_role_to_user_id_mapping):
+        if iut_role_to_user_id_mapping:
+            self.iut_role_to_user_id_mapping.update(iut_role_to_user_id_mapping)
+
+    def get_user_id_from_node(self, node):
+        """
+        returns user_id or 'all' (in case we dont have any info about this)
+        """
+        try:
+            return self.iut_role_to_user_id_mapping[node]
+        except KeyError:
+            return 'all'
 
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
@@ -172,35 +130,64 @@ class AmqpMessagePublisher:
 
     def publish_ui_display(self, message: Message, user_id=None, level=None):
 
-        # TODO fix this
-        user_id = 'all'
+        logger.info("publishing message DISPLAY for UI")
 
-        # set message route
+        # if user_id is not passed then let's introspect the message to see where to route it
         if user_id:
-            message.routing_key = "ui.user.%s.display" % user_id
-        elif hasattr(message, "node"):
-            message.routing_key = "ui.user.%s.display" % iut_role_to_user_id_mapping[message.node]
+            pass
+        elif hasattr(message, 'node'):
+            user_id = self.get_user_id_from_node(message.node)
         else:
-            raise Exception('Not enough information to know where to route message')
+            user_id = 'all'
 
-        publish_message(self.connection, message)
+        message.routing_key = "ui.user.%s.display" % user_id
 
-        logger.info(
-            "publishing: %s routing_key: %s" % (repr(message)[:STDOUT_MAX_STRING_LENGTH], message.routing_key))
+        self.publish_message(message)
 
     def publish_message(self, message):
         """
         Generic publish message which uses class connection
-
-        :param message:
-        :return:
+        Publishes message into the correct topic (uses Message object metadata)
+        Creates temporary channel on it's own
+        Connection must be a pika.BlockingConnection
         """
-        publish_message(self.connection, message)
+        channel = None
+        properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("publishing:%s routing_key: %s correlation_id %s"
-                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
-                       message.routing_key,
-                       message.correlation_id if hasattr(message, 'correlation_id') else None))
+        logger.info("publishing to routing_key: %s correlation_id %s, msg: %s"
+                    % (message.routing_key,
+                       message.correlation_id if hasattr(message, 'correlation_id') else None,
+                       repr(message)[:STDOUT_MAX_STRING_LENGTH],))
+
+        try:
+            channel = self.connection.channel()
+            channel.basic_publish(
+                exchange=AMQP_EXCHANGE,
+                routing_key=message.routing_key,
+                properties=properties,
+                body=message.to_json(),
+            )
+
+        except (pika.exceptions.ConnectionClosed, BrokenPipeError):
+
+            print("Log handler connection closed. Reconnecting..")
+
+            connection = pika.BlockingConnection(
+                pika.URLParameters(AMQP_URL))  # this doesnt overwrite connection argument!
+            channel = connection.channel()
+
+            # send retry
+            channel.basic_publish(
+                exchange=AMQP_EXCHANGE,
+                routing_key=message.routing_key,
+                properties=properties,
+                body=message.to_json(),
+            )
+
+        finally:
+
+            if channel and channel.is_open:
+                channel.close()
 
     def publish_ui_request(self, message, user_id=None):
         """
@@ -209,31 +196,29 @@ class AmqpMessagePublisher:
         :param user_id:
         :return:
         """
-        # TODO fix this
-        user_id = 'all'
 
-        # set message route
+        # if user_id is not passed then let's introspect the message to see where to route it
+
+        logger.info("publishing message REQUEST for UI")
         if user_id:
-            message.routing_key = "ui.user.%s.request" % user_id
-            message.reply_to = "ui.user.%s.reply" % user_id
-        elif hasattr(message, "node"):
-            message.routing_key = "ui.user.%s.request" % iut_role_to_user_id_mapping[message.node]
-            message.reply_to = "ui.user.%s.reply" % iut_role_to_user_id_mapping[message.node]
+            pass
+        elif hasattr(message, 'node'):
+            user_id = self.get_user_id_from_node(message.node)
         else:
-            raise Exception('Not enough information to know where to route message')
+            user_id = 'all'
 
+        message.routing_key = "ui.user.%s.request" % user_id
+        message.reply_to = "ui.user.%s.reply" % user_id
         self.publish_message(message)
 
     def publish_tt_chained_message(self, message):
         """
         This is a dummy publisher, all the required treatment has already been done by translation functions
         """
-        publish_message(self.connection, message)
+        logger.info("publishing message for TT")
+        self.publish_message(message)
 
-        logger.info("publishing:%s routing_key: %s correlation_id %s"
-                    % (repr(message)[:STDOUT_MAX_STRING_LENGTH],
-                       message.routing_key,
-                       message.correlation_id if hasattr(message, 'correlation_id') else None))
+
 
     def synch_request(self, request, timeout=30):
         """
@@ -245,63 +230,112 @@ class AmqpMessagePublisher:
 
 
 # auxiliary functions
-def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher):
-    iut_roles = message_translator.get_iut_roles()
-    roles_to_user_mapping = {}
-
-    logger.info('requesting session information to UI API    ')
-    resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
-
-    while resp and resp.ok and hasattr(resp, 'users') and len(resp.users) <2:
-        info_msg = 'Waiting for at least 2 users to join the session..'
-        amqp_publisher.publish_ui_display(info_msg)
-        logger.warning(info_msg)
-        time.sleep(5)
+def get_session_configuration_from_ui(amqp_publisher):
+    resp = None
+    session_configuration = None
+    try:
         resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
+        if resp and resp.ok:
+            # echo session config in UI
+            m = MsgUiDisplay(fields=[
+                {"type": "p",
+                 "value": "Session config: \n%s" % json.dumps(resp.to_dict(), indent=4, sort_keys=True)},
+            ])
+            amqp_publisher.publish_ui_display(m)
 
-    logger.warning("Both users connected: %s" %resp.users)
+            # set global
+            session_configuration = resp.to_dict()
+
+    except Exception:
+        err_msg = "Error trying to get configuration from UI, got %s" % repr(resp)
+        m = MsgUiDisplay(fields=[
+            {"type": "p",
+             "value": err_msg}
+        ])
+        logger.error(err_msg)
+        amqp_publisher.publish_ui_display(m)
+
+    return session_configuration
 
 
+def get_current_users_online(amqp_publisher):
+    session_configuration = get_session_configuration_from_ui(amqp_publisher)
+    return len(session_configuration['users'])
 
-    for iut_role in iut_roles:
-        # user 1 id
-        m = MsgUiRequestTextInput(
-            title="What's your user id driving %s? " % iut_role,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "you can get the user id by clicking in info button (top right of screen) -> "
-                             "'Users connected to the session'"
-                },
-                {
-                    "name": "user_id",
-                    "type": "text"
-                },
-                {
-                    "name": "submit",
-                    "type": "button",
-                    "value": True
-                },
-                {
-                    "name": " none ",
-                    "type": "button",
-                    "value": True
-                },
 
-            ]
-        )
-        resp = amqp_publisher.synch_request(m)
+def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_configuration):
+    shared_session = session_configuration and \
+                     'shared' in session_configuration and \
+                     session_configuration['shared'] is True
+    expected_user_quantity = 2 if shared_session else 1
 
-        logger.warning("||".join([str(type(resp)),str(type(resp.fields)),repr(resp)]))
-        if resp.ok and 'user_id' in str(resp.fields):
-            roles_to_user_mapping.update({iut_role, resp.fields['user_id']})
-        elif resp.ok and 'none' in str(resp.fields):
-            roles_to_user_mapping.update({iut_role, None})
+    if session_configuration and 'users' in session_configuration:
+        iut_roles = message_translator.get_iut_roles()
+        roles_to_user_mapping = {}
+        #
+        # do
+        # something
+        # here...
+
+        while get_current_users_online(message_translator, amqp_publisher) < expected_user_quantity:
+            info_msg = 'Waiting for at least 2 users to join the session..'
+            amqp_publisher.publish_ui_display(info_msg)
+            logger.warning(info_msg)
+            time.sleep(5)
+            resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
+
+        logger.warning("Both users connected: %s" % resp.users)
+
+        for iut_role in iut_roles:
+            # user 1 id
+            m = MsgUiRequestTextInput(
+                title="What's the user id driving %s? " % iut_role,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "you can get the user id by clicking in info button (top right of screen) -> "
+                                 "'Users connected to the session'"
+                    },
+                    {
+                        "name": "user_id",
+                        "type": "text"
+                    },
+                    {
+                        "name": "submit",
+                        "type": "button",
+                        "value": True
+                    },
+                    {
+                        "name": " none ",
+                        "type": "button",
+                        "value": True
+                    },
+
+                ]
+            )
+            resp = amqp_publisher.synch_request(m)
+
+            # echo reponse back to users
+            m = MsgUiDisplay(fields=[
+                {"type": "p",
+                 "value": "Got : %s" % repr(resp)},
+            ])
+            amqp_publisher.publish_ui_display(m)
+
+            logger.warning("||".join([str(type(resp)), str(type(resp.fields)), repr(resp)]))
+
+            if resp.ok and 'user_id' in str(resp.fields):
+                roles_to_user_mapping.update({iut_role, resp.fields['user_id']})
+            elif resp.ok and 'none' in str(resp.fields):
+                roles_to_user_mapping.update({iut_role, None})
+            else:
+                raise UiResponseError('received from the UI: %s' % repr(resp))
+
         else:
-            raise UiResponseError('received from the UI: %s' % repr(resp))
+            logger.warning(
+                "Cannot query users about roles with empty session configuration %s" % repr(session_configuration))
 
-
-    logger.warning(roles_to_user_mapping)
+        logger.info("Roles to user mapping %s:" % roles_to_user_mapping)
 
 
 def process_message_from_ui(message_translator, message_received):
@@ -333,10 +367,6 @@ def process_message_from_ui(message_translator, message_received):
         if response_to_tt is None:
             return
 
-        logger.info("publishing:%s routing_key: %s"
-                    % (repr(response_to_tt)[:STDOUT_MAX_STRING_LENGTH],
-                       response_to_tt.routing_key))
-
         # 4. we have a chained response for the TT
         queue_messages_to_tt.put(response_to_tt)
 
@@ -367,6 +397,10 @@ def process_message_from_testing_tool(message_translator, message_received):
 
 
 def main():
+    # main vars
+    iut_role_to_user_id_mapping = {}
+    session_configuration = {}
+
     logger.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
 
     # parse ARGS -> define which test suite we are executing
@@ -378,26 +412,39 @@ def main():
             help="Test suite name",
             choices=list(mapping_testsuite_to_message_translator.keys())
         )
-
         args = parser.parse_args()
+        assert args.test_suite
 
     except Exception as e:
         logger.error(e)
         return
 
     try:
+        # choose the message translator between CoAP, OneM2M, 6LoWPAN etc..
         message_translator = mapping_testsuite_to_message_translator[args.test_suite]()
     except KeyError:
         logger.error("Error launching test suite: %s" % args.test_suite)
         return
 
-    # start of UI adaptor flow control
     amqp_message_publisher = AmqpMessagePublisher(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,
         iut_role_to_user_id_mapping=None)
 
-    # we need to queuing all TT messsages from begining of session
+    # get config from UI
+    session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
+    logger.info("Session configuration: %s" % repr(session_configuration))
+
+    # this call is going to block until all users are present "in the room"
+    iut_role_to_user_id_mapping = get_user_ids_and_roles_from_ui(amqp_message_publisher, message_translator,
+                                                                 session_configuration)
+    logger.info("IUTs roles to Users id mapping: %s" % repr(iut_role_to_user_id_mapping))
+
+    # in case of user_to_user AmqpMessagePublisher publishes to UI1 or UI2 or both, depending on what the message that
+    # has been passed to publish() looks like, this is why amqp_message_publisher needs to be fed with this info
+    amqp_message_publisher.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
+
+    # we need to start queuing all TT messsages from beginning of session
     tt_amqp_listener_thread = AmqpListener(
         amqp_url=AMQP_URL,
         amqp_exchange=AMQP_EXCHANGE,
@@ -408,7 +455,7 @@ def main():
     tt_amqp_listener_thread.start()
 
     logger.info("UI adaptor bootstrapping..")
-    # .bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
+    # bootstrap(producer) call blocks until it has done its thing (got users info, session configs were retireved,etc)
     message_translator.bootstrap(amqp_message_publisher)
 
     logger.info("UI adaptor entering test suite execution phase..")

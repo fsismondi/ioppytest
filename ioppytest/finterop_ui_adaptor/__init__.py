@@ -7,15 +7,16 @@ STDOUT_MAX_STRING_LENGTH = 70
 COMPONENT_ID = 'ui_adaptor'
 
 MESSAGES_NOT_TO_BE_ECHOED = [
-    MsgTestCaseStarted
+    MsgTestCaseStarted,
+    MsgSessionLog
 ]
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
-    MsgDissectionAutoDissect.routing_key,
-    MsgSessionLog.routing_key,
-    MsgTestSuiteStart.routing_key,
-    MsgTestingToolTerminate.routing_key,
-    '#.fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
+    'testingtool.#',
+    'testsuite.#',
+    'session.#',
+    #'log.#'
+    'fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
 
 UI_REPLY_TOPICS = [
