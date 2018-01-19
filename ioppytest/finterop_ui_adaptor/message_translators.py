@@ -604,7 +604,7 @@ class GenericBidirectonalTranslator(object):
             ui_fields.append(
                 {
                     'type': 'p',
-                    'value': "Frames:\n%s" % tabulate(frames)
+                    'value': "Analysis (CHECKs):\n%s" % tabulate(frames)
                 }
             )
 
