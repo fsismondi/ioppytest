@@ -309,7 +309,6 @@ class UserMock(threading.Thread):
             logger.info('Event received %s' % type(event))
             logger.info('Event description %s' % event.description)
             logger.info('Terminating execution.. ')
-            time.sleep(2)
             self.stop()
 
         else:
@@ -320,13 +319,13 @@ class UserMock(threading.Thread):
 
     def stop(self):
         self.shutdown = True
-        self.channel.stop_consuming()
-
-    def exit(self):
         publish_message(self.connection,
                         MsgTestingToolComponentShutdown(component=COMPONENT_ID))
-        time.sleep(2)
+        self.channel.stop_consuming()
         self.connection.close()
+
+    def exit(self):
+        logger.info('%s exiting..' % self.component_id)
 
     def run(self):
         while self.shutdown is False:
