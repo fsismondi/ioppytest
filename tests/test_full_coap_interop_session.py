@@ -103,7 +103,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 th.start()
 
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
-
             for th in threads:
                 th.join(THREAD_JOIN_TIMEOUT)
 
@@ -114,6 +113,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             for th in threads:
                 if th.is_alive():
                     th.stop()
+                    self.fail("Thread %s didnt stop" % th.name)
 
             logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
             i = 0
