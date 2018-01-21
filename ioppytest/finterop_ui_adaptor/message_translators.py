@@ -276,7 +276,7 @@ class GenericBidirectonalTranslator(object):
             amqp_connector.publish_message(tt_config_message)
 
         except Exception as e:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            logger.error("Couldnt retrieve SESSION CONFIGURATION from UI, going into default configuration")
+            logger.warning("Couldnt retrieve SESSION CONFIGURATION from UI, going into default configuration")
             tt_config_message = MsgSessionConfiguration(
                 session_id=None,
                 configuration={},
