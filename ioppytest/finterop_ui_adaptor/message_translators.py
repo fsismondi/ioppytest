@@ -257,36 +257,6 @@ class GenericBidirectonalTranslator(object):
         # for specialized request, displays etc for each type of test suite
         self._bootstrap(amqp_connector)
 
-        # all test suites using ioppytest require the session configuration
-        req = MsgUiRequestSessionConfiguration()
-        logger.info("bootstrapping..")
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=10,
-            )
-
-            assert resp
-
-            logger.info("got session configuration from UI  %s" % repr(resp))
-
-            tt_config_message = MsgSessionConfiguration(**resp.to_dict())
-            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
-
-            amqp_connector.publish_message(tt_config_message)
-
-        except Exception as e:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            logger.warning("Couldnt retrieve SESSION CONFIGURATION from UI, going into default configuration")
-            tt_config_message = MsgSessionConfiguration(
-                session_id=None,
-                configuration={},
-                testing_tools=None,
-                users=[],
-            )
-            logger.info("sending session configuration to TT %s" % repr(tt_config_message))
-
-            amqp_connector.publish_message(tt_config_message)
-
     def _bootstrap(self, amqp_connector):
         """
         to be implemented by child class  (if no bootstrap need then just "pass"

@@ -253,7 +253,7 @@ def get_session_configuration_from_ui(amqp_publisher):
             {"type": "p",
              "value": err_msg}
         ])
-        logger.error(err_msg)
+        logger.warning(err_msg)
         amqp_publisher.publish_ui_display(m)
 
     return session_configuration
