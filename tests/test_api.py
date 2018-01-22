@@ -227,6 +227,7 @@ class ApiTests(unittest.TestCase):
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
             for th in threads:
                 th.join(THREAD_JOIN_TIMEOUT)
+                logger.warning("Thread %s didnt stop" % th.name)
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
