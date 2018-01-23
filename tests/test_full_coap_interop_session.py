@@ -17,6 +17,7 @@ from automated_IUTs.automation import UserMock
 from tests import (check_if_message_is_an_error_message,
                    publish_terminate_signal_on_report_received,
                    check_api_version,
+                   reply_to_ui_configuration_request_stub,
                    connect_and_publish_message)
 
 COMPONENT_ID = 'fake_session'
@@ -31,6 +32,14 @@ logging.getLogger('pika').setLevel(logging.INFO)
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
+
+default_configuration = {
+    "testsuite.testcases": [
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+    ]
+}
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
@@ -126,20 +135,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
             logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
-
-
-def reply_to_ui_configuration_request_stub(message: Message):
-    resp = {
-        "configuration": {},
-        "session_id": '666',
-        "testing_tools": "someTestingToolName",
-        "users": ['pablo', 'bengoechea'],
-    }
-    m = MsgUiSessionConfigurationReply(
-        message,
-        **resp
-    )
-    connect_and_publish_message(m)
 
 
 def run_checks_on_message_received(message: Message):

@@ -19,7 +19,11 @@ from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 from tests import MessageGenerator
 from tests.pcap_base64_examples import *
 
-from tests import check_if_message_is_an_error_message, publish_terminate_signal_on_report_received, check_api_version
+from tests import (check_if_message_is_an_error_message,
+                   publish_terminate_signal_on_report_received,
+                   check_api_version,
+                   reply_to_ui_configuration_request_stub,
+                   )
 
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
@@ -33,14 +37,6 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 logging.getLogger('pika').setLevel(logging.INFO)
-
-default_configuration = {
-    "testsuite.testcases": [
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
-    ]
-}
 
 """
 PRE-CONDITIONS:
@@ -193,7 +189,18 @@ class ApiTests(unittest.TestCase):
             use_message_typing=True
         )
 
-        threads = [thread_msg_listener, thread_msg_gen]
+        # thread
+        thread_ui_stub = AmqpListener(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            callback=reply_to_ui_configuration_request_stub,
+            topics=[
+                MsgUiRequestSessionConfiguration.routing_key,
+                MsgTestingToolTerminate.routing_key,
+            ],
+            use_message_typing=True
+        )
+        threads = [thread_msg_listener, thread_msg_gen, thread_ui_stub]
 
         for th in threads:
             th.setName(th.__class__.__name__)
@@ -203,19 +210,6 @@ class ApiTests(unittest.TestCase):
         try:
             for th in threads:
                 th.start()
-
-            publish_message(
-                connection=self.connection,
-                message=MsgSessionConfiguration(
-                    configuration={
-                        "testsuite.testcases": [
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-                            "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-                        ]
-                    }
-                )  # from TC1 to TC3
-            )
 
             publish_message(
                 self.connection,

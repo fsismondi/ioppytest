@@ -11,8 +11,30 @@ from ioppytest.utils.event_bus_utils import publish_message
 logging.basicConfig(level=logging.INFO,
                     format='[%(levelname)s] (%(threadName)-10s): %(message)s', )
 
+default_configuration = {
+    "testsuite.testcases": [
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+    ]
+}
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
+
+
+def reply_to_ui_configuration_request_stub(message: Message):
+    resp = {
+        "configuration": default_configuration,
+        "session_id": '666',
+        "testing_tools": "someTestingToolName",
+        "users": ['pablo', 'bengoechea'],
+    }
+    m = MsgUiSessionConfigurationReply(
+        message,
+        **resp
+    )
+    connect_and_publish_message(m)
+
 
 def connect_and_publish_message(message: Message):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -36,7 +58,6 @@ def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=Tru
     logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
 
     # it's ok if UI adaptor generates errors, as we there is not UI responding to request in the bus when testing
-    # ToDO stub all UI request/replies?
     if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:
         return
 
