@@ -75,8 +75,15 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 sh '''
                     echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                     sudo -E supervisord -c $SUPERVISOR_CONFIG_FILE
+
+                    /* we dont want to test all components */
+                    sleep 2
+                    sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop ui-adaptor
+                    sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop webserver
+
                     sleep 15
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE
+
                     sleep 2
                     python3 -m pytest -p no:cacheprovider tests/test_api.py -v
                 '''
