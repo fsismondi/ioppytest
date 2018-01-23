@@ -300,10 +300,6 @@ class UserMock(threading.Thread):
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Test suite finished, final report: %s' % event.to_json())
-            time.sleep(2)
-            m = MsgTestingToolTerminate()
-            publish_message(self.connection, m)
-            time.sleep(2)
 
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Event received %s' % type(event))
