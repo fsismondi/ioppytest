@@ -130,7 +130,10 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
 def reply_to_ui_configuration_request_stub(message: Message):
     resp = {
-        "configuration": {}
+        "configuration": {},
+        "session_id": '666',
+        "testing_tools": "someTestingToolName",
+        "users": ['pablo', 'bengoechea'],
     }
     m = MsgUiSessionConfigurationReply(
         message,

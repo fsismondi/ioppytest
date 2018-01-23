@@ -21,6 +21,7 @@ def connect_and_publish_message(message: Message):
         message
     )
 
+
 def publish_terminate_signal_on_report_received(message: Message):
     if isinstance(message, MsgTestSuiteReport):
         logging.info('Got final report %s' % repr(message))
@@ -33,6 +34,12 @@ def publish_terminate_signal_on_report_received(message: Message):
 
 def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=True):
     logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
+
+    # it's ok if UI adaptor generates errors, as we there is not UI responding to request in the bus when testing
+    # ToDO stub all UI request/replies?
+    if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:
+        return
+
     assert 'error' not in message.routing_key, 'Got an error %s' % repr(message)
     assert not isinstance(message, MsgErrorReply), 'Got an error reply %s' % repr(message)
     if fail_on_reply_nok:
