@@ -247,19 +247,19 @@ class UserMock(threading.Thread):
             return
 
         elif isinstance(event, MsgTestingToolReady):
-            m = MsgSessionConfiguration(
-                configuration={
-                    "testsuite.testcases": [
-                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-                    ]
-                }
-            )  # from TC1 to TC3
-
-            publish_message(self.connection, m)
+            # m = MsgSessionConfiguration(
+            #     configuration={
+            #         "testsuite.testcases": [
+            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+            #         ]
+            #     }
+            # )  # from TC1 to TC3
+            #
+            # publish_message(self.connection, m)
             logger.info('Event received %s' % type(event))
-            logger.info('Event pushed %s' % m)
+            # logger.info('Event pushed %s' % m)
 
         elif isinstance(event, MsgTestingToolConfigured):
             m = MsgTestSuiteStart()

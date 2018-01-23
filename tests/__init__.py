@@ -25,8 +25,8 @@ default_configuration = {
 def reply_to_ui_configuration_request_stub(message: Message):
     resp = {
         "configuration": default_configuration,
-        "session_id": '666',
-        "testing_tools": "someTestingToolName",
+        "id": '666',
+        "testSuite": "someTestingToolName",
         "users": ['pablo', 'bengoechea'],
     }
     m = MsgUiSessionConfigurationReply(
