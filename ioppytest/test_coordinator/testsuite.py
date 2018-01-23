@@ -130,9 +130,8 @@ class TestSuite:
         self.teds = OrderedDict()
         for ted in imported_teds:
             self.teds[ted.id] = ted
-            if ted.configuration_id not in self.tc_configs:
-                logger.error('Missing configuration:%s for test case:%s ' % (ted.configuration_id, ted.id))
-            assert ted.configuration_id in self.tc_configs
+            assert ted.configuration_id in self.tc_configs, \
+                "Missing config: %s for test case: %s " % (ted.configuration_id, ted.id)
 
         logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
         for key, val in self.teds.items():
