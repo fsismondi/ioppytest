@@ -11,6 +11,10 @@ MESSAGES_NOT_TO_BE_ECHOED = [
     MsgSessionLog
 ]
 
+WAITING_TIME_FOR_SECOND_USER = 500  # in seconds
+SESSION_SETUP_TAG = {'session_setup': ''}
+
+
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     'testingtool.#',
     'testsuite.#',
@@ -19,12 +23,8 @@ TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     'fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
 
-UI_REPLY_TOPICS = [
-    'ui.user.1.reply',
-    'ui.user.2.reply',
-    'ui.user.all.reply',
-]
-
-
 class UiResponseError(Exception):
+    pass
+
+class SessionError(Exception):
     pass
