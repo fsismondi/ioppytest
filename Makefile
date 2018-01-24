@@ -225,7 +225,7 @@ _docker-build-coap-additional-resources:
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
 
-_docker-build-coap-additional-resources:
+_docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
 	@echo "TBD"
 
