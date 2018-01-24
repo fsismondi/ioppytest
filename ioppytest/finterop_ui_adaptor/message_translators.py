@@ -1237,9 +1237,11 @@ class CoMISessionMessageTranslator(CoAPSessionMessageTranslator):
         super().__init__()
 
 
-class OneM2MSessionMessageTranslator(object):
-    # fixme import names directy from yaml files
-    pass
+class OneM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
+    IUT_ROLES = ['adn', 'cse']
+
+    def __init__(self):
+        super().__init__()
 
 
 class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
