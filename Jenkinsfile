@@ -44,7 +44,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
                 echo installing python dependencies...
-                make install-python-dependencies
+                sudo -H make install-python-dependencies
             '''
             }
         }
@@ -54,9 +54,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("unittesting git submodules"){
             sh '''
                 echo $AMQP_URL
-                cd ioppytest/test_analysis_tool
-                pwd
-                python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+                make _test_submodules
             '''
         }
       }
@@ -65,25 +63,22 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("unittesting components"){
             sh '''
                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py
-                python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py
-                python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py
-                python3 -m pytest -p no:cacheprovider ioppytest/sniffer/tests/__init__.py
+                make tests
             '''
         }
       }
 
-      stage("CoAP testing tool - AMQP API smoke tests"){
-        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/supervisor.conf.ini"
-        gitlabCommitStatus("CoAP testing tool - AMQP API smoke tests"){
+      stage("Functional tests / AMQP API smoke tests"){
+        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/tests.supervisor.conf.ini"
+        gitlabCommitStatus("Functional tests / AMQP API smoke tests"){
             try {
                 sh '''
                     echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                     sudo -E supervisord -c $SUPERVISOR_CONFIG_FILE
                     sleep 15
-                    sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE
-                    sleep 2
-                    python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
+
+                    sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
+                    python3 -m pytest -p no:cacheprovider tests/test_api.py -v
                 '''
           }
           catch (e){
@@ -152,10 +147,11 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
-        stage("BUILD docker images (testing tools and automated-iuts)"){
-            gitlabCommitStatus("BUILD docker images (testing tools and automated-iuts)") {
+        stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
                 sh '''
-                    sudo -E make docker-build-all
+                    sudo -E make _docker-build-coap
+                    sudo -E make _docker-build-coap-additional-resources
                     sudo -E docker images
                 '''
             }
@@ -197,7 +193,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
                         '''
                     }
                 }
@@ -211,7 +207,9 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo make stop-all
+                        sudo -E make stop-coap-client
+                        sudo -E make stop-coap-server
+                        sudo -E make stop-coap-testing-tool
                         sudo -E docker ps
                     '''
                 }

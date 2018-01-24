@@ -12,12 +12,17 @@ import traceback
 import multiprocessing
 from datetime import time
 
-from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
+from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL,LOGGER_FORMAT
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest.utils.pure_pcapy import DLT_RAW, DLT_IEEE802_15_4_NOFCS
 from ioppytest.utils.messages import *
-from ioppytest.sniffer.packet_dumper import AmqpDataPacketDumper
+from ioppytest.utils.packet_dumper import launch_amqp_data_to_pcap_dumper
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOGGER_FORMAT
+)
 
 logging.getLogger('pika').setLevel(logging.WARNING)
 
@@ -34,7 +39,10 @@ for d in TMPDIR, DATADIR, LOGDIR:
 
 
 class Sniffer:
-    DEFAULT_TOPICS = ['#.fromAgent.#', 'control.sniffing.service']
+    DEFAULT_TOPICS = [
+        'fromAgent.#',
+        'sniffing.#',
+    ]
 
     def __init__(self, traffic_dlt, amqp_url, amqp_exchange):
         self.traffic_dlt = traffic_dlt
@@ -84,22 +92,10 @@ class Sniffer:
         # ack message received
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        self.logger.info('Identifying request...')
+        self.logger.info('Identifying request with rkey: %s' % method.routing_key)
 
         try:
-            props_dict = {
-                'content_type': props.content_type,
-                'delivery_mode': props.delivery_mode,
-                'correlation_id': props.correlation_id,
-                'reply_to': props.reply_to,
-                'message_id': props.message_id,
-                'timestamp': props.timestamp,
-                'user_id': props.user_id,
-                'app_id': props.app_id,
-            }
-            request = Message.from_json(body)
-            request.update_properties(**props_dict)
-
+            request = Message.load_from_pika(method, props, body)
         except Exception as e:
             self.logger.info(str(e))
             return
@@ -234,15 +230,14 @@ class Sniffer:
                     self.pcap_dumper_subprocess = multiprocessing.Process(
                         target=launch_amqp_data_to_pcap_dumper,
                         name='process_%s_%s' % (self.COMPONENT_ID, capture_id),
-                        args=(TMPDIR, filename, self.traffic_dlt, self.url, self.exchange, self.DEFAULT_TOPICS))
-
+                        args=(TMPDIR, LOG_LEVEL, filename, self.traffic_dlt, self.url, self.exchange, self.DEFAULT_TOPICS))
                     self.pcap_dumper_subprocess.start()
                     self.logger.info("Sniffer process started %s, pid %s" % (
                         self.pcap_dumper_subprocess, self.pcap_dumper_subprocess.pid))
                     response = MsgReply(request, ok=True)
 
             except Exception as e:
-                m = 'Didnt succeed starting the sniffer process, the exception captured is %s'%str(e)
+                m = 'Didnt succeed starting the sniffer process, the exception captured is %s' % str(e)
                 self.logger.error(m)
                 response = MsgErrorReply(request, ok=False, error_message=m)
 
@@ -286,7 +281,7 @@ class Sniffer:
         publish_message(self.connection, msg)
 
         try:
-            self.logger.info("Awaiting AMQP requests on topic: control.sniffing.service")
+            self.logger.info("Awaiting AMQP requests on bus")
             self.channel.start_consuming()
         except pika.exceptions.ConnectionClosed as cc:
             self.logger.error(' AMQP connection closed: %s' % str(cc))
@@ -300,29 +295,6 @@ class Sniffer:
             # close AMQP connection
             if self.connection:
                 self.connection.close()
-
-
-def launch_amqp_data_to_pcap_dumper(dump_dir, filename, dlt, amqp_url, amqp_exchange, topics):
-    def signal_int_handler(self, frame):
-        if pcap_dumper is not None:
-            pcap_dumper.stop()
-
-    signal.signal(signal.SIGINT, signal_int_handler)
-
-    # init pcap_dumper
-    pcap_dumper = AmqpDataPacketDumper(
-        dump_dir=dump_dir,
-        filename=filename,
-        dlt=dlt,
-        amqp_url=amqp_url,
-        amqp_exchange=amqp_exchange,
-        topics=topics
-    )
-
-    # start pcap_dumper
-    pcap_dumper.run()
-
-    return pcap_dumper
 
 
 def main():

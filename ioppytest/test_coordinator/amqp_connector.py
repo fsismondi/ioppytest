@@ -61,11 +61,8 @@ class CoordinatorAmqpInterface(object):
         self.amqp_url = amqp_url
         self.amqp_exchange = amqp_exchange
 
-        self.amqp_connect()
-        self.amqp_create_queues_bind_and_susbcribe()
-
         #  callbacks to coordinator methods (~services to other components)
-        self.service_reponse_callbacks = {
+        self.request_reply_handlers = {
             MsgTestSuiteGetTestCases: self.get_testcases_basic,
             MsgTestSuiteGetStatus: self.get_states_summary
         }
@@ -83,6 +80,10 @@ class CoordinatorAmqpInterface(object):
             MsgTestCaseSkip: 'skip_testcase',
         }
 
+        # amqp connect to bus & subscribe to events
+        self.amqp_connect()
+        self.amqp_create_queues_bind_and_susbcribe()
+
     def get_new_amqp_connection(self):
         return pika.BlockingConnection(pika.URLParameters(self.amqp_url))
 
@@ -96,27 +97,27 @@ class CoordinatorAmqpInterface(object):
         self.channel.basic_qos(prefetch_count=1)
 
     def amqp_create_queues_bind_and_susbcribe(self):
-        self.services_q_name = 'services@%s' % self.component_id
-        self.events_q_name = 'events@%s' % self.component_id
+        self.requests_replies_q_name = '%s::requests_replies' % self.component_id
+        self.events_q_name = '%s::events' % self.component_id
 
         # declare services and events queues
-        self.channel.queue_declare(queue=self.services_q_name, auto_delete=True)
+        self.channel.queue_declare(queue=self.requests_replies_q_name, auto_delete=True)
         self.channel.queue_declare(queue=self.events_q_name, auto_delete=True)
 
-        self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.services_q_name,
-                                routing_key='control.testcoordination.service')
+        # subscribe to all events request/replies messages concerning the testsuite coordination
+        for msg in self.request_reply_handlers.keys():
+            self.channel.queue_bind(exchange=self.amqp_exchange,
+                                    queue=self.requests_replies_q_name,
+                                    routing_key=msg.routing_key)
 
-        self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.testcoordination')
-
-        self.channel.queue_bind(exchange=self.amqp_exchange,
-                                queue=self.events_q_name,
-                                routing_key='control.session')
+        # subscribe to all events FSM related messages
+        for msg in self.control_events_triggers.keys():
+            self.channel.queue_bind(exchange=self.amqp_exchange,
+                                    queue=self.events_q_name,
+                                    routing_key=msg.routing_key)
 
         self.channel.basic_consume(self.handle_service,
-                                   queue=self.services_q_name,
+                                   queue=self.requests_replies_q_name,
                                    no_ack=False)
 
         self.channel.basic_consume(self.handle_control,
@@ -139,35 +140,23 @@ class CoordinatorAmqpInterface(object):
             self.channel.stop_consuming()
 
         # clean up
-        self.channel.queue_delete(queue=self.services_q_name)
+        self.channel.queue_delete(queue=self.requests_replies_q_name)
         self.channel.queue_delete(queue=self.events_q_name)
         self.channel.close()
         self.connection.close()
 
-    def handle_service(self, ch, method, properties, body):
+    def handle_service(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
-            'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
-        }
-        request = Message.from_json(body)
-        request.update_properties(**props_dict)
-        logger.info('Service request received: %s' % request._type)
+        request = Message.load_from_pika(method, props, body)
+        logger.info('Service request received: %s' % type(request))
 
         # let's process request
-        if type(request) in self.service_reponse_callbacks:
+        if type(request) in self.request_reply_handlers:
 
-            logger.info('Processing request: %s' % request._type)
-            callback = self.service_reponse_callbacks[type(request)]
+            logger.info('Processing request: %s' % type(request))
+            callback = self.request_reply_handlers[type(request)]
 
             try:
                 response_data = callback()
@@ -184,29 +173,17 @@ class CoordinatorAmqpInterface(object):
         else:
             logger.debug('Ignoring service request: %s' % repr(request))
 
-    def handle_control(self, ch, method, properties, body):
+    def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        props_dict = {
-            'content_type': properties.content_type,
-            'delivery_mode': properties.delivery_mode,
-            'correlation_id': properties.correlation_id,
-            'reply_to': properties.reply_to,
-            'message_id': properties.message_id,
-            'timestamp': properties.timestamp,
-            'user_id': properties.user_id,
-            'app_id': properties.app_id,
-        }
-        event = Message.from_json(body)
-        event.update_properties(**props_dict)
-        logger.info('Event received: %s' % event._type)
+        event = Message.load_from_pika(method, props, body)
+        logger.info('Event received: %s' % type(event))
 
         # let's process request
         if type(event) in self.control_events_triggers:
 
-            logger.info('Processing request: %s' % event._type)
+            logger.info('Processing request: %s' % type(event))
             trigger_callback = self.control_events_triggers[type(event)]
 
             try:
@@ -410,7 +387,7 @@ class CoordinatorAmqpInterface(object):
 
         try:
             response = amqp_request(self.connection, MsgSniffingStart(**kwargs), COMPONENT_ID)
-            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -419,7 +396,7 @@ class CoordinatorAmqpInterface(object):
 
         try:
             response = amqp_request(self.connection, MsgSniffingStop(), COMPONENT_ID)
-            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -428,7 +405,7 @@ class CoordinatorAmqpInterface(object):
 
         try:
             response = amqp_request(self.connection, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
-            logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+            logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
             logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
@@ -437,5 +414,5 @@ class CoordinatorAmqpInterface(object):
 
         request = MsgInteropTestCaseAnalyze(**kwargs)
         response = amqp_request(self.connection, request, COMPONENT_ID)
-        logger.debug("Received answer from sniffer: %s, answer: %s" % (response._type, repr(response)))
+        logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
         return response

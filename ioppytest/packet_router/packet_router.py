@@ -7,7 +7,7 @@ import sys
 import argparse
 import logging
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
 from ioppytest.test_coordinator.testsuite import TestConfig
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
@@ -16,7 +16,11 @@ COMPONENT_ID = 'packet_router'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
-logger.setLevel(LOG_LEVEL)
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOGGER_FORMAT
+)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
@@ -172,6 +176,7 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
 
         # routes for agents' serial interfaces (802.15.4 nodes)
         serial_routes = {
+            # TODO deprecate API v0.1
             'data.serial.fromAgent.%s' % nodes[0]:
                 [
                     'data.serial.toAgent.%s' % nodes[1],
@@ -182,10 +187,23 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
                     'data.serial.toAgent.%s' % nodes[0],
                     'data.serial.toAgent.%s' % 'agent_TT',
                 ],
+
+            # API v.1.0 [toAgent|fromAgent.*.802154.serial.packet.raw]
+            'fromAgent.%s.802154.serial.packet.raw' % nodes[0]:
+                [
+                    'toAgent.%s.802154.serial.packet.raw' % nodes[1],
+                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
+                ],
+            'fromAgent.%s.802154.serial.packet.raw' % nodes[1]:
+                [
+                    'toAgent.%s.802154.serial.packet.raw' % nodes[0],
+                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
+                ],
         }
 
         # routes for agents' TUNs interfaces (ipv6 nodes)
         tun_routes = {
+            # TODO deprecate API v0.1
             'data.tun.fromAgent.%s' % nodes[0]:
                 [
                     'data.tun.toAgent.%s' % nodes[1],
@@ -196,8 +214,18 @@ def generate_routing_table_from_test_configuration(testconfig: TestConfig):
                     'data.tun.toAgent.%s' % nodes[0],
                     'data.tun.toAgent.%s' % 'agent_TT',
                 ],
+            # API v.1.0 [toAgent|fromAgent.*.ip.tun.packet.raw]
+            'fromAgent.%s.ip.tun.packet.raw' % nodes[0]:
+                [
+                    'toAgent.%s.ip.tun.packet.raw' % nodes[1],
+                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
+                ],
+            'fromAgent.%s.ip.tun.packet.raw' % nodes[1]:
+                [
+                    'toAgent.%s.ip.tun.packet.raw' % nodes[0],
+                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
+                ],
         }
-
         routing_table = dict()
         routing_table.update(serial_routes)
         routing_table.update(tun_routes)

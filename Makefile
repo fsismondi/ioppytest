@@ -18,7 +18,7 @@ help: ## Help dialog.
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
 
-tools:
+build-tools: ## builds all testing tool docker images (only testing tool)
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-dummy-gui-adaptor
@@ -27,17 +27,16 @@ tools:
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-comi
 
-
-docker-build-all: ## Build all testing tool in docker images
+build-all: ## Build all testing tool in docker images, and other docker image resources too
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap-additional-resources
-	$(MAKE) tools
+	$(MAKE) build-tools
 
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m ioppytest.utils.interop_cli connect
+	@python3 -m ioppytest.utils.interop_cli connect -ll
 
 run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -87,6 +86,25 @@ stop-coap-server:
 stop-coap-client:
 	docker stop reference_iut-coap_client
 
+tests: ## runs all unittests
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py
+	@python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py
+	@python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py
+	@python3 -m pytest -p no:cacheprovider ioppytest/sniffer/tests/__init__.py
+	$(MAKE) _test_submodules
+
+_test_ttproto:
+	cd ioppytest/test_analysis_tool ;python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+	
+_test_utils:
+	cd ioppytest/utils ;python3 -m pytest -p no:cacheprovider tests
+	
+_test_submodules:
+	$(MAKE) _test_ttproto
+	$(MAKE) _test_utils
+	
+
 stop-all: ## Stop testing tools running as docker containers
 	# (exit 0) -> so the script continues on errors
 	$(MAKE) stop-coap-testing-tool --keep-going ; exit 0
@@ -115,7 +133,7 @@ get-logs: ## Get logs from the running containers
 	docker logs reference_iut-coap_client ; exit 0
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
-install-python-dependencies:
+install-python-dependencies: ## installs all python pip dependencies
 	@echo 'installing py2 dependencies...'
 	@python -m pip -qq install -r ioppytest/agent/requirements.txt
 	@echo 'installing py3 dependencies...'
@@ -185,8 +203,14 @@ _docker-build-coap-additional-resources:
 	@echo "Starting to build coap-additional-resources.. "
 
 	# let's build the automated/reference IUT images used by F-Interop platform
-	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
-	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+
+	# build without using caché packages (slower builds)
+	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
+	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile .
+	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile .
+
 	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
 

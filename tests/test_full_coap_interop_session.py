@@ -1,26 +1,28 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+
+import os
+import sys
+import pika
+import logging
+import unittest
+from urllib.parse import urlparse
+
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
-from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 from automated_IUTs.automation import UserMock
 
-from urllib.parse import urlparse
-import logging
-
-import unittest
-import pika
-import sys
-import time
-import os
-import threading
+from tests import (check_if_message_is_an_error_message,
+                   publish_terminate_signal_on_report_received,
+                   check_api_version,
+                   reply_to_ui_configuration_request_stub,
+                   connect_and_publish_message)
 
 COMPONENT_ID = 'fake_session'
-MESSAGES_WAIT_INTERVAL = 1  # in seconds
-AMQP_EXCHANGE = ''
-AMQP_URL = ''
-THREAD_JOIN_TIMEOUT = 300
-message_count = 0
+THREAD_JOIN_TIMEOUT = 120
+MAX_LINE_LENGTH = 100
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,68 +33,92 @@ logging.getLogger('pika').setLevel(logging.INFO)
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
 
-"""
-EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
 
-PRE-CONDITIONS:
-- Export AMQP_URL in the running environment
-- Have CoAP testing tool running & listening to the bus
-- Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
-"""
+class CompleteFunctionalCoapSessionTests(unittest.TestCase):
+    """
+    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
 
+    EXECUTE AS:
+    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
 
-class SessionMockTests(unittest.TestCase):
+    PRE-CONDITIONS:
+    - Export AMQP_URL in the running environment
+    - Have CoAP testing tool running & listening to the bus
+    - Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
+    """
+
     def setUp(self):
-        import_env_vars()
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
     def tearDown(self):
         self.connection.close()
+        log_all_received_messages(event_types_sniffed_on_bus_list)
 
-    def test_testcase_report_issue_at_end_of_session(self):
+    def test_complete_interop_test_cycle(self):
         global event_types_sniffed_on_bus_list
         global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
 
         tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
-        u = UserMock(tc_list)
-        e = EventListener(AMQP_URL)
-        u.setName(u.__class__.__name__)
-        e.setName(u.__class__.__name__)
+
+        # thread
+        msg_validator = AmqpListener(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            callback=run_checks_on_message_received,
+            topics=['#'],
+            use_message_typing=True
+        )
+
+        # thread
+        ui_stub = AmqpListener(
+            amqp_url=AMQP_URL,
+            amqp_exchange=AMQP_EXCHANGE,
+            callback=reply_to_ui_configuration_request_stub,
+            topics=[
+                MsgUiRequestSessionConfiguration.routing_key,
+                MsgTestingToolTerminate.routing_key,
+            ],
+            use_message_typing=True
+        )
+
+        # thread
+        user_stub = UserMock(
+            iut_testcases=tc_list
+        )
+
+        user_stub.setName('user_mock')
+        msg_validator.setName('message_validator')
+        ui_stub.setName('ui_stub')
+
+        threads = [
+            user_stub,
+            msg_validator,
+            ui_stub,
+        ]
 
         try:
-            u.start()
-            e.start()
-            publish_message(self.connection,
-                            MsgSessionConfiguration(
-                                configuration={
-                                    "testsuite.testcases": [
-                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-                                        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-                                    ]
-                                }
-                            )  # from TC1 to TC3
-                            )
-            u.join(THREAD_JOIN_TIMEOUT)  # waits THREAD_JOIN_TIMEOUT for the session to terminate
+            self.connection.close()
+
+            for th in threads:
+                th.start()
+
+            # waits THREAD_JOIN_TIMEOUT for the session to terminate
+            # be careful Jenkins scripts have a timeout for jobs to finish execution
+            for th in threads:
+                th.join(THREAD_JOIN_TIMEOUT)
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
 
         finally:
+            for th in threads:
+                if th.is_alive():
+                    th.stop()
+                    logger.warning("Thread %s didnt stop" % th.name)
 
-            publish_message(self.connection,
-                            MsgTestingToolTerminate())  # this should terminate all processes listening in the bus
-
-            if u.is_alive():
-                u.join()
-
-            if e.is_alive():
-                e.join()
-
-            logging.info("Events sniffed in bus: %s" % event_types_sniffed_on_bus_list)
+            log_all_received_messages(event_types_sniffed_on_bus_list)
 
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
@@ -101,117 +127,25 @@ class SessionMockTests(unittest.TestCase):
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
 
 
-# # # # # # AUXILIARY METHODS # # # # # # #
-
-def import_env_vars():
-    global AMQP_EXCHANGE
-    global AMQP_URL
-
-    try:
-        AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
-    except KeyError:
-        AMQP_EXCHANGE = "amq.topic"
-
-    try:
-        AMQP_URL = str(os.environ['AMQP_URL'])
-        p = urlparse(AMQP_URL)
-        AMQP_USER = p.username
-        AMQP_SERVER = p.hostname
-        logger.info(
-            "Env variables imported for AMQP connection, User: {0} @ Server: {1} ".format(AMQP_USER, AMQP_SERVER)
-        )
-    except KeyError:
-        logger.error('Cannot retrieve environment variables for AMQP connection. Loading defaults..')
-        # load default values
-        AMQP_URL = "amqp://{0}:{1}@{2}/{3}".format("guest", "guest", "localhost", "/")
+def log_all_received_messages(event_types_sniffed_on_bus_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    i = 0
+    for ev in event_types_sniffed_on_bus_list:
+        i += 1
+        logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
 
-def check_for_bus_error(ch, method, props, body):
-    logger.info('[%s] Checking if is error, message %s' % (sys._getframe().f_code.co_name, props.message_id))
-
-    try:
-        msg = Message.from_json(body)
-        if isinstance(msg, MsgTestingToolTerminate):
-            ch.stop_consuming()
-            return
-    except:
-        pass
-
-    list_of_audited_components = [
-        'tat',
-        'test_coordinator',
-        'packer_router',
-        'sniffer',
-        'dissector'
-        'session',
-        # TODO add agent_TT messages
-    ]
-    r_key = method.routing_key
-    logger.info('[%s] Auditing: %s' % (sys._getframe().f_code.co_name, r_key))
-
-    for c in list_of_audited_components:
-        if c in r_key:
-            err = 'audited component %s pushed an error into the bus. messsage: %s' % (c, body)
-            logger.error(err)
-            raise Exception(err)
+def run_checks_on_message_received(message: Message):
+    assert message
+    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+    update_events_seen_on_bus_list(message)
+    check_if_message_is_an_error_message(message)
+    publish_terminate_signal_on_report_received(message)
+    check_api_version(message)
 
 
-class EventListener(threading.Thread):
-    COMPONENT_ID = __name__
-
-    def __init__(self, amqp_url):
-        global event_types_sniffed_on_bus_list
-        global events_sniffed_on_bus_dict
-
-        threading.Thread.__init__(self)
-        self.connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-        self.channel = self.connection.channel()
-        logger.info("[%s] AMQP connection established" % (self.__class__.__name__))
-
-        all_messages_queue = 'all_messages_queue@%s' % self.COMPONENT_ID
-
-        # lets' first clean up the queue
-        self.channel.queue_delete(queue=all_messages_queue)
-        self.channel.queue_declare(queue=all_messages_queue, auto_delete=True)
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE, queue=all_messages_queue, routing_key='#')
-
-        # for catching the terminate signal
-        self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                queue=all_messages_queue,
-                                routing_key=MsgTestingToolTerminate.routing_key)
-
-        self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.update_events_seen_on_bus_list, queue=all_messages_queue)
-
-    def update_events_seen_on_bus_list(self, ch, method, props, body):
-        global event_types_sniffed_on_bus_list
-        global events_sniffed_on_bus_dict
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        try:
-
-            m = Message.from_json(body)
-            if m is None:
-                logger.error("[%s] Couldnt get message yet did not raise error: %s" %
-                             (self.__class__.__name__, str(body)))
-                return
-            logger.info("[%s] Message received type: %s" % (self.__class__.__name__, type(m)))
-            if isinstance(m, MsgTestingToolTerminate):
-                self.stop()
-            else:
-                events_sniffed_on_bus_dict[type(m)] = m
-                event_types_sniffed_on_bus_list.append(type(m))
-
-        except NonCompliantMessageFormatError as e:
-            logger.warning("[%s] Non compliant message found: %s" % (self.__class__.__name__, e))
-
-        except Exception as e:
-            logging.error(e, exc_info=True)
-
-    def run(self):
-        self.channel.start_consuming()
-
-    def stop(self):
-        self.channel.stop_consuming()
-        self.connection.close()
+def update_events_seen_on_bus_list(message: Message):
+    global event_types_sniffed_on_bus_list
+    global events_sniffed_on_bus_dict
+    events_sniffed_on_bus_dict[type(message)] = message
+    event_types_sniffed_on_bus_list.append(type(message))
