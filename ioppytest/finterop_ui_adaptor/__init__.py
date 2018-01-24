@@ -1,6 +1,7 @@
 import os
 
 from ioppytest.utils.messages import *
+from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
 STDOUT_MAX_STRING_LENGTH = 70
 
@@ -23,8 +24,10 @@ TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     'fromAgent.#',  # do not subscribe to toAgent else we will have duplication in GUI
 ]
 
+
 class UiResponseError(Exception):
     pass
+
 
 class SessionError(Exception):
     pass
