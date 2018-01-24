@@ -5,13 +5,13 @@ configuration_id: M2M_CFG_01
 uri: www.onem2m.org
 nodes:
   - adn
-  - CSE
+  - cse
 topology:
   - link_id : link_01
     capture_filter: udp
     nodes:
       - adn
-      - CSE
+      - cse
 addressing:
     - node: adn
       ipv6_prefix : bbbb
