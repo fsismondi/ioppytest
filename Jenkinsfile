@@ -69,7 +69,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
       }
 
       stage("Functional tests / AMQP API smoke tests"){
-        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/supervisor.conf.ini"
+        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/tests.supervisor.conf.ini"
         gitlabCommitStatus("Functional tests / AMQP API smoke tests"){
             try {
                 sh '''
