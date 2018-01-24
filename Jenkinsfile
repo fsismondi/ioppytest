@@ -77,11 +77,11 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                     sudo -E supervisord -c $SUPERVISOR_CONFIG_FILE
 
                     /* we dont want to test all components */
-                    sleep 2
+                    sleep 10
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop ui-adaptor
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop webserver
 
-                    sleep 15
+                    sleep 2
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE
 
                     sleep 2
