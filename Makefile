@@ -46,7 +46,6 @@ run-6lowpan-testing-tool: ## Run 6LoWPAN testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-6lowpan testing_tool-interoperability-6lowpan
 
-
 run-coap-testing-tool: ## Run CoAP testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-coap testing_tool-interoperability-coap
@@ -54,6 +53,10 @@ run-coap-testing-tool: ## Run CoAP testing tool in docker container
 run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-onem2m
+
+run-comi-testing-tool: ## Run oneM2M testing tool in docker container
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-comi
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
@@ -70,6 +73,9 @@ run-coap-client:
 run-coap-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d -t --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name reference_iut-coap_server reference_iut-coap_server
+
+stop-comi-testing-tool:
+	docker stop testing_tool-interoperability-comi
 
 stop-onem2m-testing-tool:
 	docker stop testing_tool-interoperability-onem2m
@@ -222,6 +228,18 @@ _docker-build-coap-additional-resources:
 
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
+
+_docker-build-onem2m-additional-resources:
+	@echo "Starting to build onem2m-additional-resources.. "
+	@echo "TBD"
+
+_docker-build-comi-additional-resources:
+	@echo "Starting to build comi-additional-resources.. "
+	@echo "TBD"
+
+_docker-build-6lowpan-additional-resources:
+	@echo "Starting to build 6lowpan-additional-resources.. "
+	@echo "TBD"
 
 info_message = """ \\n\
 	******************************************************************************************\n\

@@ -195,7 +195,7 @@ class GenericBidirectonalTranslator(object):
 
             # important messages
             MsgTestingToolTerminate: self._echo_message_highlighted_description,
-            MsgTestingToolConfigured: self._echo_message_highlighted_description,
+
 
             # agents data messages and dissected messages
             MsgPacketInjectRaw: self._echo_packet_raw,
@@ -203,8 +203,9 @@ class GenericBidirectonalTranslator(object):
             MsgDissectionAutoDissect: self._echo_packet_dissected,
 
             # tagged as debugging
+            MsgTestingToolConfigured: self._echo_as_debug_messages,
             MsgSessionConfiguration: self._echo_as_debug_messages,
-            #MsgSessionLog: self._echo_as_debug_messages,
+            MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
             MsgAgentConfigured: self._echo_as_debug_messages,
             MsgAgentTunStart: self._echo_as_debug_messages,
@@ -303,7 +304,7 @@ class GenericBidirectonalTranslator(object):
                 msg.tags = {"testcase": self._current_tc}
 
             else:
-                msg.tags = {"config:": 'misc.'}
+                msg.tags = {"logs": ""}
 
         return msg
 
@@ -1027,7 +1028,7 @@ class GenericBidirectonalTranslator(object):
     def _echo_as_debug_messages(self, message):
 
         ret_msg = self._echo_message_as_table(message)
-        ret_msg.tags = {"logs": " "}
+        ret_msg.tags = {"logs": ""}
         return ret_msg
 
 
@@ -1230,16 +1231,17 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
 
 class CoMISessionMessageTranslator(CoAPSessionMessageTranslator):
-    # fixme import names directy from yaml files
     IUT_ROLES = ['comi_client', 'comi_server']
 
     def __init__(self):
         super().__init__()
 
 
-class OneM2MSessionMessageTranslator(object):
-    # fixme import names directy from yaml files
-    pass
+class OneM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
+    IUT_ROLES = ['adn', 'cse']
+
+    def __init__(self):
+        super().__init__()
 
 
 class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):

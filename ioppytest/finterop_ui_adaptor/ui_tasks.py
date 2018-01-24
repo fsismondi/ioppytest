@@ -1,16 +1,33 @@
-from ioppytest.finterop_ui_adaptor import *
+import json
+import time
+import logging
+
+from ioppytest.finterop_ui_adaptor import (UiResponseError,
+                                           SessionError,
+                                           MsgUiRequestSessionConfiguration,
+                                           WAITING_TIME_FOR_SECOND_USER,
+                                           MsgUiDisplay,
+                                           MsgUiRequestConfirmationButton,
+                                           SESSION_SETUP_TAG,
+                                           )
 
 
 # auxiliary functions
 def get_session_configuration_from_ui(amqp_publisher):
-    session_configuration = None
-    resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
-    if resp and resp.ok:
-        session_configuration = resp.to_dict()
-    else:
-        logging.error("got None or NOK response from UI, response: %s" % repr(resp))
+    keys_to_validate = {"id", "configuration", "testSuite", "users"}
 
-    return session_configuration
+    resp = amqp_publisher.synch_request(MsgUiRequestSessionConfiguration())
+
+    if resp is None:
+        raise UiResponseError("Got session config None from UI")
+
+    if not keys_to_validate.issubset(resp):
+        raise UiResponseError("Expected %s, Got  %s" % (keys_to_validate, resp.keys()))
+
+    if not resp.ok:
+        raise UiResponseError("Got NOK response from UI, response: %s" % repr(resp))
+
+    return resp.to_dict()
 
 
 def get_current_users_online(amqp_publisher):
@@ -51,7 +68,6 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
 
         while len(online_users) < expected_user_quantity and retries <= max_retries:
             msg_text = "Waiting for at least 2 users to join the session, retries : %s / %s" % (retries, max_retries)
-            logging.debug(msg_text)
             m = MsgUiDisplay(
                 tags=SESSION_SETUP_TAG,
                 fields=[
