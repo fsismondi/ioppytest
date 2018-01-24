@@ -161,7 +161,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             gitlabCommitStatus("RUN CoAP containers for mini-plugtests") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
-                    long timeoutInSeconds = 45
+                    long timeoutInSeconds = 120
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -215,6 +215,192 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
+        }
+    }
+}
+
+
+
+if(env.JOB_NAME =~ 'ioppytest - build all tools/'){
+    node('docker'){
+        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
+        /* TODO use a deficated VHOST for these tests */
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/session02"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh '''
+                git submodule update --init
+                tree .
+            '''
+        }
+
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
+                        sudo apt-get install --fix-missing -y -qq make
+                    '''
+                }
+            }
+        }
+
+        stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-coap
+                    sudo -E make _docker-build-coap-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD OneM2M docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD OneM2M docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-onem2m
+                    sudo -E make _docker-build-onem2m-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD 6LoWPAN docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD 6LoWPAN docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-6lowpan
+                    sudo -E make _docker-build-6lowpan-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD CoMI docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("CoMI CoAP docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-comi
+                    sudo -E make _docker-build-comi-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("RUN CoAP testing tool container"){
+            gitlabCommitStatus("RUN CoAP testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-coap-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+         }
+
+        stage("RUN OneM2M testing tool container"){
+            gitlabCommitStatus("RUN OneM2M testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-onem2m-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("RUN CoMI testing tool container"){
+            gitlabCommitStatus("RUN CoMI testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-comi-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("RUN 6LoWPAN testing tool container"){
+            gitlabCommitStatus("RUN 6LoWPAN testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-6lowpan-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
         }
     }
 }
