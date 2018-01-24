@@ -19,21 +19,25 @@ default_configuration = {
     ]
 }
 
+
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
-    resp = {
-        "configuration": default_configuration,
-        "id": '666',
-        "testSuite": "someTestingToolName",
-        "users": ['pablo', 'bengoechea'],
-    }
-    m = MsgUiSessionConfigurationReply(
-        message,
-        **resp
-    )
-    connect_and_publish_message(m)
+    if isinstance(message, MsgUiRequestSessionConfiguration):
+        resp = {
+            "configuration": default_configuration,
+            "id": '666',
+            "testSuite": "someTestingToolName",
+            "users": ['pablo', 'bengoechea'],
+        }
+        m = MsgUiSessionConfigurationReply(
+            message,
+            **resp
+        )
+        connect_and_publish_message(m)
+    else:
+        logging.warning('reply_to_ui_configuration_request_stub got not expected message type %s' % str(type(message)))
 
 
 def connect_and_publish_message(message: Message):

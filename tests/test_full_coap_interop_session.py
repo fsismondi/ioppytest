@@ -21,7 +21,7 @@ from tests import (check_if_message_is_an_error_message,
                    connect_and_publish_message)
 
 COMPONENT_ID = 'fake_session'
-THREAD_JOIN_TIMEOUT = 300
+THREAD_JOIN_TIMEOUT = 120
 MAX_LINE_LENGTH = 100
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -32,14 +32,6 @@ logging.getLogger('pika').setLevel(logging.INFO)
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
-
-default_configuration = {
-    "testsuite.testcases": [
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
-    ]
-}
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
@@ -61,6 +53,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
     def tearDown(self):
         self.connection.close()
+        log_all_received_messages(event_types_sniffed_on_bus_list)
 
     def test_complete_interop_test_cycle(self):
         global event_types_sniffed_on_bus_list
@@ -112,6 +105,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 th.start()
 
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
+            # be careful Jenkins scripts have a timeout for jobs to finish execution
             for th in threads:
                 th.join(THREAD_JOIN_TIMEOUT)
 
@@ -124,17 +118,21 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     th.stop()
                     logger.warning("Thread %s didnt stop" % th.name)
 
-            logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
-            i = 0
-            for ev in event_types_sniffed_on_bus_list:
-                i += 1
-                logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
+            log_all_received_messages(event_types_sniffed_on_bus_list)
 
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
 
             logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
+
+
+def log_all_received_messages(event_types_sniffed_on_bus_list:list):
+    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    i = 0
+    for ev in event_types_sniffed_on_bus_list:
+        i += 1
+        logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
 
 def run_checks_on_message_received(message: Message):

@@ -18,7 +18,7 @@ help: ## Help dialog.
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
 
-build-tools: # builds all testing tool docker images (only testing tool)
+build-tools: ## builds all testing tool docker images (only testing tool)
 	@echo $(info_message)
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-dummy-gui-adaptor
@@ -133,7 +133,7 @@ get-logs: ## Get logs from the running containers
 	docker logs reference_iut-coap_client ; exit 0
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
-install-python-dependencies: #installs all python pip dependencies
+install-python-dependencies: ## installs all python pip dependencies
 	@echo 'installing py2 dependencies...'
 	@python -m pip -qq install -r ioppytest/agent/requirements.txt
 	@echo 'installing py3 dependencies...'
@@ -203,8 +203,14 @@ _docker-build-coap-additional-resources:
 	@echo "Starting to build coap-additional-resources.. "
 
 	# let's build the automated/reference IUT images used by F-Interop platform
-	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
-	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+
+	# build without using caché packages (slower builds)
+	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
+	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile .
+	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile .
+
 	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
 
