@@ -12,12 +12,17 @@ import traceback
 import multiprocessing
 from datetime import time
 
-from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
+from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL,LOGGER_FORMAT
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest.utils.pure_pcapy import DLT_RAW, DLT_IEEE802_15_4_NOFCS
 from ioppytest.utils.messages import *
 from ioppytest.utils.packet_dumper import launch_amqp_data_to_pcap_dumper
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOGGER_FORMAT
+)
 
 logging.getLogger('pika').setLevel(logging.WARNING)
 

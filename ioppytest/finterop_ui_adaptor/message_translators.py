@@ -13,6 +13,12 @@ from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOGGER_FORMAT
+)
+
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
 
