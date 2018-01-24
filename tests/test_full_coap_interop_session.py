@@ -127,7 +127,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
 
 
-def log_all_received_messages(event_types_sniffed_on_bus_list:list):
+def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
     i = 0
     for ev in event_types_sniffed_on_bus_list:
