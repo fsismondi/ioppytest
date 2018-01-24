@@ -13,7 +13,7 @@ topology:
       - ADN
       - CSE
 addressing:
-    - node: AE
+    - node: ADN
       ipv6_prefix : bbbb
       ipv6_host: 1
     - node: CSE
