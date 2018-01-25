@@ -156,6 +156,8 @@ class ApiTests(unittest.TestCase):
 
     def tearDown(self):
         self.connection.close()
+        # print messages
+        log_all_received_messages(event_types_sniffed_on_bus_list)
 
     def test_amqp_api_smoke_tests(self):
         """
@@ -231,15 +233,17 @@ class ApiTests(unittest.TestCase):
                 if th.is_alive():
                     th.stop()
 
-            logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
-            i = 0
-            for ev in event_types_sniffed_on_bus_list:
-                i += 1
-                logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
-
             # finally checks
             check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)
             check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
+
+
+def log_all_received_messages(event_types_sniffed_on_bus_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    i = 0
+    for ev in event_types_sniffed_on_bus_list:
+        i += 1
+        logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
 
 def run_checks_on_message_received(message: Message):

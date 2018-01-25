@@ -118,8 +118,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     th.stop()
                     logger.warning("Thread %s didnt stop" % th.name)
 
-            log_all_received_messages(event_types_sniffed_on_bus_list)
-
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
 

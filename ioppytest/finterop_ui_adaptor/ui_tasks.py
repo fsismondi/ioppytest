@@ -21,13 +21,15 @@ def get_session_configuration_from_ui(amqp_publisher):
     if resp is None:
         raise UiResponseError("Got session config None from UI")
 
-    if not keys_to_validate.issubset(resp):
-        raise UiResponseError("Expected %s, Got  %s" % (keys_to_validate, resp.keys()))
-
     if not resp.ok:
         raise UiResponseError("Got NOK response from UI, response: %s" % repr(resp))
 
-    return resp.to_dict()
+    resp_dict = resp.to_dict()
+
+    if not keys_to_validate.issubset(resp_dict):
+        raise UiResponseError("Expected minimum set of keys %s, Got  %s" % (keys_to_validate, resp_dict.keys()))
+
+    return resp_dict
 
 
 def get_current_users_online(amqp_publisher):
