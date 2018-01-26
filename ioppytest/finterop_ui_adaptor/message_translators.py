@@ -13,7 +13,6 @@ from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 
-
 logging.basicConfig(
     level=LOG_LEVEL,
     format=LOGGER_FORMAT
@@ -180,14 +179,18 @@ class GenericBidirectonalTranslator(object):
         self._pending_responses = {}
         self.specialized_visualization = {
 
-            # test suite messages
+            # test suite /test cases /test steps messages
             MsgTestingToolReady: self._echo_message_highlighted_description,
             MsgTestCaseFinished: self._echo_message_highlighted_description,
+            MsgTestCaseReady: self._echo_testcase_ready,
             MsgStepStimuliExecute: self._echo_message_steps,
             MsgStepStimuliExecuted: self._echo_message_highlighted_description,
             MsgStepVerifyExecute: self._echo_message_steps,
             MsgStepVerifyExecuted: self._echo_message_highlighted_description,
             MsgConfigurationExecute: self._echo_testcase_configure,
+
+            # info
+            MsgTestSuiteGetTestCasesReply: self._echo_testcases_list,
 
             # verdicts and results
             MsgTestCaseVerdict: self._echo_testcase_verdict,
@@ -195,7 +198,6 @@ class GenericBidirectonalTranslator(object):
 
             # important messages
             MsgTestingToolTerminate: self._echo_message_highlighted_description,
-
 
             # agents data messages and dissected messages
             MsgPacketInjectRaw: self._echo_packet_raw,
@@ -210,7 +212,6 @@ class GenericBidirectonalTranslator(object):
             MsgAgentConfigured: self._echo_as_debug_messages,
             MsgAgentTunStart: self._echo_as_debug_messages,
             MsgAgentTunStarted: self._echo_as_debug_messages,
-            MsgTestCaseReady: self._echo_as_debug_messages,
 
             # barely important enough to not be in the debugging
             MsgTestingToolComponentShutdown: self._echo_message_description_and_component,
@@ -289,7 +290,8 @@ class GenericBidirectonalTranslator(object):
             pass
 
         # print states table
-        status_table = [['current testcase id', 'current test step id']]
+        status_table = list()
+        status_table.append(['current testcase id', 'current test step id'])
         status_table.append([self._current_tc, self._current_step])
         logger.debug(tabulate(status_table, tablefmt="grid", headers="firstrow"))
 
@@ -561,7 +563,7 @@ class GenericBidirectonalTranslator(object):
                 # try to set the color of the box using the verdict
                 if 'verdict' in key and 'pass' in value:
                     display_color = 'highlighted'
-                elif 'verdict' in key and value in ['fail','error','none']:
+                elif 'verdict' in key and value in ['fail', 'error', 'none']:
                     display_color = 'error'
 
             table_result.append(temp)
@@ -783,6 +785,135 @@ class GenericBidirectonalTranslator(object):
             title="Please execute the %s STEP: %s" % (message.step_type, message.step_id),
             level='info',
             fields=fields
+        )
+
+    def _echo_testcases_list(self, message):
+        """
+        {
+            "_api_version": "1.0.8",
+            "ok": true,
+            "tc_list": [
+                {
+                    "state": null,
+                    "testcase_id": "TD_M2M_NH_01",
+                    "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_01"
+                },
+                {
+                    "state": null,
+                    "testcase_id": "TD_M2M_NH_06",
+                    "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_06"
+                },
+                ...
+                ]
+        }
+
+        """
+
+        fields_to_translate = ['testcase_id',
+                               'testcase_ref',
+                               'state',
+                               ]
+        fields = []
+        table = []
+
+        table.append(fields_to_translate)
+        for f in message.tc_list:
+            if type(f) is dict:
+                table.append(
+                    [
+                        f['testcase_id'],
+                        f['testcase_ref'],
+                        f['state'] if f['state'] else "Not yet executed.",
+
+                    ]
+                )
+
+        fields.append({
+            'type': 'p',
+            'value': '%s' % (tabulate(table, tablefmt="grid", headers="firstrow"))
+        })
+
+        return MsgUiDisplayMarkdownText(
+            title="Test cases list:",
+            level='info',
+            fields=fields,
+            tags={"testsuite": ""}
+        )
+
+    def _echo_testcase_ready(self, message):
+
+        """
+        {
+            "_api_version": "1.0.8",
+            "address_adn": "bbbb::1",
+            "address_cse": "bbbb::2",
+            "addressing_table": {
+                "adn": [
+                    "bbbb",
+                    1
+                ],
+                "cse": [
+                    "bbbb",
+                    2
+                ]
+            },
+            "configuration_id": "M2M_CFG_01",
+            "configuration_ref": "www.onem2m.org",
+            "description": "Next test case to be executed is TD_M2M_NH_06",
+            "nodes": [
+                "adn",
+                "cse"
+            ],
+            "objective": "Perform GET transaction(CON mode)",
+            "state": "configuring",
+            "testcase_id": "TD_M2M_NH_06",
+            "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_06",
+            "topology": [
+                {
+                    "capture_filter": "udp",
+                    "link_id": "link_01",
+                    "nodes": [
+                        "adn",
+                        "cse"
+                    ]
+                }
+            ]
+        }
+
+        """
+
+        fields_to_translate = ['testcase_id',
+                               'testcase_ref',
+                               'configuration_id',
+                               'configuration_ref',
+                               'objective',
+                               'description',
+                               'nodes',
+                               'topology',
+                               ]
+        fields = []
+        for f in fields_to_translate:
+            try:
+                fields.append({
+                    'type': 'p',
+                    'value': '%s: %s' % (f, getattr(message, f))
+                })
+            except AttributeError as ae:
+                logger.error(ae)
+
+        fields.append({
+            'type': 'p',
+            'value': '%s' %
+                     (tabulate(
+                         translate_ioppytest_description_format_to_tabulate(message.description),
+                         tablefmt="grid"))
+        })
+
+        return MsgUiDisplayMarkdownText(
+            title="Next testcase to be executed:",
+            level='info',
+            fields=fields,
+            tags={"testcase": message.testcase_id}
         )
 
     def _echo_testcase_configure(self, message):
@@ -1207,7 +1338,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Please VERIFY the information regarding the STEP  <%s>`" % self._current_step
+            title="Please VERIFY the information regarding the STEP  <%s>" % self._current_step
         )
         message_ui_request.fields = [
             {

@@ -9,7 +9,11 @@ COMPONENT_ID = 'ui_adaptor'
 
 MESSAGES_NOT_TO_BE_ECHOED = [
     MsgTestCaseStarted,
-    MsgSessionLog
+    MsgSessionLog,
+    MsgTestingToolComponentReady,
+    MsgUiRequestSessionConfiguration,
+    MsgUiSessionConfigurationReply,
+    MsgSessionConfiguration,
 ]
 
 WAITING_TIME_FOR_SECOND_USER = 500  # in seconds

@@ -100,17 +100,20 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
 def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_configuration):
     roles_to_user_mapping = {}
     users = get_current_users_online(amqp_publisher)
-    # ToDo fixme! I'm assuming there's only 2 users max for these method
-    assert len(users) == 2, 'got user list: %s' % users
 
-    # let's just ask to the user number which are the user IUTs roles
+    # let's just ask to the user number 1 which are the user IUTs roles
     user_lead = users[0]
-    second_user = users[1]
+    try:
+        second_user = users[1]
+    except IndexError:
+        second_user = None
+
     iut_roles = message_translator.get_iut_roles()
     for iut_role in iut_roles:
         m = MsgUiRequestConfirmationButton(
             tags=SESSION_SETUP_TAG,
-            title="Is it you (%s) driving implementation under test (IUT) : %s? " % (user_lead, iut_role),
+            title="%s runs implementation under test (IUT) with role: %s? "
+                  % (user_lead.upper(), iut_role.upper()),
             fields=[
                 {
                     "name": "yes",
@@ -127,26 +130,35 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
         resp = amqp_publisher.synch_request(
             request=m,
             user_id=user_lead,
-            timeout=50
+            timeout=120
         )
+
+        if resp and resp.ok and 'yes' in str(resp.fields):
+            user_answer = True
+        elif resp and resp.ok and 'no' in str(resp.fields):
+            user_answer = False
+        else:
+            raise UiResponseError('received from the UI: %s' % repr(resp))
 
         # echo response back to users
         m = MsgUiDisplay(
             tags=SESSION_SETUP_TAG,
             fields=[
                 {"type": "p",
-                 "value": "Got : %s" % repr(resp)},
+                 "value": "{user_name} reply: {user_name} runs IUT with role {iut_role}: {answer}".format(
+                     user_name=user_lead,
+                     iut_role=iut_role.upper(),
+                     answer=str(user_answer).upper()
+                 )}
             ])
 
         amqp_publisher.publish_ui_display(m)
 
-        if resp and resp.ok and 'yes' in str(resp.fields):
-            logging.info({iut_role, user_lead})
+        # ToDo fixme! I'm assuming there's only 2 users max for these method
+        if user_answer:
             roles_to_user_mapping[iut_role] = user_lead
-        elif resp and resp.ok and 'no' in str(resp.fields):
-            roles_to_user_mapping[iut_role] = second_user
         else:
-            raise UiResponseError('received from the UI: %s' % repr(resp))
+            roles_to_user_mapping[iut_role] = second_user
 
         logging.info("Roles to user mapping updated: %s" % roles_to_user_mapping)
 

@@ -19,6 +19,7 @@ from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
+from ioppytest.utils.interop_cli import list_to_str
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 
@@ -238,24 +239,52 @@ class AmqpMessagePublisher:
         :return: Reply message
         """
 
-        if user_id:
-            if '*' in request.routing_key:
-                request.routing_key.replace('*', user_id)
-            elif '.all.' in request.routing_key:
-                request.routing_key.replace('.all.', user_id)
+        # FixMe: this susbtitution thing is ugly, maybe UiRequest class can have a set_destination method?
+        def update_routing_key_destination(message, rkey: str):
+            message.routing_key = rkey
+            message.reply_to = rkey.replace('.request', '.reply')
+            return message
+
+        if '.*.' in request.routing_key or '.all.' in request.routing_key:  # it's a user request
+
+            destination_user = None
+            if user_id:  # priority 1
+                destination_user = user_id
+            elif hasattr(request, 'node'):  # priority 2
+                destination_user = self.get_user_id_from_node(request.node)
+                if destination_user is None:
+                    destination_user = 'all'
             else:
-                raise Exception("Not a UI request?")
+                destination_user = 'all'
 
-        elif hasattr(request, 'node'):
-            user_id = self.get_user_id_from_node(request.node)
+            # lets set message rkey and reply_to fields
             if '*' in request.routing_key:
-                request.routing_key.replace('*', user_id)
+                rkey = request.routing_key.replace('*', destination_user)
+                request = update_routing_key_destination(request, rkey)
+            elif '.all.' in request.routing_key:
+                rkey = request.routing_key.replace('.all.', '.{id}.'.format(id=destination_user))
+                request = update_routing_key_destination(request, rkey)
+            else:
+                pass  # not a user request
+
+            # if request is unicast then, let's notify to the other user that he is waiting for antoher user request
+            if '.all.' not in request.routing_key:
+                m = MsgUiDisplay(fields=[{"type": "p", "value": "Waiting for {} answer..".format(destination_user)}])
+                self.publish_ui_display(
+                    message=m,
+                    user_id='all'
+                )
+
+            logger.info("publishing message REQUEST (synch call): {rk} ,for {user}".format(
+                rk=request.routing_key,
+                user=destination_user
+            ))
+
         else:
-            user_id = 'all'
-            if '*' in request.routing_key:
-                request.routing_key.replace('*', user_id)
+            logger.info("publishing message REQUEST (synch call): {rk}".format(
+                rk=request.routing_key,
+            ))
 
-        logger.info("publishing message REQUEST (synch call): %s" % request.routing_key)
         resp = amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
 
         return resp
@@ -271,7 +300,7 @@ def process_message_from_ui(message_translator, message_received):
     message_translator.print_table_of_pending_messages()
 
     # 1. echo user's response to every user in session
-    text_message = 'User replied to request: %s' % repr(message_received.fields)
+    text_message = 'User replied to request: %s' % repr(list_to_str(message_received.fields))
     message = message_translator.transform_string_to_ui_markdown_display(text_message)
     queue_messages_display_to_ui.put(message)
 
@@ -378,10 +407,16 @@ def main():
 
     # retrieve session configuration / configure testing tool phase
     logger.debug("PHASE 1 - REQUESTING INFO FROM USERS")
+
     try:
         # get config from UI
         session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
         logger.info("Got session configuration reply from UI")
+
+        if "shared" in session_configuration and session_configuration["shared"]:
+            logger.debug("session is SHARED")
+        else:
+            logger.debug("session is NOT SHARED (single-user vs automated-iut type)")
 
         # this call is going to block until all users are present "in the room"
         wait_for_all_users_to_join_session(message_translator,
@@ -410,7 +445,7 @@ def main():
              "value": err_msg}
         ])
         logger.error(err_msg)
-        #logger.error(traceback.format_exc())
+        # logger.error(traceback.format_exc())
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
     except UiResponseError as ui_error:
@@ -420,7 +455,7 @@ def main():
              "value": err_msg}
         ])
         logger.error(err_msg)
-        #logger.error(traceback.format_exc())
+        # logger.error(traceback.format_exc())
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
     except SessionError as s_err:
