@@ -37,7 +37,7 @@ from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessa
                                                                OneM2MSessionMessageTranslator)
 
 logging.basicConfig(
-    level=LOG_LEVEL,
+    level=20,
     format=LOGGER_FORMAT
 )
 
@@ -144,11 +144,14 @@ class AmqpMessagePublisher:
 
         # if user_id is not passed then let's introspect the message to see where to route it
         if user_id:
+            logging.info("{ROUTING 1} user id %s"%user_id)
             pass
         elif hasattr(message, 'node'):
             user_id = self.get_user_id_from_node(message.node)
+            logging.info("{ROUTING 2} user id %s" % user_id)
         else:
             user_id = 'all'
+            logging.info("{ROUTING 3} user id %s" % user_id)
 
         message.routing_key = "ui.user.%s.display" % user_id
 

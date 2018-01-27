@@ -74,7 +74,7 @@ def list_to_str(ls):
             if l and isinstance(l, list):
                 for sub_l in l:
                     if sub_l and not isinstance(sub_l, list):
-                        ret += str(sub_l) + ' \n '
+                        ret += str(sub_l) + '\n '
                     else:
                         # I truncate in the second level
                         pass
@@ -191,6 +191,7 @@ class GenericBidirectonalTranslator(object):
 
             # info
             MsgTestSuiteGetTestCasesReply: self._echo_testcases_list,
+            MsgTestingToolConfigured: self._echo_testing_tool_configured,
 
             # verdicts and results
             MsgTestCaseVerdict: self._echo_testcase_verdict,
@@ -205,7 +206,6 @@ class GenericBidirectonalTranslator(object):
             MsgDissectionAutoDissect: self._echo_packet_dissected,
 
             # tagged as debugging
-            MsgTestingToolConfigured: self._echo_as_debug_messages,
             MsgSessionConfiguration: self._echo_as_debug_messages,
             MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
@@ -787,6 +787,91 @@ class GenericBidirectonalTranslator(object):
             fields=fields
         )
 
+    def _echo_testing_tool_configured(self, message):
+        """
+        {
+            "_api_version": "1.0.8",
+            "content_type": "application/json",
+            "description": "Testing tool CONFIGURED",
+            "message_id": "9cc3ab2e-0844-4203-8106-3d66fd7d9d51",
+            "session_id": "41c315b3-1ae9-4369-af9d-2e877a8bd734",
+            "tc_list": [
+                {
+                    "notes": null,
+                    "objective": "AE retrieves the CSEBase resource",
+                    "pre_conditions": [
+                        "CSEBase resource has been automatically created in CSE"
+                    ],
+                    "state": null,
+                    "testcase_id": "TD_M2M_NH_01",
+                    "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_01"
+                },
+                {
+                    "notes": null,
+                    "objective": "AE registers to its regisrar CSE via an AE Create Request",
+                    "pre_conditions": [
+                        "CSEBase resource has been created in CSE with name {CSEBaseName}",
+                        "AE does not have an AE-ID, i.e it registers from scratch"
+                    ],
+                    "state": null,
+                    "testcase_id": "TD_M2M_NH_06",
+                    "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_06"
+                },
+                {
+                    "notes": null,
+                    "objective": "AE retrieves <AE> resource via an AE Retrieve Request",
+                    "pre_conditions": [
+                        "CSEBase resource has been created in registrar CSE with name {CSEBaseName}",
+                        "AE has created a <AE> resource on registrar CSE with name {AE}"
+                    ],
+                    "state": null,
+                    "testcase_id": "TD_M2M_NH_07",
+                    "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_07"
+                },
+        {
+        """
+
+        fields_to_translate = ['testcase_id',
+                               'objective',
+                               'testcase_ref',
+                               'pre_conditions',
+                               'notes',
+                               'state',
+                               ]
+        fields = []
+
+        # 'state' gets special treatment
+        fields_to_translate.remove('state')
+
+        for f in message.tc_list:
+            table = []
+            if type(f) is dict:
+                # 'state' gets special treatment
+                state = f.pop('state')
+
+                for field_name in fields_to_translate:
+                    f_value = f[field_name]
+                    table.append((field_name, f_value if type(f_value) is str else list_to_str(f_value)))
+
+                # 'state' gets special treatment
+                table.append(('state', state if state else "Not yet executed."))
+
+            fields.append({
+                'type': 'p',
+                'value': '%s' % (tabulate(table, tablefmt="grid"))
+            })
+            fields.append({
+                'type': 'p',
+                'value': '---\n'
+            })
+
+        return MsgUiDisplayMarkdownText(
+            title=message.description,
+            level='info',
+            fields=fields,
+            tags={"testsuite": ""}
+        )
+
     def _echo_testcases_list(self, message):
         """
         {
@@ -887,58 +972,45 @@ class GenericBidirectonalTranslator(object):
                                'configuration_id',
                                'configuration_ref',
                                'objective',
-                               'description',
                                'nodes',
                                'topology',
                                ]
         fields = []
+        table = []
         for f in fields_to_translate:
             try:
-                fields.append({
-                    'type': 'p',
-                    'value': '%s: %s' % (f, getattr(message, f))
-                })
+                table.append((f, getattr(message, f)))
             except AttributeError as ae:
                 logger.error(ae)
 
         fields.append({
             'type': 'p',
-            'value': '%s' %
-                     (tabulate(
-                         translate_ioppytest_description_format_to_tabulate(message.description),
-                         tablefmt="grid"))
+            'value': '%s' % (tabulate(table, tablefmt="grid"))
         })
 
         return MsgUiDisplayMarkdownText(
-            title="Next testcase to be executed:",
+            title=message.description,
             level='info',
             fields=fields,
             tags={"testcase": message.testcase_id}
         )
 
     def _echo_testcase_configure(self, message):
-
         """
-        +------------------+-----------------------------------------------+
-        | state            | configuring                                   |
-        +------------------+-----------------------------------------------+
-        | _type            | testcoordination.configuration.execute        |
-        +------------------+-----------------------------------------------+
-        | _api_version     | 0.1.71                                        |
-        +------------------+-----------------------------------------------+
-        | testcase_id      | TD_COAP_CORE_01                               |
-        +------------------+-----------------------------------------------+
-        | configuration_id | COAP_CFG_01                                   |
-        +------------------+-----------------------------------------------+
-        | testcase_ref     | http://doc.f-interop.eu/tests/TD_COAP_CORE_01 |
-        +------------------+-----------------------------------------------+
-        | description      | No special configuration needed               |
-        |                  |  CoAP client requests                         |
-        |                  |  Destination IP Address = [bbbb::2]           |
-        |                  |  Destination UDP Port = 5683                  |
-        +------------------+-----------------------------------------------+
-        | node             | coap_client                                   |
-        +------------------+-----------------------------------------------+
+            {
+                "_api_version": "1.0.8",
+                "configuration_id": "M2M_CFG_01",
+                "content_type": "application/json",
+                "description": [
+                    "CoAP servers running service at [bbbb::2]:5683"
+                ],
+                "message_id": "a3d7038a-8413-464d-99d4-8da80153a863",
+                "node": "cse",
+                "state": "configuring",
+                "testcase_id": "TD_M2M_NH_01",
+                "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_01",
+                "timestamp": 1517033788
+            }
         """
 
         fields_to_translate = ['testcase_id', 'testcase_ref', 'node', 'state']
