@@ -54,9 +54,9 @@ run-onem2m-testing-tool: ## Run oneM2M testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-onem2m
 
-run-comi-testing-tool: ## Run oneM2M testing tool in docker container
+run-comi-testing-tool: ## Run CoMI testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-onem2m testing_tool-interoperability-comi
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name testing_tool-interoperability-comi testing_tool-interoperability-comi
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
