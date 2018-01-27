@@ -115,8 +115,8 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         finally:
             for th in threads:
                 if th.is_alive():
-                    th.stop()
                     logger.warning("Thread %s didnt stop" % th.name)
+                    th.stop()
 
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
