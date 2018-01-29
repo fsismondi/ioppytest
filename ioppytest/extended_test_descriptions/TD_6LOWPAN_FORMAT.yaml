@@ -1,1638 +1,1265 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LoWPAN_FORMAT_HC_01
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 link-local)
+uri : none
+configuration: Node to Node.
+objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
-notes: null
-references: RFC 4944 section 4
+  - Hop limit is set as 64.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
       - Both source and destination addresses are EUI-64 link-local.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_02'
     type: feature
     node: EUT1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_03'
     type: feature
     node: EUT1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_04'
     type: feature
     node: EUT1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_05'
     type: verify
     node: EUT1
     description:
-      - EUT2 receives the Echo Request message from EUT1
+      - EUT2 receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_06
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_06
     type: check
     node: EUT2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_07
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_07'
     type: check
     node: EUT2
     description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_08
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_08'
     type: feature
     node: EUT2
     description:
       - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_09
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_09'
     type: feature
     node: EUT2
     description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_10
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_10'
     type: feature
     node: EUT2
     description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_01_step_11
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_01_step_11'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
+
 testcase_id: TD_6LoWPAN_FORMAT_HC_02
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local)
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
-notes: null
-references: RFC 4944 section 5
+references: 'RFC 4944 section 5'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
+      - EUT1 initiates an echo request to EUT2's link-local address.
       - ICMP payload = 512 bits, total IPv6 size 560 bits.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
       - Both source and destination addresses are EUI-64 link-local.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_02'
     type: verify
     node: EUT1
     description:
-      - EUT1 sends fragment packets to EUT2
+      - EUT1 sends fragment packets to EUT2.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_03'
     type: verify
     node: EUT1
     description:
-      - EUT2 receives the Echo Request message from EUT1
+      - EUT2 receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_04'
     type: check
     node: EUT2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_05'
     type: check
     node: EUT2
     description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_02_step_06
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_02_step_06'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
+
 testcase_id: TD_6LoWPAN_FORMAT_HC_03
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use EUI-64 addresses.
-  - Hop limit is set as 64.
-notes: null
-references: RFC 6282 section 3
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow labal is being used
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Both source and destination addresses are EUI-64 link-local.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_03_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
-  
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_04
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local)
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 1.
-notes: null
-references: RFC 6282 section 3
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 1, no traffic class or flow labal is being used
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
+      - Hop Limit is 1, no traffic class or flow labal is being used.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
       - Both source and destination addresses are EUI-64 link-local.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_04_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_05
-uri : none
-configuration: Node to Node
-objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use EUI-64 address.
-  - EUT2 is configured to use 16-bit address.
-notes: null
-references: RFC 4944 section 4
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_02'
     type: feature
     node: EUT1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_03'
     type: feature
     node: EUT1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_04'
     type: feature
     node: EUT1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_05'
     type: verify
     node: EUT1
     description:
-      - EUT2 receives the Echo Request message from EUT1
+      - EUT2 receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_06
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_06'
     type: check
     node: EUT2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_07
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_07'
     type: check
     node: EUT2
     description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_08
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_08'
     type: feature
     node: EUT2
     description:
       - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_09
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_09'
     type: feature
     node: EUT2
     description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_10
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_10'
     type: feature
     node: EUT2
     description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_05_step_11
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_03_step_11'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_04
+uri : none
+configuration: Node to Node
+objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=64 and payload=0).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 is configured to use EUI-64 address.
+  - EUT2 is configured to use 16-bit address.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_06
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_04_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_05
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 is configured to use EUI-64 address.
+  - EUT2 is configured to use 16-bit address.
+references: 'RFC 4944 section 10'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 512 bits, total IPv6 size 560 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_02'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 sends fragment packets to EUT2.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_03'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_04'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_05'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_05_step_06'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+      
+--- !testcase
+
 testcase_id: TD_6LoWPAN_FORMAT_HC_06
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local)
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
-notes: null
-references: RFC 4944 section 5
+  - Hop limit is set as 1.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 512 bits, total IPv6 size 560 bits.
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
+      - Hop Limit is 1, no traffic class or flow labal is being used.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_02'
     type: verify
     node: EUT1
     description:
-      - EUT1 sends fragment packets to EUT2
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_03
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_04
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_05
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_06_step_06
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_07
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use EUI-64 address.
-  - EUT2 is configured to use 16-bit address.
-  - Hop limit is set as 64.
-notes: null
-references: RFC 6282 section 3
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow labal is being used
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_07_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT2 receives the Echo Request message from EUT1.
   
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_05'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_03'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_06'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_07'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_06_step_10'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_07
+uri : none
+configuration: Node to Node
+objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=64 and payload=0).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 is configured to use 16-bit address.
+  - EUT2 is configured to use EUI-64 address.
+  - EUT1 and EUT2 are configured with a default hop limit of 64.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is 6-bit, destination is EUI-64.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_06
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_07_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
 testcase_id: TD_6LoWPAN_FORMAT_HC_08
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local)
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 is configured to use 16-bit address.
+  - EUT2 is configured to use EUI-64 address.
+references: 'RFC 4944 section 10'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 512 bits, total IPv6 size 560 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is 16-bit, destination is EUI-64.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_02'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 sends fragment packets to EUT2.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_03'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_04'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_05'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_08_step_06'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_09
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16 bits link-local to EUI-64 link-local, hop limit=1 and payload=0).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 is configured to use 16-bit address.
+  - EUT2 is configured to use EUI-64 address.
+  - Hop limit is set as 1.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 0 bits, total IPv6 size 52 bits.
+      - Hop Limit is 1, no traffic class or flow labal is being used.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is 16-bit, destination is EUI-64.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_06'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_09_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_10
+uri : none
+configuration: Node to Node
+objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit link-local, hop limit=64 and payload=0).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 and EUT2 are configured to use 16 bits addresses.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 4 bits, total IPv6 size 52 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_06
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_10_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_11
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local)
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 and EUT2 are configured to use 16 bits addresses.
+references: 'RFC 4944 section 10'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 512 bits, total IPv6 size 560 bits.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_02'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 sends fragment packets to EUT2.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_03'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_04'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_05'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_11_step_06'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_12
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local)
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 and EUT2 are configured to use 16 bits addresses.
+  - Hop limit is set as 1.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request to EUT2's link-local address.
+      - ICMP payload = 4 bits, total IPv6 size 52 bits.
+      - Hop Limit is 1, no traffic class or flow labal is being used.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - Source address is EUI-64, destination is 16-bit.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_06'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_12_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_13
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle compressed multicasted 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=0).
+pre_conditions: 
+  - Header compression is enabled on both EUT1 and EUT2.
+  - EUT1 and EUT2 are configured to use EUI-64 addresses.
+  - Hop limit is set as 1.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
+sequence:
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_00'
+    type: stimuli
+    node: EUT1
+    description:
+      - EUT1 initiates an echo request with the multicast address ff02'::1.
+      - ICMP payload = 4 bits, total IPv6 size 52 bits.
+      - Hop Limit is 1, no traffic class or flow labal is being used.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_01'
+    type: check
+    node: EUT1
+    description:
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message multicasted to ff02'::1.
+      - Both source and destination addresses are EUI-64 link-local.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_05'
+    type: verify
+    node: EUT1
+    description:
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_06'
+    type: check
+    node: EUT2
+    description:
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_07'
+    type: check
+    node: EUT2
+    description:
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_13_step_11'
+    type: verify
+    node: EUT1
+    description:
+      - EUT1 receives the Echo Reply message from EUT2.
+
+--- !testcase
+
+testcase_id: TD_6LoWPAN_FORMAT_HC_14
+uri: none
+configuration: Node to Node
+objective: check that EUTs correctly handle compressed multicasted 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 1.
-notes: null
-references: RFC 6282 section 3
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
+      - EUT1 initiates an echo request with the multicast address ff02'::1.
       - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 1, no traffic class or flow labal is being used
+      - Hop Limit is 1, no traffic class or flow labal is being used.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message multicasted to ff02'::1.
+      - Source address is EUI-64, destination is 16-bit.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_08_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_09
-uri : none
-configuration: Node to Node
-objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16-bit address.
-  - EUT2 is configured to use EUI-64 address.
-notes: null
-references: RFC 4944 section 4
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is 6-bit, destination is EUI-64
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_02'
     type: feature
     node: EUT1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_03'
     type: feature
     node: EUT1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_04'
     type: feature
     node: EUT1
     description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_06
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_07
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_08
-    type: feature
-    node: EUT2
-    description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_09
-    type: feature
-    node: EUT2
-    description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_10
-    type: feature
-    node: EUT2
-    description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_09_step_11
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_05'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_10
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16-bit address.
-  - EUT2 is configured to use EUI-64 address.
-notes: null
-references: RFC 4944 section 5
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 512 bits, total IPv6 size 560 bits.
+      - EUT2 receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is 16-bit, destination is EUI-64
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 sends fragment packets to EUT2
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_03
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_06'
     type: check
     node: EUT2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_07'
     type: check
     node: EUT2
     description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_10_step_06
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_11
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16-bit address.
-  - EUT2 is configured to use EUI-64 address.
-  - Hop limit is set as 64.
-notes: null
-references: RFC 6282 section 3
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow labal is being used
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is 16-bit, destination is EUI-64
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_11_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
-  
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_12
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16 bits link-local to EUI-64 link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16-bit address.
-  - EUT2 is configured to use EUI-64 address.
-  - Hop limit is set as 1.
-notes: null
-references: RFC 6282 section 3
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 1, no traffic class or flow labal is being used
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is 16-bit, destination is EUI-64
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_03
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_04
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_12_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_13
-uri : none
-configuration: Node to Node
-objective: check that EUTs correctly handle compressed 6LoWPAN packets (16-bit link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-notes: null
-references: RFC 4944 section 4
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 4 bits, total IPv6 size 52 bits.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_08'
     type: feature
-    node: EUT1
+    node: EUT2
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_09'
     type: feature
-    node: EUT1
+    node: EUT2
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_04
-    type: feature
-    node: EUT1
-    description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_05
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_06
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_07
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_08
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_10'
     type: feature
     node: EUT2
     description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away.
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_09
-    type: feature
-    node: EUT2
-    description:
-      - In IP_HC, HLIM (HL) is 10 and the hop limit field is compressed away
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_10
-    type: feature
-    node: EUT2
-    description:
-      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_13_step_11
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_14_step_11'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_HC_14
-uri: none
-configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local)
-pre_conditions: 
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-notes: null
-references: RFC 4944 section 5
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_00
-    type: stimuli
-    node: EUT1
-    description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
-      - ICMP payload = 512 bits, total IPv6 size 560 bits.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_01
-    type: check
-    node: EUT1
-    description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_02
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 sends fragment packets to EUT2
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_03
-    type: verify
-    node: EUT1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_04
-    type: check
-    node: EUT2
-    description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
-
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_05
-    type: check
-    node: EUT2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
-      
-  - step_id: TD_6LoWPAN_FORMAT_HC_14_step_06
-    type: verify
-    node: EUT1
-    description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
 testcase_id: TD_6LoWPAN_FORMAT_HC_15
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local)
+objective: check that EUTs correctly handle compressed multicasted 6LoWPAN packets (16 bits link-local to EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-  - Hop limit is set as 64.
-notes: null
-references: RFC 6282 section 3
+  - EUT1 is configured to use 16-bit address.
+  - EUT2 is configured to use EUI-64 address.
+  - Hop limit is set as 1.
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
+      - EUT1 initiates an echo request with the multicast address ff02'::1.
       - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow labal is being used
+      - Hop Limit is 1, no traffic class or flow labal is being used.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message multicasted to ff02'::1.
+      - Source address is 16-bit, destination is EUI-64.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_02'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_03'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_04'
+    type: feature
+    node: EUT1
+    description:
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_05'
     type: verify
     node: EUT1
     description:
-      - EUT2 receives the Echo Request message from EUT1
+      - EUT2 receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_03
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_06'
     type: check
     node: EUT2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_04
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_07'
     type: check
     node: EUT2
     description:
       - Dispatch value in 6LoWPAN packet is "011TFxHL"
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_15_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_08'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_09'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_10'
+    type: feature
+    node: EUT2
+    description:
+      - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
+      
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_15_step_11'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
+      - EUT1 receives the Echo Reply message from EUT2.
+
 --- !testcase
+
 testcase_id: TD_6LoWPAN_FORMAT_HC_16
 uri: none
 configuration: Node to Node
-objective: check that EUTs correctly handle fragmented compressed 6LoWPAN packets (16-bit link-local)
+objective: check that EUTs correctly handle compressed multicasted 6LoWPAN packets (16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16 bits addresses.
   - Hop limit is set as 1.
-notes: null
-references: RFC 6282 section 3
+references: 'RFC 6282 section 3; RFC 4944 section 4'
 sequence:
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_00
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_00'
     type: stimuli
     node: EUT1
     description:
-      - EUT1 initiates an echo request to EUT2s link-local address.
+      - EUT1 initiates an echo request with the multicast address ff02'::1.
       - ICMP payload = 4 bits, total IPv6 size 52 bits.
-      - Hop Limit is 1, no traffic class or flow labal is being used
+      - Hop Limit is 1, no traffic class or flow labal is being used.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_01
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_01'
     type: check
     node: EUT1
     description:
-      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2s link-local address.
-      - Source address is EUI-64, destination is 16-bit
+      - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message multicasted to ff02'::1.
+      - Source address is EUI-64, destination is 16-bit.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_02
-    type: verify
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_02'
+    type: feature
     node: EUT1
     description:
-      - EUT2 receives the Echo Request message from EUT1
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_03
-    type: check
-    node: EUT2
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_03'
+    type: feature
+    node: EUT1
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_04
-    type: check
-    node: EUT2
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_04'
+    type: feature
+    node: EUT1
     description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL"
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
       
-  - step_id: TD_6LoWPAN_FORMAT_HC_16_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_05'
     type: verify
     node: EUT1
     description:
-      - EUT1 receives the Echo Reply message from EUT2
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_ND_HC_01
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use EUI-64 addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-notes: null
-references: RFC 6775
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_00
-    type: stimuli
+      - EUT2 receives the Echo Request message from EUT1.
+
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_06'
+    type: check
     node: EUT2
     description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
+      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
 
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_02
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_07'
     type: check
-    node: EUT1
+    node: EUT2
     description:
-      - The 6LN sends à Neighbor Solitation (NS) to all-nodes multicast address with SLLAO (EUI-64). Source = link-local based on EUI-64.
+      - Dispatch value in 6LoWPAN packet is "011TFxHL".
       
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_03
-    type: verify
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_08'
+    type: feature
     node: EUT2
     description:
-      - The 6LR (EUT2) receives the Neighbor Solitation (NS) the 6LN (EUT1).
+      - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_04
-    type: check
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_09'
+    type: feature
     node: EUT2
     description:
-      - The 6LR (EUT2) sends a unicast Neighbor Advertissement (NA) containing the ARO.
-      - Link local addresses are used.
+      - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Neighbor Advertissement (NA) from the 6LR (EUT2)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_06
-    type: stimuli
-    node: EUT2
-    description: 
-     - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-     - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-     - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_07
-    type: check
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_10'
+    type: feature
     node: EUT2
     description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_08
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_09
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_10
-    type: verify
-    node: EUT2
-    description:
-     - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_ND_HC_02
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 to 16 bits adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use EUI-64 addresses.
-  - EUT2 is configured to use 16 bits addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_02
-    type: check
-    node: EUT1
-    description:
-      - The 6LN sends à Neighbor Solitation (NS) to all-nodes multicast address with SLLAO (EUI-64). Source = link-local based on EUI-64.
+      - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
       
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Neighbor Solitation (NS) the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Neighbor Advertissement (NA) containing the ARO.
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_05
+  - step_id: 'TD_6LoWPAN_FORMAT_HC_16_step_11'
     type: verify
     node: EUT1
     description:
-      - The 6LN (EUT1) receives the Neighbor Advertissement (NA) from the 6LR (EUT2)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_06
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_07
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_08
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_09
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_10
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_ND_HC_03
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (16 bits to EUI-64 adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16 bits addresses.
-  - EUT2 is configured to use EUI-64 addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_02
-    type: check
-    node: EUT1
-    description:
-      - The 6LN sends à Neighbor Solitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits addresses;
-      
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Neighbor Solitation (NS) the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Neighbor Advertissement (NA) containing the ARO.
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Neighbor Advertissement (NA) from the 6LR (EUT2)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_06
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_07
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_08
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_09
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_10
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_ND_HC_04
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (16 bits adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_02
-    type: check
-    node: EUT1
-    description:
-      - The 6LN sends à Neighbor Solitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits addresses;
-      
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Neighbor Solitation (NS) the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Neighbor Advertissement (NA) containing the ARO.
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Neighbor Advertissement (NA) from the 6LR (EUT2)
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_06
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_07
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_08
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_09
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_10
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use EUI-64 addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_02
-    type: check
-    node: EUT1
-    description:
-      - The Host sends a Router Solicitation (RS) to all-routers multicast address to all-routers with SLLAO(EUI-64). source = link local based on EUI-64
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_06
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), EUI-64.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_07
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LR (EUT2) initiates an echo request to the hosts new global address, using its own global address as the source.
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_08
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_09
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_10
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_11
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use EUI-64 addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_02
-    type: check
-    node: EUT1
-    description:
-      - The Host sends a Router Solicitation (RS) to a specific router unicast address with SLLAO(EUI-64). source = link local based on EUI-64
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_06
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), EUI-64.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_07
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LR (EUT2) initiates an echo request to the hosts new global address, using its own global address as the source.
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_08
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_09
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_10
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_11
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_02
-    type: check
-    node: EUT1
-    description:
-      - The Host sends a Router Solicitation (RS) to all-routers multicast address to all-routers with SLLAO(16 bits). source = link local based on 16 bits
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_06
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_07
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LR (EUT2) initiates an echo request to the hosts new global address, using its own global address as the source.
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_08
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_09
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_10
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_11
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
---- !testcase
-testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04
-uri: none
-configuration: 6LN to 6LR
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 adresses)
-pre_conditions:
-  - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits addresses.
-  - EUT1 is configured as 6LN.
-  - EUT2 is configured as 6LR.
-references: RFC 6775
-notes: null
-sequence:
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_00
-    type: stimuli
-    node: EUT2
-    description:
-      - Initialize the network interface of the 6LR (EUT2)
-  
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_01
-    type: stimuli
-    node: EUT1
-    description:
-      - Initialize the network interface of the 6LN (EUT1)
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_02
-    type: check
-    node: EUT1
-    description:
-      - The Host sends a Router Solicitation (RS) to a specific router unicast address with SLLAO(16 bits). source = link local based on 16 bits
-      
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_03
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_04
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
-      - Link local addresses are used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_05
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_06
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_07
-    type: stimuli
-    node: EUT2
-    description: 
-      - The 6LR (EUT2) initiates an echo request to the hosts new global address, using its own global address as the source.
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
-      - Hop Limit is 64, no traffic class or flow label is being used.
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_08
-    type: check
-    node: EUT2
-    description:
-      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
-
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_09
-    type: verify
-    node: EUT1
-    description:
-      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_10
-    type: check
-    node: EUT1
-    description:
-      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
-     
-  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_11
-    type: verify
-    node: EUT2
-    description:
-      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
+      - EUT1 receives the Echo Reply message from EUT2.
