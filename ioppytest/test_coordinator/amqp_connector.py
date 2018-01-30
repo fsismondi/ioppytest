@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import datetime
 import logging
 import os
 
@@ -152,6 +153,7 @@ class CoordinatorAmqpInterface(object):
         Creates temporary channel on it's own
         Connection must be a pika.BlockingConnection
         """
+        connection = None
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
@@ -159,8 +161,9 @@ class CoordinatorAmqpInterface(object):
                     % (message.routing_key,
                        repr(message)[:70],))
         try:
-            #channel = self.connection.channel()
-            channel = self.get_new_amqp_connection().channel()
+            # channel = self.connection.channel()
+            connection = self.get_new_amqp_connection()
+            channel = connection.channel()
             channel.basic_publish(
                 exchange=AMQP_EXCHANGE,
                 routing_key=message.routing_key,
@@ -185,12 +188,16 @@ class CoordinatorAmqpInterface(object):
             if channel and channel.is_open:
                 channel.close()
 
+            if connection and connection.is_open:
+                connection.close()
+
     def handle_service(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('Service request received: %s' % type(request))
+        logger.info('[%s] START handling SERVICE request received: %s' %
+                    (str(datetime.timedelta(seconds=666)), type(request)))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
@@ -213,12 +220,15 @@ class CoordinatorAmqpInterface(object):
         else:
             logger.debug('Ignoring service request: %s' % repr(request))
 
+        logger.info('[%s] FINISH handling SERVICE request received: %s' %
+                    (str(datetime.timedelta(seconds=666)), type(request)))
+
     def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('Event received: %s' % type(event))
+        logger.info('[%s] START handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
 
         # let's process request
         if type(event) in self.control_events_triggers:
@@ -240,6 +250,8 @@ class CoordinatorAmqpInterface(object):
 
         else:
             logger.debug('Ignoring event: %s' % repr(event))
+
+        logger.info('[%s] FINISHED handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
 
     # # # FSM coordination publish/notify functions # # #
 
