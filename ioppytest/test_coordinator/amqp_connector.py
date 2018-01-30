@@ -145,35 +145,7 @@ class CoordinatorAmqpInterface(object):
         self.channel.close()
         self.connection.close()
 
-    def handle_service(self, ch, method, props, body):
-
-        # acknowledge message reception
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-        request = Message.load_from_pika(method, props, body)
-        logger.info('Service request received: %s' % type(request))
-
-        # let's process request
-        if type(request) in self.request_reply_handlers:
-
-            logger.info('Processing request: %s' % type(request))
-            callback = self.request_reply_handlers[type(request)]
-
-            try:
-                response_data = callback()
-                response = MsgReply(request, **response_data)
-            except Exception as e:
-                response = MsgReply(request,
-                                    error_message=str(e),
-                                    error_code='TBD')
-                logger.error('[Coordination services error] %s' % e)
-
-            self.publish_message(response)
-            return
-
-        else:
-            logger.debug('Ignoring service request: %s' % repr(request))
-
-    def publish_message(self, message):
+    def _publish_message(self, message):
         """
         Generic publish message which uses class connection
         Publishes message into the correct topic (uses Message object metadata)
@@ -187,7 +159,8 @@ class CoordinatorAmqpInterface(object):
                     % (message.routing_key,
                        repr(message)[:70],))
         try:
-            channel = self.connection.channel()
+            #channel = self.connection.channel()
+            channel = self.get_new_amqp_connection().channel()
             channel.basic_publish(
                 exchange=AMQP_EXCHANGE,
                 routing_key=message.routing_key,
@@ -211,6 +184,34 @@ class CoordinatorAmqpInterface(object):
         finally:
             if channel and channel.is_open:
                 channel.close()
+
+    def handle_service(self, ch, method, props, body):
+
+        # acknowledge message reception
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        request = Message.load_from_pika(method, props, body)
+        logger.info('Service request received: %s' % type(request))
+
+        # let's process request
+        if type(request) in self.request_reply_handlers:
+
+            logger.info('Processing request: %s' % type(request))
+            callback = self.request_reply_handlers[type(request)]
+
+            try:
+                response_data = callback()
+                response = MsgReply(request, **response_data)
+            except Exception as e:
+                response = MsgReply(request,
+                                    error_message=str(e),
+                                    error_code='TBD')
+                logger.error('[Coordination services error] %s' % e)
+
+            self._publish_message(response)
+            return
+
+        else:
+            logger.debug('Ignoring service request: %s' % repr(request))
 
     def handle_control(self, ch, method, props, body):
 
@@ -246,7 +247,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestingToolConfigured(
             **self.testsuite.get_testsuite_configuration()
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_testcase_finished(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -255,7 +256,7 @@ class CoordinatorAmqpInterface(object):
             description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -265,7 +266,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_report)
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_testcase_ready(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -280,7 +281,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestCaseReady(
             **msg_fields
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
@@ -324,14 +325,14 @@ class CoordinatorAmqpInterface(object):
             logger.warning('CMD Step check or CMD step very not yet implemented')
             return  # not implemented
 
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_testcase_started(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         event = MsgTestCaseStarted(
             **tc_info_dict
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_tun_interfaces_start(self, received_event):
         """
@@ -364,13 +365,13 @@ class CoordinatorAmqpInterface(object):
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
             **self.testsuite.get_report()
         )
-        self.publish_message(event)
+        self._publish_message(event)
 
     def notify_tescase_configuration(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -387,7 +388,7 @@ class CoordinatorAmqpInterface(object):
                 description=description,
                 **tc_info_dict
             )
-            self.publish_message(event)
+            self._publish_message(event)
 
             # TODO how new way of config for 6lo handling is implemented in the FSM?
 
