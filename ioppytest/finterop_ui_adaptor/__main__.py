@@ -40,7 +40,7 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
-logger.setLevel(logging.INFO)
+logger.setLevel(LOG_LEVEL)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
@@ -210,7 +210,7 @@ class AmqpMessagePublisher:
 
     def synch_request(self, request, user_id=None, timeout=30):
         """
-        SYNCRHONOUS request call: sends message, waits for response, and returns response (unless timeout)
+        SYNCRHONOUS UI request: sends message, waits for response, and returns response (unless timeout)
         :param message: request Message (doesnt necessarily needs to be a user request to GUI)
         :param timeout: Timeout in seconds, else expection is raised
         :return: Reply message
@@ -275,7 +275,7 @@ class AmqpMessagePublisher:
 
     def publish_ui_request(self, request, user_id=None):
         """
-        ASYNCRHONOUS ui request: sends message, and exits, Response needs to be consumed using the queuing system
+        ASYNCRHONOUS UI request: sends message, and exits, Response needs to be consumed using the queuing system
         """
 
         if user_id:

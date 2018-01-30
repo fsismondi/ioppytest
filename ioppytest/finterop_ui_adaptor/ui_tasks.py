@@ -68,15 +68,30 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
         retries = 0
         max_retries = WAITING_TIME_FOR_SECOND_USER
 
+        msg_text = "Please click on the 'share' button on the top-right corner of the GUI, " \
+                   "then share the link with another F-Interop user so he/she can join the session"
+        m = MsgUiDisplay(
+            tags=UI_TAG_SETUP,
+            level='info',
+            fields=[
+                {"type": "p",
+                 "value": "%s" % msg_text},
+            ])
+        amqp_publisher.publish_ui_display(m)
+
         while len(online_users) < expected_user_quantity and retries <= max_retries:
-            msg_text = "Waiting for at least 2 users to join the session, retries : %s / %s" % (retries, max_retries)
-            m = MsgUiDisplay(
-                tags=UI_TAG_SETUP,
-                fields=[
-                    {"type": "p",
-                     "value": "%s" % msg_text},
-                ])
-            amqp_publisher.publish_ui_display(m)
+            if retries % 60 == 0:
+                mins_left = int((max_retries - retries) / 60)
+                logging.info("Time left for second user to join %s" % mins_left)
+                msg_text = "Waiting for at least 2 users to join the session (%s min. left)" % mins_left
+                m = MsgUiDisplay(
+                    tags=UI_TAG_SETUP,
+                    fields=[
+                        {"type": "p",
+                         "value": "%s" % msg_text},
+                    ])
+                amqp_publisher.publish_ui_display(m)
+
             retries += 1
             time.sleep(1)  # do not modify time
             online_users = get_current_users_online(amqp_publisher)
