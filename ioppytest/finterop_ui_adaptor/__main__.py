@@ -36,15 +36,11 @@ from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessa
                                                                SixLoWPANSessionMessageTranslator,
                                                                OneM2MSessionMessageTranslator)
 
-logging.basicConfig(
-    level=20,
-    format=LOGGER_FORMAT
-)
-
 logging.getLogger('pika').setLevel(logging.WARNING)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
+logger.setLevel(logging.INFO)
 
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
@@ -110,6 +106,23 @@ class AmqpMessagePublisher:
         except KeyError:
             return 'all'
 
+    def get_user_id_from_rkey(self, rkey):
+        terms_list = rkey.split('.')
+        if len(terms_list) == 4 and terms_list[0] == 'ui' and terms_list[1] == 'user':
+            return terms_list[2]
+        else:
+            raise KeyError("Not a UI request/display routing key %s" % rkey)
+
+    def get_session_users(self, exclude_user_id: str = None):
+        """
+        returns set of users, excluding exclude_user_id if passed as argument
+        """
+        ret = set(self.iut_role_to_user_id_mapping.values())
+        if exclude_user_id and exclude_user_id in ret:
+            ret.remove(exclude_user_id)
+
+        return ret
+
     def amqp_connect(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
         self.channel = self.connection.channel()
@@ -142,18 +155,8 @@ class AmqpMessagePublisher:
 
     def publish_ui_display(self, message: Message, user_id=None, level=None):
 
-        # if user_id is not passed then let's introspect the message to see where to route it
         if user_id:
-            logging.info("{ROUTING 1} user id %s"%user_id)
-            pass
-        elif hasattr(message, 'node'):
-            user_id = self.get_user_id_from_node(message.node)
-            logging.info("{ROUTING 2} user id %s" % user_id)
-        else:
-            user_id = 'all'
-            logging.info("{ROUTING 3} user id %s" % user_id)
-
-        message.routing_key = "ui.user.%s.display" % user_id
+            message = self._update_ui_message_rkeys(ui_message=message, user_id=user_id)
 
         if level:
             message.level = level
@@ -205,28 +208,130 @@ class AmqpMessagePublisher:
             if channel and channel.is_open:
                 channel.close()
 
-    def publish_ui_request(self, message, user_id=None):
+    def synch_request(self, request, user_id=None, timeout=30):
         """
-        :param message:
-        :param request_name: Typically the field name of the button/file/etc
-        :param user_id:
-        :return:
+        SYNCRHONOUS request call: sends message, waits for response, and returns response (unless timeout)
+        :param message: request Message (doesnt necessarily needs to be a user request to GUI)
+        :param timeout: Timeout in seconds, else expection is raised
+        :return: Reply message
         """
-
-        # if user_id is not passed then let's introspect the message to see where to route it
 
         if user_id:
-            pass
-        elif hasattr(message, 'node'):
-            user_id = self.get_user_id_from_node(message.node)
+            request = self._update_ui_message_rkeys(ui_message=request, user_id=user_id)
+
+        # if request to a user and is unicast (e.g. to user 1) then let's notify user2 that he's waiting for user1 reply
+        if 'ui.user.' in request.routing_key and '.all.' not in request.routing_key:
+
+            waiting_for_user = self.get_user_id_from_rkey(
+                rkey=request.routing_key
+            )
+
+            assert waiting_for_user
+
+            logger.info("publishing message REQUEST (synch call to {user}): {rk}".format(
+                rk=request.routing_key,
+                user=waiting_for_user
+            ))
+
+            # notify the other users that they will be waiting for another users request
+            users = self.get_session_users(
+                exclude_user_id=waiting_for_user
+            )
+
+            if not users:
+                logger.warning("Got empty list of online users: %s " % users)
+                m = MsgUiDisplay(
+                    fields=[{"type": "p", "value": "Waiting for {user} reply..".format(
+                        user=waiting_for_user
+                    )}]
+                )
+
+                self.publish_ui_display(
+                    message=m,
+                    user_id='all'
+                )
+
+            else:
+                for u in users:
+                    m = MsgUiDisplay(
+                        fields=[{"type": "p", "value": "Waiting for {user} reply..".format(
+                            user=waiting_for_user
+                        )}]
+                    )
+
+                    self.publish_ui_display(
+                        message=m,
+                        user_id=u
+                    )
+
         else:
-            user_id = 'all'
+            logger.info("publishing message REQUEST (synch call): {rk}".format(
+                rk=request.routing_key,
+            ))
 
-        message.routing_key = "ui.user.%s.request" % user_id
-        message.reply_to = "ui.user.%s.reply" % user_id
+        # fixme in amqp request use timeout instead of retries
+        resp = amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
+        return resp
 
-        logger.info("publishing message REQUEST for UI: %s" % message.routing_key)
-        self.publish_message(message)
+    def publish_ui_request(self, request, user_id=None):
+        """
+        ASYNCRHONOUS ui request: sends message, and exits, Response needs to be consumed using the queuing system
+        """
+
+        if user_id:
+            request = self._update_ui_message_rkeys(ui_message=request, user_id=user_id)
+
+        # if request to a user and is unicast (e.g. to user 1) then let's notify user2 that he's waiting for user1 reply
+        if 'ui.user.' in request.routing_key and '.all.' not in request.routing_key:
+
+            waiting_for_user = self.get_user_id_from_rkey(
+                rkey=request.routing_key
+            )
+
+            assert waiting_for_user
+
+            logger.info("publishing message REQUEST (synch call to {user}): {rk}".format(
+                rk=request.routing_key,
+                user=waiting_for_user
+            ))
+
+            # notify the other users that they will be waiting for another users request
+            users = self.get_session_users(
+                exclude_user_id=waiting_for_user
+            )
+
+            if not users:
+                logger.error("Got empty list of online users: %s " % users)
+                m = MsgUiDisplay(
+                    fields=[{"type": "p", "value": "Waiting for {user} reply..".format(
+                        user=waiting_for_user
+                    )}]
+                )
+
+                self.publish_ui_display(
+                    message=m,
+                    user_id='all'
+                )
+
+            else:
+                for u in users:
+                    m = MsgUiDisplay(
+                        fields=[{"type": "p", "value": "Waiting for {user} reply..".format(
+                            user=waiting_for_user
+                        )}]
+                    )
+
+                    self.publish_ui_display(
+                        message=m,
+                        user_id=u
+                    )
+
+        else:
+            logger.info("publishing message REQUEST (synch call): {rk}".format(
+                rk=request.routing_key,
+            ))
+
+        self.publish_message(request)
 
     def publish_tt_chained_message(self, message):
         """
@@ -235,62 +340,46 @@ class AmqpMessagePublisher:
         logger.info("publishing message for TT: %s" % message.routing_key)
         self.publish_message(message)
 
-    def synch_request(self, request, user_id=None, timeout=30):
+    def _update_ui_message_rkeys(self, ui_message, tt_message=None, node_name=None, user_id=None):
         """
-        :param message: request Message (doesnt necessarily needs to be a user request to GUI)
-        :param timeout: Timeout in seconds, else expection is raised
-        :return: Reply message
+        Updates UI messages routing key and reply to key.
+        Either node_name or user_id need to be passed as argument
         """
+        assert not (ui_message is None and node_name is None and user_id is None), \
+            "Either node name or user id needs to be passed as arg"
 
-        # FixMe: this susbtitution thing is ugly, maybe UiRequest class can have a set_destination method?
-        def update_routing_key_destination(message, rkey: str):
-            message.routing_key = rkey
-            message.reply_to = rkey.replace('.request', '.reply')
-            return message
-
-        if '.*.' in request.routing_key or '.all.' in request.routing_key:  # it's a user request
-
-            destination_user = None
+        # FixMe: use data Messages typing instead of hasattribute(,) and " <.*.> in rkey" assertions
+        destination_user = None
+        if '.*.' in ui_message.routing_key or '.all.' in ui_message.routing_key:  # it's a user request/display
             if user_id:  # priority 1
                 destination_user = user_id
-            elif hasattr(request, 'node'):  # priority 2
-                destination_user = self.get_user_id_from_node(request.node)
+            elif node_name:  # priority 2
+                destination_user = self.get_user_id_from_node(node_name)
                 if destination_user is None:
                     destination_user = 'all'
+            elif tt_message and hasattr(tt_message, 'node'):  # priority 3
+                destination_user = self.get_user_id_from_node(tt_message.node)
             else:
                 destination_user = 'all'
+        else:
+            raise Exception('UI message passed?')
 
-            # lets set message rkey and reply_to fields
-            if '*' in request.routing_key:
-                rkey = request.routing_key.replace('*', destination_user)
-                request = update_routing_key_destination(request, rkey)
-            elif '.all.' in request.routing_key:
-                rkey = request.routing_key.replace('.all.', '.{id}.'.format(id=destination_user))
-                request = update_routing_key_destination(request, rkey)
-            else:
-                pass  # not a user request
+        # lets set message rkey and reply_to fields
+        if '*' in ui_message.routing_key:
+            ui_message.routing_key = ui_message.routing_key.replace('*', destination_user)
 
-            # if request is unicast then, let's notify to the other user that he is waiting for antoher user request
-            if '.all.' not in request.routing_key:
-                m = MsgUiDisplay(fields=[{"type": "p", "value": "Waiting for {} answer..".format(destination_user)}])
-                self.publish_ui_display(
-                    message=m,
-                    user_id='all'
-                )
+            if hasattr(ui_message, 'reply_to'):
+                ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 
-            logger.info("publishing message REQUEST (synch call): {rk} ,for {user}".format(
-                rk=request.routing_key,
-                user=destination_user
-            ))
+        elif '.all.' in ui_message.routing_key:
+            ui_message.routing_key = ui_message.routing_key.replace('.all.', '.{id}.'.format(id=destination_user))
+            if hasattr(ui_message, 'reply_to'):
+                ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 
         else:
-            logger.info("publishing message REQUEST (synch call): {rk}".format(
-                rk=request.routing_key,
-            ))
+            raise Exception('UI message passed??')
 
-        resp = amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
-
-        return resp
+        return ui_message
 
 
 def process_message_from_ui(message_translator, message_received):
@@ -329,7 +418,7 @@ def process_message_from_ui(message_translator, message_received):
         logger.info("Not in responses pending list. Duplication? Two users replied to same request?")
 
 
-def process_message_from_testing_tool(message_translator, message_received):
+def process_message_from_testing_tool(message_publisher, message_translator, message_received):
     logger.info("routing TT -> UI: %s correlation_id %s, msg: %s"
                 % (message_received.routing_key,
                    message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
@@ -340,15 +429,32 @@ def process_message_from_testing_tool(message_translator, message_received):
 
     # 1. echo message to user (if applicable)
     if type(message_received) not in MESSAGES_NOT_TO_BE_ECHOED:
-        ui_display_message = message_translator.transform_message_to_ui_markdown_display(message_received)
+        ui_display_message = message_translator.transform_message_to_ui_markdown_display(
+            message=message_received)
+
+        # fixme I should access _private method
+        ui_display_message = message_publisher._update_ui_message_rkeys(
+            ui_message=ui_display_message,
+            tt_message=message_received)
+
         if ui_display_message:
             queue_messages_display_to_ui.put(ui_display_message)
+
+    else:
+        logger.info("routing TT -> UI: %s : message in DO_NOT_ECHO list" % (message_received.routing_key))
 
     # 2. request input from user (if applicable)
     ui_request_message = message_translator.get_ui_request_action_message(message_received)
     if ui_request_message:
         ui_request_message = message_translator.tag_message(ui_request_message)
+        # fixme I should access _private method
+        ui_request_message = message_publisher._update_ui_message_rkeys(
+            ui_message=ui_request_message,
+            tt_message=message_received)
         queue_messages_request_to_ui.put(ui_request_message)
+
+    else:
+        logger.info("routing TT -> UI: %s : no associated action/request" % (message_received.routing_key))
 
 
 def execute_fallback_testing_tool_configuration(amqp_publisher):
@@ -482,10 +588,33 @@ def main():
         wait_for_testing_tool_ready(amqp_message_publisher)
         logger.info("Configuring testing tool..")
         configure_testing_tool(amqp_message_publisher)
+
     except Exception as err:
         logger.error(err)
         logger.error(traceback.format_exc())
         execute_fallback_testing_tool_configuration(amqp_message_publisher)
+
+    # logger.info("starting tests!")
+    #
+    # amqp_message_publisher.publish_ui_display(
+    #     MsgUiDisplayMarkdownText(),
+    #     user_id=amqp_message_publisher.get_user_id_from_node('cse')
+    # )
+    # return
+
+    # a1=amqp_message_publisher.synch_request(
+    #     request=MsgUiRequestConfirmationButton(),
+    #     user_id=amqp_message_publisher.get_user_id_from_node('cse')
+    # )
+    #
+    # a2=amqp_message_publisher.synch_request(
+    #     request=MsgUiRequestConfirmationButton(),
+    #     user_id=amqp_message_publisher.get_user_id_from_node('adn')
+    # )
+    #
+    # logger.info(repr(a1))
+    # logger.info(repr(a2))
+    # return # fixme!
 
     # test suite execution phase
     logger.debug("PHASE 3 - SESSION EXECUTION")
@@ -522,7 +651,8 @@ def main():
             # get next message from TT
             if not queue_messages_from_tt.empty():
                 msg_from_tt = queue_messages_from_tt.get()
-                process_message_from_testing_tool(message_translator, msg_from_tt)  # this populates the *_to_ui queues
+                process_message_from_testing_tool(amqp_message_publisher, message_translator,
+                                                  msg_from_tt)  # this populates the *_to_ui queues
 
             # publish all pending display messages to UIs
             while not queue_messages_display_to_ui.empty():
