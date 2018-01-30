@@ -14,10 +14,16 @@ MESSAGES_NOT_TO_BE_ECHOED = [
     MsgUiRequestSessionConfiguration,
     MsgUiSessionConfigurationReply,
     MsgSessionConfiguration,
+    MsgAgentConfigured,
+    MsgAgentTunStart,
+    MsgTestingToolConfigured,
+    MsgTestSuiteGetTestCases
 ]
 
-WAITING_TIME_FOR_SECOND_USER = 500  # in seconds
-SESSION_SETUP_TAG = {'session_setup': ''}
+WAITING_TIME_FOR_SECOND_USER = 900  # in seconds
+
+UI_TAG_SETUP = {"session_setup": ""}
+UI_TAG_BOOTSTRAPPING = {"session_boostrap": ""}
 
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [

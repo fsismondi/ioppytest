@@ -8,7 +8,7 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
                                            WAITING_TIME_FOR_SECOND_USER,
                                            MsgUiDisplay,
                                            MsgUiRequestConfirmationButton,
-                                           SESSION_SETUP_TAG,
+                                           UI_TAG_SETUP,
                                            )
 
 
@@ -68,15 +68,30 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
         retries = 0
         max_retries = WAITING_TIME_FOR_SECOND_USER
 
+        msg_text = "Please click on the 'share' button on the top-right corner of the GUI, " \
+                   "then share the link with another F-Interop user so he/she can join the session"
+        m = MsgUiDisplay(
+            tags=UI_TAG_SETUP,
+            level='info',
+            fields=[
+                {"type": "p",
+                 "value": "%s" % msg_text},
+            ])
+        amqp_publisher.publish_ui_display(m)
+
         while len(online_users) < expected_user_quantity and retries <= max_retries:
-            msg_text = "Waiting for at least 2 users to join the session, retries : %s / %s" % (retries, max_retries)
-            m = MsgUiDisplay(
-                tags=SESSION_SETUP_TAG,
-                fields=[
-                    {"type": "p",
-                     "value": "%s" % msg_text},
-                ])
-            amqp_publisher.publish_ui_display(m)
+            if retries % 60 == 0:
+                mins_left = int((max_retries - retries) / 60)
+                logging.info("Time left for second user to join %s" % mins_left)
+                msg_text = "Waiting for at least 2 users to join the session (%s min. left)" % mins_left
+                m = MsgUiDisplay(
+                    tags=UI_TAG_SETUP,
+                    fields=[
+                        {"type": "p",
+                         "value": "%s" % msg_text},
+                    ])
+                amqp_publisher.publish_ui_display(m)
+
             retries += 1
             time.sleep(1)  # do not modify time
             online_users = get_current_users_online(amqp_publisher)
@@ -89,7 +104,7 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
         msg_text = "Users connected: %s . Ready to start the session" % str(online_users)
         logging.info(msg_text)
         m = MsgUiDisplay(
-            tags=SESSION_SETUP_TAG,
+            tags=UI_TAG_SETUP,
             fields=[
                 {"type": "p",
                  "value": "%s" % msg_text},
@@ -111,7 +126,7 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
     iut_roles = message_translator.get_iut_roles()
     for iut_role in iut_roles:
         m = MsgUiRequestConfirmationButton(
-            tags=SESSION_SETUP_TAG,
+            tags=UI_TAG_SETUP,
             title="%s runs implementation under test (IUT) with role: %s? "
                   % (user_lead.upper(), iut_role.upper()),
             fields=[
@@ -142,7 +157,7 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
 
         # echo response back to users
         m = MsgUiDisplay(
-            tags=SESSION_SETUP_TAG,
+            tags=UI_TAG_SETUP,
             fields=[
                 {"type": "p",
                  "value": "{user_name} reply: {user_name} runs IUT with role {iut_role}: {answer}".format(

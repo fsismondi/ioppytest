@@ -10,7 +10,7 @@ import datetime
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
 from ioppytest.utils.tabulate import tabulate
-from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH
+from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH, UI_TAG_BOOTSTRAPPING, UI_TAG_SETUP
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 
 logging.basicConfig(
@@ -372,7 +372,7 @@ class GenericBidirectonalTranslator(object):
 
         # generic message visualization (message as a table)
         else:
-
+            logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
             msg_ret = self._echo_message_as_table(message)
 
         msg_ret = self.tag_message(msg_ret)
@@ -847,14 +847,14 @@ class GenericBidirectonalTranslator(object):
             table = []
             if type(f) is dict:
                 # 'state' gets special treatment
-                state = f.pop('state')
+                state = f.pop('state') if 'state' in f else "Not yet executed."
 
                 for field_name in fields_to_translate:
                     f_value = f[field_name]
                     table.append((field_name, f_value if type(f_value) is str else list_to_str(f_value)))
 
                 # 'state' gets special treatment
-                table.append(('state', state if state else "Not yet executed."))
+                table.append(('state', state))
 
             fields.append({
                 'type': 'p',
@@ -1254,7 +1254,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         # 1. user needs to export ENV VARS
 
         disp = MsgUiDisplay(
-            tags={"bootstrapping": ""},
+            tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
                 "type": "p",
                 "value": env_vars_export
@@ -1266,7 +1266,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
         req = MsgUiRequestConfirmationButton(
             title="Confirm that variables have been exported",
-            tags={"bootstrapping": ""},
+            tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
                 "name": "confirm",
                 "type": "button",
@@ -1289,7 +1289,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags={"bootstrapping": ""},
+            tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1302,7 +1302,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         req = MsgUiRequestConfirmationButton(
             title="Confirm that agent component is up and running",
-            tags={"bootstrapping": ""},
+            tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
                 "name": "confirm",
                 "type": "button",
