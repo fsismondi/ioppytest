@@ -215,7 +215,6 @@ class CoordinatorAmqpInterface(object):
                 logger.error('[Coordination services error] %s' % e)
 
             self._publish_message(response)
-            return
 
         else:
             logger.debug('Ignoring service request: %s' % repr(request))
@@ -238,15 +237,12 @@ class CoordinatorAmqpInterface(object):
 
             try:
                 self.trigger(trigger_callback, event)  # dispatches event to FSM
-                return
 
             except MachineError as fsm_err:
                 logger.error('[Coordination FSM error] %s' % fsm_err)
-                return
 
             except CoordinatorError as e:
                 logger.error('[Coordination FSM error] %s' % e)
-                return
 
         else:
             logger.debug('Ignoring event: %s' % repr(event))
