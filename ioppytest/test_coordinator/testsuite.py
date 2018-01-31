@@ -248,14 +248,14 @@ class TestSuite:
         """
         report = []
         for tc in self.teds.values():
+            report_item = {'testcase_id': tc.id}
+
             if tc.report is None:
                 logger.warning("Empty report found. Generating dummy report for skipped testcase : %s" % tc.id)
                 tc.generate_testcases_verdict(None)
-
-            report_item = {'testcase_id': tc.id}
-            report_item.update(tc.report)
+            else:
+                report_item.update(tc.report)
             report.append(report_item)
-
         self.report = report
 
     def get_report(self):
