@@ -274,6 +274,25 @@ class Sniffer:
         else:
             pass
 
+    def notify_component_shutdown(self):
+
+        self.connect()
+
+        # FINISHING... let's send a goodbye message
+        msg = MsgTestingToolComponentShutdown(
+            component='sniffing',
+            description="%s is out!. Bye!" % 'sniffing'
+        )
+
+        self.channel.basic_publish(
+            body=msg.to_json(),
+            routing_key=msg.routing_key,
+            exchange=self.exchange,
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
+
     def run(self):
 
         self.connect()
@@ -288,6 +307,8 @@ class Sniffer:
             sys.exit(1)
         except KeyboardInterrupt as KI:
             self.logger.info('SIGINT detected')
+            self.notify_component_shutdown()
+            sys.exit(0)
         except Exception as e:
             self.logger.error(' Unexpected error \n More: %s' % traceback.format_exc())
             sys.exit(1)

@@ -153,11 +153,9 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
-
         def timeout_f():
             global timeout
             timeout = True
-
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()

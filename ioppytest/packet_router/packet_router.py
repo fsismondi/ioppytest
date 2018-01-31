@@ -86,7 +86,7 @@ class PacketRouter(threading.Thread):
 
     def stop(self):
 
-        self.shutdown_notification()
+        self._notify_component_shutdown()
 
         # delete routing all queues
         for src_rkey in self.routing_table.keys():
@@ -138,7 +138,7 @@ class PacketRouter(threading.Thread):
             logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
-    def shutdown_notification(self):
+    def _notify_component_shutdown(self):
 
         # FINISHING... let's send a goodbye message
         msg = MsgTestingToolComponentShutdown(
@@ -157,7 +157,7 @@ class PacketRouter(threading.Thread):
 
     def run(self):
         self.channel.start_consuming()
-        self.shutdown_notification()
+        self._notify_component_shutdown()
 
 
 def generate_routing_table_from_test_configuration(testconfig: TestConfig):
