@@ -27,10 +27,6 @@ logging.basicConfig(format=LOGGER_FORMAT)
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
 
-# # default handler
-# sh = logging.StreamHandler()
-# logger.addHandler(sh)
-
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()

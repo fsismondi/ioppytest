@@ -32,7 +32,7 @@ SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
-STEP_TIMEOUT = 300  # seconds   # TODO test suite param?
+STEP_TIMEOUT = 6000  # seconds   # TODO test suite param?
 IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
 
 # init logging to stnd output and log files
@@ -525,8 +525,8 @@ states = [
         'name': 'waiting_for_step_executed',
         'on_enter': ['notify_step_execute'],
         'on_exit': [],
-        'timeout': STEP_TIMEOUT,
-        'on_timeout': '_timeout_waiting_step_executed'
+        #'timeout': STEP_TIMEOUT,
+        #'on_timeout': '_timeout_waiting_step_executed'
     },
     {
         'name': 'testcase_finished',
