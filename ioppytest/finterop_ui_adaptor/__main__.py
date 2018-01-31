@@ -143,7 +143,7 @@ class AmqpMessagePublisher:
             )
         )
 
-    def _shutdown_notification(self):
+    def _notify_component_shutdown(self):
 
         # FINISHING... let's send a goodbye message
         msg = MsgTestingToolComponentShutdown(
@@ -154,7 +154,7 @@ class AmqpMessagePublisher:
 
     def stop(self):
 
-        self._shutdown_notification()
+        self._notify_component_shutdown()
 
         if self.channel:
             self.channel.close()
