@@ -150,7 +150,7 @@ class AutomatedIUT(threading.Thread):
                              event.step_id,))
 
         elif isinstance(event, MsgTestSuiteReport):
-            logger.info('Test suite finished, final report: %s' % event.to_json())
+            logger.info('Got final test suite report: %s' % event.to_json())
 
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Test terminate signal received. Quitting..')
@@ -299,7 +299,7 @@ class UserMock(threading.Thread):
                 f.write(event.to_json())
 
         elif isinstance(event, MsgTestSuiteReport):
-            logger.info('Test suite finished, final report: %s' % event.to_json())
+            logger.info('Got final report: %s' % event.to_json())
 
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Event received %s' % type(event))

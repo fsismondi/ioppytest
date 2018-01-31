@@ -615,85 +615,89 @@ class GenericBidirectonalTranslator(object):
 
     def _echo_test_suite_results(self, message):
         """
-        format of the mesage:
+        format of the message's body:
         {
-            "TD_COAP_CORE_01":
-                {
-                    "verdict": "pass",
-                    "description": "No interoperability error was detected,",
-                    "partial_verdicts":
+        "tc_results": [
+            {
+                "testcase_id": "TD_COAP_CORE_01",
+                "verdict": "pass",
+                "description": "No interoperability error was detected,",
+                "partial_verdicts":
+                    [
+                        ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
+                        ["TD_COAP_CORE_01_step_04", "pass",
+                         "VERIFY step: User informed that the information was displayed "
+                         "correclty on his/her IUT",
+                         ""],
+                        ["CHECK_1_post_mortem_analysis", "pass",
+                         "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
+                         "CoAP(type=0, code=1)"],
+                        ["CHECK_2_post_mortem_analysis", "pass",
+                         "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                         "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
                         [
-                            ["TD_COAP_CORE_01_step_02", None, "CHECK postponed", ""],
-                            ["TD_COAP_CORE_01_step_03", None, "CHECK postponed", ""],
-                            ["TD_COAP_CORE_01_step_04", "pass",
-                             "VERIFY step: User informed that the information was displayed "
-                             "correclty on his/her IUT",
-                             ""],
-                            ["CHECK_1_post_mortem_analysis", "pass",
-                             "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43211] GET /test> Match: "
-                             "CoAP(type=0, code=1)"],
-                            ["CHECK_2_post_mortem_analysis", "pass",
-                             "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                             "Match: CoAP(code=69, mid=0xa8cb, tok=b'', pl=Not(b''))"],
-                            [
-                                "CHECK_3_post_mortem_analysis",
-                                "pass",
-                                "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
-                                "Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"]
-                        ]
-                },
-
-            "TD_COAP_CORE_02":
-                {
-                ...
-                }
+                            "CHECK_3_post_mortem_analysis",
+                            "pass",
+                            "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43211] 2.05 Content > "
+                            "Match: CoAP(opt=Opt(CoAPOptionContentFormat()))"]
+                    ]
+            },
+            {
+                "testcase_id": "TD_COAP_CORE_02",
+                "verdict": "pass",
+                "description": "No interoperability error was detected,",
+                "partial_verdicts": [
+                    ["TD_COAP_CORE_02_step_02", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_03", None, "CHECK postponed", ""],
+                    ["TD_COAP_CORE_02_step_04", "pass",
+                     "VERIFY step: User informed that the information was displayed correclty on his/her "
+                     "IUT",
+                     ""], ["CHECK_1_post_mortem_analysis", "pass",
+                           "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 43213] DELETE /test> Match: CoAP(type=0, "
+                           "code=4)"],
+                    ["CHECK_2_post_mortem_analysis", "pass",
+                     "<Frame   4: [bbbb::2 -> bbbb::1] CoAP [ACK 43213] 2.02 Deleted > Match: CoAP("
+                     "code=66, mid=0xa8cd, tok=b'')"]]
+            }
+        ]
         }
         """
 
         fields = []
-        report_dict = message.to_dict()
-        testcases = [(k, v) for k, v in report_dict.items() if k.lower().startswith('td')]
+        testcases = message.tc_results
 
-        for tc_name, tc_report in testcases:
+        for tc_report in testcases:
+            assert type(tc_report) is dict
 
-            if tc_name and tc_report is None:
-                fields.append(
-                    {
-                        'type': 'p',
-                        'value': "%s:\n%s" %
-                                 (
-                                     tc_name,
-                                     "No report for this testcase."
-                                 )
-                    })
-            else:
+            tc_name = tc_report.pop('testcase_id')
+            partial_verdicts = None
 
-                partial_verdicts = None
-                try:
-                    partial_verdicts = tc_report.pop('partial_verdicts')
-                except KeyError:
-                    pass
+            try:
+                partial_verdicts = tc_report.pop('partial_verdicts')
+            except KeyError:
+                pass
 
-                fields.append(
-                    {
-                        'type': 'p',
-                        'value': "%s:\n%s" %
-                                 (
-                                     tc_name,
-                                     tabulate(tc_report.items()) if type(tc_report) is dict else "Oops.."
-                                 )
-                    }
-                )
-                fields.append(
-                    {
-                        'type': 'p',
-                        'value': "%s:\n%s" %
-                                 (
-                                     "Partial verdicts",
-                                     tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
-                                 )
-                    }
-                )
+            fields.append(
+                {
+                    'type': 'p',
+                    'value': "%s:\n%s" %
+                             (
+                                 tc_name,
+                                 tabulate(tc_report.items()) if type(tc_report) is dict else "Oops.."
+                             )
+                }
+            )
+            fields.append(
+                {
+                    'type': 'p',
+                    'value': "%s:\n%s" %
+                             (
+                                 "Partial verdicts",
+                                 tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
+                             )
+                }
+            )
 
         return MsgUiDisplay(
             level='highlighted',
