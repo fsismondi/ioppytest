@@ -138,6 +138,7 @@ class CoordinatorAmqpInterface(object):
             #     self.connection.sleep(0.5)
             self.channel.start_consuming()
         except KeyboardInterrupt:
+            self._notify_component_shutdown()
             self.channel.stop_consuming()
 
         # clean up
@@ -145,6 +146,14 @@ class CoordinatorAmqpInterface(object):
         self.channel.queue_delete(queue=self.events_q_name)
         self.channel.close()
         self.connection.close()
+
+    def _notify_component_shutdown(self):
+        # FINISHING... let's send a goodbye message
+        msg = MsgTestingToolComponentShutdown(
+            component=COMPONENT_ID,
+            description="%s is out!. Bye!" % COMPONENT_ID
+        )
+        self._publish_message(msg)
 
     def _publish_message(self, message):
         """

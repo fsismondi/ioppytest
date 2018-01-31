@@ -735,7 +735,7 @@ transitions = [
 
 if __name__ == '__main__':
     """
-    select testcases, then skip all
+    some minimal testing here.. 
     """
     default_configuration = {
         "testsuite.testcases": [

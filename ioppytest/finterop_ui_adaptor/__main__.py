@@ -80,7 +80,7 @@ class AmqpMessagePublisher:
                  amqp_exchange='amq.topic',
                  iut_role_to_user_id_mapping=None):
 
-        self.COMPONENT_ID = 'amqp_publisher_%s' % str(uuid.uuid4())[:8]
+        self.COMPONENT_ID = 'UI_publisher%s' % str(uuid.uuid4())[:8]
 
         if iut_role_to_user_id_mapping:
             self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
@@ -143,7 +143,18 @@ class AmqpMessagePublisher:
             )
         )
 
+    def _notify_component_shutdown(self):
+
+        # FINISHING... let's send a goodbye message
+        msg = MsgTestingToolComponentShutdown(
+            component=self.COMPONENT_ID,
+            description="%s is out!. Bye!" % self.COMPONENT_ID
+        )
+        self.publish_message(msg)
+
     def stop(self):
+
+        self._notify_component_shutdown()
 
         if self.channel:
             self.channel.close()
@@ -514,9 +525,9 @@ def main():
     tt_amqp_listener_thread.setName('TT_listener_thread')
     tt_amqp_listener_thread.start()
 
-    # retrieve session configuration / configure testing tool phase
-    logger.debug("PHASE 1 - REQUESTING INFO FROM USERS")
+    # # # # # # # # # # # # # # # # # #   REQUEST INFO FROM USER # # # # # # # # # # # # # # # # # # # # # # #
 
+    logger.debug("PHASE 1 - REQUESTING INFO FROM USERS")
     try:
         # get config from UI
         session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
@@ -578,10 +589,19 @@ def main():
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
         return  # breaks the flow, user shoud restart the session if he want to give it another try
 
+    except KeyboardInterrupt:
+        logger.info('user interruption captured, exiting..')
+        logger.info('UI adaptor stopping..')
+        tt_amqp_listener_thread.stop()  # thread
+        amqp_message_publisher.stop()  # not a thread
+        return
+
     except Exception as err:
         logger.error(err)
         logger.error(traceback.format_exc())
         raise err
+
+    # # # # # # # # # # # # # # # # # #  REQUEST SESSION INFO FROM UI # # # # # # # # # # # # # # # # # #
 
     logger.debug("PHASE 2 - REQUESTING SESSION INFO FROM UI")
     try:
@@ -594,29 +614,8 @@ def main():
         logger.error(traceback.format_exc())
         execute_fallback_testing_tool_configuration(amqp_message_publisher)
 
-    # logger.info("starting tests!")
-    #
-    # amqp_message_publisher.publish_ui_display(
-    #     MsgUiDisplayMarkdownText(),
-    #     user_id=amqp_message_publisher.get_user_id_from_node('cse')
-    # )
-    # return
+        # # # # # # # # # # # # # # # # #  SESSION EXECUTION  # # # # # # # # # # # # # # # # # #
 
-    # a1=amqp_message_publisher.synch_request(
-    #     request=MsgUiRequestConfirmationButton(),
-    #     user_id=amqp_message_publisher.get_user_id_from_node('cse')
-    # )
-    #
-    # a2=amqp_message_publisher.synch_request(
-    #     request=MsgUiRequestConfirmationButton(),
-    #     user_id=amqp_message_publisher.get_user_id_from_node('adn')
-    # )
-    #
-    # logger.info(repr(a1))
-    # logger.info(repr(a2))
-    # return # fixme!
-
-    # test suite execution phase
     logger.debug("PHASE 3 - SESSION EXECUTION")
     logger.info("UI adaptor bootstrapping..")
     # bootstrap(producer) call blocks until it has done its thing
