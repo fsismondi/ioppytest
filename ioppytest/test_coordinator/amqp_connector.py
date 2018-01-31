@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import datetime
 import logging
 import os
 
@@ -10,7 +11,7 @@ from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
-from ioppytest.utils.amqp_synch_call import publish_message, amqp_request
+from ioppytest.utils.event_bus_utils import amqp_request
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.utils.messages import *
@@ -145,12 +146,58 @@ class CoordinatorAmqpInterface(object):
         self.channel.close()
         self.connection.close()
 
+    def _publish_message(self, message):
+        """
+        Generic publish message which uses class connection
+        Publishes message into the correct topic (uses Message object metadata)
+        Creates temporary channel on it's own
+        Connection must be a pika.BlockingConnection
+        """
+        connection = None
+        channel = None
+        properties = pika.BasicProperties(**message.get_properties())
+
+        logger.info("publishing to routing_key: %s, msg: %s"
+                    % (message.routing_key,
+                       repr(message)[:70],))
+        try:
+            # channel = self.connection.channel()
+            connection = self.get_new_amqp_connection()
+            channel = connection.channel()
+            channel.basic_publish(
+                exchange=AMQP_EXCHANGE,
+                routing_key=message.routing_key,
+                properties=properties,
+                body=message.to_json(),
+            )
+
+        except (pika.exceptions.ConnectionClosed, BrokenPipeError):
+            print("Log handler connection closed. Reconnecting..")
+            connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+            channel = connection.channel()
+
+            # send retry
+            channel.basic_publish(
+                exchange=AMQP_EXCHANGE,
+                routing_key=message.routing_key,
+                properties=properties,
+                body=message.to_json(),
+            )
+
+        finally:
+            if channel and channel.is_open:
+                channel.close()
+
+            if connection and connection.is_open:
+                connection.close()
+
     def handle_service(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('Service request received: %s' % type(request))
+        logger.info('[%s] START handling SERVICE request received: %s' %
+                    (str(datetime.timedelta(seconds=666)), type(request)))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
@@ -167,18 +214,20 @@ class CoordinatorAmqpInterface(object):
                                     error_code='TBD')
                 logger.error('[Coordination services error] %s' % e)
 
-            publish_message(self.connection, response)
-            return
+            self._publish_message(response)
 
         else:
             logger.debug('Ignoring service request: %s' % repr(request))
+
+        logger.info('[%s] FINISH handling SERVICE request received: %s' %
+                    (str(datetime.timedelta(seconds=666)), type(request)))
 
     def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('Event received: %s' % type(event))
+        logger.info('[%s] START handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
 
         # let's process request
         if type(event) in self.control_events_triggers:
@@ -188,18 +237,17 @@ class CoordinatorAmqpInterface(object):
 
             try:
                 self.trigger(trigger_callback, event)  # dispatches event to FSM
-                return
 
             except MachineError as fsm_err:
                 logger.error('[Coordination FSM error] %s' % fsm_err)
-                return
 
             except CoordinatorError as e:
                 logger.error('[Coordination FSM error] %s' % e)
-                return
 
         else:
             logger.debug('Ignoring event: %s' % repr(event))
+
+        logger.info('[%s] FINISHED handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
 
     # # # FSM coordination publish/notify functions # # #
 
@@ -207,8 +255,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestingToolConfigured(
             **self.testsuite.get_testsuite_configuration()
         )
-
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_testcase_finished(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -217,7 +264,7 @@ class CoordinatorAmqpInterface(object):
             description='Testcase %s finished' % tc_info_dict['testcase_id'],
             **tc_info_dict
         )
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_testcase_verdict(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -227,7 +274,7 @@ class CoordinatorAmqpInterface(object):
         msg_fields.update(tc_report)
         msg_fields.update(tc_info_dict)
         event = MsgTestCaseVerdict(**msg_fields)
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_testcase_ready(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -242,7 +289,7 @@ class CoordinatorAmqpInterface(object):
         event = MsgTestCaseReady(
             **msg_fields
         )
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
@@ -286,14 +333,14 @@ class CoordinatorAmqpInterface(object):
             logger.warning('CMD Step check or CMD step very not yet implemented')
             return  # not implemented
 
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_testcase_started(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         event = MsgTestCaseStarted(
             **tc_info_dict
         )
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_tun_interfaces_start(self, received_event):
         """
@@ -326,13 +373,13 @@ class CoordinatorAmqpInterface(object):
     def notify_testsuite_started(self, received_event):
         event = MsgTestSuiteStarted(
         )
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
             **self.testsuite.get_report()
         )
-        publish_message(self.get_new_amqp_connection(), event)
+        self._publish_message(event)
 
     def notify_tescase_configuration(self, received_event):
         tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
@@ -349,7 +396,7 @@ class CoordinatorAmqpInterface(object):
                 description=description,
                 **tc_info_dict
             )
-            publish_message(self.get_new_amqp_connection(), event)
+            self._publish_message(event)
 
             # TODO how new way of config for 6lo handling is implemented in the FSM?
 
