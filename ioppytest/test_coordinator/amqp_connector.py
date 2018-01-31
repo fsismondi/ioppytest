@@ -377,7 +377,7 @@ class CoordinatorAmqpInterface(object):
 
     def notify_testsuite_finished(self, received_event):
         event = MsgTestSuiteReport(
-            **self.testsuite.get_report()
+            tc_results=self.testsuite.get_report()
         )
         self._publish_message(event)
 
