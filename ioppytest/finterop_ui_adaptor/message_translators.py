@@ -10,8 +10,12 @@ import datetime
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
 from ioppytest.utils.tabulate import tabulate
-from ioppytest.finterop_ui_adaptor import COMPONENT_ID, STDOUT_MAX_STRING_LENGTH, UI_TAG_BOOTSTRAPPING, UI_TAG_SETUP
 from ioppytest.finterop_ui_adaptor.user_help_text import *
+from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
+                                           STDOUT_MAX_STRING_LENGTH,
+                                           UI_TAG_BOOTSTRAPPING,
+                                           UI_TAG_SETUP,
+                                           UI_TAG_REPORT)
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -540,26 +544,28 @@ class GenericBidirectonalTranslator(object):
         return msg_ret
 
     # # # # # # # # # # # PERSONALIZED MESSAGES VISUALISATION # # # # # # # # # # # # # # #
+    def _generate_ui_fields_for_testcase_report(self, tc_report: dict):
+        """
+        used to display in UI MsgTestCaseVerdict and MsgTestSuiteReports messages
+        """
+        try:
+            partial_verdict = tc_report.pop('partial_verdicts')
+        except KeyError:
+            partial_verdict = None
+            logging.warning("No partial_verdicts for TC: %s" % tc_report['testcase_id'])
 
-    def _echo_testcase_verdict(self, message):
-        verdict = message.to_dict()
-        # fixme find a way of managing the "printable" fields, in a generic way
-        verdict.pop('_api_version')  # we dont want to display the api version in UI
-        partial_verdict = verdict.pop('partial_verdicts')
         ui_fields = []
         table_result = []
         display_color = 'warning'  # 'warning' is yellow, 'highlighted' is green, and 'error' is red
 
-        for key, value in verdict.items():
+        for key, value in tc_report.items():
 
             if type(value) is list:
                 # flatten lists and fill in table to display
                 temp = [key, list_to_str(value)]
             else:
-
                 # fill in table to display
                 temp = [key, value]
-
                 # try to set the color of the box using the verdict
                 if 'verdict' in key and 'pass' in value:
                     display_color = 'highlighted'
@@ -574,7 +580,6 @@ class GenericBidirectonalTranslator(object):
                 'value': tabulate(table_result)
             }
         )
-
         if partial_verdict:
             table_partial_verdicts = []
             frames = []
@@ -596,7 +601,13 @@ class GenericBidirectonalTranslator(object):
             ui_fields.append(
                 {
                     'type': 'p',
-                    'value': "Analysis (CHECKs):\n%s" % tabulate(frames)
+                    'value': "Checks:"
+                }
+            )
+            ui_fields.append(
+                {
+                    'type': 'p',
+                    'value': "%s" % tabulate(frames)
                 }
             )
 
@@ -607,10 +618,19 @@ class GenericBidirectonalTranslator(object):
                 }
             )
 
+        return tc_report['testcase_id'], display_color, ui_fields
+
+    def _echo_testcase_verdict(self, message):
+        verdict = message.to_dict()
+        # fixme find a way of managing the "printable" fields, in a generic way
+        verdict.pop('_api_version')  # we dont want to display the api version in UI
+
+        tc_id, display_color, ui_fields = self._generate_ui_fields_for_testcase_report(verdict)
+
         return MsgUiDisplayMarkdownText(
-            title="Verdict on TEST CASE: %s" % self._current_tc,
+            title="Verdict on TEST CASE: %s" % tc_id,
             level=display_color,
-            fields=ui_fields
+            fields=ui_fields,
         )
 
     def _echo_test_suite_results(self, message):
@@ -665,44 +685,64 @@ class GenericBidirectonalTranslator(object):
         """
 
         fields = []
+        fields_tail = []
         testcases = message.tc_results
+
+        # add header
+        summary_table = [["Testcase ID", "Verdict", "Description"]]
+        display_color = 'highlighted'
 
         for tc_report in testcases:
             assert type(tc_report) is dict
 
-            tc_name = tc_report.pop('testcase_id')
-            partial_verdicts = None
-
+            # add report basic info as a raw into the summary_table
             try:
-                partial_verdicts = tc_report.pop('partial_verdicts')
+                summary_table.append([tc_report['testcase_id'], tc_report['verdict'], tc_report['description']])
             except KeyError:
-                pass
+                logging.warning("Couldnt parse: %s" % str(tc_report))
+                summary_table.append([tc_report['testcase_id'], "None", "None"])
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 tc_name,
-                                 tabulate(tc_report.items()) if type(tc_report) is dict else "Oops.."
-                             )
-                }
-            )
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s:\n%s" %
-                             (
-                                 "Partial verdicts",
-                                 tabulate(partial_verdicts) if partial_verdicts else "No partial verdicts"
-                             )
-                }
-            )
+            # to add details we put it in the fields tail which will be displayed after the summary
+            tc_id, tc_verdict_color, ui_fields = self._generate_ui_fields_for_testcase_report(tc_report)
 
-        return MsgUiDisplay(
-            level='highlighted',
-            tags={'report': ' '},
+            if tc_verdict_color is 'error':
+                display_color = tc_verdict_color
+
+            fields_tail = fields_tail + [{
+                'type': 'p',
+                'value': '---\n---\n%s:\n' % tc_id
+            }]
+
+            if type(ui_fields) is list:
+                fields_tail = fields_tail + ui_fields
+            else:
+                logging.error("not a list: %s" % ui_fields)
+
+        # add summary
+        fields.append({
+                'type': 'p',
+                'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))
+        })
+
+        fields.append({
+            'type': 'p',
+            'value': 'see details on verdicts below'
+        })
+
+        # add long line as delimiter
+        fields.append({
+                'type': 'p',
+                'value': '-' * 70
+        })
+
+        # add tail (verdict details like checks etc..)
+        fields = fields + fields_tail
+
+        return MsgUiDisplayMarkdownText(
+            title="Test suite report",
+            level=display_color,
             fields=fields,
+            tags=UI_TAG_REPORT,
         )
 
     def _echo_message_description_and_component(self, message):
