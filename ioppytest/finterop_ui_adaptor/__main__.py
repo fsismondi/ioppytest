@@ -48,6 +48,9 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
+# timer used to avoid bumpping into UI error (message dropped on two "simultaneous" messages arrival )
+PUBLISH_DELAY = 0.1
+
 mapping_testsuite_to_message_translator = {
     'dummy': DummySessionMessageTranslator,
     'coap': CoAPSessionMessageTranslator,
@@ -190,6 +193,7 @@ class AmqpMessagePublisher:
                        repr(message)[:STDOUT_MAX_STRING_LENGTH],))
 
         try:
+            time.sleep(PUBLISH_DELAY)
             channel = self.connection.channel()
             channel.basic_publish(
                 exchange=AMQP_EXCHANGE,
@@ -281,6 +285,7 @@ class AmqpMessagePublisher:
             ))
 
         # fixme in amqp request use timeout instead of retries
+        time.sleep(PUBLISH_DELAY)
         resp = amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
         return resp
 
@@ -662,7 +667,6 @@ def main():
             # TODO implement a mechanism for not publish messages until previous one has been replied,
             # how to handle the ui.user.request cancel command tho?
 
-            time.sleep(0.2)
             if not queue_messages_request_to_ui.empty():
                 # get next request
                 request = queue_messages_request_to_ui.get()
@@ -675,7 +679,6 @@ def main():
                     request_message=request,
                     requested_field_name_list=requested_fields,
                 )
-            time.sleep(0.2)
 
             # get next message reply from UI
             if not queue_messages_from_ui.empty():
