@@ -662,6 +662,7 @@ def main():
             # TODO implement a mechanism for not publish messages until previous one has been replied,
             # how to handle the ui.user.request cancel command tho?
 
+            time.sleep(0.2)
             if not queue_messages_request_to_ui.empty():
                 # get next request
                 request = queue_messages_request_to_ui.get()
@@ -674,6 +675,7 @@ def main():
                     request_message=request,
                     requested_field_name_list=requested_fields,
                 )
+            time.sleep(0.2)
 
             # get next message reply from UI
             if not queue_messages_from_ui.empty():
