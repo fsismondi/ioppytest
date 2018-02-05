@@ -286,7 +286,7 @@ class CoordinatorAmqpInterface(object):
         self._publish_message(event)
 
     def notify_testcase_ready(self, received_event):
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
+        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=True)
         config_id = self.testsuite.get_current_testcase_configuration_id()
         config = self.testsuite.get_current_testcase_configuration().to_dict(verbose=True)
 

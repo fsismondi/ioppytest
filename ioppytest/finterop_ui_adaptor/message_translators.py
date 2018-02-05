@@ -720,8 +720,8 @@ class GenericBidirectonalTranslator(object):
 
         # add summary
         fields.append({
-                'type': 'p',
-                'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))
+            'type': 'p',
+            'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))
         })
 
         fields.append({
@@ -731,8 +731,8 @@ class GenericBidirectonalTranslator(object):
 
         # add long line as delimiter
         fields.append({
-                'type': 'p',
-                'value': '-' * 70
+            'type': 'p',
+            'value': '-' * 70
         })
 
         # add tail (verdict details like checks etc..)
@@ -1023,7 +1023,10 @@ class GenericBidirectonalTranslator(object):
         table = []
         for f in fields_to_translate:
             try:
-                table.append((f, getattr(message, f)))
+                value = getattr(message, f)
+                # avoids having very long messages in the table
+                filtered_value = textwrap.fill(value, width=40)
+                table.append((f, filtered_value))
             except AttributeError as ae:
                 logger.error(ae)
 
