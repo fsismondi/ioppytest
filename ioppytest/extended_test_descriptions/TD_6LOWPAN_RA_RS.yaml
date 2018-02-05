@@ -10,6 +10,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_00'
     type: stimuli
@@ -98,6 +99,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_00'
     type: stimuli
@@ -187,6 +189,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_00'
     type: stimuli
@@ -276,6 +279,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_00'
     type: stimuli
@@ -365,6 +369,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_00'
     type: stimuli
@@ -454,6 +459,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_00'
     type: stimuli
@@ -542,6 +548,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_00'
     type: stimuli
@@ -630,6 +637,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_00'
     type: stimuli
