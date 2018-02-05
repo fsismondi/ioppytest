@@ -2,7 +2,7 @@
 --- !testcase
 testcase_id: TD_6LoWPAN_FORMAT_HC_01
 uri : none
-configuration: 6LoWPAN_CFG_01.
+configuration: 6LoWPAN_CFG_01
 objective: check that EUTs correctly handle compressed 6LoWPAN packets (EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.
