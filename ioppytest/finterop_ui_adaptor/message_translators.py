@@ -13,6 +13,8 @@ from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
                                            STDOUT_MAX_STRING_LENGTH,
+                                           STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
+                                           STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
                                            UI_TAG_BOOTSTRAPPING,
                                            UI_TAG_SETUP,
                                            UI_TAG_REPORT)
@@ -42,11 +44,14 @@ def translate_ioppytest_description_format_to_tabulate(ls):
     ret = []
     for item in ls:
         if type(item) is str:
-            ret.append([textwrap.fill(item, width=30)])  # textwrap puts <\n> per each X chars
+            # textwrap puts <\n> per each X chars
+            ret.append([textwrap.fill(item, width=STDOUT_MAX_STRING_LENGTH_KEY_COLUMN)])
         elif type(item) is list:
             for subitem in item:
                 if type(subitem) is str:
-                    ret.append([' ', textwrap.fill(subitem, width=40)])  # textwrap puts <\n> per each X chars
+                    # textwrap puts <\n> per each X chars
+                    ret.append([' ', textwrap.fill(subitem,
+                                                   width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)])
                 else:
                     ret.append([' ', subitem])
         else:
@@ -1025,7 +1030,7 @@ class GenericBidirectonalTranslator(object):
             try:
                 value = getattr(message, f)
                 # avoids having very long messages in the table
-                filtered_value = textwrap.fill(value, width=40)
+                filtered_value = textwrap.fill(value, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
                 table.append((f, filtered_value))
             except AttributeError as ae:
                 logger.error(ae)
