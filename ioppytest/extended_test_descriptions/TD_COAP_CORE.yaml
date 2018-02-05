@@ -9,7 +9,7 @@ pre_conditions:
 notes: null
 references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
 sequence:
-  - step_id: 'TD_COAP_CORE_01_step_01'
+  - step_id: TD_COAP_CORE_01_step_01
     type: stimuli
     node : coap_client
     description:
