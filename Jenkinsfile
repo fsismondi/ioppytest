@@ -63,7 +63,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         gitlabCommitStatus("unittesting components"){
             sh '''
                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                make tests
+                make run-tests
             '''
         }
       }
