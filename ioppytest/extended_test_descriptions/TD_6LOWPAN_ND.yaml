@@ -2,7 +2,7 @@
 --- !testcase
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_01
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 link-local Advertisement)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -13,80 +13,80 @@ references: 'RFC 6282 section 3; RFC 6775 5.6'
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_00'
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_01'
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_02'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (EUI-64). Source = link-local based on EUI-64.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_03'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_04'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_05'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_06'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Neighbor Solicitation (NS) the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_07'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Neighbor Advertisement (NA) containing the ARO.
       - Link local Advertisement are used.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_08'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_09'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_10'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=11.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_11'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Neighbor Advertisement (NA) from the 6LR (EUT2)
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_12'
     type: stimuli
-    node: EUT2
+    node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
       - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
@@ -94,25 +94,25 @@ sequence:
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_13'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_14'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_15'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_01_step_16'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -120,7 +120,7 @@ sequence:
      
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_02
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 to 16 bits link-local Advertisement)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -132,80 +132,80 @@ references: 'RFC 6775 section 4'
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_00'
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_01'
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_02'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (EUI-64). Source = link-local based on EUI-64.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_03'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_04'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_05'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_06'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Neighbor Solicitation (NS) the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_07'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Neighbor Advertisement (NA) containing the ARO.
       - Link local Advertisement are used.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_08'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_09'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_10'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=11.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_11'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Neighbor Advertisement (NA) from the 6LR (EUT2)
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_12'
     type: stimuli
-    node: EUT2
+    node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
       - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
@@ -213,25 +213,25 @@ sequence:
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_13'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_14'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_15'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_02_step_16'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -239,7 +239,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_03
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (16 bits to EUI-64 link-local Advertisement)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -251,80 +251,80 @@ references: 'RFC 6775 section 4'
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_00'
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2).
   
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_01'
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_02'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits Advertisement;
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_03'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_04'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_05'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_06'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Neighbor Solicitation (NS) the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_07'
     type: check
-    node: EUT2
+    node: eut2
     description:
      - The 6LR (EUT2) sends a unicast Neighbor Advertisement (NA) containing the ARO.
      - Link local Advertisement are used.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_08'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_09'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_10'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=11; DAC=0; DAM=01.
     
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_11'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Neighbor Advertisement (NA) from the 6LR (EUT2).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_12'
     type: stimuli
-    node: EUT2
+    node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
       - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
@@ -332,25 +332,25 @@ sequence:
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_13'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_14'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_15'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_03_step_16'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1).
 
@@ -358,7 +358,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_04
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (16 bits link-local adresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -369,80 +369,80 @@ references: 'RFC 6775 section 4'
 sequence:
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_00'
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_01'
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_02'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits Advertisement;
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_03'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_04'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_05'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_06'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Neighbor Solicitation (NS) the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_07'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Neighbor Advertisement (NA) containing the ARO.
       - Link local Advertisement are used.
       
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_08'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, TF is 11 and the ecn, dscp and flow label are compressed away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_09'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, HLIM (HL) is 10 and he hop limit field is compresse away.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_10'
     type: feature
-    node: EUT1
+    node: eut1
     description:
       - In IP_HC, SAC=0; SAM=01; DAC=0; DAM=01.
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_11'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Neighbor Advertisement (NA) from the 6LR (EUT2).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_12'
     type: stimuli
-    node: EUT2
+    node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
       - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
@@ -450,24 +450,24 @@ sequence:
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_13'
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_14'
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_15'
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
   - step_id: 'TD_6LoWPAN_FORMAT_ND_HC_04_step_16'
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1).

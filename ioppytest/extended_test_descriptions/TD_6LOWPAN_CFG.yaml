@@ -22,35 +22,35 @@ addressing:
 description:
   - node: eut1
     message:
-      - This is the <node to node> configueration. Add some more info here! (TBD)
+      - This is the <Node to Node> configueration. Add some more info here! (TBD)
   - node: eut2
     message:
-      - This is the <node to node> configueration. Add some more info here! (TBD)
+      - This is the <Node to Node> configueration. Add some more info here! (TBD)
 
 
 --- !configuration
 configuration_id: 6LoWPAN_CFG_02
 uri: http://doc.f-interop.eu/tests/6LoWPAN_CFG_02
 nodes:
-  - 6LR
-  - Host
+  - 6lr
+  - 6ln
 topology:
   - link_id : link_01
-    capture_filter: TBD
+    capture_filter: none
     nodes:
-      - 6LR
-      - Host
+      - 6lr
+      - 6ln
 addressing:
-    - node: 6LR
-      ipv6_prefix : bbbb
+    - node: 6lr
+      ipv6_prefix : ??
       ipv6_host: 1
-    - node: Host
-      ipv6_prefix : bbbb
+    - node: 6ln
+      ipv6_prefix : ??
       ipv6_host: 2
 description:
-  - node: 6LR
+  - node: 6lr
     message:
-      - This is the <Host to 6LR> configueration. Add some more info here! (TBD)
-  - node: Host
+      - This is the <6LN to 6LR> configuration. Add some more info here! (TBD)
+  - node: 6ln
     message:
-      - This is the <Host to 6LR> configueration. Add some more info here! (TBD)
+      - This is the <6LN to 6LR> configueration. Add some more info here! (TBD)
