@@ -392,7 +392,7 @@ class Coordinator(CoordinatorAmqpInterface):
             if self.call_service_sniffer_start(**sniff_params):
                 logger.debug('Sniffer succesfully started')
             else:
-                CoordinatorError('Sniffer couldnt be started')
+                raise CoordinatorError('Sniffer couldnt be started')
 
     def _prepare_next_testcase(self, received_event):
         logger.info('Preparing next testcase..')
