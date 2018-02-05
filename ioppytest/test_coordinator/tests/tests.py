@@ -4,6 +4,7 @@ from ioppytest.utils.messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
 from ioppytest.test_coordinator.testsuite import import_teds
 from ioppytest.test_coordinator.states_machine import Coordinator
+from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 # init logging to stnd output and log files
@@ -74,7 +75,10 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         print(self.test_coordinator.state)
         assert self.test_coordinator.state == 'waiting_for_testcase_start'
 
-        self.test_coordinator.start_testcase(None)
+        try:
+            self.test_coordinator.start_testcase(None)
+        except AmqpSynchCallTimeoutError:
+            pass
         assert self.test_coordinator.state == 'waiting_for_step_executed'
 
         self.test_coordinator.step_executed(MsgStepStimuliExecuted(
