@@ -90,7 +90,7 @@ sequence:
     node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
+      - ICMP payload = 4 bytes, total, total IPv6 size 52 bytes.
       - Hop Limit is 64, no traffic class or flow label is being used.
 
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_01_step_13
@@ -122,11 +122,11 @@ sequence:
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_02
 uri: none
 configuration: 6LoWPAN_CFG_02
-objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 to 16 bits link-local Advertisement)
+objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 to 16-bit link-local Advertisement)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 is configured to use EUI-64 Advertisement.
-  - EUT2 is configured to use 16 bits Advertisement.
+  - EUT2 is configured to use 16-bit Advertisement.
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6775 section 4'
@@ -210,7 +210,7 @@ sequence:
     node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
+      - ICMP payload = 4 bytes, total, total IPv6 size 52 bytes.
       - Hop Limit is 64, no traffic class or flow label is being used.
 
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_02_step_13
@@ -242,10 +242,10 @@ sequence:
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_03
 uri: none
 configuration: 6LoWPAN_CFG_02
-objective: check that EUTs are able to perform the neighbor Discovery (16 bits to EUI-64 link-local Advertisement)
+objective: check that EUTs are able to perform the neighbor Discovery (16-bit to EUI-64 link-local Advertisement)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 is configured to use 16 bits Advertisement.
+  - EUT1 is configured to use 16-bit Advertisement.
   - EUT2 is configured to use EUI-64 Advertisement.
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
@@ -268,7 +268,7 @@ sequence:
     type: check
     node: eut1
     description:
-      - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits Advertisement;
+      - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16-bit). Source = link-local based on 16-bit Advertisement;
       
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_03
     type: feature
@@ -330,7 +330,7 @@ sequence:
     node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
+      - ICMP payload = 4 bytes, total, total IPv6 size 52 bytes.
       - Hop Limit is 64, no traffic class or flow label is being used.
 
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_03_step_13
@@ -362,10 +362,10 @@ sequence:
 testcase_id: TD_6LoWPAN_FORMAT_ND_HC_04
 uri: none
 configuration: 6LoWPAN_CFG_02
-objective: check that EUTs are able to perform the neighbor Discovery (16 bits link-local adresses)
+objective: check that EUTs are able to perform the neighbor Discovery (16-bit link-local adresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
-  - EUT1 and EUT2 are configured to use 16 bits Advertisement.
+  - EUT1 and EUT2 are configured to use 16-bit Advertisement.
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6775 section 4'
@@ -387,7 +387,7 @@ sequence:
     type: check
     node: eut1
     description:
-      - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16 bits). Source = link-local based on 16 bits Advertisement;
+      - The 6LN sends à Neighbor Solicitation (NS) to all-nodes multicast address with SLLAO (16-bit). Source = link-local based on 16-bit Advertisement;
 
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_03
     type: feature
@@ -449,7 +449,7 @@ sequence:
     node: eut2
     description: 
       - The 6LN (EUT1) initiates an echo request to the second node 6LR (EUT2).
-      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
+      - ICMP payload = 4 bytes, total, total IPv6 size 52 bytes.
       - Hop Limit is 64, no traffic class or flow label is being used.
 
   - step_id: TD_6LoWPAN_FORMAT_ND_HC_04_step_13
