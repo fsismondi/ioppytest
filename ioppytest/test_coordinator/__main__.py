@@ -42,7 +42,6 @@ TT_check_list = [
     'sniffing',
     'testcoordination',
     'packetrouting',
-    'agent_TT',
 ]
 # time to wait for components to send for READY signal
 READY_SIGNAL_TOUT = 20

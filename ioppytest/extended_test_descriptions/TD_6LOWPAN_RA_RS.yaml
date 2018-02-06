@@ -2,7 +2,7 @@
 --- !testcase
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform 6LoWPAN multicast router solicitation to all-nodes (EUI-64 addresses link-local) and unicast Router Advertisement (EUI-64 adresses link-local)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -10,79 +10,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a multicast Router Solicitation (RS) to all-routers link-local multicast address ("FF02::1"). SLLAO(EUI-64). source = link local based on EUI-64
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), EUI-64.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_01_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -90,7 +91,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement(EUI-64 addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -98,79 +99,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a unicast Router Solicitation (RS) to a specific router address with SLLAO(EUI-64). source = link local based on EUI-64
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), EUI-64.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_02_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -178,7 +180,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (EUI-64 to 16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -187,79 +189,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a multicast Router Solicitation (RS) to all-routers link-local multicast address ("FF02::1"). source = link local based on 64 bits
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_03_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -267,7 +270,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (EUI-64 to 16-bit link-local)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -276,79 +279,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a unicast Router Solicitation (RS) to a specific router address. source = link local based on EUI-64
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_04_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 	 
@@ -356,7 +360,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit to EUI-64 link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -365,79 +369,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a multicast Router Solicitation (RS) to all-routers link-local multicast address ("FF02::1"). source = link local based on 16 bits
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_05_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 
@@ -445,7 +450,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit to EUI-64 link-local addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -454,79 +459,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a unicast Router Solicitation (RS) to a specific router address. source = link local based on 16-bit
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_06_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 	 
@@ -534,7 +540,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -542,79 +548,80 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a multicast Router Solicitation (RS) to all-routers link-local multicast address ("FF02::1"). source = link local based on 16 bits
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_07_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
 	 
@@ -622,7 +629,7 @@ sequence:
 
 testcase_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08
 uri: none
-configuration: 6ln to 6lr
+configuration: 6LoWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit link-local addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -630,78 +637,79 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.2 - 5.3 - 5.6'
+notes: null
 sequence:
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_00'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_00
     type: stimuli
-    node: EUT2
+    node: eut2
     description:
       - Initialize the network interface of the 6LR (EUT2)
   
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_01'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_01
     type: stimuli
-    node: EUT1
+    node: eut1
     description:
       - Initialize the network interface of the 6LN (EUT1)
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_02'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_02
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The Host sends a Router Solicitation (RS) to a specific router unicast address with SLLAO(16 bits). source = link local based on 16 bits
       
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_03'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_03
     type: verify
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) receives the Router Solicitaion (RS) from the 6LN (EUT1)
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_04'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_04
     type: check
-    node: EUT2
+    node: eut2
     description:
       - The 6LR (EUT2) sends a unicast Router Advertissement containing PIO and optionally 6COs, SLLAO and ABRO to the 6LN (EUT1).
       - Link local addresses are used.
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_05'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_05
     type: verify
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) receives the Router Advertissement from the 6LR (EUT2).
 
-  - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_06'
+  - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_06
     type: check
-    node: EUT1
+    node: eut1
     description:
       - The 6LN (EUT1) configures its tentative global IPv6 address based on the PIO information in the previously received Router Advertissement from the 6LR (EUT2), 16 bits.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_07'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_07
    type: stimuli
-   node: EUT2
+   node: eut2
    description: 
      - The 6LR (EUT2) initiates an echo request to the host's new global address, using its own global address as the source.
      - ICMP payload = 4 bits, total, total IPv6 size 52 bits.
      - Hop Limit is 64, no traffic class or flow label is being used.
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_08'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_08
    type: check
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) sends a 6LoWPAN packet containing the Echo Request message to the 6LN (EUT1).
 
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_09'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_09
    type: verify
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) receives the Echo Request message from the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_10'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_10
    type: check
-   node: EUT1
+   node: eut1
    description:
      - The 6LN (EUT1) sends a 6LoWPAN packet containing the Echo Reply message to the 6LR (EUT2).
      
- - step_id: 'TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_11'
+ - step_id: TD_6LoWPAN_FORMAT_RS_RA_HC_08_step_11
    type: verify
-   node: EUT2
+   node: eut2
    description:
      - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)

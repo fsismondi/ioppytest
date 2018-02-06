@@ -64,3 +64,19 @@ class ImportYamlInteropTestCases(unittest.TestCase):
             for tc_config in imported_configs:
                 print('validating %s (...)' % str(tc_config)[:70])
                 self.validate_config_description(tc_config)
+
+    def test_check_that_every_testcase_uses_an_existent_config_id(self):
+        tc_configs = []
+        for tc_config_filename in TEST_DESCRIPTIONS_CONFIGS:
+            imported_configs = import_teds(tc_config_filename)
+            assert type(imported_configs) is list
+
+            # get all test config ids
+            for i in imported_configs:
+                tc_configs.append(i.id)
+
+        for td in TEST_DESCRIPTIONS:
+            imported_tcs = import_teds(td)
+            for tc in imported_tcs:
+                assert tc.configuration_id in tc_configs, 'couldnt find <{}> among config files'.format(
+                    tc.configuration_id)

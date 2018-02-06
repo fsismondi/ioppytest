@@ -18,7 +18,7 @@ def configure_testing_tool(amqp_publisher):
 
 
 def wait_for_testing_tool_ready(amqp_publisher):
-    retries_left = 3
+    retries_left = 10
     while retries_left >= 0:
         time.sleep(0.5)
         try:
