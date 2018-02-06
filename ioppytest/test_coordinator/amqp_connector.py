@@ -267,33 +267,26 @@ class CoordinatorAmqpInterface(object):
         self._publish_message(event)
 
     def notify_testcase_finished(self, received_event):
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
+        msg_fields = {}
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
 
         event = MsgTestCaseFinished(
-            description='Testcase %s finished' % tc_info_dict['testcase_id'],
-            **tc_info_dict
+            **msg_fields
         )
         self._publish_message(event)
 
     def notify_testcase_verdict(self, received_event):
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
-        tc_report = self.testsuite.get_testcase_report()
-
         msg_fields = {}
-        msg_fields.update(tc_report)
-        msg_fields.update(tc_info_dict)
+        msg_fields.update(self.testsuite.get_testcase_report())
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+
         event = MsgTestCaseVerdict(**msg_fields)
         self._publish_message(event)
 
     def notify_testcase_ready(self, received_event):
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=True)
-        config_id = self.testsuite.get_current_testcase_configuration_id()
-        config = self.testsuite.get_current_testcase_configuration().to_dict(verbose=True)
-
         msg_fields = {}
-        msg_fields.update(tc_info_dict)
-        msg_fields.update(config)
-        msg_fields.update({'description': 'Next test case to be executed is %s' % tc_info_dict['testcase_id']})
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase_configuration().to_dict(verbose=True))
 
         event = MsgTestCaseReady(
             **msg_fields
@@ -345,9 +338,11 @@ class CoordinatorAmqpInterface(object):
         self._publish_message(event)
 
     def notify_testcase_started(self, received_event):
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
+        msg_fields = {}
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+
         event = MsgTestCaseStarted(
-            **tc_info_dict
+            **msg_fields
         )
         self._publish_message(event)
 
@@ -380,8 +375,7 @@ class CoordinatorAmqpInterface(object):
         pass
 
     def notify_testsuite_started(self, received_event):
-        event = MsgTestSuiteStarted(
-        )
+        event = MsgTestSuiteStarted()
         self._publish_message(event)
 
     def notify_testsuite_finished(self, received_event):
