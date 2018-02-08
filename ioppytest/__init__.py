@@ -47,13 +47,14 @@ LOGDIR = os.path.join(project_dir, 'log')
 TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
 
 # yaml test descriptions:
+# fixme: refact the code so TD_XXX is a list of yaml files containing test cases from several groups
 TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 
 TD_COMI = os.path.join(TD_DIR, "TD_COMI.yaml")
 TD_COMI_CFG = os.path.join(TD_DIR, "TD_COMI_CFG.yaml")
 
-TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
+TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_HC.yaml")
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")

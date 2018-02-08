@@ -1290,6 +1290,7 @@ pre_conditions:
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
 notes: null
+sequence:
   - step_id: TD_6LOWPAN_HC_17_step_00
     type: stimuli
     node: eut1
@@ -1457,6 +1458,7 @@ pre_conditions:
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
 notes: null
+sequence:
   - step_id: TD_6LOWPAN_HC_20_step_00
     type: stimuli
     node: eut1
