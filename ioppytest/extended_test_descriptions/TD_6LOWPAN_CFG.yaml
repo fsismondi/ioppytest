@@ -22,10 +22,10 @@ addressing:
 description:
   - node: eut1
     message:
-      - This is the <Node to Node> configueration. Add some more info here! (TBD)
+      - This is the first EUT which should be a simple host.
   - node: eut2
     message:
-      - This is the <Node to Node> configueration. Add some more info here! (TBD)
+      - This is the second EUT which should be a simple host.
 
 
 --- !configuration
@@ -50,7 +50,7 @@ addressing:
 description:
   - node: 6lr
     message:
-      - This is the <6LN to 6LR> configuration. Add some more info here! (TBD)
+      - This is the first EUT which should be a 6LoWPAN Router.
   - node: 6ln
     message:
-      - This is the <6LN to 6LR> configueration. Add some more info here! (TBD)
+      - This is the second EUT which should be a 6LoWPAN Node (Router Or Host).
