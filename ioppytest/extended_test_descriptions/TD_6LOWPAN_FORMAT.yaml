@@ -8,7 +8,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 64.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_01_step_00
@@ -61,7 +61,7 @@ objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN pack
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
-references: 'RFC 4944 section 5'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_02_step_00
@@ -119,7 +119,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_01_step_00
@@ -174,7 +174,7 @@ pre_conditions:
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 64.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_04_step_00
@@ -230,7 +230,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
-references: 'RFC 4944 section 5'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_05_step_00
@@ -291,7 +291,7 @@ pre_conditions:
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_06_step_00
@@ -348,7 +348,7 @@ pre_conditions:
   - EUT1 is configured to use 16-bit address.
   - EUT2 is configured to use EUI-64 address.
   - Hop limit is set as 64.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
 - step_id: TD_6LOWPAN_FORMAT_07_step_00
@@ -403,7 +403,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 is configured to use 16-bit address.
   - EUT2 is configured to use EUI-64 address.
-references: 'RFC 4944 section 5'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_08_step_00
@@ -464,7 +464,7 @@ pre_conditions:
   - EUT1 is configured to use 16-bit address.
   - EUT2 is configured to use EUI-64 address.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
 - step_id: TD_6LOWPAN_FORMAT_09_step_00
@@ -520,7 +520,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit addresses.
   - Hop limit is set as 64.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_10_step_00
@@ -573,7 +573,7 @@ objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN pack
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit addresses.
-references: 'RFC 4944 section 5'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_11_step_00
@@ -631,7 +631,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit ddresses.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_12_step_00
@@ -685,7 +685,7 @@ pre_conditions:
   - Header compression is disabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_13_step_00
@@ -741,7 +741,7 @@ pre_conditions:
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_14_step_00
@@ -798,7 +798,7 @@ pre_conditions:
   - EUT1 is configured to use 16-bit address.
   - EUT2 is configured to use EUI-64 address.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_15_step_00
@@ -853,7 +853,7 @@ pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit addresses.
   - Hop limit is set as 1.
-references: 'RFC 6282 section 3; RFC 4944 section 4'
+references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_16_step_00

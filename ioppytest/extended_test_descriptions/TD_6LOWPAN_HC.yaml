@@ -103,44 +103,42 @@ sequence:
     node: eut1
     description:
       - EUT1 initiates an echo request to EUT2's link-local address.
-      - ICMP payload = 512 bytes, total IPv6 size 560 bytes.
+      - ICMP payload = 253 bytes, total IPv6 size 301 bytes.
 
   - step_id: TD_6LOWPAN_HC_02_step_01
     type: check
     node: eut1
     description:
       - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
+      - EUT1 send a sequence of uncompressed 6LoWPAN packets containing the Echo Request fragments to EUT2.
+      - EUT1 correctly fragments the Echo Request.
       - Both source and destination addresses are EUI-64 link-local.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
 
   - step_id: TD_6LOWPAN_HC_02_step_02
     type: verify
     node: eut1
     description:
-      - EUT1 sends fragment packets to EUT2.
+      - EUT2 reassembles correctly the fragments and receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LOWPAN_HC_02_step_03
-    type: verify
-    node: eut1
-    description:
-      - EUT2 receives the Echo Request message from EUT1.
-
-  - step_id: TD_6LOWPAN_HC_02_step_04
+  - step_id: TD_6LOWPAN_FORMAT_02_step_03
     type: check
     node: eut2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
-
-  - step_id: TD_6LOWPAN_HC_02_step_05
-    type: check
-    node: eut2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      - EUT2 sends a sequence of uncompressed 6LoWPAN packets containing the Echo Reply message to EUT1.
+      - Both source and destination address are EUI-64 link-local.
+      - EUT2 correctly fragments the Echo Reply.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
+      - The data in the Echo Reply message packets is identical to that sent in the Echo Request message packets.
       
-  - step_id: TD_6LOWPAN_HC_02_step_06
+  - step_id: TD_6LOWPAN_FORMAT_02_step_04
     type: verify
     node: eut1
     description:
-      - EUT1 receives the Echo Reply message from EUT2.
+      - EUT1 correctly reassembles the fragments and receives the Echo Reply message from EUT2.
+      - The data in the received Echo Reply message is identical to that sent in the Echo Request message.
 
 --- !testcase
 
@@ -335,44 +333,45 @@ sequence:
     node: eut1
     description:
       - EUT1 initiates an echo request to EUT2's link-local address.
-      - ICMP payload = 512 bytes, total IPv6 size 560 bytes.
+      - ICMP payload = 253 bytes, total IPv6 size 301 bytes.
 
   - step_id: TD_6LOWPAN_HC_05_step_01
     type: check
     node: eut1
     description:
       - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
-      - Source address is EUI-64, destination is 16-bit.
-      
+      - EUT1 send a sequence of uncompressed 6LoWPAN packets containing the Echo Request fragments to EUT2.
+      - EUT1 correctly fragments the Echo Request.
+      - Source address is EUI-64 link-local.
+      - Destination address is 16-bit link-local.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
+
   - step_id: TD_6LOWPAN_HC_05_step_02
     type: verify
     node: eut1
     description:
-      - EUT1 sends fragment packets to EUT2.
+      - EUT2 reassembles correctly the fragments and receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LOWPAN_HC_05_step_03
-    type: verify
-    node: eut1
-    description:
-      - EUT2 receives the Echo Request message from EUT1.
-
-  - step_id: TD_6LOWPAN_HC_05_step_04
+  - step_id: TD_6LOWPAN_FORMAT_05_step_03
     type: check
     node: eut2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
-
-  - step_id: TD_6LOWPAN_HC_05_step_05
-    type: check
-    node: eut2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      - EUT2 sends a sequence of uncompressed 6LoWPAN packets containing the Echo Reply message to EUT1.
+      - Source address is 16-bit link-local.
+      - Destination address is EUI-64 link-local.
+      - EUT2 correctly fragments the Echo Reply.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
+      - The data in the Echo Reply message packets is identical to that sent in the Echo Request message packets.
       
-  - step_id: TD_6LOWPAN_HC_05_step_06
+  - step_id: TD_6LOWPAN_FORMAT_05_step_04
     type: verify
     node: eut1
     description:
-      - EUT1 receives the Echo Reply message from EUT2.
+      - EUT1 correctly reassembles the fragments and receives the Echo Reply message from EUT2.
+      - The data in the received Echo Reply message is identical to that sent in the Echo Request message.
+
       
 --- !testcase
 
@@ -569,44 +568,44 @@ sequence:
     node: eut1
     description:
       - EUT1 initiates an echo request to EUT2's link-local address.
-      - ICMP payload = 512 bytes, total IPv6 size 560 bytes.
+      - ICMP payload = 253 bytes, total IPv6 size 301 bytes.
 
   - step_id: TD_6LOWPAN_HC_08_step_01
     type: check
     node: eut1
     description:
       - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
-      - Source address is 16-bit, destination is EUI-64.
+      - EUT1 send a sequence of uncompressed 6LoWPAN packets containing the Echo Request fragments to EUT2.
+      - EUT1 correctly fragments the Echo Request.
+      - Source address is 16-bit link-local.
+      - Destination address is EUI-64 link-local.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
 
   - step_id: TD_6LOWPAN_HC_08_step_02
     type: verify
     node: eut1
     description:
-      - EUT1 sends fragment packets to EUT2.
+      - EUT2 reassembles correctly the fragments and receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LOWPAN_HC_08_step_03
-    type: verify
-    node: eut1
-    description:
-      - EUT2 receives the Echo Request message from EUT1.
-
-  - step_id: TD_6LOWPAN_HC_08_step_04
+  - step_id: TD_6LOWPAN_FORMAT_08_step_03
     type: check
     node: eut2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
-
-  - step_id: TD_6LOWPAN_HC_08_step_05
-    type: check
-    node: eut2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      - EUT2 sends a sequence of uncompressed 6LoWPAN packets containing the Echo Reply message to EUT1.
+      - Source address is EUI-64 link-local.
+      - Destination address is 16-bit link-local.
+      - EUT2 correctly fragments the Echo Reply.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
+      - The data in the Echo Reply message packets is identical to that sent in the Echo Request message packets.
       
-  - step_id: TD_6LOWPAN_HC_08_step_06
+  - step_id: TD_6LOWPAN_FORMAT_08_step_04
     type: verify
     node: eut1
     description:
-      - EUT1 receives the Echo Reply message from EUT2.
+      - EUT1 correctly reassembles the fragments and receives the Echo Reply message from EUT2.
+      - The data in the received Echo Reply message is identical to that sent in the Echo Request message.
 
 --- !testcase
 
@@ -800,45 +799,42 @@ sequence:
     node: eut1
     description:
       - EUT1 initiates an echo request to EUT2's link-local address.
-      - ICMP payload = 512 bytes, total IPv6 size 560 bytes.
+      - ICMP payload = 253 bytes, total IPv6 size 301 bytes.
 
   - step_id: TD_6LOWPAN_HC_11_step_01
     type: check
     node: eut1
     description:
       - EUT1 sends a compressed 6LoWPAN packet containing the Echo Request message to EUT2's link-local address.
-      - Source address is EUI-64, destination is 16-bit.
+      - EUT1 send a sequence of uncompressed 6LoWPAN packets containing the Echo Request fragments to EUT2.
+      - EUT1 correctly fragments the Echo Request.
+      - Both source and destination address are 16-bit link-local.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
 
   - step_id: TD_6LOWPAN_HC_11_step_02
     type: verify
     node: eut1
     description:
-      - EUT1 sends fragment packets to EUT2.
+      - EUT2 reassembles correctly the fragments and receives the Echo Request message from EUT1.
 
-  - step_id: TD_6LOWPAN_HC_11_step_03
-    type: verify
-    node: eut1
-    description:
-      - EUT2 receives the Echo Request message from EUT1
-
-  - step_id: TD_6LOWPAN_HC_11_step_04
+  - step_id: TD_6LOWPAN_FORMAT_11_step_03
     type: check
     node: eut2
     description:
-      - EUT2 sends a compressed 6LoWPAN paket containing the Echo Reply message to EUT1.
-
-  - step_id: TD_6LOWPAN_HC_11_step_05
-    type: check
-    node: eut2
-    description:
-      - Dispatch value in 6LoWPAN packet is "011TFxHL".
+      - EUT2 sends a sequence of uncompressed 6LoWPAN packets containing the Echo Reply message to EUT1.
+      - Both source and destination address are 16-bit link-local.
+      - EUT2 correctly fragments the Echo Reply.
+      - The offsets form a contiguous sequence.
+      - All fragments except the last one must be multiples of 8 bytes.
+      - The data in the Echo Reply message packets is identical to that sent in the Echo Request message packets.
       
-  - step_id: TD_6LOWPAN_HC_11_step_06
+  - step_id: TD_6LOWPAN_FORMAT_11_step_04
     type: verify
     node: eut1
     description:
-      - EUT1 receives the Echo Reply message from EUT2.
-
+      - EUT1 correctly reassembles the fragments and receives the Echo Reply message from EUT2.
+      - The data in the received Echo Reply message is identical to that sent in the Echo Request message.
 --- !testcase
 
 testcase_id: TD_6LOWPAN_HC_12
