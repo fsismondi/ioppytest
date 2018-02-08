@@ -393,6 +393,7 @@ sequence:
     node: eut1
     description:
       - The data receives in the echo reply message is identical to that sent in EUT1's echo request message.
+
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_08
@@ -467,7 +468,7 @@ pre_conditions:
 references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
-- step_id: TD_6LOWPAN_FORMAT_09_step_00
+  - step_id: TD_6LOWPAN_FORMAT_09_step_00
     type: stimuli
     node: eut1
     description:
