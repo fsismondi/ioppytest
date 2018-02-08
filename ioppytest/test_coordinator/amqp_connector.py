@@ -11,7 +11,7 @@ from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
-from ioppytest.utils.event_bus_utils import amqp_request
+from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.utils.messages import *

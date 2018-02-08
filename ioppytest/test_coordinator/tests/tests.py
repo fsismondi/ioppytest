@@ -75,10 +75,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         print(self.test_coordinator.state)
         assert self.test_coordinator.state == 'waiting_for_testcase_start'
 
-        try:
-            self.test_coordinator.start_testcase(None)
-        except AmqpSynchCallTimeoutError:
-            pass
+        self.test_coordinator.start_testcase(None)
         assert self.test_coordinator.state == 'waiting_for_step_executed'
 
         self.test_coordinator.step_executed(MsgStepStimuliExecuted(
