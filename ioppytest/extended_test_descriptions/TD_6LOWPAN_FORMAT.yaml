@@ -351,7 +351,7 @@ pre_conditions:
 references: 'RFC 4944 section 5.1'
 notes: null
 sequence:
-- step_id: TD_6LOWPAN_FORMAT_07_step_00
+  - step_id: TD_6LOWPAN_FORMAT_07_step_00
     type: stimuli
     node: eut1
     description:

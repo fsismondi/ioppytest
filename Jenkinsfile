@@ -50,6 +50,15 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         }
       }
 
+
+      stage("test description (yaml files) validation"){
+        gitlabCommitStatus("test description (yaml files) validation"){
+            sh '''
+                make validate-test-description-syntax
+            '''
+        }
+      }
+
       stage("unittesting git submodules"){
         gitlabCommitStatus("unittesting git submodules"){
             sh '''
@@ -58,6 +67,8 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             '''
         }
       }
+
+
 
       stage("unittesting components"){
         gitlabCommitStatus("unittesting components"){
