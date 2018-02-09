@@ -334,7 +334,8 @@ class TestSuite:
         self.session_id = session_id
         self.session_users = users
         self.session_configuration = configuration
-        self.session_selected_tc_list = tc_list_requested
+        # make all testcases id uppercase
+        self.session_selected_tc_list = [x.upper() for x in tc_list_requested]
 
         # get all TCs
         tc_list_available = self.get_testcases_list()
