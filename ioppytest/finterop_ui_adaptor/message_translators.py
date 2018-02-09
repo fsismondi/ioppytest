@@ -9,7 +9,11 @@ import datetime
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.tabulate import tabulate
+from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
+                                                    get_field_keys_from_ui_request,
+                                                    get_field_value_from_ui_reply)
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
                                            STDOUT_MAX_STRING_LENGTH,
@@ -19,13 +23,15 @@ from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
                                            UI_TAG_SETUP,
                                            UI_TAG_REPORT)
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format=LOGGER_FORMAT
-)
-
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
+logger.setLevel(LOG_LEVEL)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 @property
@@ -336,30 +342,36 @@ class GenericBidirectonalTranslator(object):
 
     def translate_ui_to_tt_message(self, reply_received_from_ui):
         """
-        translates:  (ui response , pending messages table) -> a TT response
+        translates:  (ui reply , pending responses info) -> a TT response
         :returns Message for TT or None
 
         """
 
         # get table entry inserted on UI request
+        ui_requested_fields, ui_request_message, tt_message = self.pop_pending_response(
+            reply_received_from_ui.correlation_id
+        )
 
-        table_entry = self.pop_pending_response(reply_received_from_ui.correlation_id)
-        ui_request_message = table_entry['request_message']
-        ui_requested_fields = table_entry['requested_field_list']
-
-        response_fields_names = GenericBidirectonalTranslator.get_field_keys_from_ui_reply(reply_received_from_ui)
-        if len(response_fields_names) > 1:  # fixme
+        # what happens if user reply has to fields? this still is not used/nor forseen to be used by this TT
+        response_fields_names = get_field_keys_from_ui_reply(reply_received_from_ui)
+        if len(response_fields_names) > 1:
             raise Exception("UI returned a reply with two or more fields : %s " % reply_received_from_ui.fields)
 
-        user_input_action = response_fields_names[0]  # fixme
+        # get that one reply field (e.g. ts_start)
+        user_input_action = response_fields_names[0]
 
-        assert user_input_action in ui_requested_fields
+        # assert the reply field sent by UI matches the info in the pending response list
+        assert user_input_action in ui_requested_fields, "%s not in %s" % (user_input_action, ui_requested_fields)
 
         # get the value of the field from reply_received_from_ui
-        user_input_value = self.get_field_value_from_ui_reply(reply_received_from_ui, user_input_action)
+        user_input_value = get_field_value_from_ui_reply(reply_received_from_ui, user_input_action)
 
         try:
-            message_for_tt = self.ui_to_tt_message_translation[user_input_action](user_input_value)
+            # get handler based on the ui response action (e.g. ts_start, tc_skip , etc)
+            ui_to_tt_message_handler = self.ui_to_tt_message_translation[user_input_action]
+
+            # run handler with user reply value + tt message that triggered the UI request in the first place
+            message_for_tt = ui_to_tt_message_handler(user_input_value, tt_message)
         except KeyError:
             logger.debug("No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_STRING_LENGTH])
             return None
@@ -403,40 +415,56 @@ class GenericBidirectonalTranslator(object):
 
         return msg
 
-    def add_pending_response(self, corr_id, requested_field_name_list: list, request_message):
+    def add_pending_response(self, corr_id, ui_requested_field_name_list: list, ui_request_message,
+                             tt_request_originator):
         """
         Adds pending response to table. Note that this overwrites entries with same corr_id
         :param corr_id: Correlation id of request/reply
-        :param requested_field_name_list: The list of fields names in the UI request
-        :param request_message: Message originating the request in the first place
+        :param ui_requested_field_name_list: The list of fields names in the UI request
+        :param ui_request_message: Message request sent to UI
+        :param ui_request_message: Message (from TT) originating the request in the first place
         :return:
-        """
-        self._pending_responses[corr_id] = {
-            'request_message': request_message,
-            'requested_field_list': requested_field_name_list,
-        }
 
-        logger.debug(
-            "Updated pending response table,adding corr id %s | entry %s"
+        """
+        if corr_id in self._pending_responses:
+            logger.warning(
+                "Overwriting pending response table entry, adding corr id %s | entry %s" %
+                (
+                    corr_id,
+                    self._pending_responses[corr_id]
+                )
+            )
+
+        self._pending_responses[corr_id] = ui_requested_field_name_list, ui_request_message, tt_request_originator
+
+        logger.info(
+            "Updated pending response table,adding \n\tcorr id %s \n\tentry %s"
             % (
                 corr_id,
                 self._pending_responses[corr_id]
             )
         )
 
-        self.print_table_of_pending_messages()
+        self.print_table_of_pending_responses()
 
-    def print_table_of_pending_messages(self):
-        table = [['Correlation Id', 'Message sent to UI', 'Field name request (list)']]
+    def print_table_of_pending_responses(self):
+        # table's header
+        table = [
+            ['Correlation Id',
+             'Field name request (list)',
+             'Message sent to UI',
+             'Message from TT triggering request']
+        ]
         for key, value in self._pending_responses.items():
             entry = [
                 key,
-                repr(value['request_message'])[:STDOUT_MAX_STRING_LENGTH],
-                value['requested_field_list'][:STDOUT_MAX_STRING_LENGTH]
+                value[0],
+                repr(type(value[1])),
+                repr(type(value[2])),
             ]
             table.append(entry)
 
-        logger.debug(tabulate(table, tablefmt="grid", headers="firstrow"))
+        logger.info(tabulate(table, tablefmt="grid", headers="firstrow"))
 
     def get_pending_messages_correlation_id(self):
         return list(self._pending_responses.keys())
@@ -448,7 +476,7 @@ class GenericBidirectonalTranslator(object):
             ret = self._pending_responses.pop(correlation_id, None)
 
         logger.debug("Updated pending response table")
-        self.print_table_of_pending_messages()
+        self.print_table_of_pending_responses()
         return ret
 
     def is_pending_response(self, message):
@@ -456,36 +484,6 @@ class GenericBidirectonalTranslator(object):
             return message.correlation_id in self._pending_responses
         except AttributeError:
             return False
-
-    @classmethod
-    def get_field_keys_from_ui_request(cls, ui_message):
-        """
-        :return: list with all field names in request
-        """
-
-        fields_requested = [i['name'] for i in ui_message.fields if 'name' in i.keys()]
-        return fields_requested
-
-    @classmethod
-    def get_field_keys_from_ui_reply(cls, ui_message):
-        """
-        :return: list with all field names in reply
-        """
-
-        l = set()
-        for item in ui_message.fields:
-            l |= set(item.keys())
-        return list(l)
-
-    @classmethod
-    def get_field_value_from_ui_reply(cls, ui_message, field):
-        for f in ui_message.fields:
-            try:
-                return f[field]
-            except KeyError:
-                pass
-
-        return None
 
     # # # # # # #  TT -> UI translation to be implemented BY CHILD CLASS # # # # # # #
 
@@ -503,25 +501,25 @@ class GenericBidirectonalTranslator(object):
 
     # # # # # # #  UI -> TT translation to be implemented BY CHILD CLASS # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input):
+    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testsuite_abort(self, user_input):
+    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_start(self, user_input):
+    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_restart(self, user_input):
+    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_skip(self, user_input):
+    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_verify_executed(self, user_input):
+    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_stimuli_executed(self, user_input):
+    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
     # # # # # # # # # # # GENERIC MESSAGE UI VISUALISATION # # # # # # # # # # # # # # #
@@ -535,7 +533,9 @@ class GenericBidirectonalTranslator(object):
         table = []
         for key, value in d.items():
             if type(value) is list:
-                temp = [key, list_to_str(value)]
+                flatten_value = list_to_str(value)
+                flatten_value = textwrap.fill(flatten_value, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
+                temp = [key, flatten_value]
             else:
                 temp = [key, str(value)]
             table.append(temp)
@@ -557,7 +557,7 @@ class GenericBidirectonalTranslator(object):
             partial_verdict = tc_report.pop('partial_verdicts')
         except KeyError:
             partial_verdict = None
-            logging.warning("No partial_verdicts for TC: %s" % tc_report['testcase_id'])
+            logger.warning("No partial_verdicts for TC: %s" % tc_report['testcase_id'])
 
         ui_fields = []
         table_result = []
@@ -567,7 +567,9 @@ class GenericBidirectonalTranslator(object):
 
             if type(value) is list:
                 # flatten lists and fill in table to display
-                temp = [key, list_to_str(value)]
+                flatten_value = list_to_str(value)
+                flatten_value = textwrap.fill(flatten_value, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
+                temp = [key, flatten_value]
             else:
                 # fill in table to display
                 temp = [key, value]
@@ -595,6 +597,7 @@ class GenericBidirectonalTranslator(object):
                     cell_1 = item.pop(0)
                     cell_2 = item.pop(0)
                     cell_3 = list_to_str(item)
+                    cell_3 = textwrap.fill(cell_3, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
                     if 'Frame' in list_to_str(item):
                         frames.append(item)
                     table_partial_verdicts.append((cell_1, cell_2, cell_3))
@@ -704,7 +707,7 @@ class GenericBidirectonalTranslator(object):
             try:
                 summary_table.append([tc_report['testcase_id'], tc_report['verdict'], tc_report['description']])
             except KeyError:
-                logging.warning("Couldnt parse: %s" % str(tc_report))
+                logger.warning("Couldnt parse: %s" % str(tc_report))
                 summary_table.append([tc_report['testcase_id'], "None", "None"])
 
             # to add details we put it in the fields tail which will be displayed after the summary
@@ -721,7 +724,7 @@ class GenericBidirectonalTranslator(object):
             if type(ui_fields) is list:
                 fields_tail = fields_tail + ui_fields
             else:
-                logging.error("not a list: %s" % ui_fields)
+                logger.error("not a list: %s" % ui_fields)
 
         # add summary
         fields.append({
@@ -1152,7 +1155,7 @@ class GenericBidirectonalTranslator(object):
                     frame_header.append([attribute_name, frame_dict[attribute_name]])
 
             except KeyError as ae:
-                logging.error("Some attribute was not found: %s" % str(frame_dict))
+                logger.error("Some attribute was not found: %s" % str(frame_dict))
             try:
                 fields.append({
                     'type': 'p',
@@ -1184,7 +1187,7 @@ class GenericBidirectonalTranslator(object):
                     'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
                 })
             except KeyError as ae:
-                logging.error("Some attrubute was not found in protocol stack dict: %s" % str(frame_dict))
+                logger.error("Some attrubute was not found in protocol stack dict: %s" % str(frame_dict))
 
         return MsgUiDisplayMarkdownText(
             level='info',
@@ -1378,22 +1381,22 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input):
+    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         return MsgTestSuiteStart()
 
-    def _tt_message_testsuite_abort(self, user_input):
+    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         return MsgTestSuiteAbort()
 
-    def _tt_message_testcase_start(self, user_input):
+    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
         return MsgTestCaseStart(testcase_id=self._current_tc)
 
-    def _tt_message_testcase_restart(self, user_input):
+    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         return MsgTestCaseRestart()
 
-    def _tt_message_testcase_skip(self, user_input):
-        return MsgTestCaseSkip()
+    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
+        return MsgTestCaseSkip(testcase_id=origin_tt_message.testcase_id)
 
-    def _tt_message_step_verify_executed(self, user_input):
+    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         logger.info("processing: %s | %s" % (user_input, type(user_input)))
 
         if type(user_input) is str and user_input.lower() == 'true':
@@ -1413,7 +1416,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
-    def _tt_message_step_stimuli_executed(self, user_input):
+    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
@@ -1441,6 +1444,11 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.fields = [
             {
                 "name": "tc_start",
+                "type": "button",
+                "value": True
+            },
+            {
+                "name": "tc_skip",
                 "type": "button",
                 "value": True
             },
@@ -1522,7 +1530,7 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
                            tags={"tutorial": ""})
 
         for example in snippets:
-            logging.info('demoing %s' % example.__name__)
+            logger.info('demoing %s' % example.__name__)
             time.sleep(10)
             markdown_text = ""
             markdown_text += ("\n-----------\n")

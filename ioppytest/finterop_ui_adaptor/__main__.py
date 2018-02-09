@@ -11,10 +11,14 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (wait_for_all_users_to_join_s
                                                     get_current_users_online,
                                                     get_session_configuration_from_ui,
                                                     get_user_ids_and_roles_from_ui,
+                                                    get_field_keys_from_ui_request,
+                                                    get_field_keys_from_ui_reply,
+                                                    get_field_value_from_ui_reply,
                                                     )
 
 from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
                                                     wait_for_testing_tool_ready,
+                                                    send_default_testing_tool_configuration
                                                     )
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
@@ -405,7 +409,7 @@ def process_message_from_ui(message_translator, message_received):
                    repr(message_received)[:STDOUT_MAX_STRING_LENGTH],))
 
     # 0. print pending responses table
-    message_translator.print_table_of_pending_messages()
+    message_translator.print_table_of_pending_responses()
 
     # 1. echo user's response to every user in session
     text_message = 'User replied to request: %s' % repr(list_to_str(message_received.fields))
@@ -467,24 +471,21 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         ui_request_message = message_publisher._update_ui_message_rkeys(
             ui_message=ui_request_message,
             tt_message=message_received)
+
+        # add to requests queue
         queue_messages_request_to_ui.put(ui_request_message)
+
+        # prepare the entry for still-pending-responses table
+        requested_fields = get_field_keys_from_ui_request(ui_request_message)
+        message_translator.add_pending_response(
+            corr_id=ui_request_message.correlation_id,
+            ui_request_message=ui_request_message,
+            tt_request_originator = message_received,
+            ui_requested_field_name_list=requested_fields,
+        )
 
     else:
         logger.info("routing TT -> UI: %s : no associated action/request" % (message_received.routing_key))
-
-
-def execute_fallback_testing_tool_configuration(amqp_publisher):
-    """
-    Send empty configuration message to TT
-    """
-
-    msg = MsgSessionConfiguration(
-        session_id="666",
-        configuration={},
-        testing_tools="",
-        users=[],
-    )
-    amqp_publisher.publish_message(msg)
 
 
 def main():
@@ -617,7 +618,7 @@ def main():
     except Exception as err:
         logger.error(err)
         logger.error(traceback.format_exc())
-        execute_fallback_testing_tool_configuration(amqp_message_publisher)
+        send_default_testing_tool_configuration(amqp_message_publisher)
 
         # # # # # # # # # # # # # # # # #  SESSION EXECUTION  # # # # # # # # # # # # # # # # # #
 
@@ -672,13 +673,6 @@ def main():
                 request = queue_messages_request_to_ui.get()
                 # publish it
                 amqp_message_publisher.publish_ui_request(request)
-                # prepare the entry for still-pending-responses table
-                requested_fields = message_translator.get_field_keys_from_ui_request(request)
-                message_translator.add_pending_response(
-                    corr_id=request.correlation_id,
-                    request_message=request,
-                    requested_field_name_list=requested_fields,
-                )
 
             # get next message reply from UI
             if not queue_messages_from_ui.empty():
@@ -687,7 +681,7 @@ def main():
 
             # publish all pending messages to TT (there shouldn't not be more than one at a time)
             while not queue_messages_to_tt.empty():
-                message_translator.print_table_of_pending_messages()
+                message_translator.print_table_of_pending_responses()
                 msg_to_tt = queue_messages_to_tt.get()
                 amqp_message_publisher.publish_tt_chained_message(msg_to_tt)
 
