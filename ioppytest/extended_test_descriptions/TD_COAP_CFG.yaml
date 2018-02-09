@@ -59,8 +59,8 @@ description:
         - Destination UDP Port = 5683
 
 --- !configuration
-configuration_id: CoAP_CFG_02
-uri: http://doc.f-interop.eu/tests/CoAP_CFG_02
+configuration_id: COAP_CFG_02
+uri: http://doc.f-interop.eu/tests/COAP_CFG_02
 nodes:
   - coap_client
   - coap_server

@@ -92,5 +92,5 @@ class ImportYamlInteropTestCases(unittest.TestCase):
         for tc_config_filename in TEST_DESCRIPTIONS_CONFIGS:
             imported_tcs = import_teds(tc_config_filename)
             for tc_conf in imported_tcs:
-                assert tc_conf.id == id.upper(), \
-                    'TC %s contains lower cases in testcase id' % tc_conf.id
+                assert tc_conf.id == tc_conf.id.upper(), \
+                    'TC %s contains lower cases in test config id' % tc_conf.id
