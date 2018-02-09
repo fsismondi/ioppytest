@@ -13,6 +13,37 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
 
 
 # auxiliary functions
+
+def get_field_keys_from_ui_request(ui_message):
+    """
+    :return: list with all field names in request
+    """
+
+    fields_requested = [i['name'] for i in ui_message.fields if 'name' in i.keys()]
+    return fields_requested
+
+
+def get_field_keys_from_ui_reply(ui_message):
+    """
+    :return: list with all field names in reply
+    """
+
+    l = set()
+    for item in ui_message.fields:
+        l |= set(item.keys())
+    return list(l)
+
+
+def get_field_value_from_ui_reply(ui_message, field):
+    for f in ui_message.fields:
+        try:
+            return f[field]
+        except KeyError:
+            pass
+
+    return None
+
+
 def get_session_configuration_from_ui(amqp_publisher):
     keys_to_validate = {"id", "configuration", "testSuite", "users"}
 

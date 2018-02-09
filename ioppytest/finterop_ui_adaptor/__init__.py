@@ -3,7 +3,7 @@ import os
 from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
-STDOUT_MAX_STRING_LENGTH = 79
+STDOUT_MAX_STRING_LENGTH = 120
 STDOUT_MAX_STRING_LENGTH_KEY_COLUMN = 30
 STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN = STDOUT_MAX_STRING_LENGTH - STDOUT_MAX_STRING_LENGTH_KEY_COLUMN
 
