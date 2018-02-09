@@ -2,7 +2,7 @@
 --- !testcase
 testcase_id: TD_6LOWPAN_FORMAT_01
 uri : none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -56,7 +56,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_02
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (EUI-64 link-local).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -113,7 +113,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_03
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -167,7 +167,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_04
 uri : none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -224,7 +224,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_05
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -284,7 +284,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_06
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -341,7 +341,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_07
 uri : none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -398,7 +398,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_08
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -458,7 +458,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_09
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -515,7 +515,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_10
 uri : none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local, hop limit=64 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -569,7 +569,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_11
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (16-bit link-local).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -626,7 +626,7 @@ sequence:
       
 testcase_id: TD_6LOWPAN_FORMAT_12
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -680,7 +680,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_13
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=4).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -735,7 +735,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_14
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=4).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -792,7 +792,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_FORMAT_15
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=1 and payload=4).
 pre_conditions: 
   - Header compression is disabled on both EUT1 and EUT2.
@@ -848,7 +848,7 @@ sequence:
 --- !testcase
 testcase_id: TD_6LOWPAN_FORMAT_16
 uri: none
-configuration: 6LoWPAN_CFG_01
+configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (16-bit link-local, hop limit=1 and payload=4).
 pre_conditions: 
   - Header compression is enabled on both EUT1 and EUT2.

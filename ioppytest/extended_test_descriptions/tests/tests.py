@@ -80,3 +80,17 @@ class ImportYamlInteropTestCases(unittest.TestCase):
             for tc in imported_tcs:
                 assert tc.configuration_id in tc_configs, 'couldnt find <{}> among config files'.format(
                     tc.configuration_id)
+
+    def test_all_testcases_id_are_uppercase(self):
+        for td in TEST_DESCRIPTIONS:
+            imported_tcs = import_teds(td)
+            for tc in imported_tcs:
+                assert tc.configuration_id == tc.configuration_id.upper(), \
+                    'TC %s contains lower cases in testcase id' % tc.id
+
+    def test_all_testcases_config_ids_are_uppercase(self):
+        for tc_config_filename in TEST_DESCRIPTIONS_CONFIGS:
+            imported_tcs = import_teds(tc_config_filename)
+            for tc_conf in imported_tcs:
+                assert tc_conf.id == id.upper(), \
+                    'TC %s contains lower cases in testcase id' % tc_conf.id
