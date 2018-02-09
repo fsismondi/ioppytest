@@ -2,7 +2,7 @@
 --- !testcase
 testcase_id: TD_6LOWPAN_RS_RA_HC_01
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform 6LoWPAN multicast router solicitation to all-nodes (EUI-64 addresses link-local) and unicast Router Advertisement (EUI-64 adresses link-local)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -91,7 +91,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_02
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement(EUI-64 addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -180,7 +180,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_03
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (EUI-64 to 16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -270,7 +270,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_04
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (EUI-64 to 16-bit link-local)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -360,7 +360,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_05
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit to EUI-64 link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -450,7 +450,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_06
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit to EUI-64 link-local addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -540,7 +540,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_07
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
@@ -629,7 +629,7 @@ sequence:
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_08
 uri: none
-configuration: 6LoWPAN_CFG_02
+configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit link-local addresses)
 pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
