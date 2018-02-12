@@ -355,7 +355,7 @@ sequence:
     node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
-	 
+
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_05
@@ -535,7 +535,7 @@ sequence:
     node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
-	 
+
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_07
@@ -624,7 +624,7 @@ sequence:
     node: eut2
     description:
       - The 6LR (EUT2) receives the Echo Reply message from the 6LN (EUT1)
-	 
+
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_08
