@@ -246,7 +246,10 @@ _docker-build-onem2m-additional-resources:
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
 	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automated_IUTs/comi_server_acklio/Dockerfile .
+	docker tag automated_iut-comi_server-acklio-v$(version):latest automated_iut-comi_server-acklio
+
 	docker build --quiet -t automated_iut-comi_client-acklio-v$(version) -f automated_IUTs/comi_client_acklio/Dockerfile .
+	docker tag automated_iut-comi_client-acklio-v$(version):latest automated_iut-comi_client-acklio
 
 _docker-build-6lowpan-additional-resources:
 	@echo "Starting to build 6lowpan-additional-resources.. "
