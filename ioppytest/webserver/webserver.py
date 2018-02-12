@@ -168,7 +168,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         assert "/results" in path
         # tc_name = path.split('/')[-1]
 
-
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
