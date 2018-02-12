@@ -27,12 +27,17 @@ build-tools: ## builds all testing tool docker images (only testing tool)
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-comi
 
-build-all: ## Build all testing tool in docker images, and other docker image resources too
-	@echo $(info_message)
+build-automated-iuts: ## Build all automated-iut docker images
 	@echo "Starting to build docker images.. "
 	$(MAKE) _docker-build-coap-additional-resources
-	$(MAKE) build-tools
+	$(MAKE) _docker-build-comi-additional-resources
+	$(MAKE) _docker-build-onem2m-additional-resources
 
+build-all: ## Build all testing tool in docker images, and other docker image resources too
+	@echo $(info_message)
+	@echo "Starting to build all docker images.. "
+	$(MAKE) build-tools
+	$(MAKE) build-automated-iuts
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -240,7 +245,8 @@ _docker-build-onem2m-additional-resources:
 
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
-	@echo "TBD"
+	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automated_IUTs/comi_server_acklio/Dockerfile .
+	docker build --quiet -t automated_iut-comi_client-acklio-v$(version) -f automated_IUTs/comi_client_acklio/Dockerfile .
 
 _docker-build-6lowpan-additional-resources:
 	@echo "Starting to build 6lowpan-additional-resources.. "
