@@ -240,7 +240,7 @@ _docker-build-onem2m-additional-resources:
 
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
-	@echo "TBD"
+	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automated_IUTs/comi_server_acklio/Dockerfile .
 
 _docker-build-6lowpan-additional-resources:
 	@echo "Starting to build 6lowpan-additional-resources.. "
