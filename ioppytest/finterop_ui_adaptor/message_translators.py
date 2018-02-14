@@ -89,12 +89,12 @@ def list_to_str(ls):
             if l and isinstance(l, list):
                 for sub_l in l:
                     if sub_l and not isinstance(sub_l, list):
-                        ret += str(sub_l) + '\n '
+                        ret += str(sub_l) + '\n'
                     else:
                         # I truncate in the second level
                         pass
             else:
-                ret += str(l) + ' \n '
+                ret += str(l) + '\n'
 
     except TypeError as e:
         logger.error(e)

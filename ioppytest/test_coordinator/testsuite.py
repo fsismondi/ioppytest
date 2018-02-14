@@ -99,9 +99,9 @@ def list_to_str(ls):
                     # I truncate in the second level
                     pass
                 else:
-                    ret += sub_l + ' \n '
+                    ret += sub_l + '\n'
         else:
-            ret += l + ' \n '
+            ret += l + '\n'
     return ret
 
 
