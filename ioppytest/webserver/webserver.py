@@ -19,6 +19,7 @@ from jinja2 import Template
 
 from ioppytest import TEST_DESCRIPTIONS, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR, LOG_LEVEL
 from ioppytest.test_coordinator.testsuite import TestCase
+from ioppytest.extended_test_descriptions.format_conversion import get_markdown_representation_of_testcase
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -199,6 +200,63 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes(resp, 'utf-8'))
 
     def handle_testcase(self, path):
+        """
+        Helper to produce testcase (ascci table) for paths like : (...)/tests/TD_COAP_(...)
+        """
+        assert ("/tests/") in path
+        tc_name = path.split('/')[-1]
+        tc = None
+
+        for tc_iter in td_list:
+
+            if tc_iter.id.lower() == tc_name.lower():
+                tc = tc_iter
+
+                break
+
+        if tc is None:
+            self.send_error(404, "Testcase couldn't be found")
+            return None
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        ascii_table = get_markdown_representation_of_testcase(tc_name)
+        ascii_table = "<br />".join(ascii_table.split("\n"))
+
+        head = """
+        <html>
+            <head>
+            <meta charset='utf-8'>
+            <style>
+                tail {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    font-size: 10px;
+                }
+                ascii-art {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    white-space: pre;
+                    font-size: 12px;
+                }
+            </style>
+            </head>\n
+
+            """
+        self.wfile.write(bytes(head, 'utf-8'))
+        self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
+        self.wfile.write(bytes("<title>Testcase description</title>", 'utf-8'))
+        self.wfile.write(bytes("<ascii-art>%s</ascii-art>" % ascii_table, 'utf-8'))
+        self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+        self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
+        self.wfile.write(bytes("</html>\n", 'utf-8'))
+        return
+
+    def handle_testcase_html_table(self, path):
         """
         Helper to produce testcase for paths like : (...)/tests/TD_COAP_(...)
         """
