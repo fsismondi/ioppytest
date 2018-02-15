@@ -22,8 +22,8 @@ sequence:
     description:
       - 'The request sent by the client contains'
       - - Type=0 and Code=1
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - UTEST Uri-Path option "test"
 
   - step_id: TD_COAP_CORE_01_step_03
@@ -66,8 +66,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=0 and Code=4
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Uri-Path option "test"
 
   - step_id : TD_COAP_CORE_02_step_03
@@ -112,8 +112,8 @@ sequence:
   description:
     - 'The request sent by the client contains:'
     - - Type=0 and Code=3
-      - Client-generated Message ID (➔ CMID)
-      - Client-generated Token (➔ CTOK)
+      - Client-generated Message ID (* CMID)
+      - Client-generated Token (* CTOK)
       - Uri-Path option "test"
 
 
@@ -167,8 +167,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=0 and Code=2
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
 
   - step_id : TD_COAP_CORE_04_step_03
     type : verify
@@ -217,8 +217,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=1 and Code=4
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
 
   - step_id : TD_COAP_CORE_05_step_03
     type : check
@@ -226,7 +226,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=1 (NON)
         - Code = 2.05 (Content)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Content-format option
 
@@ -261,8 +261,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=1 and Code=4
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
 
   - step_id : TD_COAP_CORE_06_step_03
     type : check
@@ -270,7 +270,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=1 (NON)
         - Code = 2.02 (Delete)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Empty or non-empty Payload
         - Content-format option if payload non-empty
@@ -308,8 +308,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=1 and Code=3
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
 
   - step_id : TD_COAP_CORE_07_step_03
     type : verify
@@ -323,7 +323,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=1 (NON)
         - Code=2.04(Changed) or 2.01 (Created)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Content-format option if payload non-empty
         - Empty or non-empty Payload
@@ -361,8 +361,8 @@ sequence:
     description:
       - 'The request sent by the client contains:'
       - - Type=1 and Code=2
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - An arbitrary payload
         - Content-format option
 
@@ -378,7 +378,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=1 (NON)
         - Code=2.01(Created) or 2.04 (Changed)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Zero or more Location-path options
         - Content-format option if payload non-empty
@@ -414,7 +414,7 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Client-generated Message ID (➔ CMID)
+        - Client-generated Message ID (* CMID)
 
   - step_id : TD_COAP_CORE_09_step_03
     type : check
@@ -431,7 +431,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=0 (CON)
         - Code=2.05(Content)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Content-format option
         - Non-empty Payload
@@ -475,8 +475,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Length of the token should be between 1 to 8 Bytes
 
   - step_id : TD_COAP_CORE_10_step_03
@@ -519,8 +519,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Length of the token should be between 1 to 8 Bytes
 
   - step_id : TD_COAP_CORE_11_step_03
@@ -538,7 +538,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=0 (CON)
         - Code=2.05 (Content)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Token = CTOK
         - Non-empty Payload
 
@@ -581,7 +581,7 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Zero-Length Token ➔ CTOK
+        - Zero-Length Token * CTOK
 
   - step_id : TD_COAP_CORE_12_step_03
     type : check
@@ -622,8 +622,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
       - 'and three options of type Uri-Path, with the values:'
       - - seg1
         - seg2
@@ -668,8 +668,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0 (CON)
         - Code=1 (GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
       - 'and two options of Uri-Query, with values such as:'
       - - first=1
         - second=2
@@ -714,8 +714,8 @@ sequence:
       - 'Sent request must contain:'
       - - Type=0
         - Code=1
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
 
   - step_id : TD_COAP_CORE_15_step_03
     type : check
@@ -772,7 +772,7 @@ sequence:
       - 'The requested sent by the client contains:'
       - - Type=0
         - Code=1
-        - Client-generated Message ID (➔ CMID)
+        - Client-generated Message ID (* CMID)
 
   - step_id : TD_COAP_CORE_16_step_03
     type : check
@@ -789,7 +789,7 @@ sequence:
       - 'Server sends response containing'
       - - Type=0(CON)
         - Code=2.05(Content)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Non-empty Payload
         - Content-format option
 
@@ -849,7 +849,7 @@ sequence:
       - 'The requested sent by the client contains:'
       - - Type=1(NON)
         - Code=1(GET)
-        - Client-generated Message ID (➔ CMID)
+        - Client-generated Message ID (* CMID)
 
   - step_id : TD_COAP_CORE_17_step_03
     type : check
@@ -865,7 +865,7 @@ sequence:
       - 'Server sends response containing:'
       - - Type=1(CON)
         - Code=2.05(Content)
-        - Server-generated Message ID (➔ SMID)
+        - Server-generated Message ID (* SMID)
         - Content-format option
         - Non-empty Payload
 
@@ -942,8 +942,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=2(POST)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Content-format option
         - Empty or non-empty Payload
 
@@ -992,8 +992,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Option type = Accept, value=0 (text/plain;charset=utf-8)
 
   - step_id : TD_COAP_CORE_20_step_03
@@ -1023,8 +1023,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Another client-generated Message ID ≠ CMID (➔ CMID2)
-        - Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
+        - Another client-generated Message ID ≠ CMID (* CMID2)
+        - Client-generated Token which may or may not be ≠ CTOK (* CTOK2)
         - Option type = Accept, value=41 (application/xml)
 
   - step_id : TD_COAP_CORE_20_step_07
@@ -1068,8 +1068,8 @@ sequence:
       - 'The request sent request by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - No ETag option
 
   - step_id : TD_COAP_CORE_21_step_03
@@ -1078,7 +1078,7 @@ sequence:
       - 'Server sends response containing:'
       - - Code=2.05(Content)
         - Message ID = CMID, Token = CTOK
-        - Option type = ETag, value = a value chosen by the server (➔ ETAG1)
+        - Option type = ETag, value = a value chosen by the server (* ETAG1)
         - Non-empty Payload
 
   - step_id : TD_COAP_CORE_21_step_04
@@ -1099,8 +1099,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Another client-generated Message ID ≠ CMID (➔ CMID2)
-        - Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
+        - Another client-generated Message ID ≠ CMID (* CMID2)
+        - Client-generated Token which may or may not be ≠ CTOK (* CTOK2)
         - Option type = ETag, value = ETAG1 (the ETag value received in step3)
 
   - step_id : TD_COAP_CORE_21_step_07
@@ -1136,8 +1136,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Another client-generated Message ID ≠ CMID and ≠ CMID2 (➔ CMID3)
-        - Client-generated Token which may or may not be ≠ CTOK or CTOK2 (➔ CTOK3)
+        - Another client-generated Message ID ≠ CMID and ≠ CMID2 (* CMID3)
+        - Client-generated Token which may or may not be ≠ CTOK or CTOK2 (* CTOK3)
         - Option type = ETag, value = ETAG1 (the ETag value received in step3)
 
   - step_id : TD_COAP_CORE_21_step_12
@@ -1181,8 +1181,8 @@ sequence:
       - 'The request sent request by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - No ETag option
 
   - step_id : TD_COAP_CORE_22_step_03
@@ -1191,7 +1191,7 @@ sequence:
       - 'Server sends response containing:'
       - - Code=2.05(Content)
         - Message ID = CMID, Token = CTOK
-        - Option type = ETag, value = a value chosen by the server (➔ ETAG1)
+        - Option type = ETag, value = a value chosen by the server (* ETAG1)
         - Non-empty Payload
 
 #Vsingle update
@@ -1207,8 +1207,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=3(PUT)
-        - Another client-generated Message ID ≠ CMID (➔ CMID2)
-        - Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
+        - Another client-generated Message ID ≠ CMID (* CMID2)
+        - Client-generated Token which may or may not be ≠ CTOK (* CTOK2)
         - Option type = If-Match, value = ETAG1 (ETag value received in step3)
         - An arbitrary payload (Which differs from the payload received in step3)
 
@@ -1241,8 +1241,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=1(GET)
-        - Another client-generated Message ID ≠ CMID and ≠ CMID2 (➔ CMID3)
-        - Client-generated Token which may or may not be ≠ CTOK or CTOK2 (➔ CTOK3)
+        - Another client-generated Message ID ≠ CMID and ≠ CMID2 (* CMID3)
+        - Client-generated Token which may or may not be ≠ CTOK or CTOK2 (* CTOK3)
 
   - step_id : TD_COAP_CORE_22_step_10
     type : check
@@ -1250,7 +1250,7 @@ sequence:
       - 'Server sends response containing:'
       - - Code=2.05(Content)
         - Message ID = CMID3, Token = CTOK3
-        - Option type = ETag, value = a value ≠ ETAG1 chosen by the server (➔ ETAG2)
+        - Option type = ETag, value = a value ≠ ETAG1 chosen by the server (* ETAG2)
         - The payload sent in step 5
 
   - step_id : TD_COAP_CORE_22_step_11
@@ -1277,8 +1277,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=3(PUT)
-        - Another client-generated Message ID ≠ CMID, CMID2, CMID3 (➔ CMID4)
-        - Client-generated Token which may or may not be ≠ CTOK, CTOK2, CTOK3 (➔ CTOK4)
+        - Another client-generated Message ID ≠ CMID, CMID2, CMID3 (* CMID4)
+        - Client-generated Token which may or may not be ≠ CTOK, CTOK2, CTOK3 (* CTOK4)
         - Option type = If-Match, value = ETAG2 (ETag value received in step 10)
         - An arbitrary payload(which differs from the previous pauloads)
 
@@ -1322,8 +1322,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=3(PUT)
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - Optionn Type=If-None-Match
         - An arbitrary payload
 
@@ -1356,8 +1356,8 @@ sequence:
       - 'The request sent by the client contains:'
       - - Type=0(CON)
         - Code=3(PUT)
-        - Another client-generated Message ID ≠ CMID (➔ CMID2)
-        - Client-generated Token which may or may not be ≠ CTOK (➔ CTOK2)
+        - Another client-generated Message ID ≠ CMID (* CMID2)
+        - Client-generated Token which may or may not be ≠ CTOK (* CTOK2)
         - Optionn Type=If-None-Match
         - An arbitrary payload
 
@@ -1400,7 +1400,7 @@ sequence:
     description:
       - 'The request sent by the client is four bytes and contains:'
       - - Type=0 and Code=0
-        - Client-generated Message ID (➔ CMID)
+        - Client-generated Message ID (* CMID)
         - Zero-length Token
         - No payload
 

@@ -22,8 +22,8 @@ sequence:
     description:
       - 'The request sent by the client contains'
       - - Type=0 and Code=1
-        - Client-generated Message ID (➔ CMID)
-        - Client-generated Token (➔ CTOK)
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
         - UTEST Uri-Path option "test"
 
   - step_id: TD_COMI_DUMMY_TEST_step_03
