@@ -17,7 +17,8 @@ import posixpath
 import mimetypes
 from jinja2 import Template
 
-from ioppytest import TEST_DESCRIPTIONS, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR, LOG_LEVEL
+from ioppytest import TEST_DESCRIPTIONS, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR, LOG_LEVEL, \
+    TEST_DESCRIPTIONS_DICT
 from ioppytest.test_coordinator.testsuite import TestCase
 from ioppytest.extended_test_descriptions.format_conversion import get_markdown_representation_of_testcase
 
@@ -44,6 +45,21 @@ for TD in TEST_DESCRIPTIONS:
         for yaml_doc in yaml_docs:
             if type(yaml_doc) is TestCase:
                 td_list.append(yaml_doc)
+
+
+def get_tc_list_from_yaml(testdescription_yamlfile):
+    """
+    :param testdescription_yamlfile:
+    :return: TC objects
+    """
+
+    list = []
+    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
+        yaml_docs = yaml.load_all(stream)
+        for yaml_doc in yaml_docs:
+            if type(yaml_doc) is TestCase:
+                list.append(yaml_doc)
+    return list
 
 
 def create_html_test_results():
@@ -103,15 +119,22 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """
 
         # check if its a testcase in the ones already loaded
-        if self.path.startswith('/tests/') or self.path.startswith('/ioppytest/tests/'):
+        if self.path.startswith('/testsuite/'):
+            logger.debug('Handling TESTSUITE request: %s' % self.path)
+            return self.testsuite_description(self.path)
+
+        elif self.path.startswith('/tests/') or self.path.startswith('/ioppytest/tests/'):
             logger.debug('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
+
         elif self.path.startswith('/ioppytest/pcaps'):
             logger.debug('Handling PCAP request: %s' % self.path)
             return self.handle_pcaps(self.path)
+
         elif self.path.startswith('/ioppytest/results'):
             logger.debug('Handling RESULTS request: %s' % self.path)
             return self.handle_results(self.path)
+
         elif self.path.startswith('/ioppytest/packets'):
             logger.debug('Handling PACKETS dissection request: %s' % self.path)
             return self.handle_packets(self.path)
@@ -143,6 +166,65 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", ctype)
             self.end_headers()
             return f
+
+    def testsuite_description(self, path):
+        """
+        /help/articles/how-do-i-set-up-a-webpage.html
+
+        <a href="linkhere.html">Click Me</a>
+
+        """
+        assert ("/testsuite/") in path
+        testsuite_name = path.split('/')[-1]
+
+        if testsuite_name not in TEST_DESCRIPTIONS_DICT.keys():
+            self.send_error(404, "Test suite <%s> couldn't be found" % testsuite_name)
+            return None
+
+        tc_list = list()
+        test_suite_list_of_test_description = TEST_DESCRIPTIONS_DICT[testsuite_name]
+        print("test descriptions found: %s" % test_suite_list_of_test_description)
+        for item in test_suite_list_of_test_description:
+            print("processing: %s" % item)
+            tc_list += get_tc_list_from_yaml(item)
+
+        head = """
+        <html>
+            <head>
+            <meta charset='utf-8'>
+            <style>
+                tail {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    font-size: 10px;
+                }
+                ascii-art {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    white-space: pre;
+                    font-size: 12px;
+                }
+            </style>
+            </head>\n
+
+            """
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(bytes(head, 'utf-8'))
+        self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
+        self.wfile.write(bytes("<title>Test Suite</title>", 'utf-8'))
+        self.wfile.write(bytes("<ascii-art>Test Suite [%s]:</ascii-art>" % testsuite_name.upper(), 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
+        for tc in tc_list:
+            self.wfile.write(
+                bytes('<ascii-art><li><a href="/tests/%s">%s</a></li></ascii-art>\n' % (tc.id, tc.id), 'utf-8'))
+        self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+        self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
+        self.wfile.write(bytes("</html>\n", 'utf-8'))
+        return
 
     def handle_pcaps(self, path):
         logger.info('Handling data: %s' % path)
@@ -318,6 +400,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 font-weight: normal;
                 font-size: 13px;
                 paddomg-legt 1.8em
+            }
+            ascii-art {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    white-space: pre;
+                    font-size: 12px;
             }
             table {
                 border-collapse: collapse;

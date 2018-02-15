@@ -146,9 +146,10 @@ if __name__ == '__main__':
     from ioppytest import TMPDIR
 
     for i in td_list:
-        with open(os.path.join(TMPDIR, i.id + '.md'), 'w') as test_case_html_file:
-            test_case_html_file.write(get_markdown_representation_of_testcase(i.id))
+        if "6LOWPAN" in i.id:
+            with open(os.path.join(TMPDIR, i.id + '.md'), 'w') as test_case_html_file:
+                test_case_html_file.write(get_markdown_representation_of_testcase(i.id))
 
-            # for i in td_list:
-            #     with open(os.path.join(TMPDIR, i.id + '.html'), 'w') as test_case_html_file:
-            #         test_case_html_file.write(get_html_representation_of_testcase(i.id))
+                # for i in td_list:
+                #     with open(os.path.join(TMPDIR, i.id + '.html'), 'w') as test_case_html_file:
+                #         test_case_html_file.write(get_html_representation_of_testcase(i.id))

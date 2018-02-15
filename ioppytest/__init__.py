@@ -67,6 +67,13 @@ TD_6LOWPAN_RS_RA_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
+TEST_DESCRIPTIONS_DICT = {
+    'coap': [TD_COAP, TD_COAP_CFG],
+    '6lowpan': [TD_6LOWPAN, TD_6LOWPAN_FORMAT, TD_6LOWPAN_RS_RA, TD_6LOWPAN_CFG],
+    'onem2m':[TD_ONEM2M,TD_ONEM2M_CFG],
+    'comi':[TD_COMI,TD_COMI_CFG]
+}
+
 TEST_DESCRIPTIONS = [TD_COAP,
                      TD_6LOWPAN,
                      TD_ONEM2M,
