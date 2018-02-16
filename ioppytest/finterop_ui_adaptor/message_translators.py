@@ -766,7 +766,7 @@ class GenericBidirectonalTranslator(object):
         fields = [
             {
                 'type': 'p',
-                'value': message.description
+                'value': list_to_str(message.description)
             }
         ]
 
@@ -918,7 +918,7 @@ class GenericBidirectonalTranslator(object):
             })
 
         return MsgUiDisplayMarkdownText(
-            title=message.description,
+            title=list_to_str(message.description),
             level='info',
             fields=fields,
             tags={"testsuite": ""}
@@ -1044,7 +1044,7 @@ class GenericBidirectonalTranslator(object):
         })
 
         return MsgUiDisplayMarkdownText(
-            title=message.description,
+            title=list_to_str(message.description),
             level='info',
             fields=fields,
             tags={"testcase": message.testcase_id}
