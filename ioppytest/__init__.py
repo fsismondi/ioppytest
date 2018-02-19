@@ -64,22 +64,28 @@ TD_6LOWPAN_FORMAT_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 TD_6LOWPAN_RS_RA = os.path.join(TD_DIR, "TD_6LOWPAN_RS_RA.yaml")
 TD_6LOWPAN_RS_RA_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
+TD_6LOWPAN_ND = os.path.join(TD_DIR, "TD_6LOWPAN_ND.yaml")
+TD_6LOWPAN_ND_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
 TEST_DESCRIPTIONS_DICT = {
     'coap': [TD_COAP, TD_COAP_CFG],
-    '6lowpan': [TD_6LOWPAN, TD_6LOWPAN_FORMAT, TD_6LOWPAN_RS_RA, TD_6LOWPAN_CFG],
-    'onem2m':[TD_ONEM2M,TD_ONEM2M_CFG],
-    'comi':[TD_COMI,TD_COMI_CFG]
+    '6lowpan': [TD_6LOWPAN, TD_6LOWPAN_FORMAT, TD_6LOWPAN_RS_RA, TD_6LOWPAN_ND, TD_6LOWPAN_CFG],
+    'onem2m': [TD_ONEM2M, TD_ONEM2M_CFG],
+    'comi': [TD_COMI, TD_COMI_CFG]
 }
 
-TEST_DESCRIPTIONS = [TD_COAP,
-                     TD_6LOWPAN,
-                     TD_ONEM2M,
-                     TD_COMI,
-                     TD_6LOWPAN_FORMAT,
-                     TD_6LOWPAN_RS_RA]
+TEST_DESCRIPTIONS = [
+    TD_COAP,
+    TD_ONEM2M,
+    TD_COMI,
+    TD_6LOWPAN,
+    TD_6LOWPAN_FORMAT,
+    TD_6LOWPAN_RS_RA,
+    TD_6LOWPAN_ND,
+]
 
 TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG,
                              TD_6LOWPAN_CFG,
