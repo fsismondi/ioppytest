@@ -14,18 +14,18 @@ topology:
       - eut2
 addressing:
     - node: eut1
-      ipv6_prefix : bbbb
+      ipv6_prefix : ????
       ipv6_host: 1
     - node: eut2
-      ipv6_prefix : bbbb
+      ipv6_prefix : ????
       ipv6_host: 2
 description:
   - node: eut1
     message:
-      - This is the first EUT which should be a simple host.
+      - EUT which is a simple host.
   - node: eut2
     message:
-      - This is the second EUT which should be a simple host.
+      - EUT which is a simple host.
 
 
 --- !configuration
@@ -42,15 +42,15 @@ topology:
       - 6ln
 addressing:
     - node: 6lr
-      ipv6_prefix : ??
+      ipv6_prefix : ????
       ipv6_host: 1
     - node: 6ln
-      ipv6_prefix : ??
+      ipv6_prefix : ????
       ipv6_host: 2
 description:
   - node: 6lr
     message:
-      - This is the first EUT which should be a 6LoWPAN Router.
+      - EUT which is a 6LoWPAN Router.
   - node: 6ln
     message:
-      - This is the second EUT which should be a 6LoWPAN Node (Router Or Host).
+      - EUT which is a 6LoWPAN Node (Router Or Host).
