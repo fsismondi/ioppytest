@@ -1499,4 +1499,4 @@ sequence:
     type: verify
     node: eut1
     description:
-      - EUT1 receives the UDP response message from EUT2  
+      - EUT1 receives the UDP response message from EUT2

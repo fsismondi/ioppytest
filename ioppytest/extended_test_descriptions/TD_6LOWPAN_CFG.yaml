@@ -22,10 +22,10 @@ addressing:
 description:
   - node: eut1
     message:
-      - EUT which is a simple host.
+      - EUT is a simple host.
   - node: eut2
     message:
-      - EUT which is a simple host.
+      - EUT is a simple host.
 
 
 --- !configuration
@@ -50,7 +50,7 @@ addressing:
 description:
   - node: 6lr
     message:
-      - EUT which is a 6LoWPAN Router.
+      - EUT is a 6LoWPAN Router.
   - node: 6ln
     message:
-      - EUT which is a 6LoWPAN Node (Router Or Host).
+      - EUT is a 6LoWPAN Node (Router Or Host).
