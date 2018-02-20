@@ -40,8 +40,6 @@ from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessa
                                                                SixLoWPANSessionMessageTranslator,
                                                                OneM2MSessionMessageTranslator)
 
-logging.getLogger('pika').setLevel(logging.WARNING)
-
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
 logger.setLevel(LOG_LEVEL)
@@ -51,6 +49,8 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
+
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 # timer used to avoid bumpping into UI error (message dropped on two "simultaneous" messages arrival )
 PUBLISH_DELAY = 0.1

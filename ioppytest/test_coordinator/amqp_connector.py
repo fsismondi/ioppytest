@@ -285,8 +285,8 @@ class CoordinatorAmqpInterface(object):
 
     def notify_testcase_ready(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
         msg_fields.update(self.testsuite.get_current_testcase_configuration().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
 
         event = MsgTestCaseReady(
             **msg_fields
@@ -295,9 +295,10 @@ class CoordinatorAmqpInterface(object):
 
     def notify_step_execute(self, received_event):
         step_info_dict = self.testsuite.get_current_step().to_dict(verbose=True)
-        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
         config = self.testsuite.get_current_testcase_configuration().to_dict(verbose=True)
         config_id = self.testsuite.get_current_testcase_configuration_id()
+        tc_info_dict = self.testsuite.get_current_testcase().to_dict(verbose=False)
+
         target_node = None
         try:
             target_node = self.testsuite.get_current_step_target_address()
@@ -389,7 +390,7 @@ class CoordinatorAmqpInterface(object):
         config_id = self.testsuite.get_current_testcase_configuration_id()
         config = self.testsuite.get_current_testcase_configuration().to_dict(verbose=True)
 
-        for desc in config['description']:
+        for desc in config['nodes_description']:
             description = desc['message']
             node = desc['node']
 

@@ -39,40 +39,12 @@ def NotImplementedField(self):
     raise NotImplementedError
 
 
-def translate_ioppytest_description_format_to_tabulate(ls):
-    """
-        we get stuff like:
-
-        as output we need:
-
-    """
-    # fixme change ioppytest format to meet tabulates requirements, their fromat for describing tables makes more sense!
-    ret = []
-    for item in ls:
-        if type(item) is str:
-            # textwrap puts <\n> per each X chars
-            ret.append([textwrap.fill(item, width=STDOUT_MAX_STRING_LENGTH_KEY_COLUMN)])
-        elif type(item) is list:
-            for subitem in item:
-                if type(subitem) is str:
-                    # textwrap puts <\n> per each X chars
-                    ret.append([' ', textwrap.fill(subitem,
-                                                   width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)])
-                else:
-                    ret.append([' ', subitem])
-        else:
-            logger.warning("Got unexpected table format %s" % type(item))
-
-    logger.debug("converted table: %s" % ret)
-
-    return ret
-
-
-def list_to_str(ls):
+def list_to_str(ls, max_width=79):
     """
     flattens a nested list up to two levels of depth
 
     :param ls: the list, supports str also
+    :param max_width: max width of each text line (inserts \n if line is longer)
     :return: single string with all the items inside the list
     """
 
@@ -82,25 +54,61 @@ def list_to_str(ls):
         return 'None'
 
     if type(ls) is str:
-        return ls
+        return textwrap.fill(ls, width=max_width)
 
     try:
         for l in ls:
-            if l and isinstance(l, list):
+            if l and isinstance(l, list):  # there's a list inside the list
                 for sub_l in l:
                     if sub_l and not isinstance(sub_l, list):
-                        ret += str(sub_l) + '\n'
+                        ret += "    - " + textwrap.fill(str(sub_l), width=max_width) + '\n'
                     else:
                         # I truncate in the second level
                         pass
             else:
-                ret += str(l) + '\n'
+                ret += "- " + textwrap.fill(str(l), width=max_width) + '\n'
 
     except TypeError as e:
         logger.error(e)
         return str(ls)
 
     return ret
+
+
+# TODO delete unused
+# def list_to_str(ls):
+#     """
+#     flattens a nested list up to two levels of depth
+#
+#     :param ls: the list, supports str also
+#     :return: single string with all the items inside the list
+#     """
+#
+#     ret = ''
+#
+#     if ls is None:
+#         return 'None'
+#
+#     if type(ls) is str:
+#         return ls
+#
+#     try:
+#         for l in ls:
+#             if l and isinstance(l, list):
+#                 for sub_l in l:
+#                     if sub_l and not isinstance(sub_l, list):
+#                         ret += str(sub_l) + '\n'
+#                     else:
+#                         # I truncate in the second level
+#                         pass
+#             else:
+#                 ret += str(l) + '\n'
+#
+#     except TypeError as e:
+#         logger.error(e)
+#         return str(ls)
+#
+#     return ret
 
 
 class GenericBidirectonalTranslator(object):
@@ -203,6 +211,7 @@ class GenericBidirectonalTranslator(object):
             MsgStepVerifyExecute: self._echo_message_steps,
             MsgStepVerifyExecuted: self._echo_message_highlighted_description,
             MsgConfigurationExecute: self._echo_testcase_configure,
+            MsgTestCaseSkip: self._echo_testcase_skip,
 
             # info
             MsgTestSuiteGetTestCasesReply: self._echo_testcases_list,
@@ -543,7 +552,7 @@ class GenericBidirectonalTranslator(object):
         # prepare fields
         msg_ret.fields = [{
             'type': 'p',
-            'value': tabulate(table)
+            'value': tabulate(table, tablefmt="grid")
         }]
 
         return msg_ret
@@ -552,6 +561,54 @@ class GenericBidirectonalTranslator(object):
     def _generate_ui_fields_for_testcase_report(self, tc_report: dict):
         """
         used to display in UI MsgTestCaseVerdict and MsgTestSuiteReports messages
+
+        example:
+        ------------------------------------------------------------------------------------------------------------------------
+        routing_key : testsuite.testcase.verdict
+        ------------------------------------------------------------------------------------------------------------------------
+        {
+            "_api_version": "1.0.10",
+            "description": "premature end of conversation",
+            "objective": "Perform GET transaction(CON mode)",
+            "partial_verdicts": [
+                [
+                    "TD_COAP_CORE_01_step_02",
+                    null,
+                    "CHECK step: postponed",
+                    ""
+                ],
+                [
+                    "TD_COAP_CORE_01_step_03",
+                    null,
+                    "CHECK step: postponed",
+                    ""
+                ],
+                [
+                    "TD_COAP_CORE_01_step_04",
+                    "pass",
+                    "VERIFY step: User informed that the information was displayed correclty on his/her IUT",
+                    ""
+                ],
+                [
+                    "tat_check_1",
+                    "pass",
+                    "<Frame   3: [bbbb::1 -> bbbb::2] CoAP [CON 324] GET /test> Match: CoAP(type=0, code=1)"
+                ],
+                [
+                    "tat_check_2",
+                    "inconclusive",
+                    "premature end of conversation"
+                ]
+            ],
+            "pre_conditions": [
+                "Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload"
+            ],
+            "state": "finished",
+            "testcase_id": "TD_COAP_CORE_01",
+            "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+            "verdict": "inconclusive"
+        }
+
         """
         try:
             partial_verdict = tc_report.pop('partial_verdicts')
@@ -559,45 +616,56 @@ class GenericBidirectonalTranslator(object):
             partial_verdict = None
             logger.warning("No partial_verdicts for TC: %s" % tc_report['testcase_id'])
 
-        ui_fields = []
-        table_result = []
-        display_color = 'warning'  # 'warning' is yellow, 'highlighted' is green, and 'error' is red
+        table = list()
+        fields = []
 
-        for key, value in tc_report.items():
+        step_message_fields = [
+            ('verdict', 'Verdict'),
+            ('description', 'Verdict info'),
+            ('testcase_id', 'Test case ID'),
+            ('objective', 'Test Purpose'),
+            ('testcase_ref', 'Test case URL'),
+            ('pre_conditions', 'Pre-conditions'),
 
-            if type(value) is list:
-                # flatten lists and fill in table to display
-                flatten_value = list_to_str(value)
-                flatten_value = textwrap.fill(flatten_value, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
-                temp = [key, flatten_value]
-            else:
-                # fill in table to display
-                temp = [key, value]
-                # try to set the color of the box using the verdict
-                if 'verdict' in key and 'pass' in value:
-                    display_color = 'highlighted'
-                elif 'verdict' in key and value in ['fail', 'error', 'none']:
-                    display_color = 'error'
+        ]
 
-            table_result.append(temp)
+        for i in step_message_fields:
+            try:
+                col1 = i[1]
+                col2 = tc_report[i[0]]
+                col2 = list_to_str(col2)  # flattens info
+                table.append([col1, col2])
+            except KeyError as e:
+                logger.warning(e)
 
-        ui_fields.append(
-            {
-                'type': 'p',
-                'value': tabulate(table_result)
-            }
-        )
+        fields.append({
+            'type': 'p',
+            'value': tabulate(table, tablefmt="grid")
+        })
+
+        # 'warning' is yellow, 'highlighted' is green, and 'error' is red
+
+        if 'verdict' in tc_report and 'pass' in tc_report['verdict']:
+            display_color = 'highlighted'
+        elif 'verdict' in tc_report and 'fail' in tc_report['verdict'].lower():
+            display_color = 'error'
+        elif 'verdict' in tc_report and 'error' in tc_report['verdict'].lower():
+            display_color = 'error'
+        elif 'verdict' in tc_report and 'none' in tc_report['verdict'].lower():
+            display_color = 'error'
+        else:
+            display_color = 'warning'
+
         if partial_verdict:
             table_partial_verdicts = []
             frames = []
-            table_partial_verdicts.append(('Step ID', 'Partial verdict', 'Description'))
+            table_partial_verdicts.append(('Step ID', 'Partial \nVerdict', 'Description'))
             for item in partial_verdict:
                 try:
                     assert type(item) is list
                     cell_1 = item.pop(0)
                     cell_2 = item.pop(0)
                     cell_3 = list_to_str(item)
-                    cell_3 = textwrap.fill(cell_3, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
                     if 'Frame' in list_to_str(item):
                         frames.append(item)
                     table_partial_verdicts.append((cell_1, cell_2, cell_3))
@@ -606,27 +674,27 @@ class GenericBidirectonalTranslator(object):
                     logger.error(traceback.format_exc())
                     break
 
-            ui_fields.append(
+            fields.append(
                 {
                     'type': 'p',
                     'value': "Checks:"
                 }
             )
-            ui_fields.append(
+            fields.append(
                 {
                     'type': 'p',
-                    'value': "%s" % tabulate(frames)
+                    'value': "%s" % tabulate(frames, tablefmt="grid")
                 }
             )
 
-            ui_fields.append(
+            fields.append(
                 {
                     'type': 'p',
-                    'value': tabulate(table_partial_verdicts, headers="firstrow")
+                    'value': tabulate(table_partial_verdicts, tablefmt="grid", headers="firstrow")
                 }
             )
 
-        return tc_report['testcase_id'], display_color, ui_fields
+        return tc_report['testcase_id'], display_color, fields
 
     def _echo_testcase_verdict(self, message):
         verdict = message.to_dict()
@@ -762,6 +830,19 @@ class GenericBidirectonalTranslator(object):
         ]
         return MsgUiDisplayMarkdownText(fields=fields)
 
+    def _echo_testcase_skip(self, message):
+
+        # default TC is current TC
+        tc_id = message.testcase_id if message.testcase_id else 'current testcase'
+
+        fields = [
+            {
+                'type': 'p',
+                'value': '<%s> %s' % (tc_id, "has been chosen to be skipped by user")
+            }
+        ]
+        return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
+
     def _echo_message_highlighted_description(self, message):
         fields = [
             {
@@ -814,23 +895,32 @@ class GenericBidirectonalTranslator(object):
          response_type          bool
 
         """
-        fields_to_translate = ['step_id', 'step_type', 'node', 'target_address', 'testcase_ref']
+
+        table = list()
         fields = []
-        for f in fields_to_translate:
+
+        step_message_fields = [
+            ('step_id', 'Step ID'),
+            ('step_type', 'Step Type'),
+            ('node', 'Node'),
+            ('target_address', 'Address of target node'),
+            ('testcase_id', 'Test case ID'),
+            ('testcase_ref', 'Test case URL'),
+            ('step_info', 'Description'),
+        ]
+
+        for i in step_message_fields:
             try:
-                fields.append({
-                    'type': 'p',
-                    'value': '%s: %s' % (f, getattr(message, f))
-                })
-            except AttributeError as ae:
-                logger.debug(ae)
+                col1 = i[1]
+                col2 = getattr(message, i[0])
+                col2 = list_to_str(col2)  # flattens info
+                table.append([col1, col2])
+            except AttributeError as e:
+                logger.warning(e)
 
         fields.append({
             'type': 'p',
-            'value': '%s' %
-                     tabulate(
-                         translate_ioppytest_description_format_to_tabulate(message.step_info),
-                         tablefmt="grid")
+            'value': tabulate(table, tablefmt="grid")
         })
 
         return MsgUiDisplayMarkdownText(
@@ -978,113 +1068,67 @@ class GenericBidirectonalTranslator(object):
         )
 
     def _echo_testcase_ready(self, message):
-
-        """
-        {
-            "_api_version": "1.0.8",
-            "address_adn": "bbbb::1",
-            "address_cse": "bbbb::2",
-            "addressing_table": {
-                "adn": [
-                    "bbbb",
-                    1
-                ],
-                "cse": [
-                    "bbbb",
-                    2
-                ]
-            },
-            "configuration_id": "M2M_CFG_01",
-            "configuration_ref": "www.onem2m.org",
-            "description": "Next test case to be executed is TD_M2M_NH_06",
-            "nodes": [
-                "adn",
-                "cse"
-            ],
-            "objective": "Perform GET transaction(CON mode)",
-            "state": "configuring",
-            "testcase_id": "TD_M2M_NH_06",
-            "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_06",
-            "topology": [
-                {
-                    "capture_filter": "udp",
-                    "link_id": "link_01",
-                    "nodes": [
-                        "adn",
-                        "cse"
-                    ]
-                }
-            ]
-        }
-
-        """
-
-        fields_to_translate = ['testcase_id',
-                               'testcase_ref',
-                               'configuration_id',
-                               'configuration_ref',
-                               'objective',
-                               'nodes',
-                               'topology',
-                               ]
+        table = list()
         fields = []
-        table = []
-        for f in fields_to_translate:
+
+        step_message_fields = [
+            ('testcase_id', 'Test Case ID'),
+            ('testcase_ref', 'Test Case URL'),
+            ('configuration_id', 'Configuration ID'),
+            ('configuration_ref', 'Configuration URL'),
+            ('pre_conditions', 'Test Case pre-conditions'),
+            ('nodes', 'Nodes'),
+            # ('nodes_description', 'Node Description'), # more complex structure, let's parse it separetly
+        ]
+
+        for i in step_message_fields:
             try:
-                value = getattr(message, f)
-                # avoids having very long messages in the table
-                filtered_value = textwrap.fill(value, width=STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN)
-                table.append((f, filtered_value))
-            except AttributeError as ae:
-                logger.error(ae)
+                col1 = i[1]
+                col2 = getattr(message, i[0])
+                col2 = list_to_str(col2)  # flattens info
+                table.append([col1, col2])
+            except AttributeError as e:
+                logger.warning(e)
+
+        for desc in getattr(message, 'nodes_description'):
+            table.append([desc['node'], list_to_str(desc['message'])])
 
         fields.append({
             'type': 'p',
-            'value': '%s' % (tabulate(table, tablefmt="grid"))
+            'value': tabulate(table, tablefmt="grid")
         })
 
         return MsgUiDisplayMarkdownText(
-            title=list_to_str(message.description),
+            title='Next test case to be executed',
             level='info',
             fields=fields,
             tags={"testcase": message.testcase_id}
         )
 
     def _echo_testcase_configure(self, message):
-        """
-            {
-                "_api_version": "1.0.8",
-                "configuration_id": "M2M_CFG_01",
-                "content_type": "application/json",
-                "description": [
-                    "CoAP servers running service at [bbbb::2]:5683"
-                ],
-                "message_id": "a3d7038a-8413-464d-99d4-8da80153a863",
-                "node": "cse",
-                "state": "configuring",
-                "testcase_id": "TD_M2M_NH_01",
-                "testcase_ref": "http://doc.f-interop.eu/tests/TD_M2M_NH_01",
-                "timestamp": 1517033788
-            }
-        """
 
-        fields_to_translate = ['testcase_id', 'testcase_ref', 'node', 'state']
+        table = list()
         fields = []
-        for f in fields_to_translate:
+
+        step_message_fields = [
+            ('testcase_id', 'Test Case ID'),
+            ('testcase_ref', 'Test Case URL'),
+            ('node', 'Node'),
+            ('description', 'Nodes Description')
+        ]
+
+        for i in step_message_fields:
             try:
-                fields.append({
-                    'type': 'p',
-                    'value': '%s: %s' % (f, getattr(message, f))
-                })
-            except AttributeError as ae:
-                logger.error(ae)
+                col1 = i[1]
+                col2 = getattr(message, i[0])
+                col2 = list_to_str(col2)  # flattens info
+                table.append([col1, col2])
+            except AttributeError as e:
+                logger.warning(e)
 
         fields.append({
             'type': 'p',
-            'value': '%s' %
-                     (tabulate(
-                         translate_ioppytest_description_format_to_tabulate(message.description),
-                         tablefmt="grid"))
+            'value': tabulate(table, tablefmt="grid")
         })
 
         return MsgUiDisplayMarkdownText(
@@ -1154,6 +1198,8 @@ class GenericBidirectonalTranslator(object):
                 for attribute_name in ['id', 'error']:
                     frame_header.append([attribute_name, frame_dict[attribute_name]])
 
+                frame_header.append(['Dissection', '\n%s\n' % frames_as_list_of_strings.pop(0)])
+
             except KeyError as ae:
                 logger.error("Some attribute was not found: %s" % str(frame_dict))
             try:
@@ -1163,7 +1209,7 @@ class GenericBidirectonalTranslator(object):
                 })
                 fields.append({
                     'type': 'p',
-                    'value': 'Frame header:\n%s' % tabulate(frame_header)
+                    'value': 'Frame:\n%s' % tabulate(frame_header, tablefmt="grid")
                 })
 
                 # for protocol_layer_dict in frame_dict['protocol_stack']:
@@ -1182,12 +1228,12 @@ class GenericBidirectonalTranslator(object):
                 #                 )
                 #             })
 
-                fields.append({
-                    'type': 'p',
-                    'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
-                })
+                # fields.append({
+                #     'type': 'p',
+                #     'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
+                # })
             except KeyError as ae:
-                logger.error("Some attrubute was not found in protocol stack dict: %s" % str(frame_dict))
+                logger.error("Some attribute was not found in protocol stack dict: %s" % str(frame_dict))
 
         return MsgUiDisplayMarkdownText(
             level='info',
