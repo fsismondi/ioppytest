@@ -75,6 +75,7 @@ TD_6LOWPAN = [
     TD_6LOWPAN_HC,
     TD_6LOWPAN_FORMAT,
     TD_6LOWPAN_ND,
+    TD_6LOWPAN_RS_RA,
 ]
 
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
