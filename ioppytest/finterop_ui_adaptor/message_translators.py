@@ -773,7 +773,13 @@ class GenericBidirectonalTranslator(object):
 
             # add report basic info as a raw into the summary_table
             try:
-                summary_table.append([tc_report['testcase_id'], tc_report['verdict'], tc_report['description']])
+                summary_table.append(
+                    [
+                        tc_report['testcase_id'],
+                        tc_report['verdict'],
+                        list_to_str(tc_report['description'])
+                    ]
+                )
             except KeyError:
                 logger.warning("Couldnt parse: %s" % str(tc_report))
                 summary_table.append([tc_report['testcase_id'], "None", "None"])
@@ -1036,9 +1042,9 @@ class GenericBidirectonalTranslator(object):
 
         """
 
-        fields_to_translate = ['testcase_id',
-                               'testcase_ref',
-                               'state',
+        fields_to_translate = ['Test Case ID',
+                               'Test Case URL',
+                               'Test Case State',
                                ]
         fields = []
         table = []
