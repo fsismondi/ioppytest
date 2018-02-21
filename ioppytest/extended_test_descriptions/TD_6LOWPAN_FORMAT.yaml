@@ -514,7 +514,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_10
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_10
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local, hop limit=64 and payload=0).
 pre_conditions: 
