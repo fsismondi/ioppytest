@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LOWPAN_FORMAT_01
-uri : none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_01
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
@@ -55,7 +55,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_02
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_02
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (EUI-64 link-local).
 pre_conditions: 
@@ -112,7 +112,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_03
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_03
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
@@ -166,7 +166,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_04
-uri : none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_04
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=64 and payload=0).
 pre_conditions: 
@@ -223,7 +223,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_05
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_05
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local).
 pre_conditions: 
@@ -283,7 +283,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_06
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_06
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
@@ -340,7 +340,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_07
-uri : none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_03
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=64 and payload=0).
 pre_conditions: 
@@ -397,7 +397,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_08
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_08
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local).
 pre_conditions: 
@@ -457,7 +457,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_09
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_09
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=1 and payload=0).
 pre_conditions: 
@@ -514,7 +514,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_10
-uri : none
+uri: none
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local, hop limit=64 and payload=0).
 pre_conditions: 
@@ -568,7 +568,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_11
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_11
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle fragmented uncompressed 6LoWPAN packets (16-bit link-local).
 pre_conditions: 
@@ -625,7 +625,7 @@ sequence:
 --- !testcase
       
 testcase_id: TD_6LOWPAN_FORMAT_12
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_12
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed 6LoWPAN packets (16-bit link-local, hop limit=1 and payload=0).
 pre_conditions: 
@@ -679,7 +679,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_13
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_13
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (EUI-64 link-local, hop limit=1 and payload=4).
 pre_conditions: 
@@ -734,7 +734,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_14
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_14
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (EUI-64 link-local to 16-bit link-local, hop limit=1 and payload=4).
 pre_conditions: 
@@ -791,7 +791,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_FORMAT_15
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_15
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (16-bit link-local to EUI-64 link-local, hop limit=1 and payload=4).
 pre_conditions: 
@@ -847,7 +847,7 @@ sequence:
 
 --- !testcase
 testcase_id: TD_6LOWPAN_FORMAT_16
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_FORMAT_16
 configuration: 6LOWPAN_CFG_01
 objective: check that EUTs correctly handle uncompressed multicasted 6LoWPAN packets (16-bit link-local, hop limit=1 and payload=4).
 pre_conditions: 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LOWPAN_ND_01
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_ND_01
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 link-local Advertisement)
 pre_conditions:
@@ -120,7 +120,7 @@ sequence:
 --- !testcase
      
 testcase_id: TD_6LOWPAN_ND_02
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_ND_02
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (EUI-64 to 16-bit link-local Advertisement)
 pre_conditions:
@@ -240,7 +240,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_ND_03
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_ND_03
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (16-bit to EUI-64 link-local Advertisement)
 pre_conditions:
@@ -360,7 +360,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_ND_04
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_ND_04
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform the neighbor Discovery (16-bit link-local adresses)
 pre_conditions:
