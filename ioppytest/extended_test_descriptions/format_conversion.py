@@ -164,3 +164,7 @@ if __name__ == '__main__':
                 test_case_md_file.write("# Interoperability Test Description: %s\n" % i.id)
                 test_case_md_file.write(get_markdown_representation_of_testcase(i.id))
                 test_case_md_file.write("\n\n")
+
+        for i in td_list:
+            if "6LOWPAN" in i.id:
+                print("\n{\n'value': 'http://doc.f-interop.eu/tests/%s'\n},"%i.id)
