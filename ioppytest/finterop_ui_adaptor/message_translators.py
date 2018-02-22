@@ -1514,7 +1514,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.fields = [
             {
                 "type": "p",
-                "value": "Do you confirm executing the STIMULI <%s>" % self._current_step
+                "value": "Confirm executing %s (see description below)" % self._current_step
             },
             {
                 "name": "stimuli_executed",
@@ -1531,7 +1531,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.fields = [
             {
                 "type": "p",
-                "value": "Please provide VERIFY step response for <%s>" % self._current_step
+                "value": "Please verify %s (see description below)" % self._current_step
             },
             {
                 "label": "OK",
@@ -1579,41 +1579,11 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         """
 
         # # # Set Up the VPN between users' IUTs # # #
-        # 1. user needs to export ENV VARS
+        # 1. user needs to config AGENT and PROBE
 
-        disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "type": "p",
-                "value": env_vars_export
-            }]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-        req = MsgUiRequestConfirmationButton(
-            title="Confirm that variables have been exported",
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
-        )
-
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
-            )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
-
-        # 2. user needs to config AGENT:
         # in 6lowpan we redirect the user towards the official doc
         agents_kickstart_help = """
-        Please see documentation for configuring 6LoWPAN (802.15.4) testing setup here:
+        ## Please see documentation for configuring 6LoWPAN (802.15.4) testing setup here:
  
         [http://doc.f-interop.eu/interop/6lowpan_test_suite](http://doc.f-interop.eu/interop/6lowpan_test_suite)
         
@@ -1632,7 +1602,36 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that agent component is up and running",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "name": "continue",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=900,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[
+                {
+                    "type": "p",
+                    "value": env_vars_export
+                }]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm that agent and probe are up and running",
             tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
                 "name": "confirm",
@@ -1644,7 +1643,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         try:
             resp = amqp_connector.synch_request(
                 request=req,
-                timeout=900,
+                timeout=600,
             )
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
