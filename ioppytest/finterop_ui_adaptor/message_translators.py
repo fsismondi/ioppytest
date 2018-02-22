@@ -1509,9 +1509,13 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Do you confirm executing the STIMULI  <%s> ? " % self._current_step
+            # title="Do you confirm executing the STIMULI  <%s> ? " % self._current_step
         )
         message_ui_request.fields = [
+            {
+                "type": "p",
+                "value": "Do you confirm executing the STIMULI <%s>" % self._current_step
+            },
             {
                 "name": "stimuli_executed",
                 "type": "button",
@@ -1522,12 +1526,12 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     def _ui_request_step_verification(self, message_from_tt):
         message_ui_request = MsgUiRequestConfirmationButton(
-            title="Please VERIFY the information regarding the STEP  <%s>" % self._current_step
+            # title="Please VERIFY the information regarding the STEP  <%s>" % self._current_step
         )
         message_ui_request.fields = [
             {
                 "type": "p",
-                "value": "Please provide VERIFY step response"
+                "value": "Please provide VERIFY step response for <%s>" % self._current_step
             },
             {
                 "label": "OK",
@@ -1564,6 +1568,92 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
     def __init__(self):
         super().__init__()
+
+    def _bootstrap(self, amqp_connector):
+        """
+        see doc of overridden method
+
+        only the following API calls should be used from bootstrap method:
+            amqp_connector.synch_request(self, request, timeout)
+            amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
+        """
+
+        # # # Set Up the VPN between users' IUTs # # #
+        # 1. user needs to export ENV VARS
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "type": "p",
+                "value": env_vars_export
+            }]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm that variables have been exported",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # 2. user needs to config AGENT:
+        # in 6lowpan we redirect the user towards the official doc
+        agents_kickstart_help = """
+        Please see documentation for configuring 6LoWPAN (802.15.4) testing setup here:
+ 
+        [http://doc.f-interop.eu/interop/6lowpan_test_suite](http://doc.f-interop.eu/interop/6lowpan_test_suite)
+        
+        """
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm that agent component is up and running",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=900,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        return True
+
+        # 3. TODO trigger agents configuration
+        # 4. TODO automate ping test from tt
+        # 5. TODO ask user to ping other user's endpoint
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
