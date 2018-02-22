@@ -38,9 +38,9 @@ class ImportYamlInteropTestCases(unittest.TestCase):
     def validate_config_description(self, config):
 
         tc_config_must_have_fields = {'id', 'uri', 'nodes', 'topology',
-                                      'description'}
+                                      'nodes_description'}
         tc_config_must_have_non_null_fields = {'id', 'uri', 'nodes', 'topology',
-                                               'description'}
+                                               'nodes_description'}
 
         for field in tc_config_must_have_fields:
             assert hasattr(config, field), 'CONFIG yaml file must contain a %s field' % field
@@ -94,3 +94,19 @@ class ImportYamlInteropTestCases(unittest.TestCase):
             for tc_conf in imported_tcs:
                 assert tc_conf.id == tc_conf.id.upper(), \
                     'TC %s contains lower cases in test config id' % tc_conf.id
+
+    # def test_last_line_is_empty_line(self):
+    #     valid_last_lines = [
+    #         '       ',
+    #         '\t',
+    #         '\n',
+    #         '\n\n',
+    #         '\r\n'
+    #     ]
+    #     import os
+    #     for td in TEST_DESCRIPTIONS:
+    #         with open(td, 'r') as f:
+    #             lines = f.readlines()
+    #             last_line = lines[-1].rsplit(os.linesep+os.linesep)
+    #             print('>>>>%s' % last_line)
+    #

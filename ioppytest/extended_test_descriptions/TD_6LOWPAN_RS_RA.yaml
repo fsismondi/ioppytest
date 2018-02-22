@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 --- !testcase
 testcase_id: TD_6LOWPAN_RS_RA_HC_01
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_01
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform 6LoWPAN multicast router solicitation to all-nodes (EUI-64 addresses link-local) and unicast Router Advertisement (EUI-64 adresses link-local)
 pre_conditions:
@@ -90,7 +90,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_02
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_02
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement(EUI-64 addresses)
 pre_conditions:
@@ -179,7 +179,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_03
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_03
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (EUI-64 to 16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
@@ -269,7 +269,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_04
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_04
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (EUI-64 to 16-bit link-local)
 pre_conditions:
@@ -359,7 +359,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_05
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_05
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit to EUI-64 link-local addresses) and unicast Router Advertisement
 pre_conditions:
@@ -449,7 +449,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_06
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_06
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit to EUI-64 link-local addresses)
 pre_conditions:
@@ -539,7 +539,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_07
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_07
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform multicast Router Solicitation (16-bit link-local addresses) and unicast Router Advertisement
 pre_conditions:
@@ -628,7 +628,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_6LOWPAN_RS_RA_HC_08
-uri: none
+uri: http://doc.f-interop.eu/tests/TD_6LOWPAN_RS_RA_HC_08
 configuration: 6LOWPAN_CFG_02
 objective: check that EUTs are able to perform unicast Router Solicitation and Advertisement (16-bit link-local addresses)
 pre_conditions:

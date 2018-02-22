@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-
+import os
 import json
 import yaml
 import logging
+import fileinput
 
 from itertools import cycle
 from collections import OrderedDict
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TD_DIR
 from ioppytest.utils.exceptions import TestSuiteError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
@@ -47,6 +48,22 @@ def test_config_constructor(loader, node):
 # these build Testcase and Configuration objects from yaml files
 yaml.add_constructor(u'!configuration', test_config_constructor)
 yaml.add_constructor(u'!testcase', testcase_constructor)
+
+
+def merge_yaml_files(filelist: list):
+    new_merged_file = os.path.join(TD_DIR, 'merged_files.yaml')
+
+    with open(new_merged_file, 'w', encoding="utf-8") as fout:
+        for file in filelist:
+            with open(file, 'r', encoding="utf-8") as fin:
+                for line in fin:
+                    if line.startswith("#"):
+                        pass
+                    else:
+                        fout.write(line)
+            fout.write(os.linesep)
+
+    return new_merged_file
 
 
 def import_teds(yamlfile):
@@ -111,6 +128,8 @@ class TestSuite:
     def __init__(self, ted_tc_file, ted_config_file):
 
         # first let's import the TC configurations
+        if type(ted_config_file) is list:
+            ted_config_file = merge_yaml_files(ted_config_file)
         imported_configs = import_teds(ted_config_file)
         self.tc_configs = OrderedDict()
         self.agents = set()
@@ -126,6 +145,8 @@ class TestSuite:
             logger.info('test configuration imported from YAML: %s' % key)
 
         # lets import TCs and make sure there's a tc config for each one of them
+        if type(ted_tc_file) is list:
+            ted_tc_file = merge_yaml_files(ted_tc_file)
         imported_teds = import_teds(ted_tc_file)
         self.teds = OrderedDict()
         for ted in imported_teds:
@@ -699,7 +720,7 @@ class TestConfig:
         self.uri = uri
         self.nodes = nodes
         self.nodes_configured = set()
-        self.description = description
+        self.nodes_description = description
 
         # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
         # see test configuration yaml file
@@ -787,7 +808,7 @@ class TestConfig:
             d['configuration_ref'] = self.uri
             d['nodes'] = self.nodes
             d['topology'] = self.topology
-            d['description'] = self.description
+            d['nodes_description'] = self.nodes_description
 
         return dict(d)
 

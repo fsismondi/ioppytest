@@ -145,11 +145,26 @@ def get_html_representation_of_testcase(testcase_id):
 if __name__ == '__main__':
     from ioppytest import TMPDIR
 
-    for i in td_list:
-        if "6LOWPAN" in i.id:
-            with open(os.path.join(TMPDIR, i.id + '.md'), 'w') as test_case_html_file:
-                test_case_html_file.write(get_markdown_representation_of_testcase(i.id))
+    # # one .md per TC
+    # for i in td_list:
+    #     if "6LOWPAN" in i.id:
+    #         with open(os.path.join(TMPDIR, i.id + '.md'), 'w') as test_case_md_file:
+    #             test_case_md_file.write(get_markdown_representation_of_testcase(i.id))
+    #
+    #             # for i in td_list:
+    #             #     with open(os.path.join(TMPDIR, i.id + '.html'), 'w') as test_case_md_file:
+    #             #         test_case_md_file.write(get_html_representation_of_testcase(i.id))
 
-                # for i in td_list:
-                #     with open(os.path.join(TMPDIR, i.id + '.html'), 'w') as test_case_html_file:
-                #         test_case_html_file.write(get_html_representation_of_testcase(i.id))
+    # one .md for all TC
+    testsuite_filename = 'TD_6LoWPAN_interoperability.md'
+    with open(os.path.join(TMPDIR, testsuite_filename), 'w') as test_case_md_file:
+
+        for i in td_list:
+            if "6LOWPAN" in i.id:
+                test_case_md_file.write("# Interoperability Test Description: %s\n" % i.id)
+                test_case_md_file.write(get_markdown_representation_of_testcase(i.id))
+                test_case_md_file.write("\n\n")
+
+        for i in td_list:
+            if "6LOWPAN" in i.id:
+                print("\n{\n'value': 'http://doc.f-interop.eu/tests/%s'\n},"%i.id)

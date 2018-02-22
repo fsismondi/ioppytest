@@ -49,37 +49,54 @@ TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
 
 # yaml test descriptions:
 # fixme: refact the code so TD_XXX is a list of yaml files containing test cases from several groups
-TD_COAP = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
+TD_COAP_CORE = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
+TD_COAP = [
+    TD_COAP_CORE
+]
 
 TD_COMI = os.path.join(TD_DIR, "TD_COMI.yaml")
 TD_COMI_CFG = os.path.join(TD_DIR, "TD_COMI_CFG.yaml")
 
-TD_6LOWPAN = os.path.join(TD_DIR, "TD_6LOWPAN_HC.yaml")
-TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
-
 TD_6LOWPAN_FORMAT = os.path.join(TD_DIR, "TD_6LOWPAN_FORMAT.yaml")
 TD_6LOWPAN_FORMAT_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
+TD_6LOWPAN_HC = os.path.join(TD_DIR, "TD_6LOWPAN_HC.yaml")
+TD_6LOWPAN_HC_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
 TD_6LOWPAN_RS_RA = os.path.join(TD_DIR, "TD_6LOWPAN_RS_RA.yaml")
 TD_6LOWPAN_RS_RA_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
+TD_6LOWPAN_ND = os.path.join(TD_DIR, "TD_6LOWPAN_ND.yaml")
+TD_6LOWPAN_ND_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
+TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+TD_6LOWPAN = [
+    TD_6LOWPAN_HC,
+    TD_6LOWPAN_FORMAT,
+    TD_6LOWPAN_ND,
+    TD_6LOWPAN_RS_RA,
+]
 
 TD_ONEM2M = os.path.join(TD_DIR, "TD_ONEM2M_PRO.yaml")
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
 TEST_DESCRIPTIONS_DICT = {
-    'coap': [TD_COAP, TD_COAP_CFG],
-    '6lowpan': [TD_6LOWPAN, TD_6LOWPAN_FORMAT, TD_6LOWPAN_RS_RA, TD_6LOWPAN_CFG],
-    'onem2m':[TD_ONEM2M,TD_ONEM2M_CFG],
-    'comi':[TD_COMI,TD_COMI_CFG]
+    'coap': TD_COAP,  # it's already a list
+    '6lowpan': TD_6LOWPAN,  # it's already a list
+    'onem2m': [TD_ONEM2M],
+    'comi': [TD_COMI]
 }
 
-TEST_DESCRIPTIONS = [TD_COAP,
-                     TD_6LOWPAN,
-                     TD_ONEM2M,
-                     TD_COMI,
-                     TD_6LOWPAN_FORMAT,
-                     TD_6LOWPAN_RS_RA]
+TEST_DESCRIPTIONS = [
+    TD_COAP_CORE,
+    TD_ONEM2M,
+    TD_COMI,
+    TD_6LOWPAN_HC,
+    TD_6LOWPAN_FORMAT,
+    TD_6LOWPAN_RS_RA,
+    TD_6LOWPAN_ND,
+]
 
 TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG,
                              TD_6LOWPAN_CFG,

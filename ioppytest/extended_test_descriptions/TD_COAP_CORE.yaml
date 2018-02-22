@@ -1418,3 +1418,4 @@ sequence:
     node : coap_client
     description:
       - 'Client displays that the "Ping" was successful'
+        
