@@ -1585,16 +1585,19 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         agents_kickstart_help = """
         ## Please see documentation for configuring 6LoWPAN (802.15.4) testing setup here:
  
-        [http://doc.f-interop.eu/interop/6lowpan_test_suite](http://doc.f-interop.eu/interop/6lowpan_test_suite)
+        http://doc.f-interop.eu/interop/6lowpan_test_suite
         
         """
 
         disp = MsgUiDisplay(
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "type": "p",
-                "value": agents_kickstart_help
-            }, ]
+            level='highlighted',
+            fields=[
+                {
+                    "type": "p",
+                    "value": agents_kickstart_help
+                },
+            ]
         )
         amqp_connector.publish_ui_display(
             message=disp,
