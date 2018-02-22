@@ -1582,35 +1582,27 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # 1. user needs to config AGENT and PROBE
 
         # in 6lowpan we redirect the user towards the official doc
-        agents_kickstart_help = """
-        ## Please see documentation for configuring 6LoWPAN (802.15.4) testing setup here:
- 
-        http://doc.f-interop.eu/interop/6lowpan_test_suite
-        
-        """
+        agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
+        agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
 
-        disp = MsgUiDisplay(
+
+        req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
-            level='highlighted',
             fields=[
                 {
                     "type": "p",
                     "value": agents_kickstart_help
                 },
+                {
+                    "type": "p",
+                    "value": agents_kickstart_help_2
+                },
+                {
+                    "name": "continue",
+                    "type": "button",
+                    "value": True
+                },
             ]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "continue",
-                "type": "button",
-                "value": True
-            }, ]
         )
 
         try:
