@@ -1,0 +1,29 @@
+--- !configuration
+configuration_id: M2M_CFG_01
+uri: http://openmobilealliance.org/iot/lightweight-m2m-lwm2m
+nodes:
+  - Client
+  - Server
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - Client
+      - Server
+addressing:
+    - node: Client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: Server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+description:
+  - node: Server
+    message:
+      - LWM2M server running service at [bbbb::2]:5683
+  - node: Client
+    message:
+      - No special configuration needed
+      - LWM2M client requests
+      - - Destination IP Address = [bbbb::2]
+        - Destination UDP Port = 5683
