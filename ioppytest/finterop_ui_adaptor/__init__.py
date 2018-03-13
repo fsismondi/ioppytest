@@ -21,7 +21,8 @@ MESSAGES_NOT_TO_BE_ECHOED = [
     MsgAgentTunStart,
     MsgAgentTunStarted,
     MsgTestingToolConfigured,
-    MsgTestSuiteGetTestCases
+    MsgTestSuiteGetTestCases,
+    MsgDissectionAutoDissect
 ]
 
 WAITING_TIME_FOR_SECOND_USER = 900  # in seconds
