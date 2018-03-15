@@ -27,16 +27,16 @@ class AcklioCoMiServer(AutomatedIUT):
     stimuli_cmd_dict = NotImplementedField
 
     iut_cmd = [
-        './serverComi --yang-file=comi-interop@2017-12-12  --sid-file=comi-interop@2017-12-12 launch'
+        './serverComi --yang-sid-path=./plugtests/ --datastore-path=./plugtests/ --read-ds-from-file=1  launch'
     ]
 
     def __init__(self):
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
-        th = threading.Thread(target=self._launch_automated_iut)
-        th.daemon = True
-        th.start()
+        #th = threading.Thread(target=self._launch_automated_iut)
+        #th.daemon = True
+        #th.start()
 
     def _launch_automated_iut(self):
         # att this is a blocking function
