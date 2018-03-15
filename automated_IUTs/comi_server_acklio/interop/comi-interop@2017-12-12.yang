@@ -1,0 +1,48 @@
+module comi-interop {
+
+  namespace "http://www.acklio.com";
+
+  prefix "comi-interop";
+
+  organization
+       "IETF CoRE WG";
+
+  contact
+       "Editor:   Tanguy Ropitault
+               <mailto:tanguy@ackl.io>
+        Editor:   Michel Veillette
+               <mailto:michel.veillette@trilliantinc.com>
+               
+        Editor:   Alexander Pelov
+               <mailto:a@ackl.io>";
+
+
+  revision "2017-12-12" {
+        description "Initial revision.";
+        reference
+        "Interoperability testing for CoMI implementations.";
+  }
+ 
+
+  container interface {
+      leaf ip-address {
+        type string;
+      }
+
+      leaf name {
+        type string;
+      }  
+
+      leaf throughput {
+        type int64;
+      }
+  }
+}
+
+
+
+
+
+
+
+
