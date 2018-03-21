@@ -31,7 +31,7 @@ from ioppytest.utils.messages import *
 from ioppytest.finterop_ui_adaptor import (UiResponseError,
                                            SessionError,
                                            COMPONENT_ID,
-                                           STDOUT_MAX_STRING_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            MESSAGES_NOT_TO_BE_ECHOED,
                                            TESTING_TOOL_TOPIC_SUBSCRIPTIONS)
 from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
@@ -194,7 +194,7 @@ class AmqpMessagePublisher:
 
         logger.info("publishing to routing_key: %s, msg: %s"
                     % (message.routing_key,
-                       repr(message)[:STDOUT_MAX_STRING_LENGTH],))
+                       repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
         try:
             time.sleep(PUBLISH_DELAY)
@@ -295,7 +295,7 @@ class AmqpMessagePublisher:
 
     def publish_ui_request(self, request, user_id=None):
         """
-        ASYNCRHONOUS UI request: sends message, and exits, Response needs to be consumed using the queuing system
+        ASYNCHRONOUS UI request: sends message, and exits, Response needs to be consumed using the queuing system
         """
 
         if user_id:
@@ -406,7 +406,7 @@ def process_message_from_ui(message_translator, message_received):
     logger.info("routing TT <- UI: %s correlation_id %s, msg: %s"
                 % (message_received.routing_key,
                    message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
-                   repr(message_received)[:STDOUT_MAX_STRING_LENGTH],))
+                   repr(message_received)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
     # 0. print pending responses table
     message_translator.print_table_of_pending_responses()
@@ -442,7 +442,7 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
     logger.info("routing TT -> UI: %s correlation_id %s, msg: %s"
                 % (message_received.routing_key,
                    message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
-                   repr(message_received)[:STDOUT_MAX_STRING_LENGTH],))
+                   repr(message_received)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
     # 0. update message factory states
     message_translator.update_state(message_received)

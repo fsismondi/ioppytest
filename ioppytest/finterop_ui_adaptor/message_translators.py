@@ -16,7 +16,8 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply
                                                     get_field_value_from_ui_reply)
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
-                                           STDOUT_MAX_STRING_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
                                            STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
                                            UI_TAG_BOOTSTRAPPING,
@@ -334,6 +335,47 @@ class GenericBidirectonalTranslator(object):
 
         return msg
 
+    def truncate_if_text_too_long(self, msg):
+
+        """
+            Updates message body text of message before being sent to UI.
+            method before being published
+        """
+
+        if msg:
+            try:
+                new_fields_list = []
+                for f in msg.fields:
+                    try:
+
+                        if f["type"] == "p" and len(f["value"]) > STDOUT_MAX_TEXT_LENGTH:  # text too long
+                            f["value"] = f["value"][:STDOUT_MAX_TEXT_LENGTH]
+                            new_fields_list.append(
+                                {
+                                    "type": f["type"],
+                                    "value": f["value"]
+                                }
+                            )
+
+                            new_fields_list.append(
+                                {
+                                    "type": f["type"],
+                                    "value": "WARNING: this message has been truncated"
+                                }
+                            )
+                        else:  # text, accepted length
+                            new_fields_list.append(f)
+
+                    except KeyError:  # this is not text
+                        new_fields_list.append(f)
+
+                msg.fields = new_fields_list
+
+            except AttributeError:
+                logging.error("UI Message doesnt contain FILDS field")
+
+        return msg
+
     def get_ui_request_action_message(self, message_from_tt: Message):
         """
         translates:  (message_from_tt) -> a UI request
@@ -382,7 +424,8 @@ class GenericBidirectonalTranslator(object):
             # run handler with user reply value + tt message that triggered the UI request in the first place
             message_for_tt = ui_to_tt_message_handler(user_input_value, tt_message)
         except KeyError:
-            logger.debug("No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_STRING_LENGTH])
+            logger.debug(
+                "No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE])
             return None
 
         logger.debug("UI reply :%s translated into TT message %s"
@@ -406,6 +449,8 @@ class GenericBidirectonalTranslator(object):
             msg_ret = self._echo_message_as_table(message)
 
         msg_ret = self.tag_message(msg_ret)
+        msg_ret = self.truncate_if_text_too_long(msg_ret)
+        
         return msg_ret
 
     @classmethod
@@ -1584,7 +1629,6 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # in 6lowpan we redirect the user towards the official doc
         agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
         agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
-
 
         req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
