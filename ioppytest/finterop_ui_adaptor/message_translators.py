@@ -360,7 +360,7 @@ class GenericBidirectonalTranslator(object):
                             new_fields_list.append(
                                 {
                                     "type": f["type"],
-                                    "value": "WARNING: this message has been truncated"
+                                    "value": "(WARNING: this message has been truncated)"
                                 }
                             )
                         else:  # text, accepted length
@@ -450,7 +450,7 @@ class GenericBidirectonalTranslator(object):
 
         msg_ret = self.tag_message(msg_ret)
         msg_ret = self.truncate_if_text_too_long(msg_ret)
-        
+
         return msg_ret
 
     @classmethod
@@ -1295,16 +1295,25 @@ class GenericBidirectonalTranslator(object):
     def _echo_packet_raw(self, message):
         fields = []
 
-        dir = []
         if 'fromAgent' in message.routing_key:
             dir = 'AGENT -> TESTING TOOL'
+
         elif 'toAgent' in message.routing_key:
-            dir = 'TESTING TOOL -> AGENT'
+            dir = 'TESTING TOOL -> AGENT (%s)' % message.routing_key
 
         fields.append({
             'type': 'p',
             'value': '%s: %s' % ('data packet', dir)
         })
+
+        try:
+            routing_info = message.routing_key.split('.')[0], message.routing_key.split('.')[1]
+            fields.append({
+                'type': 'p',
+                'value': '%s: %s' % routing_info
+            })
+        except IndexError:
+            pass
 
         fields.append({
             'type': 'p',
