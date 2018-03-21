@@ -26,7 +26,8 @@ RUN python3 -m pip install pika
 
 # CoMI binary and examples
 ADD automated_IUTs/comi_server_acklio/serverComi /CoMI/
-ADD automated_IUTs/comi_server_acklio/examples /CoMI/examples/
+RUN chmod +x /CoMI/serverComi
+ADD automated_IUTs/comi_server_acklio/interop /CoMI/interop/
 
 
 EXPOSE 5683

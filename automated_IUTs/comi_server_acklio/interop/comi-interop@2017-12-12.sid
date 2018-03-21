@@ -1,0 +1,37 @@
+{
+  "assignment-ranges": [
+    {
+      "entry-point": 70000,
+      "size": 50
+    }
+  ],
+  "module-name": "comi-interop",
+  "module-revision": "2017-12-12",
+  "items": [
+    {
+      "namespace": "module",
+      "identifier": "comi-interop",
+      "sid": 70000
+    },
+    {
+      "namespace": "data",
+      "identifier": "/comi-interop:interface",
+      "sid": 70001
+    },
+    {
+      "namespace": "data",
+      "identifier": "/comi-interop:interface/ip-address",
+      "sid": 70002
+    },
+    {
+      "namespace": "data",
+      "identifier": "/comi-interop:interface/name",
+      "sid": 70003
+    },
+    {
+      "namespace": "data",
+      "identifier": "/comi-interop:interface/throughput",
+      "sid": 70004
+    }
+  ]
+}
