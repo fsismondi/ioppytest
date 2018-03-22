@@ -171,7 +171,7 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
                     "type": "button",
                     "value": True
                 },
-            ]
+            ],
         )
         resp = amqp_publisher.synch_request(
             request=m,
