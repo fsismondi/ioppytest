@@ -1263,8 +1263,10 @@ class GenericBidirectonalTranslator(object):
 
         fields.append({
             'type': 'p',
-            'value': '%s:%s' % ('timestamp', message.timestamp)
+            'value': '%s:%s' % ('timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime(
+                '%Y-%m-%d %H:%M:%S'))
         })
+
         fields.append({
             'type': 'p',
             'value': '%s:%s' % ('interface', message.interface_name)
@@ -1584,7 +1586,6 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # in 6lowpan we redirect the user towards the official doc
         agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
         agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
-
 
         req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
