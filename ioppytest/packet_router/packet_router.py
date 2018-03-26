@@ -99,7 +99,6 @@ class PacketRouter(threading.Thread):
     def on_request(self, ch, method, props, body):
 
         # TODO implement forced message drop mechanism
-
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
         body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -107,7 +106,9 @@ class PacketRouter(threading.Thread):
 
         # let's route the message to the right agent
         try:
-            data = body_dict['data']
+            m = MsgPacketInjectRaw(data=body_dict['data'],
+                                   timestamp=body_dict['timestamp'],
+                                   interface_name=body_dict['interface_name'])
         except:
             logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
             return
@@ -116,9 +117,6 @@ class PacketRouter(threading.Thread):
         if src_rkey in self.routing_table.keys():
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
-                m = MsgPacketInjectRaw(
-                    data=data
-                )
                 # forward to dst_rkey
                 self.channel.basic_publish(
                     body=m.to_json(),

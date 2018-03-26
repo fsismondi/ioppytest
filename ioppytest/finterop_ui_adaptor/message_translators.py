@@ -1315,11 +1315,12 @@ class GenericBidirectonalTranslator(object):
         except IndexError:
             pass
 
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime(
-                '%Y-%m-%d %H:%M:%S'))
-        })
+        if message.timestamp:
+            fields.append({
+                'type': 'p',
+                'value': '%s:%s' % ('timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime(
+                    '%Y-%m-%d %H:%M:%S'))
+            })
 
         fields.append({
             'type': 'p',
