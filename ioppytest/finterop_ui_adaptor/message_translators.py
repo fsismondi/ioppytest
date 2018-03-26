@@ -234,7 +234,6 @@ class GenericBidirectonalTranslator(object):
             MsgSessionConfiguration: self._echo_as_debug_messages,
             MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
-            MsgAgentConfigured: self._echo_as_debug_messages,
             MsgAgentTunStart: self._echo_as_debug_messages,
             MsgAgentTunStarted: self._echo_as_debug_messages,
 

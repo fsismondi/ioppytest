@@ -18,7 +18,6 @@ MESSAGES_NOT_TO_BE_ECHOED = [
     MsgUiRequestSessionConfiguration,
     MsgUiSessionConfigurationReply,
     MsgSessionConfiguration,
-    MsgAgentConfigured,
     MsgAgentTunStart,
     MsgAgentTunStarted,
     MsgTestingToolConfigured,
