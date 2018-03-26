@@ -44,7 +44,7 @@ TT_check_list = [
     'packetrouting',
 ]
 # time to wait for components to send for READY signal
-READY_SIGNAL_TOUT = 20
+READY_SIGNAL_TOUT = 30
 
 if __name__ == '__main__':
 
@@ -122,12 +122,9 @@ if __name__ == '__main__':
 
     if no_component_checks:
         logger.info('Skipping component readiness checks')
-
     else:
-
         def on_ready_signal(ch, method, props, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
-
             event = Message.load_from_pika(method, props, body)
 
             if isinstance(event, MsgTestingToolComponentReady):
@@ -136,7 +133,6 @@ if __name__ == '__main__':
                 if component in TT_check_list:
                     TT_check_list.remove(component)
                     return
-
             elif isinstance(event, MsgTestingToolReady):  # listen to self generated event
                 logger.info('all signals processed')
                 channel.queue_delete('bootstrapping')
