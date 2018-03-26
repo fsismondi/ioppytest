@@ -43,8 +43,8 @@ class PacketRouter(threading.Thread):
         logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
         self.message_count = 0
-        self.set_up_connection()
-        self.queues_init()
+        self._set_up_connection()
+        self._queues_init()
 
         msg = MsgTestingToolComponentReady(
             component='packetrouting'
@@ -53,7 +53,7 @@ class PacketRouter(threading.Thread):
 
         logger.info('packet router waiting for new messages in the data plane..')
 
-    def set_up_connection(self):
+    def _set_up_connection(self):
         try:
             logger.info('Setting up AMQP connection..')
             # setup AMQP connection
@@ -65,7 +65,7 @@ class PacketRouter(threading.Thread):
             logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
             sys.exit(1)
 
-    def queues_init(self):
+    def _queues_init(self):
         for src_rkey, dst_rkey_list in self.routing_table.items():
             assert type(src_rkey) is str
             assert type(dst_rkey_list) is list
@@ -81,8 +81,8 @@ class PacketRouter(threading.Thread):
                                     queue=src_queue,
                                     routing_key=src_rkey)
 
-            # bind all src queues to on_request callback
-            self.channel.basic_consume(self.on_request, queue=src_queue)
+            # bind all src queues to _on_request callback
+            self.channel.basic_consume(self._on_request, queue=src_queue)
 
     def stop(self):
 
@@ -96,7 +96,7 @@ class PacketRouter(threading.Thread):
 
         self.channel.stop_consuming()
 
-    def on_request(self, ch, method, props, body):
+    def _on_request(self, ch, method, props, body):
 
         # TODO implement forced message drop mechanism
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
