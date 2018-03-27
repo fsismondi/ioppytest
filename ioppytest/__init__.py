@@ -128,7 +128,7 @@ try:
             "heartbeat_interval=0",
             "blocked_connection_timeout=2",
             "retry_delay=1",
-            "socket_timeout=1",
+            "socket_timeout=5",
             "connection_attempts=3"
         )
     else:
