@@ -512,8 +512,15 @@ class TestSuite:
         self.current_tc.change_state(state)
 
     def finish_check_step(self, description, partial_verdict):
-        assert self.get_current_step_state() == 'executing'
-        assert self.current_tc.current_step.type == 'check'
+
+        if self.get_current_step_state() != 'executing':
+            logger.warning("You cannot do this in state: %s" % self.get_current_step_state())
+            return
+
+        if self.current_tc.current_step.type != 'check':
+            logger.warning("You cannot do this in state: %s" % self.current_tc.current_step.type)
+            return
+
         assert partial_verdict.lower() in Verdict.values
 
         self.current_tc.current_step.set_result(partial_verdict.lower(), "CHECK step: %s" % description)
@@ -526,8 +533,15 @@ class TestSuite:
                         self.current_tc.current_step.state))
 
     def finish_verify_step(self, verify_response):
-        assert self.get_current_step_state() == 'executing'
-        assert self.current_tc.current_step.type == 'verify'
+
+        if self.get_current_step_state() != 'executing':
+            logger.warning("You cannot do this in state: %s" % self.get_current_step_state())
+            return
+
+        if self.current_tc.current_step.type != 'verify':
+            logger.warning("You cannot do this in state: %s" % self.current_tc.current_step.type)
+            return
+
         assert type(verify_response) is bool
 
         if verify_response:
@@ -548,8 +562,14 @@ class TestSuite:
                         self.current_tc.current_step.state))
 
     def finish_stimuli_step(self):
-        assert self.get_current_step_state() == 'executing'
-        assert self.current_tc.current_step.type == 'stimuli'
+
+        if self.get_current_step_state() != 'executing':
+            logger.warning("You cannot do this in state: %s" % self.get_current_step_state())
+            return
+
+        if self.current_tc.current_step.type != 'stimuli':
+            logger.warning("You cannot do this in state: %s"%self.current_tc.current_step.type)
+            return
 
         self.current_tc.current_step.change_state('finished')
 
