@@ -234,8 +234,7 @@ class GenericBidirectonalTranslator(object):
             MsgSessionConfiguration: self._echo_as_debug_messages,
             MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
-            MsgAgentTunStart: self._echo_as_debug_messages,
-            MsgAgentTunStarted: self._echo_as_debug_messages,
+            MsgAgentTunStarted: self._echo_agent_messages,
 
             # barely important enough to not be in the debugging
             MsgTestingToolComponentShutdown: self._echo_message_description_and_component,
@@ -247,7 +246,7 @@ class GenericBidirectonalTranslator(object):
         }
 
         # init:
-        # 1. receive Msg TT confiured -> action _ui_request_env_config
+        # 1. receive Msg TT configured -> action _ui_request_env_config
         # 2. received OK for ENV config -> request agent config
         # 3. received OK for agen conf -> _ui_request_testsuite_start
 
@@ -682,10 +681,7 @@ class GenericBidirectonalTranslator(object):
             except KeyError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         # 'warning' is yellow, 'highlighted' is green, and 'error' is red
 
@@ -718,25 +714,15 @@ class GenericBidirectonalTranslator(object):
                     logger.error(traceback.format_exc())
                     break
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "Checks:"
-                }
-            )
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s" % tabulate(frames, tablefmt="grid")
-                }
-            )
+            fields.extend([
+                {'type': 'p', 'value': "Analysis Tool Checks:"},
+                {'type': 'p', 'value': "%s" % tabulate(frames, tablefmt="grid")}
+            ])
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': tabulate(table_partial_verdicts, tablefmt="grid", headers="firstrow")
-                }
-            )
+            fields.extend([
+                {'type': 'p', 'value': "Step results:"},
+                {'type': 'p', 'value': tabulate(table_partial_verdicts, tablefmt="grid", headers="firstrow")}
+            ])
 
         return tc_report['testcase_id'], display_color, fields
 
@@ -845,21 +831,12 @@ class GenericBidirectonalTranslator(object):
                 logger.error("not a list: %s" % ui_fields)
 
         # add summary
-        fields.append({
-            'type': 'p',
-            'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))
-        })
+        fields.append({'type': 'p', 'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))})
 
-        fields.append({
-            'type': 'p',
-            'value': 'see details on verdicts below'
-        })
+        fields.append({'type': 'p', 'value': 'see details on verdicts below'})
 
         # add long line as delimiter
-        fields.append({
-            'type': 'p',
-            'value': '-' * 70
-        })
+        fields.append({'type': 'p', 'value': '-' * 70})
 
         # add tail (verdict details like checks etc..)
         fields = fields + fields_tail
@@ -968,10 +945,7 @@ class GenericBidirectonalTranslator(object):
             except AttributeError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
             title="Please execute the %s STEP: %s" % (message.step_type, message.step_id),
@@ -1048,14 +1022,8 @@ class GenericBidirectonalTranslator(object):
                 # 'state' gets special treatment
                 table.append(('state', state))
 
-            fields.append({
-                'type': 'p',
-                'value': '%s' % (tabulate(table, tablefmt="grid"))
-            })
-            fields.append({
-                'type': 'p',
-                'value': '---\n'
-            })
+            fields.append({'type': 'p', 'value': '%s' % (tabulate(table, tablefmt="grid"))})
+            fields.append({'type': 'p', 'value': '---\n'})
 
         return MsgUiDisplayMarkdownText(
             title=list_to_str(message.description),
@@ -1105,10 +1073,7 @@ class GenericBidirectonalTranslator(object):
                     ]
                 )
 
-        fields.append({
-            'type': 'p',
-            'value': '%s' % (tabulate(table, tablefmt="grid", headers="firstrow"))
-        })
+        fields.append({'type': 'p', 'value': '%s' % (tabulate(table, tablefmt="grid", headers="firstrow"))})
 
         return MsgUiDisplayMarkdownText(
             title="Test cases list:",
@@ -1143,10 +1108,7 @@ class GenericBidirectonalTranslator(object):
         for desc in getattr(message, 'nodes_description'):
             table.append([desc['node'], list_to_str(desc['message'])])
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
             title='Next test case to be executed',
@@ -1176,10 +1138,7 @@ class GenericBidirectonalTranslator(object):
             except AttributeError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
             title="Please configure the IUT as indicated",
@@ -1253,35 +1212,9 @@ class GenericBidirectonalTranslator(object):
             except KeyError as ae:
                 logger.error("Some attribute was not found: %s" % str(frame_dict))
             try:
-                fields.append({
-                    'type': 'p',
-                    'value': '-' * 70
-                })
-                fields.append({
-                    'type': 'p',
-                    'value': 'Frame:\n%s' % tabulate(frame_header, tablefmt="grid")
-                })
+                fields.append({'type': 'p', 'value': '-' * 70})
+                fields.append({'type': 'p', 'value': 'Frame:\n%s' % tabulate(frame_header, tablefmt="grid")})
 
-                # for protocol_layer_dict in frame_dict['protocol_stack']:
-                #     fields.append({
-                #         'type': 'p',
-                #         'value': 'Frame header:\n%s' % tabulate(frame_header)
-                #     })
-                #
-                #     try:
-                #         for protocol_layer_dict in frame_dict['protocol_stack']:
-                #             fields.append({
-                #                 'type': 'p',
-                #                 'value': '%s:%s\n%s' % (
-                #                     protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
-                #                     tabulate(protocol_layer_dict.items())
-                #                 )
-                #             })
-
-                # fields.append({
-                #     'type': 'p',
-                #     'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
-                # })
             except KeyError as ae:
                 logger.error("Some attribute was not found in protocol stack dict: %s" % str(frame_dict))
 
@@ -1300,31 +1233,19 @@ class GenericBidirectonalTranslator(object):
         elif 'toAgent' in message.routing_key:
             dir = 'TESTING TOOL -> AGENT (%s)' % message.routing_key
 
-        fields.append({
-            'type': 'p',
-            'value': '%s: %s' % ('data packet', dir)
-        })
+        fields.append({'type': 'p', 'value': '%s: %s' % ('data packet', dir)})
 
         try:
             routing_info = message.routing_key.split('.')[0], message.routing_key.split('.')[1]
-            fields.append({
-                'type': 'p',
-                'value': '%s: %s' % routing_info
-            })
+            fields.append({'type': 'p', 'value': '%s: %s' % routing_info})
         except IndexError:
             pass
 
         if message.timestamp:
-            fields.append({
-                'type': 'p',
-                'value': '%s:%s' % ('timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime(
-                    '%Y-%m-%d %H:%M:%S'))
-            })
+            fields.append({'type': 'p', 'value': '%s:%s' % (
+                'timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))})
 
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('interface', message.interface_name)
-        })
+        fields.append({'type': 'p', 'value': '%s:%s' % ('interface', message.interface_name)})
 
         network_bytes_aligned = ''
         count = 0
@@ -1340,10 +1261,7 @@ class GenericBidirectonalTranslator(object):
                 network_bytes_aligned += ' '
                 count += 1
 
-        fields.append({
-            'type': 'p',
-            'value': '\n%s' % (network_bytes_aligned)
-        })
+        fields.append({'type': 'p', 'value': '\n%s' % (network_bytes_aligned)})
 
         return MsgUiDisplayMarkdownText(
             level='info',
@@ -1354,35 +1272,20 @@ class GenericBidirectonalTranslator(object):
     def _echo_session_configuration(self, message):
         fields = []
 
-        fields.append({
-            'type': 'p',
-            'value': '%s: %s' % ('session_id', message.session_id)
-        })
-
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('users', message.users)
-        })
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('testing_tools', message.testing_tools)
-        })
+        fields.append({'type': 'p', 'value': '%s: %s' % ('session_id', message.session_id)})
+        fields.append({'type': 'p', 'value': '%s:%s' % ('users', message.users)})
+        fields.append({'type': 'p', 'value': '%s:%s' % ('testing_tools', message.testing_tools)})
 
         try:
             testcases = message.configuration['testsuite.testcases']
-            fields.append({
-                'type': 'p',
-                'value': '%s:%s' % ('testcases', testcases)
-            })
+            fields.append({'type': 'p', 'value': '%s:%s' % ('testcases', testcases)})
         except Exception as e:
             logger.warning('No testsuite.testcases in %s ' % repr(message))
 
         try:
             additional_session_resource = message.configuration['testsuite.additional_session_resource']
-            fields.append({
-                'type': 'p',
-                'value': '%s:%s' % ('additional_session_resource', additional_session_resource)
-            })
+            fields.append(
+                {'type': 'p', 'value': '%s:%s' % ('additional_session_resource', additional_session_resource)})
         except Exception as e:
             logger.warning("No testsuite.additional_session_resource in %s " % repr(message))
 
@@ -1396,6 +1299,26 @@ class GenericBidirectonalTranslator(object):
         ret_msg = self._echo_message_as_table(message)
         ret_msg.tags = {"logs": ""}
         return ret_msg
+
+    def _echo_agent_messages(self, message):
+        fields = []
+
+        if MsgAgentTunStarted:
+            fields.append(
+                {
+                    'type': 'p',
+                    'value': '%s TUN started, IPv6 interface %s::%s' % (
+                    message.name, message.ipv6_prefix, message.ipv6_host)
+                }
+            )
+        else:
+            raise NotImplementedError()
+
+        return MsgUiDisplayMarkdownText(
+            tags=UI_TAG_SETUP,
+            level='info',
+            fields=fields
+        )
 
 
 class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
