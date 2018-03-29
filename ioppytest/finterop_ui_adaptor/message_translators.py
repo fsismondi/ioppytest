@@ -948,7 +948,7 @@ class GenericBidirectonalTranslator(object):
         fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
-            title="Please execute the %s STEP: %s" % (message.step_type, message.step_id),
+            title="Please execute the %s STEP:" % message.step_type,
             level='info',
             fields=fields
         )
