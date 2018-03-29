@@ -34,6 +34,7 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
+TESTING_TOOL_AGENT_NAME = 'agent_TT'
 
 @property
 def NotImplementedField(self):
@@ -438,16 +439,17 @@ class GenericBidirectonalTranslator(object):
 
         # search for specialized visualization, returns fields
         if type(message) in self.specialized_visualization:
-            specialized_visualization = self.specialized_visualization[type(message)]
-            msg_ret = specialized_visualization(message)
+            specialized_visualization_handler = self.specialized_visualization[type(message)]
+            msg_ret = specialized_visualization_handler(message)
 
         # generic message visualization (message as a table)
         else:
             logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
             msg_ret = self._echo_message_as_table(message)
 
-        msg_ret = self.tag_message(msg_ret)
-        msg_ret = self.truncate_if_text_too_long(msg_ret)
+        if msg_ret:
+            msg_ret = self.tag_message(msg_ret)
+            msg_ret = self.truncate_if_text_too_long(msg_ret)
 
         return msg_ret
 
@@ -1227,19 +1229,22 @@ class GenericBidirectonalTranslator(object):
     def _echo_packet_raw(self, message):
         fields = []
 
+        try:
+            agent_name = message.routing_key.split('.')[1]
+        except IndexError:
+            agent_name = 'unknown_agent'
+
+        # dont echo TT's agent messages
+        if TESTING_TOOL_AGENT_NAME in agent_name:
+            return
+
         if 'fromAgent' in message.routing_key:
-            dir = 'AGENT -> TESTING TOOL'
+            dir = '%s -> TESTING TOOL' % agent_name
 
         elif 'toAgent' in message.routing_key:
-            dir = 'TESTING TOOL -> AGENT (%s)' % message.routing_key
+            dir = 'TESTING TOOL -> %s' % agent_name
 
         fields.append({'type': 'p', 'value': '%s: %s' % ('data packet', dir)})
-
-        try:
-            routing_info = message.routing_key.split('.')[0], message.routing_key.split('.')[1]
-            fields.append({'type': 'p', 'value': '%s: %s' % routing_info})
-        except IndexError:
-            pass
 
         if message.timestamp:
             fields.append({'type': 'p', 'value': '%s:%s' % (

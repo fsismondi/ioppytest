@@ -452,12 +452,13 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         ui_display_message = message_translator.transform_message_to_ui_markdown_display(
             message=message_received)
 
-        # fixme I should access _private method
-        ui_display_message = message_publisher._update_ui_message_rkeys(
-            ui_message=ui_display_message,
-            tt_message=message_received)
-
         if ui_display_message:
+
+            # fixme I shouldnt access _private method
+            ui_display_message = message_publisher._update_ui_message_rkeys(
+                ui_message=ui_display_message,
+                tt_message=message_received)
+
             queue_messages_display_to_ui.put(ui_display_message)
 
     else:
