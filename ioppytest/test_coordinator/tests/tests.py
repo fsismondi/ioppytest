@@ -43,6 +43,8 @@ class TestSuiteTests(unittest.TestCase):
         except ValueError:
             pass  # passed
 
+        self.testsuite.get_addressing_table()
+
         self.testsuite.get_agent_names()
 
         self.testsuite.get_current_step()
@@ -52,13 +54,18 @@ class TestSuiteTests(unittest.TestCase):
 
         self.testsuite.get_testcases_list()
 
-        self.testsuite.get_current_testcase_state()
+        self.testsuite.get_current_testcase()
         self.testsuite.get_current_testcase_id()
+        self.testsuite.get_current_testcase_state()
         self.testsuite.get_current_testcase_configuration()
         self.testsuite.get_current_testcase_configuration_id()
 
-        self.testsuite.get_current_step_target_address()
-        self.testsuite.get_addressing_table()
+        self.testsuite.get_report()
+        self.testsuite.get_testcases_basic()
+        self.testsuite.get_testcase_report()
+
+        self.testsuite.get_detailed_status()
+        self.testsuite.get_default_iut_addressing_from_configurations()
 
     def test_all_getters_of_testsuite_on_init(self):
         self._run_all_getters()

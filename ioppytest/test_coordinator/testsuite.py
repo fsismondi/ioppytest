@@ -630,7 +630,11 @@ class TestSuite:
             assert type(testcase_id) is str
         # assigns the one which is not None:
         tc = self.get_testcase(testcase_id) or self.get_current_testcase()
-        return tc.report
+
+        if tc:
+            return tc.report
+        else:
+            return None
 
     def reinit_testcase(self, testcase_id):
         """
