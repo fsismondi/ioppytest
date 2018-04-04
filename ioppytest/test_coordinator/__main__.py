@@ -16,7 +16,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS, LOGGER_FORMAT,
 from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from ioppytest.test_coordinator.states_machine import Coordinator
 

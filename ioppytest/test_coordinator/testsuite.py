@@ -132,17 +132,34 @@ class TestSuite:
             ted_config_file = merge_yaml_files(ted_config_file)
         imported_configs = import_teds(ted_config_file)
         self.tc_configs = OrderedDict()
+
         self.agents = set()
+        self.addressing_table = dict()
+
+        # TODO deprecate the node configuration principle maybe? This only makes sense if we have a config per TC
+        self.nodes_configured = set()
 
         for tc_config in imported_configs:
             self.tc_configs[tc_config.id] = tc_config
             self.agents |= set(tc_config.nodes)
+            # set default addressing table
+            for item in tc_config.get_default_addressing_table():
+                self.addressing_table.update(
+                    {
+                        item['node']:
+                            (
+                                item['ipv6_prefix'],
+                                item['ipv6_host']
+                            )
+                    }
+                )
 
-        logger.info('Imports: %s TC_CONFIG imported' % len(self.tc_configs))
-        logger.info('Imports: found the following agents from TC_CONFIG %s' % list(self.agents))
+        logger.info('Import: %s TC_CONFIG imported' % len(self.tc_configs))
+        logger.info('Import: agents participating in TC_CONFIG: %s' % list(self.agents))
+        logger.info('Import: default addressing table loaded from TC_CONFIGs: %s' % (self.addressing_table))
 
         for key, val in self.tc_configs.items():
-            logger.info('test configuration imported from YAML: %s' % key)
+            logger.info('Import: test configuration imported from YAML: %s' % key)
 
         # lets import TCs and make sure there's a tc config for each one of them
         if type(ted_tc_file) is list:
@@ -154,7 +171,7 @@ class TestSuite:
             assert ted.configuration_id in self.tc_configs, \
                 "Missing config: %s for test case: %s " % (ted.configuration_id, ted.id)
 
-        logger.info('Imports: %s TC execution scripts imported' % len(self.teds))
+        logger.info('Import: %s TC execution scripts imported' % len(self.teds))
         for key, val in self.teds.items():
             logger.info('test case imported from YAML: %s' % key)
 
@@ -238,7 +255,6 @@ class TestSuite:
         :return: step or None if testcase finished
 
         """
-        assert self.current_tc
 
         try:
             # if None then nothing else to execute
@@ -297,33 +313,60 @@ class TestSuite:
         self.current_tc.abort()
         self.current_tc = None
 
-    def set_iut_configuration(self, node, node_address):
-        if node and node_address:
-            self.get_current_testcase_configuration().update_node_address(node, node_address)
-            config = self.get_current_testcase_configuration().to_dict(verbose=True)
-            logger.info(
-                'IUT/EUT addresses updated: %s, topology: %s' % (config['addressing_table'], config['topology']))
-        else:
-            raise TestSuiteError('Expected node_id and node_address (%s), but got %s , %s ' %
-                                 (
-                                     str(type(node_address)),
-                                     node,
-                                     node_address
-                                 ))
+    def check_all_iut_nodes_configured(self):
+
+        try:
+            r = len(self.nodes_configured) > 1  # assumes two IUTs
+        except Exception as e:
+            logger.error(e)
+            r = False
+
+        return r
+
+    def get_addressing_table(self):
+        return self.addressing_table
+
+    def get_node_address(self, node):
+        return self.addressing_table[node]
+
+    def update_node_address(self, node, address):
+        self.addressing_table.update({node: address})
+        self.nodes_configured.add(node)
 
     def get_current_step_target_address(self):
-        # should return using format bbbb::1 , bbbb::2 , etc..
-        node = self.current_tc.current_step.iut.node
-        config = self.get_current_testcase_configuration()
-        address_tuple = config.get_target_address(node)
+        """
+        :return: IPv6 address using format bbbb::1 , bbbb::2 , cccc::3 , etc..
+        """
+        if self.current_tc is None:
+            logger.info("No target address yet set. No running test case.")
+            return None
 
+        try:
+            step = self.current_tc.current_step
+        except AttributeError as e:
+            logger.info("No current step. Test case started? err: %s" % e)
+            return None
+
+        try:
+            node = self.current_tc.current_step.iut.node
+        except AttributeError as e:
+            logger.info("No IUT <-> STEP association. err: %s" % e)
+            return None
+
+        try:
+            config = self.get_current_testcase_configuration()
+        except AttributeError as e:
+            logger.warning("Something went wrong.. Couldnt get current_tc config. Test case started? err: %s" % e)
+            return None
+
+        target_node = config.get_target_node(node)  # for the current step
+        address_tuple = self.get_node_address(target_node)
+
+        # TODO drop assertions
+        assert type(address_tuple) is tuple
         assert len(address_tuple) == 2
 
         return "%s::%s" % address_tuple
-
-    def check_all_iut_nodes_configured(self):
-        current_config = self.get_current_testcase_configuration()
-        return current_config.check_all_iut_nodes_configured()
 
     def check_testcase_finished(self):
         return self.current_tc.check_all_steps_finished()
@@ -472,12 +515,11 @@ class TestSuite:
         except Exception:
             return None
 
-    def get_agents_addressing_from_configurations(self):
-        # attention! TD configuration addresses overwrite themselves so keep the coherence at the yaml level!
+    def get_default_iut_addressing_from_configurations(self):
         testsuite_agents_config = {}
 
         for tc_conf in self.tc_configs.values():
-            testsuite_agents_config.update(tc_conf.get_addressing_table())
+            testsuite_agents_config.update(self.get_addressing_table())
 
         return testsuite_agents_config
 
@@ -568,7 +610,7 @@ class TestSuite:
             return
 
         if self.current_tc.current_step.type != 'stimuli':
-            logger.warning("You cannot do this in state: %s"%self.current_tc.current_step.type)
+            logger.warning("You cannot do this in state: %s" % self.current_tc.current_step.type)
             return
 
         self.current_tc.current_step.change_state('finished')
@@ -739,35 +781,18 @@ class TestConfig:
         self.id = configuration_id
         self.uri = uri
         self.nodes = nodes
-        self.nodes_configured = set()
         self.nodes_description = description
+        self.default_addressing = addressing
 
         # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
         # see test configuration yaml file
         self.topology = topology
 
-        # default addressing table
-        self.addressing_table = dict()
-        for item in addressing:
-            self.addressing_table.update(
-                {
-                    item['node']:
-                        (
-                            item['ipv6_prefix'],
-                            item['ipv6_host']
-                        )
-                }
-            )
-
     def __repr__(self):
         return json.dumps(self.to_dict(True))
 
-    def update_node_address(self, node, address):
-        # TODO drop these assertions later on
-        assert type(node) is str
-        assert type(address) is tuple
-        self.addressing_table.update({node: address})
-        self.nodes_configured.add(node)
+    def get_default_addressing_table(self):
+        return self.default_addressing
 
     def get_nodes_on_link(self, link=None):
         nodes_on_link = []
@@ -782,17 +807,10 @@ class TestConfig:
 
         return nodes_on_link
 
-    # TODO depricate all addresses related API calls in favour of this one
-    def get_addressing_table(self):
-        return self.addressing_table
-
-    def get_node_address(self, node):
-        return self.addressing_table[node]
-
-    def get_target_address(self, node, link=None):
+    def get_target_node(self, origin_node, link=None):
         """
         We assume two nodes per link:
-         node & target_node
+         origin_node & target_node
 
         If the test configuration defines more that one link, then link argument must be provided.
 
@@ -804,25 +822,16 @@ class TestConfig:
         target_node = None
         nodes_on_link = self.get_nodes_on_link(link)
 
-        assert node in nodes_on_link, 'Node %s not in known nodes link list: %s' % (node, nodes_on_link)
+        assert origin_node in nodes_on_link, 'Node %s not in known nodes link list: %s' % (origin_node, nodes_on_link)
         assert len(nodes_on_link) == 2
-        nodes_on_link.remove(node)
+        nodes_on_link.remove(origin_node)
         target_node = nodes_on_link.pop()
 
-        return self.get_node_address(target_node)
-
-    def check_all_iut_nodes_configured(self):
-        return len(self.nodes_configured) == len(self.get_nodes_on_link())
+        return target_node
 
     def to_dict(self, verbose=None):
         d = OrderedDict()
         d['configuration_id'] = self.id
-        d['addressing_table'] = self.addressing_table
-
-        # TODO deprecate this (returned keys of the dict should not be address_coap_client), use address table only
-        # TODO deprecate sixlowpan automated iut may be using this
-        for key, val in self.addressing_table.items():
-            d['address_%s' % key] = "%s::%s" % val
 
         if verbose:
             d['configuration_ref'] = self.uri
@@ -844,11 +853,11 @@ class Step():
         if type == 'stimuli' or type == 'verify':
             assert node is not None
             self.iut = Iut(node)
-
-            # Check and verify steps need a partial verdict
-            self.partial_verdict = Verdict()
         else:
             self.iut = None
+
+        # stimulis step dont get partial verdict
+        self.partial_verdict = Verdict()
 
         self.state = None
 
@@ -1026,7 +1035,7 @@ class TestCase:
                 else:
                     step = it.__next__()
         except StopIteration:
-            logger.debug("[TESTCASE] - all steps in TC are either finished or pending -> ready for analysis")
+            logger.debug("[TESTCASE] - all steps in TC are either finished (or pending).")
             return True
 
     def generate_testcases_verdict(self, tat_post_mortem_analysis_report=None):
@@ -1039,8 +1048,9 @@ class TestCase:
                                 [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
         """
         # TODO hanlde frame id associated to the step , used for GUI purposes
-        assert self.check_all_steps_finished(), "Found non finished steps: %s" % json.dumps(
-            self.seq_to_dict(verbose=True))
+        if self.check_all_steps_finished() is False:
+            logger.warning("Found non finished steps: %s" % json.dumps(self.seq_to_dict(verbose=False)))
+            return
 
         final_verdict = Verdict()
         tc_report = []
