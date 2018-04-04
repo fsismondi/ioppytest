@@ -22,9 +22,9 @@ class AcklioCoMiServer(AutomatedIUT):
     node = 'comi_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
 
-    implemented_testcases_list = None
+    implemented_testcases_list = []
 
-    stimuli_cmd_dict = NotImplementedField
+    stimuli_cmd_dict = {}
 
     iut_cmd = [
         './serverComi --yang-sid-path=./plugtests/ --datastore-path=./plugtests/ --read-ds-from-file=1  launch'

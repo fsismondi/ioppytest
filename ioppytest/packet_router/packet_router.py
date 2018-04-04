@@ -40,7 +40,14 @@ class PacketRouter(threading.Thread):
 
         self.routing_table = routing_table
 
-        logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
+        # component identification & bus params
+        self.COMPONENT_ID = '%s|%s' % (COMPONENT_ID, 'amqp_connector')
+
+        # init logging to stnd output and log files
+        self.logger = logging.getLogger(self.COMPONENT_ID)
+        self.logger.setLevel(LOG_LEVEL)
+
+        self.logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
         self.message_count = 0
         self._set_up_connection()
@@ -51,18 +58,18 @@ class PacketRouter(threading.Thread):
         )
         publish_message(self.connection, msg)
 
-        logger.info('packet router waiting for new messages in the data plane..')
+        self.logger.info('packet router waiting for new messages in the data plane..')
 
     def _set_up_connection(self):
         try:
-            logger.info('Setting up AMQP connection..')
+            self.logger.info('Setting up AMQP connection..')
             # setup AMQP connection
             self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
             self.channel = self.connection.channel()
             self.channel.basic_qos(prefetch_count=1)
 
         except pika.exceptions.ConnectionClosed as cc:
-            logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
+            self.logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
             sys.exit(1)
 
     def _queues_init(self):
@@ -110,7 +117,7 @@ class PacketRouter(threading.Thread):
                                    timestamp=body_dict['timestamp'],
                                    interface_name=body_dict['interface_name'])
         except:
-            logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
+            self.logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
             return
 
         src_rkey = method.routing_key
@@ -126,14 +133,14 @@ class PacketRouter(threading.Thread):
                         content_type='application/json',
                     )
                 )
-                logger.info(
+                self.logger.info(
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
 
         elif 'toAgent' in src_rkey:
             pass  # echo of router message
 
         else:
-            logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
     def _notify_component_shutdown(self):
