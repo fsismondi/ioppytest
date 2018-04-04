@@ -27,7 +27,6 @@ ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test 
 SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # TODO 6lo FIX ME !
-# - sniffer is handled in a complete different way (sniff amqp bus here! and not netwrosk interface using agent)
 # - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
 
 # component identification & bus params
@@ -168,14 +167,85 @@ class Coordinator(CoordinatorAmqpInterface):
         self.testsuite.abort_current_testcase()
 
     def handle_iut_configuration_executed(self, received_event):
-        if received_event.ipv6_address:
-            # fixme this only supports bbbb::1 , bbbb::2, etc format of addresses
-            address_tuple = tuple(received_event.ipv6_address.split('::'))
-            if len(address_tuple) != 2:
-                raise CoordinatorError('Received a wrong formatted address')
-            self.testsuite.set_iut_configuration(received_event.node, address_tuple)
+        # agent needs an id so we can keep track of nodes id and auto-defined on manual configured address in the
+        # network (e.g. forced private IPv6 address of agent)
+        agent_name = None
+        iut_address = None
+
+        # TODO deprecate this MsgConfigurationExecuted (used for the 6lowpan testbed node automation)
+        if type(received_event) is MsgConfigurationExecuted:
+            if received_event.ipv6_address:
+                # fixme this only supports bbbb::1 , bbbb::2, etc format of addresses
+                iut_address = tuple(received_event.ipv6_address.split('::'))
+
+            else:
+                pass  # use default address
+
+            agent_name = received_event.node
+
+        elif type(received_event) is MsgAgentTunStarted:
+            """ example:
+            
+                [Session message] [<class 'ioppytest.utils.messages.MsgAgentTunStarted'>]
+                
+                -----------------------  --------
+                _api_version             1.0.13
+                name                     agent_TT
+                ipv4_network
+                ipv4_netmask
+                ipv4_host
+                ipv6_no_forwarding       False
+                ipv6_host                :3
+                ipv6_prefix              bbbb
+                re_route_packets_if
+                re_route_packets_prefix
+                re_route_packets_host
+                -----------------------  --------
+        
+            """
+
+            try:
+                # ipv6 tunnel, IUT running hosted in same OS where agent runs
+                if received_event.ipv6_prefix and received_event.ipv6_host:
+                    iut_address = received_event.ipv6_prefix, received_event.ipv6_host
+
+                # ipv4 tunnel, IUT destination running in another network, agent re-routes to other interface
+                elif received_event.ipv4_network and received_event.ipv4_host:
+                    iut_address = received_event.ipv4_network, received_event.ipv4_host
+
+                else:
+                    logger.warning('Not supported agent/iut configuration: %s' % repr(received_event))
+                    pass  # use default address
+
+                agent_name = received_event.name
+
+            except AttributeError as e:
+                logger.error(e)
+                raise CoordinatorError(
+                    'Received a wrong formatted  agent message, update of agent source code needed? %s' % repr(
+                        received_event))
+            try:
+                # ipv6 tunnel, IUT destination running in another network, agent re-routes to other interface
+                if received_event.re_route_packets_prefix and received_event.re_route_packets_host:
+                    iut_address = received_event.re_route_packets_prefix, received_event.re_route_packets_host
+                else:
+                    logger.debug("Agent not running as router")
+
+            except AttributeError as e:
+                logger.warning(e)
+                logger.warning("Non compliant API message (missing fields): %s"% repr(received_event))
+
+        if len(iut_address) != 2:
+            raise CoordinatorError('Received a wrong formatted address')
+
+        if agent_name:
+            self.testsuite.update_node_address(agent_name, iut_address)
+            logger.info(
+                "Agent's %s processed, updated information on IUT node: %s" % (agent_name, str(iut_address)))
         else:
-            pass  # use default address
+            raise CoordinatorError(
+                'Received a wrong formatted  agent message, update of agent source code needed? %s' % repr(
+                    received_event))
 
         if self.testsuite.check_all_iut_nodes_configured():
             self.trigger('_all_iut_configuration_executed', None)
@@ -525,8 +595,8 @@ states = [
         'name': 'waiting_for_step_executed',
         'on_enter': ['notify_step_execute'],
         'on_exit': [],
-        #'timeout': STEP_TIMEOUT,
-        #'on_timeout': '_timeout_waiting_step_executed'
+        # 'timeout': STEP_TIMEOUT,
+        # 'on_timeout': '_timeout_waiting_step_executed'
     },
     {
         'name': 'testcase_finished',

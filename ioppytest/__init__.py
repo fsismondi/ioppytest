@@ -35,7 +35,7 @@ LOGGER_FORMAT = '%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s
 # # # # # # hard variables # # # # # # # # # #
 
 # python configs
-LOG_LEVEL = 20  # DEBUG = 10, INFO = 20, WARNING = 30
+LOG_LEVEL = 30  # DEBUG = 10, INFO = 20, WARNING = 30
 AMQP_LOG_LEVEL = 30
 
 # project directories
@@ -128,7 +128,7 @@ try:
             "heartbeat_interval=0",
             "blocked_connection_timeout=2",
             "retry_delay=1",
-            "socket_timeout=1",
+            "socket_timeout=5",
             "connection_attempts=3"
         )
     else:

@@ -1,8 +1,11 @@
 import unittest, logging, os
 import time, json
 import pika
+from ioppytest.utils.messages import MsgPacketInjectRaw
 from ioppytest.packet_router.packet_router import PacketRouter
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
+
+TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED = 5  # estimation
 
 """
 launch it as
@@ -30,15 +33,15 @@ class PacketRouterTestCase(unittest.TestCase):
         self.channel.queue_declare(queue=self.queue_name, auto_delete=False)
         self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                 queue=self.queue_name,
-                                routing_key='some.interface.#')
+                                routing_key='toAgent.#')
 
         logging.info('using AMQP vars: %s, %s' % (AMQP_URL, AMQP_EXCHANGE,))
 
         self.routing_table = {
-            'some.interface.fromAgent.agent1':
-                ['some.interface.toAgent.agent2'],
-            'some.interface.fromAgent.agent2':
-                ['some.interface.toAgent.agent1'],
+            'fromAgent.agent1':
+                ['toAgent.agent2'],  # routes to only one destination
+            'fromAgent.agent2':
+                ['toAgent.agent1'],  # routes to only one destination
         }
 
         # start packet router
@@ -48,17 +51,11 @@ class PacketRouterTestCase(unittest.TestCase):
 
     def test_packet_routing(self):
         assert self.channel.is_open, 'no channel opened for tests'
-        self._send_packet_fromAgent1()
 
-        time.sleep(2)
+        self._send_packet_fromAgent1()
+        time.sleep(TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED)
         method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
         print(body)
-        assert method_frame is not None, 'Expected to get a message, but nothing was received'
-        self.channel.basic_ack(method_frame.delivery_tag)
-
-        time.sleep(2)
-        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
-        print(method_frame, header_frame, body)
         assert method_frame is not None, 'Expected to get a message, but nothing was received'
         self.channel.basic_ack(method_frame.delivery_tag)
 
@@ -66,43 +63,22 @@ class PacketRouterTestCase(unittest.TestCase):
         time.sleep(2)
 
         self._send_packet_fromAgent2()
-
-        time.sleep(2)
+        time.sleep(TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED)
         method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
         print(method_frame, header_frame, body)
         assert method_frame is not None, 'Expected to get a message, but nothing was received'
         self.channel.basic_ack(method_frame.delivery_tag)
-
-        time.sleep(2)
-        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
-        print(method_frame, header_frame, body)
-        assert method_frame is not None, 'Expected to get a message, but nothing was received'
-        self.channel.basic_ack(method_frame.delivery_tag)
-
-    # def test_we_can_push_to_event_bus(self):
-    #     self._send_packet_fromAgent1()
-    #     self._send_packet_fromAgent2()
 
     def _send_packet_fromAgent1(self):
         """
         tests
         :return:
         """
-
+        m = MsgPacketInjectRaw()
+        m.routing_key = list(self.routing_table.keys())[0]  # use first routing table entry
         self.channel.basic_publish(
-            body=json.dumps(
-                {
-                    '_type': 'packet.sniffed.raw',
-                    'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243,
-                             139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0,
-                             166,
-                             127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0,
-                             0,
-                             255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
-                    'description': 'hello world',
-                }
-            ),
-            routing_key=list(self.routing_table.keys())[0],  # use first routing table entry
+            body=m.to_json(),
+            routing_key=m.routing_key,
             exchange=AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',
@@ -115,20 +91,11 @@ class PacketRouterTestCase(unittest.TestCase):
         :return:
         """
 
+        m = MsgPacketInjectRaw()
+        m.routing_key = list(self.routing_table.keys())[1]  # use second routing table entry
         self.channel.basic_publish(
-            body=json.dumps(
-                {
-                    '_type': 'packet.sniffed.raw',
-                    'data': [96, 0, 0, 0, 0, 56, 0, 1, 254, 128, 0, 0, 0, 0, 0, 0, 174, 188, 50, 255, 254, 205, 243,
-                             139, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 58, 0, 1, 0, 5, 2, 0, 0, 143, 0,
-                             166,
-                             127, 0, 0, 0, 2, 4, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 1, 4, 0, 0,
-                             0,
-                             255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 205, 243, 139],
-                    'description': 'hello world',
-                }
-            ),
-            routing_key=list(self.routing_table.keys())[1],  # use second routing table entry
+            body=m.to_json(),
+            routing_key=m.routing_key,
             exchange=AMQP_EXCHANGE,
             properties=pika.BasicProperties(
                 content_type='application/json',

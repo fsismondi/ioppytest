@@ -71,7 +71,11 @@ class CoordinatorAmqpInterface(object):
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
             MsgSessionConfiguration: 'configure_testsuite',
+
+            # same handler
             MsgConfigurationExecuted: 'iut_configuration_executed',
+            MsgAgentTunStarted: 'iut_configuration_executed',
+
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',
             MsgStepVerifyExecuted: 'step_executed',
@@ -79,6 +83,7 @@ class CoordinatorAmqpInterface(object):
             MsgTestCaseSelect: 'select_testcase',
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseSkip: 'skip_testcase',
+
         }
 
         # amqp connect to bus & subscribe to events
@@ -126,7 +131,7 @@ class CoordinatorAmqpInterface(object):
                                    no_ack=False)
 
     def run(self):
-        logger.info('starting to consume events from the bus..')
+        logger.info(' %s ready, listening to events in the bus..' % COMPONENT_ID)
 
         # NOTE TO SELF, if blocking connections combined with start_consuming start
         # getting a lot of ConnectionResetByPeerErrors then implement our own loop
@@ -244,10 +249,10 @@ class CoordinatorAmqpInterface(object):
                 self.trigger(trigger_callback, event)  # dispatches event to FSM
 
             except MachineError as fsm_err:
-                logger.error('[Coordination FSM error] %s' % fsm_err)
+                logger.error('Coordination FSM error: %s' % fsm_err)
 
             except CoordinatorError as e:
-                logger.error('[Coordination FSM error] %s' % e)
+                logger.error('Coordination error: %s' % e)
 
         else:
             logger.debug('Ignoring event: %s' % repr(event))
@@ -349,7 +354,7 @@ class CoordinatorAmqpInterface(object):
         logger.debug("Let's start the bootstrap the agents")
 
         # fixme desable this for tests that dont require TUNs
-        nodes = self.testsuite.get_agents_addressing_from_configurations()
+        nodes = self.testsuite.get_addressing_table()
 
         for node_name, address_tuple in nodes.items():
             # convention -> agents are named the same as the node roles (coap_client, etc..)
