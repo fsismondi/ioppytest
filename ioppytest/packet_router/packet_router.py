@@ -14,19 +14,12 @@ from ioppytest.utils.amqp_synch_call import publish_message
 
 COMPONENT_ID = 'packet_router'
 
-# init logging to stnd output and log files
-logger = logging.getLogger(COMPONENT_ID)
-
 logging.basicConfig(
     level=LOG_LEVEL,
     format=LOGGER_FORMAT
 )
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 
 class PacketRouter(threading.Thread):
@@ -41,10 +34,10 @@ class PacketRouter(threading.Thread):
         self.routing_table = routing_table
 
         # component identification & bus params
-        self.COMPONENT_ID = '%s|%s' % (COMPONENT_ID, 'amqp_connector')
+        self.component_id = COMPONENT_ID
 
         # init logging to stnd output and log files
-        self.logger = logging.getLogger(self.COMPONENT_ID)
+        self.logger = logging.getLogger(self.component_id)
         self.logger.setLevel(LOG_LEVEL)
 
         self.logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
@@ -61,6 +54,13 @@ class PacketRouter(threading.Thread):
         self.logger.info('packet router waiting for new messages in the data plane..')
 
     def _set_up_connection(self):
+
+        # AMQP log handler with f-interop's json formatter
+        rabbitmq_handler = RabbitMQHandler(self.url, self.component_id)
+        json_formatter = JsonFormatter()
+        rabbitmq_handler.setFormatter(json_formatter)
+        self.logger.addHandler(rabbitmq_handler)
+
         try:
             self.logger.info('Setting up AMQP connection..')
             # setup AMQP connection
@@ -110,6 +110,7 @@ class PacketRouter(threading.Thread):
         body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         self.message_count += 1
+        self.logger.info("Routing message, count %s" % self.message_count)
 
         # let's route the message to the right agent
         try:
@@ -122,6 +123,7 @@ class PacketRouter(threading.Thread):
 
         src_rkey = method.routing_key
         if src_rkey in self.routing_table.keys():
+            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
                 # forward to dst_rkey
@@ -273,7 +275,7 @@ def main():
         r.start()
         r.join()
     except (KeyboardInterrupt, SystemExit):
-        logger.info('got SIGINT. Bye bye!')
+        logging.info('got SIGINT. Bye bye!')
         r.stop()
 
 
