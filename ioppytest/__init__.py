@@ -35,7 +35,7 @@ LOGGER_FORMAT = '%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s
 # # # # # # hard variables # # # # # # # # # #
 
 # python configs
-LOG_LEVEL = 30  # DEBUG = 10, INFO = 20, WARNING = 30
+LOG_LEVEL = 20  # DEBUG = 10, INFO = 20, WARNING = 30
 AMQP_LOG_LEVEL = 30
 
 # project directories
