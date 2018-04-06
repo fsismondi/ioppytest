@@ -33,10 +33,10 @@ MAX_LINE_LENGTH = 100
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 90
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 """
 PRE-CONDITIONS:
@@ -180,6 +180,9 @@ class ApiTests(unittest.TestCase):
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
             messages_list=messages,
+            # att (!) some test run cycles of more that 100 messages, so this factor will change enourmosuly the time it
+            # takes to complete a test
+            wait_time_between_pubs=0.25
         )
 
         # thread
@@ -223,7 +226,6 @@ class ApiTests(unittest.TestCase):
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
             for th in threads:
                 th.join(THREAD_JOIN_TIMEOUT)
-                logger.warning("Thread %s didnt stop" % th.name)
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
@@ -232,6 +234,7 @@ class ApiTests(unittest.TestCase):
             for th in threads:
                 if th.is_alive():
                     th.stop()
+                    logger.warning("Thread %s didnt stop" % th.name)
 
             # finally checks
             check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)

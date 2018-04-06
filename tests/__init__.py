@@ -79,7 +79,7 @@ def check_api_version(message: Message):
         logging.warning('Message didnt enclude API version metadata %s' % repr(message))
         return
 
-    assert message._api_version.startswith("1"), "Running incompatible version of API %s" % repr(message)
+    assert message._api_version.startswith("1"), "Using very old version of API spec %s" % repr(message)
 
 
 class MessageGenerator(threading.Thread):
