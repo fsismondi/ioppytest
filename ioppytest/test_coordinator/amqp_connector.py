@@ -210,12 +210,12 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('REQUEST received: %s' % type(request))
+        logger.info('Received REQUEST: %s' % type(request))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
 
-            logger.info('Processing request: %s' % type(request))
+            logger.info('Processing REQUEST: %s' % type(request))
             callback = self.request_reply_handlers[type(request)]
 
             try:
@@ -230,19 +230,21 @@ class CoordinatorAmqpInterface(object):
             self._publish_message(response)
 
         else:
-            logger.debug('Ignoring service request: %s' % repr(request))
+            logger.debug('Ignoring service REQUEST: %s' % repr(request))
+
+        logger.info('Finished with REQUEST: %s' % type(request))
 
     def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('EVENT received: %s' % type(event))
+        logger.info('Received EVENT: %s' % type(event))
 
         # let's process request
         if type(event) in self.control_events_triggers:
 
-            logger.info('Processing request: %s' % type(event))
+            logger.info('Processing EVENT: %s' % type(event))
             trigger_callback = self.control_events_triggers[type(event)]
 
             try:
@@ -255,7 +257,9 @@ class CoordinatorAmqpInterface(object):
                 logger.error('Coordination error: %s' % e)
 
         else:
-            logger.debug('Ignoring event: %s' % repr(event))
+            logger.debug('Ignoring EVENT: %s' % repr(event))
+
+        logger.info('Finished with EVENT: %s' % type(event))
 
     # # # FSM coordination publish/notify functions # # #
 

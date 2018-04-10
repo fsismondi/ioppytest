@@ -101,7 +101,6 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
-                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 bootstrap-agent-TT
             '''
             throw e
           }
