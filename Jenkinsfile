@@ -9,7 +9,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             checkout scm
             sh '''
                 git submodule update --init
-                tree .
+                # tree .
             '''
         }
 

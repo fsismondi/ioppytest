@@ -31,8 +31,8 @@ SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
-STEP_TIMEOUT = 6000  # seconds   # TODO test suite param?
-IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite param?
+STEP_TIMEOUT = 6000  # seconds   # TODO test suite or test coordinator param?
+IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite or test coordinator param?
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
@@ -259,6 +259,9 @@ class Coordinator(CoordinatorAmqpInterface):
         states = self.testsuite.states_summary()
         states.update(self.testsuite.get_testsuite_configuration())
         return states
+
+    def get_nodes_addressing_table(self):
+        return self.testsuite.get_addressing_table().copy()
 
     def finish_testcase(self):
         """

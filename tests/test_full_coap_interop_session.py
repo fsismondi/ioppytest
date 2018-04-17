@@ -18,11 +18,12 @@ from tests import (check_if_message_is_an_error_message,
                    publish_terminate_signal_on_report_received,
                    check_api_version,
                    reply_to_ui_configuration_request_stub,
-                   connect_and_publish_message)
+                   connect_and_publish_message,
+                   log_all_received_messages,
+                   MAX_LINE_LENGTH)
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 120
-MAX_LINE_LENGTH = 100
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -123,14 +124,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
             logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
             logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
-
-
-def log_all_received_messages(event_types_sniffed_on_bus_list: list):
-    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
-    i = 0
-    for ev in event_types_sniffed_on_bus_list:
-        i += 1
-        logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
 
 def run_checks_on_message_received(message: Message):

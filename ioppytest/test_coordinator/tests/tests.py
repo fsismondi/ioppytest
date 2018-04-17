@@ -106,7 +106,7 @@ class TestSuiteTests(unittest.TestCase):
 
         self._run_all_getters()
 
-        logger.info("report: %s"%self.testsuite.generate_report())
+        logger.info("report: %s" % self.testsuite.generate_report())
 
     def test_all_getters_of_testsuite_on_finished(self):
         log_trace = []
@@ -118,7 +118,7 @@ class TestSuiteTests(unittest.TestCase):
         while tc:
 
             if self.testsuite.check_testcase_finished():
-                logger.info('finished %s'%self.testsuite.get_current_testcase().id)
+                logger.info('finished %s' % self.testsuite.get_current_testcase().id)
                 self.testsuite.get_current_testcase().change_state('finished')
                 tc = self.testsuite.next_testcase()
                 self._run_all_getters()
@@ -145,7 +145,7 @@ class TestSuiteTests(unittest.TestCase):
 
         self._run_all_getters()
 
-        logger.info("report: %s"%self.testsuite.generate_report())
+        logger.info("report: %s" % self.testsuite.generate_report())
 
     def test_check_testcase_finished(self):
         assert self.testsuite.current_tc is None
@@ -188,15 +188,49 @@ class CoordinatorStateMachineTests(unittest.TestCase):
                                             ted_tc_file=TD_COAP)
         self.test_coordinator.bootstrap()
 
-    def test_session_flow_1(self):
+    def test_session_flow_0(self):
+        """
+        Checks transition
+        waiting_for_iut_configuration_executed -> waiting_for_testcase_start
+        on events MsgAgentTunStarted
+        """
 
-        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
 
         self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
-        assert self.test_coordinator.state != 'waiting_for_testcase_start'
+        assert self.test_coordinator.state != 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
 
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())
-        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed'
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (0) before first Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(name="someAgentName1",
+                                                                                   ipv6_prefix="bbbb",
+                                                                                   ipv6_host="1", ))
+
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (1) before second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(name="someAgentName2",
+                                                                                   ipv6_prefix="bbbb",
+                                                                                   ipv6_host="2", ))
+
+        logger.info('>>> (2) after second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        assert self.test_coordinator.state == 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is True
+
+    def test_session_flow_1(self):
+
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
+        assert self.test_coordinator.state != 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
 
         # wait until it times out
         while True:
@@ -256,7 +290,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         skip all testcases
         """
 
-        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
 
         self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
         assert self.test_coordinator.state != 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
@@ -273,7 +307,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         """
         select testcases, then skip all
         """
-        assert self.test_coordinator.state == 'waiting_for_testsuite_config'
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
 
         self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
         assert self.test_coordinator.state != 'waiting_for_testcase_start'
