@@ -115,6 +115,18 @@ service_api_calls = [
     )
 ]
 user_sequence = [
+
+    MsgAgentTunStarted(
+        name="someAgentName1",
+        ipv6_prefix="bbbb",
+        ipv6_host="1",
+    ),
+    MsgAgentTunStarted(
+        name="someAgentName2",
+        ipv6_prefix="bbbb",
+        ipv6_host="2",
+    ),
+
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
