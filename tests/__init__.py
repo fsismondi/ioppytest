@@ -29,7 +29,11 @@ def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     i = 0
     for ev in event_types_sniffed_on_bus_list:
         i += 1
-        logging.info("\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" % (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
+        try:
+            logging.info("\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" %
+                         (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
+        except AttributeError as e:
+            logging.warning("No message id in message: %s" % repr(ev))
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
