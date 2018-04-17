@@ -19,8 +19,17 @@ default_configuration = {
     ]
 }
 
+MAX_LINE_LENGTH = 120
+
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
+
+def log_all_received_messages(event_types_sniffed_on_bus_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    i = 0
+    for ev in event_types_sniffed_on_bus_list:
+        i += 1
+        logging.info("\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" % (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
@@ -65,10 +74,14 @@ def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=Tru
     if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:
         return
 
-    assert 'error' not in message.routing_key, 'Got an error %s' % repr(message)
-    assert not isinstance(message, MsgErrorReply), 'Got an error reply %s' % repr(message)
+    assert 'error' not in message.routing_key, \
+        'Got an error on message, id: %s ,msg repr: %s' % (message.message_id, repr(message))
+
+    assert not isinstance(message, MsgErrorReply), \
+        'Got an ErrorReply on message, id: %s ,msg repr: %s' % (message.message_id, repr(message))
+
     if fail_on_reply_nok:
-        assert not (isinstance(message, MsgReply) and message.ok == False), \
+        assert not (isinstance(message, MsgReply) and not message.ok), \
             'Got a reply with a NOK reponse %s' % repr(message)
 
 
