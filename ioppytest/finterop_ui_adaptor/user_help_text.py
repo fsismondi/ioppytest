@@ -1,6 +1,5 @@
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
-
 env_vars_export = """
 Please open a Terminal where to execute the agent component (VPN client)
 and export environment variables: 
@@ -20,6 +19,8 @@ agents_IP_tunnel_config = """
 
 ### Please download the agent component (python script):
 
+\n\n
+
 `git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
 
 ------------------------------------------------------------------------------
@@ -28,58 +29,111 @@ agents_IP_tunnel_config = """
 
 `pip install -r requirements.txt`
 
-------------------------------------------------------------------------------
-### Run (choose if either SomeAgentName1 or SomeAgentName2):
+\n\n
 
+------------------------------------------------------------------------------
+
+\n\n
+
+Coming soon:
+
+\n\n
+
+PyPI (The Python Package Index ) agent python package distribution and installation process.
+
+\n\n
+
+------------------------------------------------------------------------------
+
+### Run (choose if either SomeAgentName1 or SomeAgentName2):
 
 (from inside agent repo)
 
+\n\n
 
-`sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+
+\n\n
 
 or
 
-`sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
+\n\n
+
+`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
 
 ------------------------------------------------------------------------------
+```
 
+"""
+
+vpn_setup = """
 ### What is this for?
+
+\n\n
 
 The agent creates a tun interface in your PC which allows you to comminicate with other implementations, the 
 solution goes more or less like this:
+
+\n\n
+
 ```
-                          +----------------+
-                          |                |
-                          |   AMQP broker  |
-                          |                |
-                          +----------------+
-                                ^     +
-                                |     |
-data.tun.fromAgent.agent_name   |     |  data.tun.toAgent.agent_name
-                                |     |
-                                +     v
-                 +---------------------------------+
-                 |                                 |
-                 |             Agent               |
-                 |           (tun mode)            |
-                 |                                 |
-                 |   +------tun interface--------+ |
-                 |  +----------------------------+ |
-                 |  |         IPv6-based         | |
-                 |  |        communicating       | |
-                 |  |      piece of software     | |
-                 |  |      (e.g. coap client)    | |
-                 |  +----------------------------+ |
-                 +---------------------------------+
+       +--------------------------------+                                             +--------------------------------+
+       | +----------------------------+ |                                             | +----------------------------+ |
+       | |         IPv6-based         | |                                             | |         IPv6-based         | |
+       | |        communicating       | |                                             | |        communicating       | |
+       | |      piece of software     | |                                             | |      piece of software     | |
+       | |      (e.g. coap client)    | |   +----------------------------+            | |      (e.g. coap sever)     | |
+       | |                            | |   |                            |            | |                            | |
+       | +----------------------------+ |   |      Packet Router         |            | +----------------------------+ |
+PC     |                                |   |    (routes AMQP packets)   |      PC    |                                |
+user 1 | +------tun interface---------+ |   |                            |      user2 | +------tun interface---------+ |
+       |                                |   |                            |            |                                |
+       |            Agent               |   +----------------------------+            |            Agent               |
+       |                                |                                             |                                |
+       |          (tun mode)            |               ^    +                        |          (tun mode)            |
+       |                                |               |    |                        |                                |
+       |                                |               |    |                        |                                |
+       +--------------------------------+               |    |                        +--------------------------------+
+                                                r_key_1 |    |  r_key_2
+                     +     ^                            |    |                                      +     ^
+                     |     |                            |    |                                      |     |
+             r_key_1 |     | r_key_2                    |    |                              r_key_3 |     | r_key_4
+                     |     |                            |    |                                      |     |
+                     v     +                            +    v                                      v     +
+
+     +----------------------------------------------------------------------------------------------------------------->
+                                                AMQP Event Bus
+     <-----------------------------------------------------------------------------------------------------------------+
 ```
+
+\n\n\n\n
+
+r_key_1=fromAgent.agent_1_name.ip.tun.packet.raw
+r_key_2=toAgent.agent_1_name.ip.tun.packet.raw
+r_key_3=fromAgent.agent_2_name.ip.tun.packet.raw
+r_key_4=toAgent.agent_2_name.ip.tun.packet.raw
 
 ------------------------------------------------------------------------------
 
+### More about the agent component:
+
+\n\n
+
+[link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
+
+\n\n
+"""
+
+vpn_ping_tests = """
 ### How do I know it's working?
 
 If everything goes well you should see in your terminal sth like this:
 
-fsismondi@carbonero250:~/dev/agent$ sudo -E python agent.py connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
+\n\n
+------------------------------------------------------------------------------
+\n\n
+
+fsismondi@carbonero250:~/dev/agent$ sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
 Password:
 
       ______    _____       _                       
@@ -102,18 +156,32 @@ INFO:connectors.tun:Topic: data.tun.toAgent.coap_client
 INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/session05
 INFO:connectors.core:Backend ready to consume data
 
-------------------------------------------------------------------------------
+
 ------------------------------------------------------------------------------
 ## After clicking in "Test Suite Start" you should be able to test the agent:
 
-### Test1 : check the tun interface was created (unless agent was runned in --serial mode) 
 \n\n
+
+------------------------------------------------------------------------------
+
+\n\n
+
+### Test1 : check the tun interface was created 
+
+\n\n
+
 Then after the user triggers **test suite start** should see a new network interface in your PC:
+
 \n\n
+
 `fsismondi@carbonero250:~$ ifconfig`
+
 \n\n
+
 should show:
+
 \n\n
+
 ```
     tun0: flags=8851<UP,POINTOPOINT,RUNNING,SIMPLEX,MULTICAST> mtu 1500
         inet6 fe80::aebc:32ff:fecd:f38b%tun0 prefixlen 64 scopeid 0xc 
@@ -126,13 +194,21 @@ should show:
 ----------------------------------------------------------------------------
 
 ### Test2 : ping the other device (unless agent was runned in --serial mode) 
+
 \n\n
+
 Now you could try ping6 the other implementation in the VPN:
+
 \n\n
+
 `fsismondi@carbonero250:~$ ping6 bbbb::2`
+
 \n\n
+
 should show:
+
 \n\n
+
 ```
     fsismondi@carbonero250:~$ ping6 bbbb::2
     PING6(56=40+8+8 bytes) bbbb::1 --> bbbb::2
@@ -147,9 +223,4 @@ should show:
 
 ----------------------------------------------------------------------------
 
-### More about the agent component:
-
-[link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
-
-\n\n
 """

@@ -1373,7 +1373,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 2. user needs to config AGENT:
+        # 2. user needs to setup AGENT's environment:
 
         agents_kickstart_help = agents_IP_tunnel_config
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
@@ -1409,11 +1409,79 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        return True
+        # 3. give some more info to the user about the agent
 
-        # 3. TODO trigger agents configuration
-        # 4. TODO automate ping test from tt
-        # 5. TODO ask user to ping other user's endpoint
+        agents_kickstart_help = vpn_setup
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm to continue",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # 4. give some more info to the user about how to TEST the agent setup
+
+        agents_kickstart_help = vpn_ping_tests
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            title="Confirm to continue",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        return True
 
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
