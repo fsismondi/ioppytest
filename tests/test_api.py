@@ -137,11 +137,10 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
     MsgStepStimuliExecuted(),
     MsgTestSuiteGetStatus(),
-    MsgStepVerifyExecuted(),
-    MsgTestSuiteGetStatus(),
     MsgStepVerifyExecuted(
         verify_response=False,
         description='User indicates that IUT didnt behave as expected '),
+    MsgTestSuiteGetStatus(),
     MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
     MsgTestCaseRestart(),
     MsgTestSuiteGetStatus(),
