@@ -171,7 +171,7 @@ class CoordinatorAmqpInterface(object):
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("publishing to routing_key: %s, msg: %s"
+        logger.info("PUBLISHING to routing_key: %s, msg: %s"
                     % (message.routing_key,
                        repr(message)[:70],))
         try:
@@ -215,7 +215,7 @@ class CoordinatorAmqpInterface(object):
         # let's process request
         if type(request) in self.request_reply_handlers:
 
-            logger.info('Processing request: %s' % type(request))
+            logger.info('HANDLING request: %s' % type(request))
             callback = self.request_reply_handlers[type(request)]
 
             try:
@@ -242,7 +242,7 @@ class CoordinatorAmqpInterface(object):
         # let's process request
         if type(event) in self.control_events_triggers:
 
-            logger.info('Processing request: %s' % type(event))
+            logger.info('HANDLING request: %s' % type(event))
             trigger_callback = self.control_events_triggers[type(event)]
 
             try:

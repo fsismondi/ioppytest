@@ -192,7 +192,7 @@ class AmqpMessagePublisher:
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("publishing to routing_key: %s, msg: %s"
+        logger.info("PUBLISHING to routing_key: %s, msg: %s"
                     % (message.routing_key,
                        repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
