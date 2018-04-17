@@ -23,20 +23,21 @@ from tests import (check_if_message_is_an_error_message,
                    publish_terminate_signal_on_report_received,
                    check_api_version,
                    reply_to_ui_configuration_request_stub,
+                   log_all_received_messages,
+                   MAX_LINE_LENGTH,
                    )
 
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
 
-MAX_LINE_LENGTH = 100
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 90
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 """
 PRE-CONDITIONS:
@@ -115,6 +116,18 @@ service_api_calls = [
     )
 ]
 user_sequence = [
+
+    MsgAgentTunStarted(
+        name="someAgentName1",
+        ipv6_prefix="bbbb",
+        ipv6_host="1",
+    ),
+    MsgAgentTunStarted(
+        name="someAgentName2",
+        ipv6_prefix="bbbb",
+        ipv6_host="2",
+    ),
+
     MsgTestSuiteGetStatus(),
     MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
     MsgTestSuiteGetStatus(),
@@ -124,11 +137,10 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
     MsgStepStimuliExecuted(),
     MsgTestSuiteGetStatus(),
-    MsgStepVerifyExecuted(),
-    MsgTestSuiteGetStatus(),
     MsgStepVerifyExecuted(
         verify_response=False,
         description='User indicates that IUT didnt behave as expected '),
+    MsgTestSuiteGetStatus(),
     MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
     MsgTestCaseRestart(),
     MsgTestSuiteGetStatus(),
@@ -150,6 +162,7 @@ class ApiTests(unittest.TestCase):
     - Export AMQP_URL in the running environment
     - Have CoAP testing tool running & listening to the bus
     """
+
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
@@ -180,6 +193,9 @@ class ApiTests(unittest.TestCase):
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
             messages_list=messages,
+            # att (!) some test run cycles of more that 100 messages, so this factor will change enourmosuly the time it
+            # takes to complete a test
+            wait_time_between_pubs=0.25
         )
 
         # thread
@@ -223,7 +239,6 @@ class ApiTests(unittest.TestCase):
             # waits THREAD_JOIN_TIMEOUT for the session to terminate
             for th in threads:
                 th.join(THREAD_JOIN_TIMEOUT)
-                logger.warning("Thread %s didnt stop" % th.name)
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
@@ -232,18 +247,11 @@ class ApiTests(unittest.TestCase):
             for th in threads:
                 if th.is_alive():
                     th.stop()
+                    logger.warning("Thread %s didnt stop" % th.name)
 
             # finally checks
             check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)
             check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
-
-
-def log_all_received_messages(event_types_sniffed_on_bus_list: list):
-    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
-    i = 0
-    for ev in event_types_sniffed_on_bus_list:
-        i += 1
-        logging.info("Event sniffed (%s): %s" % (i, repr(ev)[:MAX_LINE_LENGTH]))
 
 
 def run_checks_on_message_received(message: Message):
@@ -267,11 +275,11 @@ def check_request_with_no_correlation_id(events_tracelog):
     non_compiant = []
     for ev in events_tracelog:
         if ".request" in ev.routing_key:
-            if not hasattr(ev,'correlation_id'):
+            if not hasattr(ev, 'correlation_id'):
                 non_compiant.append(ev)
 
     if len(non_compiant) > 0:
-        m = "Request with no correlation id: %s"%len(non_compiant)
+        m = "Request with no correlation id: %s" % len(non_compiant)
         logging.warning(m)
         for i in non_compiant:
             logging.warning("Request with no correlation id: %s" % repr(i)[:MAX_LINE_LENGTH])
