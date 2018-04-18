@@ -134,28 +134,22 @@ If everything goes well you should see in your terminal sth like this:
 \n\n
 
 fsismondi@carbonero250:~/dev/agent$ sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
-Password:
+Password: ********
 
-      ______    _____       _                       
-     |  ____|  |_   _|     | |                      
-     | |__ ______| |  _ __ | |_ ___ _ __ ___  _ __  
-     |  __|______| | | '_ \| __/ _ \ '__/ _ \| '_ \ 
-     | |        _| |_| | | | ||  __/ | | (_) | |_) |
-     |_|       |_____|_| |_|\__\___|_|  \___/| .__/ 
-                                             | |    
-                                             |_|    
+  _                              _              _                                     _
+ (_)  ___   _ __   _ __   _   _ | |_  ___  ___ | |_         __ _   __ _   ___  _ __  | |_
+ | | / _ \ | '_ \ | '_ \ | | | || __|/ _ \/ __|| __|_____  / _` | / _` | / _ \| '_ \ | __|
+ | || (_) || |_) || |_) || |_| || |_|  __/\__ \| |_|_____|| (_| || (_| ||  __/| | | || |_
+ |_| \___/ | .__/ | .__/  \__, | \__|\___||___/ \__|       \__,_| \__, | \___||_| |_| \__|
+           |_|    |_|     |___/                                   |___/
 
-INFO:__main__:Try to connect with {'session': u'session05', 'user': u'paul', (...)
-INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/session05
-INFO:connectors.tun:tun listening to control plane 
-INFO:connectors.tun:Queue: control.tun@coap_client 
-INFO:connectors.tun:Topic: control.tun.toAgent.coap_client
-INFO:connectors.tun:tun listening to data plane
-INFO:connectors.tun:Queue: data.tun@coap_client
-INFO:connectors.tun:Topic: data.tun.toAgent.coap_client
-INFO:kombu.mixins:Connected to amqp://paul:**@f-interop.rennes.inria.fr:5672/session05
-INFO:connectors.core:Backend ready to consume data
 
+INFO:agent.agent_cli:Try to connect with {'session': u'1aa87ae1-27ec-40fe-b1f6-181761e77478', 'user': u'EKV0BXBX', 'exchange': u'amq.topic', 'password': u'RAOMI8S7', 'server': 'mq.dev.f-interop.eu:443', 'name': u'coap_client'}
+INFO:kombu.mixins:Connected to amqp://EKV0BXBX:**@mq.dev.f-interop.eu:443/1aa87ae1-27ec-40fe-b1f6-181761e77478
+INFO:kombu.mixins:Connected to amqp://EKV0BXBX:**@mq.dev.f-interop.eu:443/1aa87ae1-27ec-40fe-b1f6-181761e77478
+INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.start bound to: toAgent.coap_client.ip.tun.start
+INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.packet.raw bound to: toAgent.coap_client.ip.tun.packet.raw
+INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl messages and data packets..
 
 ------------------------------------------------------------------------------
 ## After clicking in "Test Suite Start" you should be able to test the agent:
@@ -221,6 +215,80 @@ should show:
     round-trip min/avg/max/std-dev = 63.770/66.528/69.990/2.588 ms
 ```
 
+\n\n
+
 ----------------------------------------------------------------------------
+
+\n\n
+
+while in the terminal where the agent runs you should see upstream and downstream packets log messages:
+
+\n\n
+
+```
+INFO:agent.connectors.tun:Message received from testing tool. Injecting in Tun. Message count (downlink): 5
+
+      _
+     / \
+    /   \
+   /     \
+  /       \
+ /__     __\
+    |   |              _ _       _
+    |   |             | (_)     | |
+    |   |  _   _ _ __ | |_ _ __ | | __
+    |   | | | | | '_ \| | | '_ \| |/ /
+    |   | | |_| | |_) | | | | | |   <
+    |   |  \__,_| .__/|_|_|_| |_|_|\_\
+    |   |       | |
+    |   |       |_|
+    !___!
+   \  O  /
+    \/|\/
+      |
+     / \
+   _/   \ _
+
+
+INFO:agent.utils.opentun:
+ # # # # # # # # # # # # OPEN TUN # # # # # # # # # # # #
+ data packet TUN interface -> EventBus
+{"_api_version": "1.0.15", "data": [96, 15, 46, 51, 0, 16, 58, 64, 187, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 187, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 128, 0, 58, 189, 105, 26, 0, 1, 90, 214, 243, 65, 0, 5, 22, 69], "interface_name": "tun0", "timestamp": 1524036417}
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+```
+
+\n\n
+----------------------------------------------------------------------------
+\n\n
+
+```
+INFO:agent.connectors.tun:Message received from testing tool. Injecting in Tun. Message count (downlink): 2
+
+    ___
+   |   |
+   |   |       _                     _ _       _
+   |   |      | |                   | (_)     | |
+   |   |    __| | _____      ___ __ | |_ _ __ | | __
+   |   |   / _` |/ _ \ \ /\ / / '_ \| | | '_ '\| |/ /
+   |   |  | (_| | (_) \ V  V /| | | | | | | | |   <
+   |   |   \__,_|\___/ \_/\_/ |_| |_|_|_|_| |_|_|\_\
+   |   |
+ __!   !__,
+ \       / \O
+  \     / \/|
+   \   /    |
+    \ /    / \
+     Y   _/  _\
+
+INFO:agent.connectors.tun:
+ # # # # # # # # # # # # OPEN TUN # # # # # # # # # # # #
+ data packet EventBus -> TUN interface
+{"_api_version": "1.0.15", "data": [96, 14, 68, 209, 0, 16, 58, 64, 187, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 187, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 129, 0, 57, 189, 105, 26, 0, 1, 90, 214, 243, 65, 0, 5, 22, 69], "interface_name": "tun0", "timestamp": 1524036417}
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+```
+\n\n
+----------------------------------------------------------------------------
+\n\n
+
 
 """
