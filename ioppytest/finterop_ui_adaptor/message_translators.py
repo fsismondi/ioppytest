@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pika
 import logging
 import traceback
 import textwrap
@@ -9,6 +10,7 @@ import datetime
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
+from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
@@ -35,6 +37,7 @@ rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
 TESTING_TOOL_AGENT_NAME = 'agent_TT'
+
 
 @property
 def NotImplementedField(self):
@@ -77,40 +80,11 @@ def list_to_str(ls, max_width=79):
     return ret
 
 
-# TODO delete unused
-# def list_to_str(ls):
-#     """
-#     flattens a nested list up to two levels of depth
-#
-#     :param ls: the list, supports str also
-#     :return: single string with all the items inside the list
-#     """
-#
-#     ret = ''
-#
-#     if ls is None:
-#         return 'None'
-#
-#     if type(ls) is str:
-#         return ls
-#
-#     try:
-#         for l in ls:
-#             if l and isinstance(l, list):
-#                 for sub_l in l:
-#                     if sub_l and not isinstance(sub_l, list):
-#                         ret += str(sub_l) + '\n'
-#                     else:
-#                         # I truncate in the second level
-#                         pass
-#             else:
-#                 ret += str(l) + '\n'
-#
-#     except TypeError as e:
-#         logger.error(e)
-#         return str(ls)
-#
-#     return ret
+def bootstrap_vpn_interfaces():
+    con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+    ui_request = MsgTestSuiteStart()
+    print("publishing .. %s" % repr(ui_request))
+    publish_message(con, ui_request)
 
 
 class GenericBidirectonalTranslator(object):
@@ -246,28 +220,23 @@ class GenericBidirectonalTranslator(object):
             MsgConfigurationExecuted: self._echo_message_highlighted_description,
         }
 
-        # init:
-        # 1. receive Msg TT configured -> action _ui_request_env_config
-        # 2. received OK for ENV config -> request agent config
-        # 3. received OK for agen conf -> _ui_request_testsuite_start
-
         self.tt_to_ui_message_translation = {
-            MsgTestingToolConfigured: self._ui_request_testsuite_start,
+            # MsgTestingToolConfigured: self._ui_request_testsuite_start, let the user bootstrap this process
             MsgTestCaseReady: self._ui_request_testcase_start,
             MsgStepStimuliExecute: self._ui_request_step_stimuli_executed,
             MsgStepVerifyExecute: self._ui_request_step_verification,
         }
 
         self.ui_to_tt_message_translation = {
-            'ts_start': self._tt_message_testsuite_start,
-            'ts_abort': self._tt_message_testsuite_abort,
-            'tc_start': self._tt_message_testcase_start,
-            'tc_restart': self._tt_message_testcase_restart,
-            'tc_skip': self._tt_message_testcase_skip,
+            'ts_start': self.get_tt_message_testsuite_start,
+            'ts_abort': self.get_tt_message_testsuite_abort,
+            'tc_start': self.get_tt_message_testcase_start,
+            'tc_restart': self.get_tt_message_testcase_restart,
+            'tc_skip': self.get_tt_message_testcase_skip,
             # 'tc_list': self._handle_get_testcase_list,
             # 'tc_select': self._handle_testcase_select,
-            'verify_executed': self._tt_message_step_verify_executed,
-            'stimuli_executed': self._tt_message_step_stimuli_executed,
+            'verify_executed': self.get_tt_message_step_verify_executed,
+            'stimuli_executed': self.get_tt_message_step_stimuli_executed,
         }
 
     def bootstrap(self, amqp_connector):
@@ -418,10 +387,10 @@ class GenericBidirectonalTranslator(object):
 
         try:
             # get handler based on the ui response action (e.g. ts_start, tc_skip , etc)
-            ui_to_tt_message_handler = self.ui_to_tt_message_translation[user_input_action]
+            ui_to_tt_message_translator_func = self.ui_to_tt_message_translation[user_input_action]
 
             # run handler with user reply value + tt message that triggered the UI request in the first place
-            message_for_tt = ui_to_tt_message_handler(user_input_value, tt_message)
+            message_for_tt = ui_to_tt_message_translator_func(user_input_value, tt_message)
         except KeyError:
             logger.debug(
                 "No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE])
@@ -555,25 +524,25 @@ class GenericBidirectonalTranslator(object):
 
     # # # # # # #  UI -> TT translation to be implemented BY CHILD CLASS # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_skip(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
     # # # # # # # # # # # GENERIC MESSAGE UI VISUALISATION # # # # # # # # # # # # # # #
@@ -1313,7 +1282,7 @@ class GenericBidirectonalTranslator(object):
                 {
                     'type': 'p',
                     'value': '%s TUN started, IPv6 interface %s::%s' % (
-                    message.name, message.ipv6_prefix, message.ipv6_host)
+                        message.name, message.ipv6_prefix, message.ipv6_host)
                 }
             )
         else:
@@ -1342,8 +1311,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         """
 
         # # # Set Up the VPN between users' IUTs # # #
-        # 1. user needs to export ENV VARS
 
+        # 1. user needs to export ENV VARS
         disp = MsgUiDisplay(
             tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
@@ -1356,13 +1325,18 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that variables have been exported",
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that variables have been exported",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
         )
 
         try:
@@ -1374,7 +1348,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             pass
 
         # 2. user needs to setup AGENT's environment:
-
         agents_kickstart_help = agents_IP_tunnel_config
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
@@ -1392,25 +1365,50 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that agent component is up and running",
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that agent component is up and running",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
         )
 
+        resp_confirm_agent_up = None
         try:
-            resp = amqp_connector.synch_request(
+            resp_confirm_agent_up = amqp_connector.synch_request(
                 request=req,
                 timeout=300,
             )
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 3. give some more info to the user about the agent
+        # 3. starts the agent interfaces
+        if resp_confirm_agent_up:
+            bootstrap_vpn_interfaces()
 
+            disp = MsgUiDisplay(
+                tags=UI_TAG_BOOTSTRAPPING,
+                fields=[{
+                    "type": "p",
+                    "value": "bootstrapping agent interface.."
+                }, ]
+            )
+
+            amqp_connector.publish_ui_display(
+                message=disp,
+                user_id='all'
+            )
+
+            #  TODO some prettier solution for this maybe?
+            time.sleep(5)
+
+        # 4. give some more info to the user about the agent
         agents_kickstart_help = vpn_setup
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
@@ -1428,13 +1426,18 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm to continue",
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm to continue",
+                },
+
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                }, ]
         )
 
         try:
@@ -1445,7 +1448,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 4. give some more info to the user about how to TEST the agent setup
+        # 5. give some more info to the user about how to TEST the agent setup
 
         agents_kickstart_help = vpn_ping_tests
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
@@ -1464,13 +1467,17 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm to continue",
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm to continue",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                }, ]
         )
 
         try:
@@ -1485,22 +1492,22 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         return MsgTestSuiteStart()
 
-    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         return MsgTestSuiteAbort()
 
-    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_start(self, user_input, origin_tt_message=None):
         return MsgTestCaseStart(testcase_id=self._current_tc)
 
-    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         return MsgTestCaseRestart()
 
-    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_skip(self, user_input, origin_tt_message=None):
         return MsgTestCaseSkip(testcase_id=origin_tt_message.testcase_id)
 
-    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         logger.info("processing: %s | %s" % (user_input, type(user_input)))
 
         if type(user_input) is str and user_input.lower() == 'true':
@@ -1520,7 +1527,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
-    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
