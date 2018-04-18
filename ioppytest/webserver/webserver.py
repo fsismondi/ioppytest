@@ -73,6 +73,9 @@ for ts_name, test_descriptions_list in TEST_DESCRIPTIONS_DICT.items():
     for test_desc in test_descriptions_list:
         testcases_path_list += ['/testsuites/{}/{}'.format(ts_name, tc.id) for tc in get_tc_list_from_yaml(test_desc)]
 
+        # the legacy ones:
+        testcases_path_list += ['/tests/{}'.format(tc.id) for tc in get_tc_list_from_yaml(test_desc)]
+
 print('routes built:%s' % testcases_path_list)
 
 
@@ -351,6 +354,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_testcase(self, path):
         """
         Helper to produce testcase (ascci table) for paths like : (...)/testsuites/coap/TD_COAP_(...)
+        Still supports legacy links: (...)/tests/TD_COAP_(...)
         """
         tc_name = path.split('/')[-1]
         tc = None
@@ -359,11 +363,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             if tc_iter.id.lower() == tc_name.lower():
                 tc = tc_iter
-
                 break
 
         if tc is None:
-            self.send_error(404, "Testcase %s couldn't be found" % tc_name)
+            self.send_error(404, "Testcase %s couldn't be found in list %s" % (tc_name,testcases_path_list))
             return None
 
         self.send_response(200)
