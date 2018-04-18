@@ -1060,6 +1060,7 @@ class GenericBidirectonalTranslator(object):
         step_message_fields = [
             ('testcase_id', 'Test Case ID'),
             ('testcase_ref', 'Test Case URL'),
+            ('objective', 'Test Case Objective'),
             ('configuration_id', 'Configuration ID'),
             ('configuration_ref', 'Configuration URL'),
             ('pre_conditions', 'Test Case pre-conditions'),

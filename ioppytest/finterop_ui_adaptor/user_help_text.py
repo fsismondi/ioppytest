@@ -28,6 +28,7 @@ agents_IP_tunnel_config = """
 ------------------------------------------------------------------------------
 
 ### Install dependencies:
+(ptyhon 2.7 needed)
 
 `pip install -r requirements.txt`
 
@@ -49,7 +50,7 @@ PyPI (The Python Package Index ) agent python package distribution and installat
 
 ### Run (choose if either SomeAgentName1 or SomeAgentName2):
 
-(from inside agent repo)
+(from inside agent repo, python 2.7 needed)
 
 \n\n
 
@@ -96,12 +97,12 @@ user 1 | +------tun interface---------+ |   |                            |      
        |                                |               |    |                        |                                |
        |                                |               |    |                        |                                |
        +--------------------------------+               |    |                        +--------------------------------+
-                                                r_key_1 |    |  r_key_2
-                     +     ^                            |    |                                      +     ^
+                                                r_key_1 |    |  r_key_4
+                     +     ^                       &    |    |     &                                ^     +
+                     |     |                    r_key_3 |    |  r_key_2                             |     |
+             r_key_1 |     | r_key_2                    |    |                              r_key_4 |     | r_key_3
                      |     |                            |    |                                      |     |
-             r_key_1 |     | r_key_2                    |    |                              r_key_3 |     | r_key_4
-                     |     |                            |    |                                      |     |
-                     v     +                            +    v                                      v     +
+                     v     +                            +    v                                      +     v
 
      +----------------------------------------------------------------------------------------------------------------->
                                                 AMQP Event Bus
