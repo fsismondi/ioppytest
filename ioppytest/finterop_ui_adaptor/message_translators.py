@@ -1369,7 +1369,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             fields=[
                 {
                     "type": "p",
-                    "value": "Confirm that agent component is up and running",
+                    "value": "Confirm that agent component is running",
                 },
                 {
                     "name": "confirm",

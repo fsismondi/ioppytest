@@ -12,6 +12,7 @@ STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN = STDOUT_MAX_TEXT_LENGTH_PER_LINE - STDOUT
 COMPONENT_ID = 'ui_adaptor'
 
 MESSAGES_NOT_TO_BE_ECHOED = [
+    MsgTestSuiteStart,
     MsgTestCaseStarted,
     MsgSessionLog,
     MsgTestingToolComponentReady,

@@ -127,6 +127,9 @@ r_key_4=toAgent.agent_2_name.ip.tun.packet.raw
 """
 
 vpn_ping_tests = """
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
 ## How do I know if the agent is working?
 
 If everything goes well you should see in your terminal sth like this:
@@ -147,9 +150,9 @@ Password: ********
            |_|    |_|     |___/                                   |___/
 
 
-INFO:agent.agent_cli:Try to connect with {'session': u'1aa87ae1-27ec-40fe-b1f6-181761e77478', 'user': u'EKV0BXBX', 'exchange': u'amq.topic', 'password': u'RAOMI8S7', 'server': 'mq.dev.f-interop.eu:443', 'name': u'coap_client'}
-INFO:kombu.mixins:Connected to amqp://EKV0BXBX:**@mq.dev.f-interop.eu:443/1aa87ae1-27ec-40fe-b1f6-181761e77478
-INFO:kombu.mixins:Connected to amqp://EKV0BXBX:**@mq.dev.f-interop.eu:443/1aa87ae1-27ec-40fe-b1f6-181761e77478
+INFO:agent.agent_cli:Try to connect with {'session': <session_id>, 'user': <user_id>, 'exchange': 'amq.topic', 'password': <pass>, 'server': 'mq.f-interop.eu:443', 'name': u'coap_client'}
+INFO:kombu.mixins:Connected to amqp://<user_id>:**@mq.f-interop.eu:443/<session_id>
+INFO:kombu.mixins:Connected to amqp://<user_id>:**@mq.f-interop.eu:443/<session_id>
 INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.start bound to: toAgent.coap_client.ip.tun.start
 INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.packet.raw bound to: toAgent.coap_client.ip.tun.packet.raw
 INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl messages and data packets..
@@ -158,7 +161,7 @@ INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl mess
 \n\n
 
 ------------------------------------------------------------------------------
-## How do I know if the agent is working? (continuation..)
+## How can I test that is actually working?
 
 (now the agent should be boostrapped, and the network interfaces ready to go..)
 
@@ -171,12 +174,11 @@ INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl mess
 ### Test1 : check the tun interface was created 
 
 \n\n
-
-`fsismondi@carbonero250:~$ ifconfig`
+------------------------------------------------------------------------------
 
 \n\n
 
-this should show:
+`fsismondi@carbonero250:~$ ifconfig`  this should show:
 
 \n\n
 
@@ -190,23 +192,27 @@ this should show:
 ```
 
 ----------------------------------------------------------------------------
+----------------------------------------------------------------------------
 
 ### Test2 : ping the other device 
+
 \n\n
+----------------------------------------------------------------------------
+\n\n
+
 (!) Note: this may not work under these circumstances:
-- this is a user to user session, and the other user hasn't yet started his agent component 
-- if somebody is using agent in --serial-mode (network configs may be slightly different)   
+    - this is a user to user session, and the other user hasn't yet started his agent component 
+    - if some user is using agent in --serial-mode (network configs may be slightly different)   
+
+\n\n
+----------------------------------------------------------------------------
 \n\n
 
 Now you could try ping6 the other implementation in the VPN:
 
 \n\n
 
-`fsismondi@carbonero250:~$ ping6 bbbb::2`
-
-\n\n
-
-should show:
+`fsismondi@carbonero250:~$ ping6 bbbb::2`  should show:
 
 \n\n
 
