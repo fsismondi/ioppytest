@@ -44,7 +44,7 @@ TT_check_list = [
     'packetrouting',
 ]
 # time to wait for components to send for READY signal
-READY_SIGNAL_TOUT = 30
+READY_SIGNAL_TOUT = 45
 
 if __name__ == '__main__':
 

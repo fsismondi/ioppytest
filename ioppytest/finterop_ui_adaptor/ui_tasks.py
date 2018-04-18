@@ -158,9 +158,12 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
     for iut_role in iut_roles:
         m = MsgUiRequestConfirmationButton(
             tags=UI_TAG_SETUP,
-            title="%s runs implementation under test (IUT) with role: %s? "
-                  % (user_lead.upper(), iut_role.upper()),
             fields=[
+                {
+                    "type": "p",
+                    "value": "%s runs implementation under test (IUT) with role: %s? "
+                             % (user_lead.upper(), iut_role.upper())
+                },
                 {
                     "name": "yes",
                     "type": "button",
