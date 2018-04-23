@@ -6,8 +6,6 @@ import logging
 import os
 
 from transitions.core import MachineError
-# TODO fix me! dont do agent stuff in coordinator
-from ioppytest.agent.utils import bootstrap_agent
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
@@ -366,14 +364,14 @@ class CoordinatorAmqpInterface(object):
             ipv6_host = address_tuple[1]
             assigned_ip = ":%s" % ipv6_host
 
-            bootstrap_agent.bootstrap(
-                amqp_url=AMQP_URL,
-                amqp_exchange=AMQP_EXCHANGE,
-                agent_id=node_name,
-                ipv6_host=assigned_ip,
-                ipv6_prefix=ipv6_network_prefix,
-                ipv6_no_forwarding=False
+            msg = MsgAgentTunStart(
+                name = node_name,
+                ipv6_prefix = ipv6_network_prefix,
+                ipv6_host =ipv6_host,
+                ipv6_no_forwarding=False,
+
             )
+            self._publish_message(msg)
 
     def notify_testsuite_ready(self, received_event):
         pass
