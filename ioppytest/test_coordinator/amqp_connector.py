@@ -360,8 +360,8 @@ class CoordinatorAmqpInterface(object):
 
         for node_name, address_tuple in nodes.items():
             # convention -> agents are named the same as the node roles (coap_client, etc..)
-            ipv6_network_prefix = address_tuple[0]
-            ipv6_host = address_tuple[1]
+            ipv6_network_prefix = str(address_tuple[0])
+            ipv6_host = str(address_tuple[1])
             assigned_ip = ":%s" % ipv6_host
 
             msg = MsgAgentTunStart(
