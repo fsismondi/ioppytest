@@ -1,7 +1,5 @@
 version = 1.0
 
-automated-iuts = automated_iut-coap_client-californium-v$(version) automated_iut-coap_server-californium-v$(version)
-
 info:
 	@echo $(info_message)
 
@@ -99,10 +97,10 @@ stop-coap-server:
 stop-coap-client:
 	docker stop reference_iut-coap_client
 
-stop-coap-client-califorium:
+stop-coap-client-californium:
 	docker stop automated_iut-coap_client-californium-v$(version)
 
-stop-coap-server-califorium:
+stop-coap-server-californium:
 	docker stop automated_iut-coap_server-californium-v$(version)
 
 stop-coap-client-coapthon:
@@ -118,8 +116,8 @@ stop-all: ## Stop testing tools running as docker containers
 	$(MAKE) stop-6lowpan-testing-tool --keep-going ; exit 0
 	$(MAKE) stop-coap-server --keep-going ; exit 0
 	$(MAKE) stop-coap-client --keep-going ; exit 0
-	$(MAKE) stop-coap-client-califorium --keep-going ; exit 0
-	$(MAKE) stop-coap-server-califorium --keep-going ; exit 0
+	$(MAKE) stop-coap-client-californium --keep-going ; exit 0
+	$(MAKE) stop-coap-server-californium --keep-going ; exit 0
 	$(MAKE) stop-coap-client-coapthon --keep-going ; exit 0
 	$(MAKE) stop-coap-server-coapthon --keep-going ; exit 0
 
@@ -274,7 +272,7 @@ _docker-build-6lowpan-additional-resources:
 	@echo "Starting to build 6lowpan-additional-resources.. "
 	@echo "TBD"
 
-_run-coap-mini-plugfest-califorium-cli-vs-californium-server:
+_run-coap-mini-plugfest-californium-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 
@@ -283,7 +281,7 @@ _run-coap-mini-plugfest-califorium-cli-vs-californium-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-californium-v$(version) automated_iut-coap_client-californium-v$(version)
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium-v$(version) automated_iut-coap_server-californium-v$(version)
 
-_run-coap-mini-plugfest-califorium-cli-vs-coapthon-server:
+_run-coap-mini-plugfest-californium-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 
@@ -302,14 +300,36 @@ _run-coap-mini-plugfest-coapthon-cli-vs-coapthon-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-coapthon-v$(version) automated_iut-coap_server-coapthon-v$(version)
 
 
-_run-coap-mini-plugfest-coapthon-cli-vs-califorium-server:
+_run-coap-mini-plugfest-coapthon-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 
 	$(MAKE) run-coap-testing-tool
 
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-coapthon-v$(version) automated_iut-coap_client-coapthon-v$(version)
-	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-califorium-v$(version) automated_iut-coap_server-califorium-v$(version)
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium-v$(version) automated_iut-coap_server-californium-v$(version)
+
+
+_stop-coap-mini-plugfest-coapthon-cli-vs-californium-server:
+    $(MAKE) stop-coap-client-coapthon
+    $(MAKE) stop-coap-server-californium
+	$(MAKE) stop-coap-testing-tool
+
+_stop-coap-mini-plugfest-californium-cli-vs-californium-server:
+    $(MAKE) stop-coap-client-californium
+    $(MAKE) stop-coap-server-californium
+	$(MAKE) stop-coap-testing-tool
+
+_stop-coap-mini-plugfest-californium-cli-vs-coapthon-server:
+    $(MAKE) stop-coap-client-californium
+    $(MAKE) stop-coap-server-coapthon
+	$(MAKE) stop-coap-testing-tool
+
+_stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server:
+    $(MAKE) stop-coap-client-coapthon
+    $(MAKE) stop-coap-server-coapthon
+	$(MAKE) stop-coap-testing-tool
+
 
 
 info_message = """ \\n\

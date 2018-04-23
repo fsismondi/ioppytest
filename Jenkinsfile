@@ -122,7 +122,9 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 if(env.JOB_NAME =~ 'CoAP testing tool/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
+        /* attention, here we use external RMQ server*/
+        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
@@ -167,8 +169,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
-        stage("RUN CoAP containers for mini-plugtests"){
-            gitlabCommitStatus("RUN CoAP containers for mini-plugtests") {
+        stage("RUN mini-plugtest 1"){
+            gitlabCommitStatus("START respources for mini-plugtest 1") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -177,7 +179,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E _run-coap-mini-plugfest-califorium-cli-vs-californium-server
+                                sudo -E _run-coap-mini-plugfest-californium-cli-vs-californium-server
                             '''
                         }
 
@@ -192,10 +194,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-         }
 
-        stage("EXECUTE CoAP mini-plugtests"){
-            gitlabCommitStatus("EXECUTE CoAP mini-plugtests") {
+            gitlabCommitStatus("EXECUTE mini-plugtest 1") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -215,12 +215,173 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make stop-all
+                        sudo -E make _stop-coap-mini-plugfest-californuim-cli-vs-californuim-server
                         sudo -E docker ps
                     '''
                 }
             }
 
+        }
+
+        stage("RUN mini-plugtest 2"){
+            gitlabCommitStatus("START respources for mini-plugtest 2") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E _run-coap-mini-plugfest-californium-cli-vs-coapthon-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest 2") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make _stop-coap-mini-plugfest-californuim-cli-vs-coapthon-server
+                        sudo -E docker ps
+                    '''
+                }
+            }
+
+        }
+
+        stage("RUN mini-plugtest 3"){
+            gitlabCommitStatus("START respources for mini-plugtest 3") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E _run-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest 3") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make _stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                        sudo -E docker ps
+                    '''
+                }
+            }
+
+        }
+
+        stage("RUN mini-plugtest 4"){
+            gitlabCommitStatus("START respources for mini-plugtest 4") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E _run-coap-mini-plugfest-coapthon-cli-vs-californium-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest 4") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make _stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                        sudo -E docker ps
+                    '''
+                }
+            }
         }
     }
 }
