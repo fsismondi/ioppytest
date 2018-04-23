@@ -372,7 +372,7 @@ class CoordinatorAmqpInterface(object):
 
             )
 
-            msg.routing_key.replace('*', node_name)
+            msg.routing_key = msg.routing_key.replace('*', node_name)
 
             self._publish_message(msg)
 
