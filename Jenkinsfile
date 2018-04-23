@@ -177,9 +177,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E make run-coap-client
-                                sudo -E make run-coap-server
-                                sudo -E make run-coap-testing-tool
+                                sudo -E _run-coap-mini-plugfest-califorium-cli-vs-californium-server
                             '''
                         }
 
@@ -217,9 +215,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make stop-coap-client
-                        sudo -E make stop-coap-server
-                        sudo -E make stop-coap-testing-tool
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
