@@ -179,7 +179,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E _run-coap-mini-plugfest-californium-cli-vs-californium-server
+                                sudo -E make _run-coap-mini-plugfest-californium-cli-vs-californium-server
                             '''
                         }
 
@@ -215,7 +215,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-plugfest-californuim-cli-vs-californuim-server
+                        sudo -E make _stop-coap-mini-interop-californuim-cli-vs-californuim-server
                         sudo -E docker ps
                     '''
                 }
@@ -233,7 +233,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E _run-coap-mini-plugfest-californium-cli-vs-coapthon-server
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-coapthon-server
                             '''
                         }
 
@@ -269,7 +269,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-plugfest-californuim-cli-vs-coapthon-server
+                        sudo -E make _stop-coap-mini-interop-californuim-cli-vs-coapthon-server
                         sudo -E docker ps
                     '''
                 }
@@ -287,7 +287,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E _run-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                                sudo -E make _run-coap-mini-interop-coapthon-cli-vs-coapthon-server
                             '''
                         }
 
@@ -323,7 +323,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                        sudo -E make _stop-coap-mini-interop-coapthon-cli-vs-coapthon-server
                         sudo -E docker ps
                     '''
                 }
@@ -341,7 +341,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E _run-coap-mini-plugfest-coapthon-cli-vs-californium-server
+                                sudo -E make _run-coap-mini-interop-coapthon-cli-vs-californium-server
                             '''
                         }
 
@@ -377,7 +377,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server
+                        sudo -E make _stop-coap-mini-interop-coapthon-cli-vs-coapthon-server
                         sudo -E docker ps
                     '''
                 }
