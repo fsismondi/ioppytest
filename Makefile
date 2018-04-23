@@ -311,23 +311,23 @@ _run-coap-mini-plugfest-coapthon-cli-vs-californium-server:
 
 
 _stop-coap-mini-plugfest-coapthon-cli-vs-californium-server:
-    $(MAKE) stop-coap-client-coapthon
-    $(MAKE) stop-coap-server-californium
+	$(MAKE) stop-coap-client-coapthon
+	$(MAKE) stop-coap-server-californium
 	$(MAKE) stop-coap-testing-tool
 
 _stop-coap-mini-plugfest-californium-cli-vs-californium-server:
-    $(MAKE) stop-coap-client-californium
-    $(MAKE) stop-coap-server-californium
+	$(MAKE) stop-coap-client-californium
+	$(MAKE) stop-coap-server-californium
 	$(MAKE) stop-coap-testing-tool
 
 _stop-coap-mini-plugfest-californium-cli-vs-coapthon-server:
-    $(MAKE) stop-coap-client-californium
-    $(MAKE) stop-coap-server-coapthon
+	$(MAKE) stop-coap-client-californium
+	$(MAKE) stop-coap-server-coapthon
 	$(MAKE) stop-coap-testing-tool
 
 _stop-coap-mini-plugfest-coapthon-cli-vs-coapthon-server:
-    $(MAKE) stop-coap-client-coapthon
-    $(MAKE) stop-coap-server-coapthon
+	$(MAKE) stop-coap-client-coapthon
+	$(MAKE) stop-coap-server-coapthon
 	$(MAKE) stop-coap-testing-tool
 
 
