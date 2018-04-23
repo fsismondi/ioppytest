@@ -7,7 +7,10 @@ import os
 
 from transitions.core import MachineError
 # TODO fix me! dont do agent stuff in coordinator
-from ioppytest.agent.utils import bootstrap_agent
+
+# TODO fix me, use agent as package instead of submodule!!!
+from ioppytest.agent.agent.utils import bootstrap_agent
+
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
