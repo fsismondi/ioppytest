@@ -365,12 +365,15 @@ class CoordinatorAmqpInterface(object):
             assigned_ip = ":%s" % ipv6_host
 
             msg = MsgAgentTunStart(
-                name = node_name,
-                ipv6_prefix = ipv6_network_prefix,
-                ipv6_host =ipv6_host,
+                name=node_name,
+                ipv6_prefix=ipv6_network_prefix,
+                ipv6_host=ipv6_host,
                 ipv6_no_forwarding=False,
 
             )
+
+            msg.routing_key.replace('*', node_name)
+
             self._publish_message(msg)
 
     def notify_testsuite_ready(self, received_event):
