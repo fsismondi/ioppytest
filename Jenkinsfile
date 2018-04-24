@@ -140,7 +140,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             checkout scm
             sh '''
                 git submodule update --init
-                tree .
+                # tree .
             '''
         }
 
@@ -407,7 +407,7 @@ if(env.JOB_NAME =~ 'ioppytest - build all tools/'){
             checkout scm
             sh '''
                 git submodule update --init
-                tree .
+                # tree .
             '''
         }
 
