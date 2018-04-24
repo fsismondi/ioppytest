@@ -130,6 +130,12 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
+        stage("Check if DOCKER is installed on node"){
+            sh '''
+                docker version
+            '''
+        }
+
         stage("Clone repo and submodules"){
             checkout scm
             sh '''
