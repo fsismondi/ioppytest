@@ -179,7 +179,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E make _run-coap-mini-plugfest-californium-cli-vs-californium-server
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-californium-server
                             '''
                         }
 
