@@ -1,123 +1,117 @@
 properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
-if(env.JOB_NAME =~ 'coap_testing_tool/'){
+if(env.JOB_NAME =~ 'ioppytest/'){
     node('sudo'){
         env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
 
-        stage ("Setup dependencies"){
+        stage("Clone repo and submodules"){
             checkout scm
-            sh 'git submodule update --init'
+            sh '''
+                git submodule update --init
+                # tree .
+            '''
+        }
+
+        stage ("Environment dependencies"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                 sh '''
-                sudo apt-get clean
-                sudo apt-get update
-                sudo apt-get upgrade -y
-                sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
-                sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
-                sudo apt-get install --fix-missing -y build-essential
-                sudo apt-get install --fix-missing -y libyaml-dev
-                sudo apt-get install --fix-missing -y libssl-dev openssl
-                sudo apt-get install --fix-missing -y libffi-dev
-                sudo apt-get install --fix-missing -y curl tree netcat
-                sudo apt-get install --fix-missing -y rabbitmq-server
-                echo 'restarting rmq server and app'
-                sudo rabbitmq-server -detached || true
-                sudo rabbitmqctl stop_app || true
-                sudo rabbitmqctl start_app || true
+                    sudo apt-get clean
+                    sudo apt-get update
+                    sudo apt-get upgrade -y -qq
+                    sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                    sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                    sudo apt-get install --fix-missing -y -qq build-essential
+                    sudo apt-get install --fix-missing -y -qq libyaml-dev
+                    sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                    sudo apt-get install --fix-missing -y -qq libffi-dev
+                    sudo apt-get install --fix-missing -y -qq curl tree netcat
+                    sudo apt-get install --fix-missing -y -qq rabbitmq-server
+                    sudo apt-get install --fix-missing -y -qq supervisor
+                    sudo apt-get install --fix-missing -y -qq make
+
+                    echo restarting rmq server and app
+                    sudo rabbitmq-server -detached || true
+                    sudo rabbitmqctl stop_app || true
+                    sudo rabbitmqctl start_app || true
                 '''
 
-            /* Show deployed code */
-            sh "tree ."
           }
       }
 
-      stage("Testing Tool components requirements"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
+      stage("Testing Tool dependencies"){
+        gitlabCommitStatus("Testing Tool dependencies"){
             withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
-            sudo apt-get -y install supervisor
-            sudo apt-get -y install tcpdump
-
-            python3 -m pip install pytest --ignore-installed
-            python3 -m pytest --version
-
-            echo 'installing py2 dependencies'
-            python -m pip install -r coap_testing_tool/agent/requirements.txt --upgrade
-
-            echo 'installing py3 dependencies'
-            python3 -m pip install -r coap_testing_tool/test_coordinator/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/test_analysis_tool/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/packet_router/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/sniffer/requirements.txt --upgrade
-            python3 -m pip install -r coap_testing_tool/webserver/requirements.txt --upgrade
+                echo installing python dependencies...
+                sudo -H make install-python-dependencies
             '''
             }
         }
       }
 
-      stage("unittesting submodules"){
-        gitlabCommitStatus("Testing Tool's submodules unit-testing"){
+
+      stage("test description (yaml files) validation"){
+        gitlabCommitStatus("test description (yaml files) validation"){
             sh '''
-            echo $AMQP_URL
-            cd coap_testing_tool/test_analysis_tool
-            pwd
-            python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
+                make validate-test-description-syntax
             '''
         }
       }
+
+      stage("unittesting git submodules"){
+        gitlabCommitStatus("unittesting git submodules"){
+            sh '''
+                echo $AMQP_URL
+                make _test_submodules
+            '''
+        }
+      }
+
+
 
       stage("unittesting components"){
-        gitlabCommitStatus("Testing Tool's components unit-testing"){
+        gitlabCommitStatus("unittesting components"){
             sh '''
-            echo $AMQP_URL
-            echo $(which pytest)
-            pwd
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/extended_test_descriptions/tests/tests.py
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/test_coordinator/tests/tests.py
-            python3 -m pytest -p no:cacheprovider coap_testing_tool/packet_router/tests/tests.py
+                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                make run-tests
             '''
         }
       }
 
-      stage("Testing Tool's AMQP API smoke tests"){
-
-        gitlabCommitStatus("Testing Tool's AMQP API smoke tests"){
-          try {
+      stage("Functional tests / AMQP API smoke tests"){
+        env.SUPERVISOR_CONFIG_FILE="envs/coap_testing_tool/tests.supervisor.conf.ini"
+        gitlabCommitStatus("Functional tests / AMQP API smoke tests"){
+            try {
                 sh '''
-                echo 'AMQP PARAMS:'
-                echo $AMQP_URL
-                echo $AMQP_EXCHANGE
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf shutdown
-                sleep 10
-                sudo -E supervisord -c coap_testing_tool/supervisord.conf
-                sleep 15
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
-                sleep 2
-                pwd
-                python3 -m pytest -p no:cacheprovider tests/test_api.py -vv
+                    echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                    sudo -E supervisord -c $SUPERVISOR_CONFIG_FILE
+                    sleep 15
+
+                    sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
+                    python3 -m pytest -p no:cacheprovider tests/test_api.py -v
                 '''
           }
           catch (e){
             sh '''
-            echo 'Do you smell the smoke in the room??'
-            echo 'processes logs :'
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 tat
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 test-coordinator
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 agent
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-router
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 packet-sniffer
-            sudo -E supervisorctl -c coap_testing_tool/supervisord.conf tail -10000 bootstrap-agent-TT
+                echo Do you smell the smoke in the room??
+                echo processes logs :
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 tat
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 test-coordinator
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
             '''
             throw e
           }
           finally {
-                sh '''
+            sh'''
                 sleep 5
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf status
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
                 sleep 5
-                sudo -E supervisorctl -c coap_testing_tool/supervisord.conf stop all
-                '''
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE stop all
+                sleep 5
+            '''
           }
         }
       }
@@ -125,196 +119,10 @@ if(env.JOB_NAME =~ 'coap_testing_tool/'){
 }
 
 
-if(env.JOB_NAME =~ 'coap_testing_tool_ansible_playbook/'){
-    node('sudo'){
-
-        stage("Install Ansible"){
-            sh '''
-            sudo apt-get install --fix-missing -y  python-pip
-            sudo apt-get install --fix-missing -y  ansible
-            '''
-        }
-
-        stage("Build w/ Ansible Playbook"){
-            checkout scm
-            sh "git submodule update --init"
-            sh "git submodule sync --recursive"
-            gitlabCommitStatus("ansible-container") {
-                sh "sudo ansible-playbook -i ansible/hosts.local ansible/main.yml --ask-become-pass"
-            }
-        }
-    }
-}
-
-if(env.JOB_NAME =~ 'coap_testing_tool_ansible_container/'){
-
-    node('docker'){
-        env.DOCKER_CLIENT_TIMEOUT=3000
-        env.COMPOSE_HTTP_TIMEOUT=3000
-
-        stage("Build ansible-containers"){
-            sh "sudo apt-get install -y python-pip"
-            sh "sudo pip install ansible-container"
-            checkout scm
-            sh "git submodule update --init"
-            sh "git submodule sync --recursive"
-            sh "pwd"
-            gitlabCommitStatus("ansible-container") {
-                ansiColor('xterm'){
-                    sh "sudo -E ansible-container --debug build"
-                }
-            }
-        }
-    }
-}
-
-if(env.JOB_NAME =~ 'coap_testing_tool_docker_build/'){
+if(env.JOB_NAME =~ 'CoAP testing tool/'){
     node('docker'){
 
-        env.AMQP_URL="amqp://guest:guest@localhost/"
-        env.AMQP_EXCHANGE="amq.topic"
-        env.DOCKER_CLIENT_TIMEOUT=3000
-        env.COMPOSE_HTTP_TIMEOUT=3000
-        env.TT_DOCKER_IMAGE_NAME="testing_tool-coap"
-
-        stage("Clone repo and submodules"){
-            checkout scm
-            sh "git submodule update --init"
-            sh "tree ."
-        }
-
-        stage("Creating CoAP testing tool docker image from Dockerfile"){
-            gitlabCommitStatus("coap testing tool docker image") {
-
-                sh "echo buiding coap_testing_tool docker image"
-                sh "sudo -E docker build -t ${env.TT_DOCKER_IMAGE_NAME} ."
-                sh "sudo -E docker images"
-            }
-        }
-
-         stage("Testing Tool run"){
-             long startTime = System.currentTimeMillis()
-             long timeoutInSeconds = 30
-             gitlabCommitStatus("Docker run") {
-                sh "echo $AMQP_URL"
-                try {
-                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                        sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.TT_DOCKER_IMAGE_NAME} "
-                    }
-                } catch (err) {
-                    long timePassed = System.currentTimeMillis() - startTime
-                    if (timePassed >= timeoutInSeconds * 1000) {
-                        echo 'Docker container kept on running!'
-                        currentBuild.result = 'SUCCESS'
-                    } else {
-                        currentBuild.result = 'FAILURE'
-                    }
-                }
-
-             }
-
-         }
-    }
-}
-
-if(env.JOB_NAME =~ 'coap_automated_iuts_docker_build_and_run/'){
-    node('docker'){
-
-        env.AMQP_URL="amqp://guest:guest@localhost/"
-        env.AMQP_EXCHANGE="amq.topic"
-        env.DOCKER_CLIENT_TIMEOUT=3000
-        env.COMPOSE_HTTP_TIMEOUT=3000
-
-        stage("Clone repo and submodules"){
-            checkout scm
-            sh "git submodule update --init"
-            sh "tree ."
-        }
-
-        stage("automated_iut-coap_server-califronium: docker image BUILD"){
-            env.AUTOMATED_IUT='coap_server_californium'
-
-            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image BUILD") {
-
-                sh "echo buiding $AUTOMATED_IUT"
-                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "sudo -E docker images"
-            }
-        }
-
-         stage("automated_iut-coap_server-califronium: docker image RUN"){
-
-            gitlabCommitStatus("automated_iut-coap_server-califronium: docker image RUN") {
-                long startTime = System.currentTimeMillis()
-                long timeoutInSeconds = 30
-                gitlabCommitStatus("Docker run") {
-                    sh "echo $AUTOMATED_IUT"
-                    sh "echo $AMQP_URL"
-                    try {
-                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} "
-                        }
-                    } catch (err) {
-                        long timePassed = System.currentTimeMillis() - startTime
-                        if (timePassed >= timeoutInSeconds * 1000) {
-                            echo 'Docker container kept on running!'
-                            currentBuild.result = 'SUCCESS'
-                        } else {
-                            currentBuild.result = 'FAILURE'
-                        }
-                    }
-
-                }
-
-            }
-
-         }
-
-         stage("automated_iut-coap_client-coapthon: docker image BUILD"){
-            gitlabCommitStatus("automated_iut-coap_client-coapthon: docker image BUILD") {
-                env.AUTOMATED_IUT='coap_client_coapthon'
-
-                sh "echo buiding $AUTOMATED_IUT"
-                sh "sudo -E docker build -t ${env.AUTOMATED_IUT} -f automated_IUTs/${env.AUTOMATED_IUT}/Dockerfile ."
-                sh "sudo -E docker images"
-            }
-        }
-
-         stage("automated_iut-coap_client-coapthon: docker image RUN"){
-
-            gitlabCommitStatus("automated_iut-coap_client-coapthon:: docker image RUN") {
-                long startTime = System.currentTimeMillis()
-                long timeoutInSeconds = 30
-                gitlabCommitStatus("Docker run") {
-                    sh "echo $AUTOMATED_IUT"
-                    sh "echo $AMQP_URL"
-                    try {
-                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E docker run -i --sig-proxy=true --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged ${env.AUTOMATED_IUT} "
-                        }
-                    } catch (err) {
-                        long timePassed = System.currentTimeMillis() - startTime
-                        if (timePassed >= timeoutInSeconds * 1000) {
-                            echo 'Docker container kept on running!'
-                            currentBuild.result = 'SUCCESS'
-                        } else {
-                            currentBuild.result = 'FAILURE'
-                        }
-                    }
-
-                }
-
-            }
-
-         }
-    }
-}
-
-
-if(env.JOB_NAME =~ 'full_coap_interop_session/'){
-    node('docker'){
-
-        /* attention, here we use external RMQ server, else we would need to allow docker containers to access host's loopback ports */
+        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
@@ -322,55 +130,57 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
 
         stage("Clone repo and submodules"){
             checkout scm
-            sh "git submodule update --init"
-            sh "tree ."
+            sh '''
+                git submodule update --init
+                tree .
+            '''
         }
 
-        stage("Testing Tool components requirements"){
-            gitlabCommitStatus("Testing Tool's components unit-testing"){
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
                 withEnv(["DEBIAN_FRONTEND=noninteractive"]){
                     sh '''
                         sudo apt-get clean
                         sudo apt-get update
-                        sudo apt-get upgrade -y
-                        sudo apt-get install --fix-missing -y python-dev python-pip python-setuptools
-                        sudo apt-get install --fix-missing -y python3-dev python3-pip python3-setuptools
-                        sudo apt-get install --fix-missing -y build-essential
-                        sudo apt-get install --fix-missing -y libyaml-dev
-                        sudo apt-get install --fix-missing -y libssl-dev openssl
-                        sudo apt-get install --fix-missing -y libffi-dev
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
+                        sudo apt-get install --fix-missing -y -qq make
 
-                        python3 -m pip install pytest --ignore-installed
-                        python3 -m pytest --version
-
-                        echo 'installing py2 dependencies'
-                        make install-requirements
+                        sudo make install-python-dependencies
                     '''
                 }
             }
         }
 
-        stage("docker BUILD testing tool and automated-iuts"){
-            gitlabCommitStatus("docker BUILD testing tool and automated-iuts") {
-                sh "sudo apt-get install --reinstall make"
-                sh "sudo -E make docker-build-all "
-                sh "sudo -E docker images"
+        stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-coap
+                    sudo -E make _docker-build-coap-additional-resources
+                    sudo -E docker images
+                '''
             }
         }
 
-        stage("docker RUN testing tool and automated-iuts"){
-            gitlabCommitStatus("docker RUN testing tool and automated-iuts") {
+        stage("RUN CoAP containers for mini-plugtests"){
+            gitlabCommitStatus("RUN CoAP containers for mini-plugtests") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
-                    long timeoutInSeconds = 45
-
-                    sh "echo $AMQP_URL"
+                    long timeoutInSeconds = 120
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
-                            sh "sudo -E make run-coap-client"
-                            sh "sudo -E make run-coap-server"
-                            sh "sudo -E make run-coap-testing-tool"
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-coap-client
+                                sudo -E make run-coap-server
+                                sudo -E make run-coap-testing-tool
+                            '''
                         }
 
                     } catch (err) {
@@ -386,35 +196,221 @@ if(env.JOB_NAME =~ 'full_coap_interop_session/'){
             }
          }
 
-         stage("full_coap_interop_session"){
-            gitlabCommitStatus("full_coap_interop_session") {
+        stage("EXECUTE CoAP mini-plugtests"){
+            gitlabCommitStatus("EXECUTE CoAP mini-plugtests") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
-                            echo 'AMQP PARAMS:'
-                            echo $AMQP_URL
-                            echo $AMQP_EXCHANGE
-                            python3 -m pytest -p no:cacheprovider tests/test_full_coap_interop_session.py -vvv
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
                         '''
                     }
                 }
                 catch (e){
                     sh '''
-                        echo 'Do you smell the smoke in the room??'
-                        echo 'docker container logs :'
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
                         sudo make get-logs
                     '''
                     throw e
                 }
                 finally {
                     sh '''
-                        sudo make stop-all
+                        sudo -E make stop-coap-client
+                        sudo -E make stop-coap-server
+                        sudo -E make stop-coap-testing-tool
                         sudo -E docker ps
                     '''
                 }
             }
 
+        }
+    }
+}
+
+
+
+if(env.JOB_NAME =~ 'ioppytest - build all tools/'){
+    node('docker'){
+        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
+        /* TODO use a deficated VHOST for these tests */
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/session02"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh '''
+                git submodule update --init
+                tree .
+            '''
+        }
+
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
+                        sudo apt-get install --fix-missing -y -qq make
+                    '''
+                }
+            }
+        }
+
+        stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-coap
+                    sudo -E make _docker-build-coap-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD OneM2M docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD OneM2M docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-onem2m
+                    sudo -E make _docker-build-onem2m-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD 6LoWPAN docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("BUILD 6LoWPAN docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-6lowpan
+                    sudo -E make _docker-build-6lowpan-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("BUILD CoMI docker images (testing tools and automated-iuts)"){
+            gitlabCommitStatus("CoMI CoAP docker images (testing tools and automated-iuts)") {
+                sh '''
+                    sudo -E make _docker-build-comi
+                    sudo -E make _docker-build-comi-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("RUN CoAP testing tool container"){
+            gitlabCommitStatus("RUN CoAP testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-coap-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
          }
+
+        stage("RUN OneM2M testing tool container"){
+            gitlabCommitStatus("RUN OneM2M testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-onem2m-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("RUN CoMI testing tool container"){
+            gitlabCommitStatus("RUN CoMI testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-comi-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("RUN 6LoWPAN testing tool container"){
+            gitlabCommitStatus("RUN 6LoWPAN testing tool ") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make run-6lowpan-testing-tool
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+        }
     }
 }

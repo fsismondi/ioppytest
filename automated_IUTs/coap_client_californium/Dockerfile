@@ -10,18 +10,22 @@ RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
 RUN apt-get -y install net-tools
 
+# upgrade pip
+RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
+
 # requirement for californium
 RUN apt-get -y install default-jre
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #py2 requirements
-RUN pip install -r coap_testing_tool/agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requierements
-RUN pip3 install pika
+RUN python3 -m pip install pika
 
 #RUN cp automated_IUTs/coap_client_californium/supervisor.conf /etc/supervisor/supervisor.conf
 

@@ -9,16 +9,20 @@ RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
 RUN apt-get -y install net-tools
 
-ADD . /coap_testing_tool
-ENV PATH="/coap_testing_tool:$PATH"
-WORKDIR /coap_testing_tool
+# upgrade pip
+RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
+
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 #py2 requirements
-RUN pip install -r coap_testing_tool/agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requirements
-RUN pip3 install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
-RUN pip3 install -r automated_IUTs/coap_client_coapthon/requirements.txt
+RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
+RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/requirements.txt
 
 #RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
 

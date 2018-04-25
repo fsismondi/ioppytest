@@ -1,0 +1,1976 @@
+# -*- coding: utf-8 -*-
+--- !testcase
+testcase_id: TD_M2M_NH_01
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_01
+configuration: M2M_CFG_01
+objective: AE retrieves the CSEBase resource
+pre_conditions:
+  - CSEBase resource has been automatically created in CSE
+notes: null
+references: 'TS-0001, clause 10.2.3.2 ; TS-0004, clause 7.3.2'
+sequence:
+  - step_id: TD_M2M_NH_01_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a GET request with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_01_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host=registrar CSE Host
+        - Uri-Port=registrar CSE port
+        - Uri-Path=<CSEBase>
+
+  - step_id: TD_M2M_NH_01_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_01_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_06
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_06
+configuration: M2M_CFG_01
+objective: AE registers to its regisrar CSE via an AE Create Request
+pre_conditions:
+  - CSEBase resource has been created in CSE with name {CSEBaseName}
+  - AE does not have an AE-ID, i.e it registers from scratch
+notes: null
+references: 'TS-0001, clause 10.2.1.1 ; TS-0004, clause 7.3.5.2.1'
+sequence:
+  - step_id: TD_M2M_NH_06_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a AE Create request to register to the Registrar CSE'
+      - - Type = 0 (CON)
+        - Code = 2 (POST)
+        - Content-format option
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_06_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-TY=2
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_06_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <AE> resource is created in registrar CSE'
+
+  - step_id: TD_M2M_NH_06_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=Uri of the created AE resource
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_06_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_07
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_07
+configuration: M2M_CFG_01
+objective: AE retrieves <AE> resource via an AE Retrieve Request
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}
+  - AE has created a <AE> resource on registrar CSE with name {AE}
+notes: null
+references: 'TS-0001, clause 10.2.1.2 ; TS-0004, clause 7.3.5.2.2'
+sequence:
+  - step_id: TD_M2M_NH_07_step_01
+    type: stimuli
+    node: adn
+    description:
+      - 'AE is requested to send a AE GET request to Registrar CSE with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/{AE}
+
+  - step_id: TD_M2M_NH_07_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/{AE}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_07_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_07_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_08
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_08
+configuration: M2M_CFG_01
+objective: AE updates attribute in <AE> resource
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}
+  - AE has created a <AE> resource on registrar CSE with name {AE}
+notes: null
+references: 'TS-0001, clause 10.2.1.3 ; TS-0004, clause 7.3.5.2.3'
+sequence:
+  - step_id: TD_M2M_NH_08_step_01
+    type: stimuli
+    node: adn
+    description:
+      - 'AE is requested to send a AE Update request to register to the Registrar CSE'
+      - - Type = 0 (CON)
+        - Code = 3 (PUT)
+        - Content-format option
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_08_step_02
+    type: check
+    description:
+      - 'Sent PUT request contains'
+      - - Type=0 and Code=3
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/{AE}
+        - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_08_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <AE> resource has been updated in registrar CSE'
+
+  - step_id: TD_M2M_NH_08_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.04(changed)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_08_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_09
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_09
+configuration: M2M_CFG_01
+objective: AE de-registers by deleting <AE> resource via an AE Delete Request
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}
+  - AE has created a <AE> resource on registrar CSE with name {AE}
+notes: null
+references: 'TS-0001, clause 10.2.1.4 ; TS-0004, clause 7.3.5.2.4'
+sequence:
+  - step_id: TD_M2M_NH_09_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a DELETE request with'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_09_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+       
+
+  - step_id: TD_M2M_NH_09_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Empty Payload
+
+  - step_id: TD_M2M_NH_09_step_04
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <AE> resource has been removed from registrar CSE'
+
+  - step_id: TD_M2M_NH_09_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_10
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_10
+configuration: M2M_CFG_01
+objective: AE creates a container resource in registrar CSE via a container Create Request
+pre_conditions:
+  - AE has created an application resource <AE> on registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.4.1 ; TS-0004, clause 7.3.5.2.1'
+sequence:
+  - step_id: TD_M2M_NH_10_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a <container> Create request'
+      - - Type = 0 (CON)
+        - Code = 2 (POST)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_10_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <AE> resource 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-TY=3
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_10_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <container> resource is created in registrar CSE'
+
+  - step_id: TD_M2M_NH_10_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=Uri of the created resource
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_10_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_11
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_11
+configuration: M2M_CFG_01
+objective: AE retrieves information of a container resource via a container Retrieve Request
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+notes: null
+references: 'TS-0001, clause 10.2.4.2 ; TS-0004, clause 7.3.5.2.2'
+sequence:
+  - step_id: TD_M2M_NH_11_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a GET Request for a <container> with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/URI of <container> resource
+
+  - step_id: TD_M2M_NH_11_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <container> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_11_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_11_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_12
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_12
+configuration: M2M_CFG_01
+objective: AE updates attribute in <container> resource
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+notes: null
+references: 'TS-0001, clause 10.2.4.3 ; TS-0004, clause 7.3.5.2.3'
+sequence:
+  - step_id: TD_M2M_NH_12_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a <container> Update request to register to the Registrar CSE with'
+      - - Type = 0 (CON)
+        - Code = 3 (PUT)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_12_step_02
+    type: check
+    description:
+      - 'Sent PUT request contains'
+      - - Type=0 and Code=3
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <container> resource
+        - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_12_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <container> resource has been updated in registrar CSE'
+
+  - step_id: TD_M2M_NH_12_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.04(changed)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_12_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_13
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_13
+configuration: M2M_CFG_01
+objective: AE deletes a specific container resource via a container Delete Request
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+notes: null
+references: 'TS-0001, clause 10.2.2.4 ; TS-0004, clause 7.3.5.2.4'
+sequence:
+  - step_id: TD_M2M_NH_13_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a DELETE request with'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_13_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/URI of <container> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+       
+
+  - step_id: TD_M2M_NH_13_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <container> resource has been removed from registrar CSE'
+
+  - step_id: TD_M2M_NH_13_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Empty Payload
+
+
+  - step_id: TD_M2M_NH_13_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_14
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_14
+configuration: M2M_CFG_01
+objective: AE adds a contentInstance resource <contentInstance> to a specific container in Registrar CSE via a contentInstance Create Request.
+pre_conditions:
+  - AE has created an application resource <AE> on registrar CSE.
+  - AE has created a container resource <container> on registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.19.2 ; TS-0004, clause 7.3.6.2.1'
+sequence:
+  - step_id: TD_M2M_NH_14_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE sends a RETRIEVE request with resultContent set to 1 (default value) to retrieve the <container> resource'
+      - 'AE is requested to send a <contentInstance> Create request'
+      - - Type = 0 (CON)
+        - Code = 2 (POST)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_14_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <container> resource 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-TY=4
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_14_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <contentInstance> resource is created in Registrar CSE and AE sends a RETRIEVE request to the <container> resource to check that if the Registrar CSE has updated stateTag, currentNrOfInstances, and CurrentByteSize attribute correspondingly which is resulted from the successful creation of child <contentInstance> resource.'
+
+  - step_id: TD_M2M_NH_14_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=Uri of the created resource
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_14_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful CREATE  operation of <contentInstance> and indicates Registrar CSE has updated stateTag, currentNrOfInstances, and CurrentByteSize attribute correspondingly by checking the response of a <container> request to the <container> resource.'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_15
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_15
+configuration: M2M_CFG_01
+objective: AE retrieves information of a contentInstance resource via a contentInstance Retrieve Request.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource. 
+notes: null
+references: 'TS-0001, clause 10.2.19.3 ; TS-0004, clause 7.3.6.2.2'
+sequence:
+  - step_id: TD_M2M_NH_15_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a GET Request for a <contentInstance> with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/URI of <contentInstance> resource
+
+  - step_id: TD_M2M_NH_15_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <contentInstance> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_15_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_15_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_17
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_17
+configuration: M2M_CFG_01
+objective: AE deletes contentInstance resource via a contentInstance Delete Request and the Registrar CSE updates the parent <container> resource with currentNrOfInstances, and CurrentByteSize attributes correspondingly.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE.
+  - AE has created a container resource <container> on Registrar CSE.
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource.
+notes: null
+references: 'TS-0001, clause 10.2.19.5 ; TS-0004, clause 7.3.6.2.4'
+sequence:
+  - step_id: TD_M2M_NH_17_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE sends a RETRIEVE request with resultContent set to 1 (default value) to retrieve the <container> resource and AE is requested to send a contentInstance Delete Request'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_17_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/URI of <contentInstance> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+       
+
+  - step_id: TD_M2M_NH_17_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <contentInstance> resource is deleted in Registrar CSE and AE sends a RETRIEVE request to the parent <container> resource to check that if the Registrar CSE has updated currentNrOfInstances, and CurrentByteSize attribute correspondingly which is resulted from the successful deletion of child <contentInstance> resource.'
+
+  - step_id: TD_M2M_NH_17_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Empty Payload
+
+
+  - step_id: TD_M2M_NH_17_step_05
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <contentInstance> resource has been removed in registrar CSE.'
+
+  - step_id: TD_M2M_NH_17_step_06
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful DELETE operation of <contentInstance> and indicates Registrar CSE has updated currentNrOfInstances, and CurrentByteSize attribute correspondingly.'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_49
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_49
+configuration: M2M_CFG_01
+objective: AE deletes a <latest> resource of a <container> and the Registrar CSE points a latest <contentInstance> among the existing contentInstances to the <latest> resource of the <container>.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE.
+  - AE has created a container resource <container> on Registrar CSE.
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource.
+notes: null
+references: 'TS-0001, clause 10.2.22.2 ; TS-0004, clause 7.4.28.2.5'
+sequence:
+  - step_id: TD_M2M_NH_49_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE retrieves a <latest> resource in a <container> and then sends a DELETE request to the <latest> resource of the <container>.'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_49_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/URI of <latest> resource of a <container>
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+
+  - step_id: TD_M2M_NH_49_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Non-Empty Payload (representation of deleted <latest> resource of a <container>
+
+
+  - step_id: TD_M2M_NH_49_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful DELETE operation of a <latest> resource and AE sends a RETRIEVE request to <latest> resource of a <container> to check if the retrieved <latest> resource in the <container> is different with that one that was retrieved before DELETE request of the <latest> resource in terms of resourceID and resourceName attribute value.'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_50
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_50
+configuration: M2M_CFG_01
+objective: AE deletes a <oldest> resource of a <container> and the Registrar CSE points an oldest <contentInstance> among the existing contentInstances to the <oldest> resource of the <container>.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE.
+  - AE has created a container resource <container> on Registrar CSE.
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource.
+notes: null
+references: 'TS-0001, clause 10.2.22.2 ; TS-0004, clause 7.4.28.2.5'
+sequence:
+  - step_id: TD_M2M_NH_50_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE retrieves a <oldest> resource in a <container> and then sends a DELETE request to the <oldest> resource of the <container>.'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_50_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/URI of <oldest> resource of a <container>
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+
+  - step_id: TD_M2M_NH_50_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Non-Empty Payload (representation of deleted <latest> resource of a <container>
+
+
+  - step_id: TD_M2M_NH_49_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful DELETE operation of a <oldest> resource and AE sends a RETRIEVE request to <oldest> resource of a <container> to check if the retrieved <oldest> resource in the <container> is different with that one that was retrieved before DELETE request of the <oldest> resource in terms of resourceID and resourceName attribute value.'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_51
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_51
+configuration: M2M_CFG_01
+objective: AE sends a <contentInstance> CREATE request to a <container> which contains attribute currentNrOfInstances whose value equals to that of maxNrOfInstances and Registrar CSE deletes the oldest <contentInstance> from the parent <container> and then creates the requested <contentInstance> resource for the originator AE.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE.
+  - AE has created a container resource <container> on Registrar CSE (where the number of contentInstances equals to the value set in maxNrOfInstance) on registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.19.2 ; TS-0004, clause 7.3.6.2.1'
+sequence:
+  - step_id: TD_M2M_NH_51_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE sends a RETRIEVE request with resultContent set to 1 (default value) to retrieve the <oldest> contentInstance resource'
+      - 'AE sends a request to create a <contentInstance> resource.'
+
+  - step_id: TD_M2M_NH_51_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <container> resource 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-TY=4
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_51_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <oldest> of a <container> is deleted.'
+
+  - step_id: TD_M2M_NH_51_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=Uri of the created resource
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_51_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful CREATE operation of <contentInstance> and indicates the representation of the recent <oldest> resource in the <container> is different with that of <oldest> resource retrieved at the beginning of test in terms of resourceID and resourceName attribute value'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_71
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_60
+configuration: M2M_CFG_01
+objective: AE retrieves a <latest> resource of a <container> and the Registrar CSE points a latest <contentInstance> among the existing contentInstances to the <latest> resource of the <container>.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource. 
+notes: null
+references: 'TS-0001, clause 10.2.22.1 ; TS-0004, clause 7.4.27.2.2'
+sequence:
+  - step_id: TD_M2M_NH_71_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a GET Request for a <latest> with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/URI of <contentInstance> resource
+
+  - step_id: TD_M2M_NH_71_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <latest> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_71_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_71_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_72
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_61
+configuration: M2M_CFG_01
+objective: AE retrieves a <oldest> resource of a <container> and the Registrar CSE points an oldest <contentInstance> among the existing contentInstances to the <oldest> resource of the <container>.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+  - AE has created a contentInstance resource <contentInstance> as child resource of <container> resource. 
+notes: null
+references: 'TS-0001, clause 10.2.23.1 ; TS-0004, clause 7.4.28.2.2'
+sequence:
+  - step_id: TD_M2M_NH_72_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a GET Request for a <oldest> with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/URI of <oldest> resource
+
+  - step_id: TD_M2M_NH_72_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <oldest> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_72_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_72_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_18
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_18
+configuration: M2M_CFG_01
+objective: AE discovers all accessible resources from registrar CSE.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}. 
+notes: null
+references: 'TS-0001, clause 10.2.6 ; TS-0004, clause 7.2.3.13'
+sequence:
+  - step_id: TD_M2M_NH_18_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a discovery request to registrar CSE with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_18_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Uri-Query = (fu=1)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_18_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload=Serialized representation of data object containing addresses of all discovered resources
+
+  - step_id: TD_M2M_NH_18_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_19
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_19
+configuration: M2M_CFG_01
+objective: AE discovers accessible resources residing in Registrar CSE using the label filter criteria.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}
+  - A <Container> resource with label "key1" is created on Registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.6 ; TS-0004, clause 7.2.3.13'
+sequence:
+  - step_id: TD_M2M_NH_19_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a Discovery request in order to discover the <Container> resource using the label filter criteria with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_19_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Uri-Query = (fu=1)
+        - Uri-Query = (lbl=key1)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_19_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload=Serialized representation of data object containing the address of the discovered container
+
+  - step_id: TD_M2M_NH_19_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_20
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_20
+configuration: M2M_CFG_01
+objective: AE discovers accessible resources residing in Registrar CSE limiting the number of matching resources to the specified value.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}
+notes: null
+references: 'TS-0001, clause 10.2.6 ; TS-0004, clause 7.2.3.13'
+sequence:
+  - step_id: TD_M2M_NH_20_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a Discovery request in order to discover at most 2 resources in registrar CSE with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_20_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Uri-Query = (fu=1)
+        - Uri-Query = (lim=2)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_20_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload=Serialized representation of data object containing at most 2 addresses of discovered resources
+
+  - step_id: TD_M2M_NH_20_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_21
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_21
+configuration: M2M_CFG_01
+objective: AE discovers accessible resources residing in Registrar CSE using multiple Filter Criteria.
+pre_conditions:
+  - Two <Container> resources with labels "key1" and "key2" are created in Registrar CSE.
+  - A <Group> resources with labels "key1" and "key2" is created in Registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.6 ; TS-0004, clause 7.2.3.13'
+sequence:
+  - step_id: TD_M2M_NH_21_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a Discovery request in order to discover specific resources located in Registrar CSE using multiple filter criteria (label, resource type and limit) with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_21_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Uri-Query = (fu=1)
+        - Uri-Query = (lbl=key1)
+        - Uri-Query = (lbl=key2)
+        - Uri-Query = (rty=3)
+        - Uri-Query = (lim=1)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_21_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload=Serialized representation of data object containing the address of one of the <Container> resources. 
+
+  - step_id: TD_M2M_NH_21_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_22
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_22
+configuration: M2M_CFG_01
+objective: AE creates a subscription to Application Entity resource via subscription Create Request.
+pre_conditions:
+  - AE has created an application resource <AE> on registrar CSE.
+  - AE has created a container resource <container> on registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.11.2 ; TS-0004, clause 7.3.7.2'
+sequence:
+  - step_id: TD_M2M_NH_22_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a subscription Create request to the Registrar CSE with'
+      - - Type = 0 (CON)
+        - Code = 2 (POST)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_22_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <container> resource 
+        - content-type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-TY=23
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_22_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <Subscription> resource is created in registrar CSE.'
+
+  - step_id: TD_M2M_NH_22_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=Uri of the created resource
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_22_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation.'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_23
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_23
+configuration: M2M_CFG_01
+objective: AE retrieves subscription resource from Registrar CSE.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+  - AE has created a subscription resource <subscripton> on registrar CSE.  
+notes: null
+references: 'TS-0001, clause 10.2.11.2 ; TS-0004, clause 7.3.7.2'
+sequence:
+  - step_id: TD_M2M_NH_23_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a Retrieve Request for a <subscription> with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+        - Uri-Path = {CSEBaseName}/URI of <subscription> resource
+
+  - step_id: TD_M2M_NH_23_step_02
+    type: check
+    description:
+      - 'Sent Get request contains'
+      - - Type=0 and Code=1
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <subscription> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload
+
+  - step_id: TD_M2M_NH_23_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_23_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id: TD_M2M_NH_24
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_24
+configuration: M2M_CFG_01
+objective: AE updates information about a subscription via subscription Update Request.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE
+  - AE has created a container resource <container> on Registrar CSE
+  - AE has created a subscription resource <subscripton> on registrar CSE.  
+notes: null
+references: 'TS-0001, clause 10.2.11.4 ; TS-0004, clause 7.3.7.2'
+sequence:
+  - step_id: TD_M2M_NH_24_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a subscription Update Request to update the lifetime of the resource with'
+      - - Type = 0 (CON)
+        - Code = 3 (PUT)
+        - Content-format option
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_24_step_02
+    type: check
+    description:
+      - 'Sent PUT request contains'
+      - - Type=0 and Code=3
+        - Uri-Host = IP address or the FQDN of registrar CSE
+        - Uri-Path = {CSEBaseName}/URI of <subscription> resource
+        - Content-Type=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json 
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (-> CRQI)
+        - Non-empty Payload
+
+  - step_id: TD_M2M_NH_24_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <subscription> resource has been updated in registrar CSE'
+
+  - step_id: TD_M2M_NH_24_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code=2.04(changed)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Content-format=application/vnd.oneM2M-res+xml or application/vnd.oneM2M-res+json
+          - Non-empty Payload
+
+  - step_id: TD_M2M_NH_08_step_05
+    type: verify
+    node: adn
+    description:
+      - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_25
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_25
+configuration: M2M_CFG_01
+objective: AE cancels subscription via an subscription Delete Request.
+pre_conditions:
+  - AE has created an Application Entity resource <AE> on Registrar CSE.
+  - AE has created a container resource <container> on Registrar CSE.
+  - AE has created a subscription resource <subscription> on registrar CSE.
+notes: null
+references: 'TS-0001, clause 10.2.11.5 ; TS-0004, clause 7.3.7.2'
+sequence:
+  - step_id: TD_M2M_NH_25_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a subscription Delete Request with'
+      - - Type = 0(CON)
+        - Code = 4(Delete)
+
+  - step_id: TD_M2M_NH_25_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/URI of <subscription> resource
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty Payload
+
+  - step_id: TD_M2M_NH_25_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <Subscription> resource is deleted in registrar CSE.'
+
+
+  - step_id: TD_M2M_NH_25_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+          - Empty Payload
+
+  - step_id: TD_M2M_NH_25_step_05
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <subscription> resource has been removed in registrar CSE.'
+
+  - step_id: TD_M2M_NH_25_step_06
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_26
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_26
+configuration: M2M_CFG_01
+objective: AE creates an accessControlPolicy resource.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}.
+  - AE has created a <AE> resource on registrar CSE with name {AE}. 
+notes: null
+references: 'TS-0001, clause 10.2.21.1 ; TS-0004, clause 7.3.1.2'
+sequence:
+  - step_id: TD_M2M_NH_26_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a subscription Delete Request with'
+      - - Type = 0(CON)
+        - Code = 2(POST)
+
+  - step_id: TD_M2M_NH_26_step_02
+    type: check
+    description:
+      - 'Sent POST request contains'
+      - - Type=0 and Code=2
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}
+        - Content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - oneM2M-TY=1
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Serialized representation of <accessControlPolicy> resource. 
+
+  - step_id: TD_M2M_NH_26_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <accessControlPolicy> resource is created in registrar CSE.'
+
+  - step_id: TD_M2M_NH_26_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Non-Empty Payload=Serialized representation of <accessControlPolicy> resource.
+          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - Location-Path=URI of the created <accessControlPolicy> resource. 
+
+  - step_id: TD_M2M_NH_26_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_27
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_27
+configuration: M2M_CFG_01
+objective: AE retrieves accessControlPolicy resource.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}.
+  - AE has created a <AE> resource on registrar CSE with name {AE}. 
+  - accessControlPolicy resource has been created in registrar CSE under <AE> resource with name {accessControlPolicyName}. 
+notes: null
+references: 'TS-0001, clause 10.2.21.1 ; TS-0004, clause 7.3.1.2'
+sequence:
+  - step_id: TD_M2M_NH_27_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a accessControlPolicy retrieve request to Registrar CSE'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_27_step_02
+    type: check
+    description:
+      - 'Sent GET request contains'
+      - - Type=0 and Code=1
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}/{accessControlPolicyName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload. 
+
+  - step_id: TD_M2M_NH_27_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - Non-Empty Payload=Serialized representation of <accessControlPolicy> resource.
+          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+          - Location-Path=URI of the created <accessControlPolicy> resource. 
+
+  - step_id: TD_M2M_NH_27_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_28
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_28
+configuration: M2M_CFG_01
+objective: AE updates attribute in accessControlPolicy resource.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}.
+  - AE has created a <AE> resource on registrar CSE with name {AE}. 
+  - accessControlPolicy resource has been created in registrar CSE under <AE> resource with name {accessControlPolicyName}. 
+notes: null
+references: 'TS-0001, clause 10.2.21.3 ; TS-0004, clause 7.3.1.2'
+sequence:
+  - step_id: TD_M2M_NH_28_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a accessControlPolicy update request to Registrar CSE'
+      - - Type = 0(CON)
+        - Code = 3(UPDATE)
+
+  - step_id: TD_M2M_NH_28_step_02
+    type: check
+    description:
+      - 'Sent Update request contains'
+      - - Type=0 and Code=3
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}/{accessControlPolicyName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - Serialized representation of updated <accessControlPolicy> resource.
+
+  - step_id: TD_M2M_NH_28_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <accessControlPolicy> resource has been updated in registrar CSE.'
+
+  - step_id: TD_M2M_NH_28_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.04(Updated)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Non-Empty Payload=Serialized representation of <accessControlPolicy> resource.
+          - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+
+  - step_id: TD_M2M_NH_28_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_29
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_29
+configuration: M2M_CFG_01
+objective: AE deletes accessControlPolicy resource.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}.
+  - AE has created a <AE> resource on registrar CSE with name {AE}. 
+  - accessControlPolicy resource has been created in registrar CSE under <AE> resource with name {accessControlPolicyName}. 
+notes: null
+references: 'TS-0001, clause 10.2.21.4 ; TS-0004, clause 7.3.1.2'
+sequence:
+  - step_id: TD_M2M_NH_29_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a accessControlPolicy DELETE request to Registrar CSE'
+      - - Type = 0(CON)
+        - Code = 4(DELETE)
+
+  - step_id: TD_M2M_NH_29_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}/{accessControlPolicyName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload.
+
+  - step_id: TD_M2M_NH_29_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+
+  - step_id: TD_M2M_NH_29_step_04
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <accessControlPolicy> resource has been removed from registrar
+CSE.'
+
+  - step_id: TD_M2M_NH_29_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_30
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_30
+configuration: M2M_CFG_01
+objective: AE delete request is rejected due to accessControlPolicy.
+pre_conditions:
+  - CSEBase resource has been created in registrar CSE with name {CSEBaseName}.
+  - AE has created a <AE> resource on registrar CSE with name {AE}. 
+  - accessControlPolicy resource has been created in registrar CSE under <AE> resource with name {accessControlPolicyName}, which forbids to delete container. 
+  - AE has created a <container> resource on registrar CSE under <AE>, with name {containerName}.
+notes: null
+references: 'TS-0004, clause 7.3.1.2'
+sequence:
+  - step_id: TD_M2M_NH_30_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a container Delete Request for resource <container>'
+      - - Type = 0(CON)
+        - Code = 4(DELETE)
+
+  - step_id: TD_M2M_NH_30_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path={CSEBaseName}/{AE}/{containerName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Empty payload.
+
+  - step_id: TD_M2M_NH_30_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 4.03(Forbidden)
+          - oneM2M-RSC=4103
+          - oneM2M-RQI=CRQI
+          - empty payload
+
+  - step_id: TD_M2M_NH_30_step_04
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <container> resource has not been removed from registrar
+CSE.'
+
+  - step_id: TD_M2M_NH_30_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_31
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_31
+configuration: M2M_CFG_01
+objective: AE creates a group resource.
+pre_conditions:
+notes: null
+references: 'TS-0001, clause 10.2.7.2; TS-0004, clause 7.3.12.2.1'
+sequence:
+  - step_id: TD_M2M_NH_31_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a group Create Request'
+      - - Type = 0(CON)
+        - Code = 2(POST)
+
+  - step_id: TD_M2M_NH_31_step_02
+    type: check
+    description:
+      - 'Sent Create request contains'
+      - - Type=0 and Code=2
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}
+        - Content-type= application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - oneM2M-TY= 9
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Non-Empty payload= serialized representation of <group> resource.
+
+  - step_id: TD_M2M_NH_31_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <group> is created in registrar CSE.'
+
+  - step_id: TD_M2M_NH_31_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Location-Path=URI of the created <group> resource
+          - Payload= Serialized representation of <group> resource. 
+
+
+  - step_id: TD_M2M_NH_31_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_32
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_32
+configuration: M2M_CFG_01
+objective: AE retrieves group resource.
+pre_conditions:
+  - AE has created a <group> resource. 
+notes: null
+references: 'TS-0001, clause 10.2.7.3; TS-0004, clause 7.3.12.2.2'
+sequence:
+  - step_id: TD_M2M_NH_32_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a group Retrieve Request'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_32_step_02
+    type: check
+    description:
+      - 'Sent Retrieve request contains'
+      - - Type=0 and Code=1
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{group}
+        - Content-format= application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+
+
+  - step_id: TD_M2M_NH_32_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - Payload= Serialized representation of <group> resource. 
+
+
+  - step_id: TD_M2M_NH_32_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_33
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_33
+configuration: M2M_CFG_01
+objective: AE updates attribute in group resource.
+pre_conditions:
+  - AE has created a <group> resource on registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.7.4; TS-0004, clause 7.3.12.2.3'
+sequence:
+  - step_id: TD_M2M_NH_33_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a group update Request'
+      - - Type = 0(CON)
+        - Code = 3(UPDATE)
+
+  - step_id: TD_M2M_NH_33_step_02
+    type: check
+    description:
+      - 'Sent Update request contains'
+      - - Type=0 and Code=3
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{group}
+        - Content-format= application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Nom-empty payload
+
+  - step_id: TD_M2M_NH_33_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <group> resource is updated in Registrar CSE'
+
+  - step_id: TD_M2M_NH_33_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.04(Changed)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Payload= Serialized representation of <group> resource. 
+
+
+  - step_id: TD_M2M_NH_33_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_34
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_34
+configuration: M2M_CFG_01
+objective: AE deletes group resource.
+pre_conditions:
+  - AE has created a <group> resource on registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.7.5; TS-0004, clause 7.3.12.2.4'
+sequence:
+  - step_id: TD_M2M_NH_34_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a group delete Request'
+      - - Type = 0(CON)
+        - Code = 4(DELETE)
+
+  - step_id: TD_M2M_NH_34_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{group}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+
+  - step_id: TD_M2M_NH_34_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(DELETED)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+
+  - step_id: TD_M2M_NH_34_step_04
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <group> resource is deleted in Registrar CSE'
+
+  - step_id: TD_M2M_NH_34_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_35
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_35
+configuration: M2M_CFG_01
+objective: AE creates a node resource.
+pre_conditions: 
+notes: null
+references: 'TS-0001, clause 10.2.14.1; TS-0004, clause 7.3.18.2.1'
+sequence:
+  - step_id: TD_M2M_NH_35_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a node Create Request'
+      - - Type = 0(CON)
+        - Code = 2(POST)
+
+  - step_id: TD_M2M_NH_35_step_02
+    type: check
+    description:
+      - 'Sent Create request contains'
+      - - Type=0 and Code=2
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Non-empty payload
+        - Content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - oneM2M-TY=14
+
+  - step_id: TD_M2M_NH_35_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <node> resource is created in Registrar CSE'
+
+  - step_id: TD_M2M_NH_35_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.01(Created)
+          - oneM2M-RSC=2001
+          - oneM2M-RQI=CRQI
+          - Non-empty payload
+          - Location-Path=URI of the created <node> resource
+
+  - step_id: TD_M2M_NH_35_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_36
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_36
+configuration: M2M_CFG_01
+objective: AE retrieves node resource.
+pre_conditions: 
+  - AE has created a <node> resource on Registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.14.2; TS-0004, clause 7.3.18.2.2'
+sequence:
+  - step_id: TD_M2M_NH_36_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a node retrieve Request'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_M2M_NH_36_step_02
+    type: check
+    description:
+      - 'Sent Retrieve request contains'
+      - - Type=0 and Code=1
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{node}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+
+  - step_id: TD_M2M_NH_36_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.05(Content)
+          - oneM2M-RSC=2000
+          - oneM2M-RQI=CRQI
+          - Non-empty payload
+
+  - step_id: TD_M2M_NH_36_step_04
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_37
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_37
+configuration: M2M_CFG_01
+objective: AE updates attribute in node resource.
+pre_conditions: 
+  - AE has created a <node> resource on Registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.14.3; TS-0004, clause 7.3.18.2.3'
+sequence:
+  - step_id: TD_M2M_NH_37_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a node Update Request'
+      - - Type = 0(CON)
+        - Code = 3(PUT)
+
+  - step_id: TD_M2M_NH_37_step_02
+    type: check
+    description:
+      - 'Sent Update request contains'
+      - - Type=0 and Code=3
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{node}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+        - Content-format=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+        - Non-empty payload
+
+  - step_id: TD_M2M_NH_37_step_03
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <node> resource is updated in Registrar CSE.'
+
+  - step_id: TD_M2M_NH_37_step_04
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.04(Changed)
+          - oneM2M-RSC=2004
+          - oneM2M-RQI=CRQI
+          - Non-empty payload
+          - content-type=application/vnd.onem2m-res+xml or application/vnd.onem2m-res+json
+
+  - step_id: TD_M2M_NH_37_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+
+--- !testcase
+
+testcase_id : TD_M2M_NH_38
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_38
+configuration: M2M_CFG_01
+objective: AE deletes node resource.
+pre_conditions: 
+  - AE has created a <node> resource on Registrar CSE. 
+notes: null
+references: 'TS-0001, clause 10.2.14.4; TS-0004, clause 7.3.18.2.4'
+sequence:
+  - step_id: TD_M2M_NH_38_step_01
+    type: stimuli
+    node : adn
+    description:
+      - 'AE is requested to send a node Update Request'
+      - - Type = 0(CON)
+        - Code = 4(DELETE)
+
+  - step_id: TD_M2M_NH_38_step_02
+    type: check
+    description:
+      - 'Sent Delete request contains'
+      - - Type=0 and Code=4
+        - Uri-Host= IP address or the FQDN of registrar CSE
+        - Uri-Path= {CSEBaseName}/{node}
+        - oneM2M-FR=AE-ID
+        - oneM2M-RQI=token-string (->CRQI)
+
+  - step_id: TD_M2M_NH_38_step_03
+    type: check
+    description:
+        - 'Registrar CSE sends response containing'
+        - - Code = 2.02(Deleted)
+          - oneM2M-RSC=2002
+          - oneM2M-RQI=CRQI
+
+  - step_id: TD_M2M_NH_38_step_04
+    type: verify
+    node: adn
+    description:
+        - 'Check if possible that the <node> resource is deleted in Registrar CSE.'
+
+  - step_id: TD_M2M_NH_38_step_05
+    type: verify
+    node: adn
+    description:
+        - 'AE indicates successful operation'
+

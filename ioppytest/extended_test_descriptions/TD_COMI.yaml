@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+--- !testcase
+testcase_id: TD_COMI_DUMMY_TEST
+uri : http://doc.f-interop.eu/tests/TD_COMI_DUMMY_TEST
+configuration: COMI_CFG_01
+objective: Perform SOME TBD transaction(SOME TBD PARTICULARITY)
+pre_conditions:
+  - Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload
+notes: null
+references: '[COAP] 5.8.1, 1.2, 2.1, 2.2, 3.1'
+sequence:
+  - step_id: TD_COMI_DUMMY_TEST_step_01
+    type: stimuli
+    node : comi_client
+    description:
+      - 'Client is requested to send a GET request with'
+      - - Type = 0(CON)
+        - Code = 1(GET)
+
+  - step_id: TD_COMI_DUMMY_TEST_step_02
+    type: check
+    description:
+      - 'The request sent by the client contains'
+      - - Type=0 and Code=1
+        - Client-generated Message ID (* CMID)
+        - Client-generated Token (* CTOK)
+        - UTEST Uri-Path option "test"
+
+  - step_id: TD_COMI_DUMMY_TEST_step_03
+    type: check
+    description:
+        - 'Server sends response containing'
+        - - Code = 2.05(Content)
+          - Message ID = CMID, Token = CTOK
+          - Content-format option
+          - Non-empty Payload
+
+  - step_id: TD_COMI_DUMMY_TEST_step_04
+    type: verify
+    node: comi_client
+    description:
+        - 'Client displays the received information'

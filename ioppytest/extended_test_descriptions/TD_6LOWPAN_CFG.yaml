@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: 6LOWPAN_CFG_01
+uri: http://doc.f-interop.eu/tests/6LOWPAN_CFG_01
+nodes:
+  - eut1
+  - eut2
+topology:
+  - link_id : link_01
+    capture_filter: TBD
+    nodes:
+      - eut1
+      - eut2
+addressing:
+    - node: eut1
+      ipv6_prefix : ????
+      ipv6_host: 1
+    - node: eut2
+      ipv6_prefix : ????
+      ipv6_host: 2
+description:
+  - node: eut1
+    message:
+      - EUT is a simple host.
+  - node: eut2
+    message:
+      - EUT is a simple host.
+
+
+--- !configuration
+configuration_id: 6LOWPAN_CFG_02
+uri: http://doc.f-interop.eu/tests/6LOWPAN_CFG_02
+nodes:
+  - 6lr
+  - 6ln
+topology:
+  - link_id : link_01
+    capture_filter: none
+    nodes:
+      - 6lr
+      - 6ln
+addressing:
+    - node: 6lr
+      ipv6_prefix : ????
+      ipv6_host: 1
+    - node: 6ln
+      ipv6_prefix : ????
+      ipv6_host: 2
+description:
+  - node: 6lr
+    message:
+      - EUT is a 6LoWPAN Router.
+  - node: 6ln
+    message:
+      - EUT is a 6LoWPAN Node (Router Or Host).
