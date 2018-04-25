@@ -122,8 +122,9 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
 
-            logging.info('SUCCESS! TT + additional resources executed the a complete interop test :D ')
-            logging.info('report: %s' % repr(events_sniffed_on_bus_dict[MsgTestSuiteReport]))
+            logging.info('SUCCESS! Testing Tool + automated IUTs executed the a complete interop test :D ')
+            for tc_report in events_sniffed_on_bus_dict[MsgTestSuiteReport].tc_results:
+                logging.info('\t%s' % tc_report)
 
 
 def run_checks_on_message_received(message: Message):
