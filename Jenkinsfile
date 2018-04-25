@@ -221,7 +221,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-interop-californium-cli-vs-californium-server
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
@@ -275,7 +275,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-interop-californium-cli-vs-coapthon-server
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
@@ -329,7 +329,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-interop-coapthon-cli-vs-coapthon-server
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
@@ -383,7 +383,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make _stop-coap-mini-interop-coapthon-cli-vs-coapthon-server
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
