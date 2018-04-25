@@ -79,10 +79,10 @@ def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=Tru
         return
 
     assert 'error' not in message.routing_key, \
-        'Got an error on message, id: %s ,msg repr: %s' % (message.message_id, repr(message))
+        'Got an error on message, \n\tid: %s ,\n\tmsg repr: %s' % (message.message_id, repr(message))
 
     assert not isinstance(message, MsgErrorReply), \
-        'Got an ErrorReply on message, id: %s ,msg repr: %s' % (message.message_id, repr(message))
+        'Got an ErrorReply on message, \n\tid: %s ,\n\tmsg repr: %s' % (message.message_id, repr(message))
 
     if fail_on_reply_nok:
         assert not (isinstance(message, MsgReply) and not message.ok), \
