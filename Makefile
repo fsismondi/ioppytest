@@ -6,6 +6,9 @@ info:
 version:
 	@echo ioppytest v$(version)
 
+echo_amqp_env_params:
+	@echo URL: $(AMQP_URL)
+	@echo EXCHANGE: $(AMQP_EXCHANGE)
 
 help: ## Help dialog.
 	@IFS=$$'\n' ; \
