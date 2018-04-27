@@ -205,8 +205,12 @@ class Coordinator(CoordinatorAmqpInterface):
             """
 
             try:
+                # ipv6 tunnel, IUT destination running in another network, agent re-routes to other interface
+                if received_event.re_route_packets_prefix and received_event.re_route_packets_host:
+                    iut_address = received_event.re_route_packets_prefix, received_event.re_route_packets_host
+
                 # ipv6 tunnel, IUT running hosted in same OS where agent runs
-                if received_event.ipv6_prefix and received_event.ipv6_host:
+                elif received_event.ipv6_prefix and received_event.ipv6_host:
                     iut_address = received_event.ipv6_prefix, received_event.ipv6_host
 
                 # ipv4 tunnel, IUT destination running in another network, agent re-routes to other interface
@@ -224,16 +228,6 @@ class Coordinator(CoordinatorAmqpInterface):
                 raise CoordinatorError(
                     'Received a wrong formatted  agent message, update of agent source code needed? %s' % repr(
                         received_event))
-            try:
-                # ipv6 tunnel, IUT destination running in another network, agent re-routes to other interface
-                if received_event.re_route_packets_prefix and received_event.re_route_packets_host:
-                    iut_address = received_event.re_route_packets_prefix, received_event.re_route_packets_host
-                else:
-                    logger.debug("Agent not running as router")
-
-            except AttributeError as e:
-                logger.warning(e)
-                logger.warning("Non compliant API message (missing fields): %s"% repr(received_event))
 
         if len(iut_address) != 2:
             raise CoordinatorError('Received a wrong formatted address')
