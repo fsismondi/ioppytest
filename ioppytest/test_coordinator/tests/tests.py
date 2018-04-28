@@ -188,6 +188,62 @@ class CoordinatorStateMachineTests(unittest.TestCase):
                                             ted_tc_file=TD_COAP)
         self.test_coordinator.bootstrap()
 
+    def test_session_flow_and_emulate_agent_as_a_router_towards_another_network(self):
+        """
+        python3 -m unittest ioppytest.test_coordinator.tests.tests.CoordinatorStateMachineTests.test_session_flow_and_emulate_agent_as_a_router_towards_another_network
+
+        MsgAgentTunStarted message fields:
+                name                     agent_TT
+                ipv4_network
+                ipv4_netmask
+                ipv4_host
+                ipv6_no_forwarding       False
+                ipv6_host                :3
+                ipv6_prefix              bbbb
+                re_route_packets_if
+                re_route_packets_prefix
+                re_route_packets_host
+        """
+
+        coap_client_address = ("cccc", "123:456")
+        coap_server_address = ("aaaa","123:456")
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
+        assert self.test_coordinator.state != 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (0) before first Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(
+            name="coap_client",
+            re_route_packets_if='some_other_tuntap',
+            re_route_packets_prefix=coap_client_address[0],
+            re_route_packets_host=coap_client_address[1],
+        ))
+
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (1) before second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(
+            name="coap_server",
+            re_route_packets_if='some_other_tuntap',
+            re_route_packets_prefix=coap_server_address[0],
+            re_route_packets_host=coap_server_address[1],
+        ))
+
+        logger.info('>>> (2) after second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        assert self.test_coordinator.state == 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is True
+
+        logger.warning(self.test_coordinator.testsuite.get_node_address('coap_client'))
+        assert self.test_coordinator.testsuite.get_node_address('coap_client') == coap_client_address
+        assert self.test_coordinator.testsuite.get_node_address('coap_server') == coap_server_address
+
     def test_session_flow_0(self):
         """
         Checks transition

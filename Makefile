@@ -6,6 +6,9 @@ info:
 version:
 	@echo ioppytest v$(version)
 
+echo_amqp_env_params:
+	@echo URL: $(AMQP_URL)
+	@echo EXCHANGE: $(AMQP_EXCHANGE)
 
 help: ## Help dialog.
 	@IFS=$$'\n' ; \
@@ -253,7 +256,7 @@ _docker-build-coap-additional-resources:
 	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
 
-	docker tag automated_iut-coap_client-coapthon-v$(version):latest reference_iut-coap_client
+	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
 
 _docker-build-onem2m-additional-resources:
