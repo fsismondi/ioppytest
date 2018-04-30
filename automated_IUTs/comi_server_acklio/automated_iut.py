@@ -22,9 +22,9 @@ class AcklioCoMiServer(AutomatedIUT):
     node = 'comi_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
 
-    implemented_testcases_list = []
-
-    stimuli_cmd_dict = {}
+    stimuli_to_testcase_map = {}
+    implemented_stimuli_list = list(stimuli_to_testcase_map.keys())
+    implemented_testcases_list = list(stimuli_to_testcase_map.values())
 
     iut_cmd = [
         './serverComi --yang-sid-path=./plugtests/ --datastore-path=./plugtests/ --read-ds-from-file=1  launch'
@@ -51,7 +51,7 @@ class AcklioCoMiServer(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
     def _execute_configuration(self, testcase_id, node):

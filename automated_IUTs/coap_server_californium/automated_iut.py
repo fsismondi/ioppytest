@@ -24,8 +24,6 @@ class CaliforniumCoapServer(AutomatedIUT):
 
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
-    stimuli_cmd_dict = NotImplementedField
-
     iut_cmd = [
         'java',
         '-jar',
@@ -45,7 +43,7 @@ class CaliforniumCoapServer(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
     def _launch_automated_iut(self):

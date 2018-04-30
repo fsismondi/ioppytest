@@ -50,7 +50,7 @@ signal.signal(signal.SIGINT, signal_int_handler)
 class AutomatedIUT(threading.Thread):
     # attributes to be provided by subclass
     implemented_testcases_list = NotImplementedField
-    stimuli_cmd_dict = NotImplementedField
+    implemented_stimuli_list = NotImplementedField
     component_id = NotImplementedField
     node = NotImplementedField
 
@@ -86,6 +86,27 @@ class AutomatedIUT(threading.Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
+        # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
+
+    def _exit(self):
+        m = MsgTestingToolComponentShutdown(component=self.component_id)
+        publish_message(self.connection, m)
+        time.sleep(2)
+        self.connection.close()
+        sys.exit(0)
+
+    def _execute_verify(self, verify_step_id):
+        raise NotImplementedError("Subclasses should implement this!")
+
+    def _execute_stimuli(self, stimuli_step_id, addr):
+        raise NotImplementedError("Subclasses should implement this!")
+
+    # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
+    def _execute_configuration(self, testcase_id, node):
+        raise NotImplementedError("Subclasses should implement this!")
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def run(self):
         logger.info("Starting thread listening on the event bus")
         self.channel.start_consuming()
@@ -118,17 +139,14 @@ class AutomatedIUT(threading.Thread):
 
         elif isinstance(event, MsgStepStimuliExecute):
             logger.info('event.node %s,%s' % (event.node, self.node))
-            if event.node == self.node and event.step_id in self.stimuli_cmd_dict:
-                # TODO Fix me: No  need to go fetch CMD to child object, just call as _execute_simuli(step_id,target_address)
-                cmd = self.stimuli_cmd_dict[event.step_id]
+            if event.node == self.node and event.step_id in self.implemented_stimuli_list:
                 step = event.step_id
                 addr = event.target_address
-                if cmd:
-                    self._execute_stimuli(step, cmd,
-                                          addr)  # this should be a blocking call until stimuli has been executed
+
+                self._execute_stimuli(step, addr)  # blocking till stimuli execution
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
-                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
+                logger.info('Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
                             (
                                 type(event),
                                 event.node,
@@ -145,9 +163,11 @@ class AutomatedIUT(threading.Thread):
                                                                        ))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                            (type(event),
-                             event.node,
-                             event.step_id,))
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Got final test suite report: %s' % event.to_json())
@@ -162,30 +182,12 @@ class AutomatedIUT(threading.Thread):
                 logger.info('Configure test case %s', event.testcase_id)
                 # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
                 ipaddr = self._execute_configuration(event.testcase_id,
-                                                     event.node)  # this should be a blocking call until configuration has been done
+                                                     event.node)  # blocking till complete config execution
                 if ipaddr != '':
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.connection, m)
         else:
             logger.info('Event received and ignored: %s' % type(event))
-
-    def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=self.component_id)
-        publish_message(self.connection, m)
-        time.sleep(2)
-        self.connection.close()
-        sys.exit(0)
-
-    def _execute_verify(self, verify_step_id):
-        raise NotImplementedError("Subclasses should implement this!")
-
-    # TODO fix me! no cmd should be passed, this is child class related stuff
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
-        raise NotImplementedError("Subclasses should implement this!")
-
-    # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
-    def _execute_configuration(self, testcase_id, node):
-        raise NotImplementedError("Subclasses should implement this!")
 
 
 class UserMock(threading.Thread):

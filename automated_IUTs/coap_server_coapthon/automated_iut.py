@@ -43,7 +43,7 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
     def _launch_automated_iut(self):
