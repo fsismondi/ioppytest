@@ -72,7 +72,7 @@ def publish_terminate_signal_on_report_received(message: Message):
         )
         for tc_rep in message.tc_results:
             logging.info('-' * 30)
-            logging.info('TESTCASE: %s \n%s' % (tc_rep['testcase_id'], pprint.pformat()))
+            logging.info('TESTCASE: %s \n%s' % (tc_rep['testcase_id'], pprint.pformat(tc_rep)))
             logging.info('-' * 30)
 
 
