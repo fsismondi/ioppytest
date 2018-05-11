@@ -1,6 +1,7 @@
 import threading
 import logging
 import pika
+import pprint
 import time
 import sys
 
@@ -30,8 +31,8 @@ def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     for ev in event_types_sniffed_on_bus_list:
         i += 1
         try:
-            logging.info("\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" %
-                         (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
+            logging.debug(
+                "\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" % (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
 
@@ -69,10 +70,11 @@ def publish_terminate_signal_on_report_received(message: Message):
             connection,
             MsgTestingToolTerminate(description="Received report, functional test finished..")
         )
+        logging.info(pprint.pformat(message.tc_results))
 
 
 def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=True):
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
 
     # it's ok if UI adaptor generates errors, as we there is not UI responding to request in the bus when testing
     if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:

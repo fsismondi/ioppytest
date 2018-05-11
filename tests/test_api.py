@@ -256,7 +256,7 @@ class ApiTests(unittest.TestCase):
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
     update_events_seen_on_bus_list(message=message)
     check_if_message_is_an_error_message(message=message, fail_on_reply_nok=False)
     check_api_version(message=message)

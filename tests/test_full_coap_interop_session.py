@@ -28,7 +28,7 @@ THREAD_JOIN_TIMEOUT = 120
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-logging.getLogger('pika').setLevel(logging.INFO)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
@@ -129,7 +129,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
     update_events_seen_on_bus_list(message)
     check_if_message_is_an_error_message(message)
     publish_terminate_signal_on_report_received(message)
