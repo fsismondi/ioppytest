@@ -70,9 +70,9 @@ def publish_terminate_signal_on_report_received(message: Message):
             connection,
             MsgTestingToolTerminate(description="Received report, functional test finished..")
         )
-        for tc_rep in message.tc_results:
+        for tc_result_i in message.tc_results:
             logging.info('-' * 30)
-            logging.info('TESTCASE: %s \n%s' % (tc_rep['testcase_id'], pprint.pformat(tc_rep)))
+            logging.info('TESTCASE: %s \n%s' % (tc_result_i['testcase_id'], pprint.pformat(tc_result_i)))
             logging.info('-' * 30)
 
 

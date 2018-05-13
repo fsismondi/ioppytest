@@ -49,6 +49,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
     """
 
     def setUp(self):
+        self.is_comms_between_iuts_ok = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
@@ -122,9 +123,18 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
 
-            logging.info('SUCCESS! Testing Tool + automated IUTs executed the a complete interop test :D ')
             for tc_report in events_sniffed_on_bus_dict[MsgTestSuiteReport].tc_results:
                 logging.info('\t%s' % tc_report)
+
+                if 'testcase_id' in tc_report and tc_report['testcase_id']:
+                    self.is_comms_between_iuts_ok = True
+
+            logging.info('SUCCESS! Testing Tool + automated IUTs executed the a complete interop test :D ')
+
+            if self.is_comms_between_iuts_ok:
+                logging.info('IUT comms OK!')
+            else:
+                logging.warning('IUT comms FAILURE!')
 
 
 def run_checks_on_message_received(message: Message):
