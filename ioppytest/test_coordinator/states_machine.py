@@ -760,7 +760,23 @@ transitions = [
             'handle_testcase_select'
         ]
     },
-
+    # SKIP test case, case 1 : is_skipping_current_testcase
+    {
+        'trigger': 'skip_testcase',
+        'source': [
+            'waiting_for_iut_configuration_executed',
+            'waiting_for_testcase_start',
+            'waiting_for_step_executed',
+            'testcase_finished'
+        ],
+        'dest': 'preparing_next_testcase',
+        'conditions': 'is_skipping_current_testcase',
+        'before': [
+            '_set_received_event',
+            'handle_testcase_skip'
+        ]
+    },
+    # SKIP test case, case 2 : not is_skipping_current_testcase
     {
         'trigger': 'skip_testcase',
         'source': [
@@ -777,21 +793,7 @@ transitions = [
             'handle_testcase_skip'
         ]
     },
-    {
-        'trigger': 'skip_testcase',
-        'source': [
-            'waiting_for_iut_configuration_executed',
-            'waiting_for_testcase_start',
-            'waiting_for_step_executed',
-            'testcase_finished'
-        ],
-        'dest': 'preparing_next_testcase',
-        'conditions': 'is_skipping_current_testcase',
-        'before': [
-            '_set_received_event',
-            'handle_testcase_skip'
-        ]
-    },
+
     {
         'trigger': 'go_to_next_testcase',
         'source': [],
