@@ -47,7 +47,7 @@ PRE-CONDITIONS:
 
 service_api_calls = [
     # init
-    MsgSessionConfiguration(configuration={}),
+    MsgSessionConfiguration(),
 
     # TAT calls
     MsgTestSuiteGetStatus(),
@@ -119,7 +119,7 @@ service_api_calls = [
 ]
 user_sequence = [
     # init
-    MsgSessionConfiguration(configuration={}),
+    MsgSessionConfiguration(),
 
     MsgAgentTunStarted(
         name="someAgentName1",
