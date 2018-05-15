@@ -404,3 +404,21 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         assert self.test_coordinator.state == 'testsuite_finished', \
             "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
         logger.info(self.test_coordinator.state)
+
+    def test_skip_test_cases(self):
+        """
+        Checks transition
+        waiting_for_iut_configuration_executed -> waiting_for_testcase_start
+        on events MsgAgentTunStarted
+        """
+
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id = "TD_COAP_CORE_01"))
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id="TD_COAP_CORE_01"))
+
+        logger.info(self.test_coordinator.testsuite.get_testcases_basic())
+        logger.info(self.test_coordinator.testsuite.get_testcase_report())
+        logger.info(self.test_coordinator.testsuite.get_report())
+
