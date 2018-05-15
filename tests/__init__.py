@@ -31,8 +31,12 @@ def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     for ev in event_types_sniffed_on_bus_list:
         i += 1
         try:
-            logging.debug(
-                "\n\tevent count: %s,\n\tmsg_id: %s,\n\trepr: %s" % (i, ev.message_id, repr(ev)[:MAX_LINE_LENGTH]))
+            log_line = "\n\tevent count: %s" % i
+            log_line += "\n\tmsg_id: %s" % ev.message_id
+            log_line += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
+            if isinstance(ev, MsgSessionLog):
+                log_line += "\n\tmessage from %s: %s" % (ev.component, ev.message)
+            logging.info(log_line)
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
 

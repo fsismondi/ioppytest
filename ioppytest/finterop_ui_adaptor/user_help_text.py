@@ -87,8 +87,8 @@ solution goes more or less like this:
        | |      piece of software     | |                                             | |      piece of software     | |
        | |      (e.g. coap client)    | |   +----------------------------+            | |      (e.g. coap sever)     | |
        | |                            | |   |                            |            | |                            | |
-       | +----------------------------+ |   |      Packet Router         |            | +----------------------------+ |
-PC     |                                |   |    (routes AMQP packets)   |      PC    |                                |
+       | +----------------------------+ |   |                            |            | +----------------------------+ |
+PC     |                                |   |       Packet Router        |      PC    |                                |
 user 1 | +------tun interface---------+ |   |                            |      user2 | +------tun interface---------+ |
        |                                |   |                            |            |                                |
        |            Agent               |   +----------------------------+            |            Agent               |

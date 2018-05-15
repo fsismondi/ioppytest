@@ -208,7 +208,7 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('Received REQUEST: %s' % type(request))
+        logger.info('RECEIVED request: %s' % type(request))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
@@ -237,7 +237,7 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('Received EVENT: %s' % type(event))
+        logger.info('RECEIVED event: %s' % type(event))
 
         # let's process request
         if type(event) in self.control_events_triggers:

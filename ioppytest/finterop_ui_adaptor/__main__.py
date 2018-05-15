@@ -572,7 +572,6 @@ def main():
              "value": err_msg}
         ])
         logger.error(err_msg)
-        # logger.error(traceback.format_exc())
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
     except UiResponseError as ui_error:

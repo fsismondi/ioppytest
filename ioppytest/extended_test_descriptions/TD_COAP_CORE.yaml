@@ -148,7 +148,7 @@ objective: Perform POST transaction (CON mode)
 configuration: COAP_CFG_01
 references: "[COAP] 5.8.2, 1.2, 2.1, 2.2, 3.1"
 pre_conditions:
-  - Server accepts POST requet on /test
+  - Server accepts POST request on /test
 notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
 
@@ -158,7 +158,7 @@ sequence:
     description:
       - 'Client is requested to send a POST request with:'
       - - Type = 0 (CON)
-        - Code = 2 (PUT)
+        - Code = 2 (POST)
         - Content-format option
         - Empty or non-empty Payload
 

@@ -1710,7 +1710,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
-    IUT_ROLES = ['dummy_1', 'dummy_1']
+    IUT_ROLES = ['example_role_1', 'example_role_2']
 
     def _bootstrap(self, amqp_connector):
         import inspect
