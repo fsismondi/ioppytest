@@ -460,7 +460,7 @@ class TestSuite:
         # if skipped tc is current test case then current_tc -> None
         if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
             self.current_tc = None
-            logger.debug("re-referencing current testcase to None")
+            logger.info("Skipping current TC, re-referenced current TC to None")
 
     def get_testcase(self, testcase_id):
         """
@@ -468,15 +468,12 @@ class TestSuite:
         """
         if testcase_id is None:
             return self.get_current_testcase()
-
         else:
-
             assert type(testcase_id) is str
-
             try:
                 return self.teds[testcase_id]
             except KeyError:
-                logger.info('testcase %s not found in list: %' % (testcase_id, self.teds.keys()))
+                logger.info('TC %s not found in list: %s' % (testcase_id, self.teds.keys()))
                 return None
 
     def get_current_testcase(self):

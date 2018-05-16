@@ -193,11 +193,6 @@ transitions = [
         'before': '_set_received_event',
         'after': 'notify_testcase_ready'
     },
-    # {
-    #     'trigger': '_all_iut_configuration_executed',
-    #     'source': 'waiting_for_iut_configuration_executed',
-    #     'dest': 'waiting_for_testcase_start',
-    # },
     {
         'trigger': '_timeout_waiting_step_executed',
         'source': 'waiting_for_step_executed',

@@ -27,6 +27,11 @@ MAX_LINE_LENGTH = 120
 
 def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    complete_log_trace = """ 
+*****************************************************************
+COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
+*****************************************************************
+    """
     i = 0
     for ev in event_types_sniffed_on_bus_list:
         i += 1
@@ -35,10 +40,12 @@ def log_all_received_messages(event_types_sniffed_on_bus_list: list):
             log_line += "\n\tmsg_id: %s" % ev.message_id
             log_line += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
             if isinstance(ev, MsgSessionLog):
-                log_line += "\n\tmessage from %s: %s" % (ev.component, ev.message)
+                complete_log_trace += "\n [%s] %s" % (ev.component, ev.message)
             logging.info(log_line)
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
+
+    logging.info(complete_log_trace)
 
 
 def reply_to_ui_configuration_request_stub(message: Message):

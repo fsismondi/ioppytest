@@ -16,7 +16,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 
-from tests import MessageGenerator
+from tests import MessageGenerator, default_configuration
 from tests.pcap_base64_examples import *
 
 from tests import (check_if_message_is_an_error_message,
@@ -45,9 +45,40 @@ PRE-CONDITIONS:
 - Have CoAP testing tool running & listening to the bus
 """
 
+user_sequence = [
+    MsgAgentTunStarted(
+        name="someAgentName1",
+        ipv6_prefix="bbbb",
+        ipv6_host="1",
+    ),
+    MsgAgentTunStarted(
+        name="someAgentName2",
+        ipv6_prefix="bbbb",
+        ipv6_host="2",
+    ),
+
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
+    MsgTestSuiteGetStatus(),
+    MsgStepStimuliExecuted(),
+    MsgTestSuiteGetStatus(),
+    MsgStepVerifyExecuted(
+        verify_response=False,
+        description='User indicates that IUT didnt behave as expected '),
+    MsgTestSuiteGetStatus(),
+    MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
+    MsgTestCaseRestart(),
+    MsgTestSuiteGetStatus(),
+    MsgTestSuiteAbort(),
+    MsgTestSuiteGetStatus(),
+]
+
+
 service_api_calls = [
-    # init
-    MsgSessionConfiguration(configuration=None),
 
     # TAT calls
     MsgTestSuiteGetStatus(),
@@ -117,40 +148,6 @@ service_api_calls = [
         value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
     )
 ]
-user_sequence = [
-    # init
-    MsgSessionConfiguration(configuration=None),
-
-    MsgAgentTunStarted(
-        name="someAgentName1",
-        ipv6_prefix="bbbb",
-        ipv6_host="1",
-    ),
-    MsgAgentTunStarted(
-        name="someAgentName2",
-        ipv6_prefix="bbbb",
-        ipv6_host="2",
-    ),
-
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
-    MsgTestSuiteGetStatus(),
-    MsgStepStimuliExecuted(),
-    MsgTestSuiteGetStatus(),
-    MsgStepVerifyExecuted(
-        verify_response=False,
-        description='User indicates that IUT didnt behave as expected '),
-    MsgTestSuiteGetStatus(),
-    MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
-    MsgTestCaseRestart(),
-    MsgTestSuiteGetStatus(),
-    MsgTestSuiteAbort(),
-    MsgTestSuiteGetStatus(),
-]
 
 
 class ApiTests(unittest.TestCase):
@@ -188,8 +185,8 @@ class ApiTests(unittest.TestCase):
 
         # prepare the message generator
         messages = []  # list of messages to send
-        messages += service_api_calls
         messages += user_sequence
+        messages += service_api_calls
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
         # thread
@@ -211,27 +208,35 @@ class ApiTests(unittest.TestCase):
             use_message_typing=True
         )
 
-        # thread
-        thread_ui_stub = AmqpListener(
-            amqp_url=AMQP_URL,
-            amqp_exchange=AMQP_EXCHANGE,
-            callback=reply_to_ui_configuration_request_stub,
-            topics=[
-                MsgUiRequestSessionConfiguration.routing_key,
-                MsgTestingToolTerminate.routing_key,
-            ],
-            use_message_typing=True
-        )
-        threads = [thread_msg_listener, thread_msg_gen, thread_ui_stub]
+        # # thread
+        # thread_ui_stub = AmqpListener(
+        #     amqp_url=AMQP_URL,
+        #     amqp_exchange=AMQP_EXCHANGE,
+        #     callback=reply_to_ui_configuration_request_stub,
+        #     topics=[
+        #         MsgUiRequestSessionConfiguration.routing_key,
+        #         MsgTestingToolTerminate.routing_key,
+        #     ],
+        #     use_message_typing=True
+        # )
+        # threads = [thread_msg_listener, thread_msg_gen, thread_ui_stub]
+        threads = [thread_msg_listener, thread_msg_gen]
 
         for th in threads:
             th.setName(th.__class__.__name__)
 
-        time.sleep(10)  # wait for the testing tool to enter test suite ready state
+        time.sleep(15)  # wait for the testing tool to enter test suite ready state
 
         try:
             for th in threads:
                 th.start()
+
+            publish_message(
+                self.connection,
+                MsgSessionConfiguration(configuration=default_configuration),
+            )  # configures test suite
+
+            time.sleep(1)
 
             publish_message(
                 self.connection,
