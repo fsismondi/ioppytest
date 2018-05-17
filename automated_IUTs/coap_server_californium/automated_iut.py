@@ -28,7 +28,7 @@ class CaliforniumCoapServer(AutomatedIUT):
         'java',
         '-jar',
         'automated_IUTs/coap_server_californium/target/coap_plugtest_server-1.0-SNAPSHOT.jar',
-        ' ::1 ',
+        COAP_SERVER_HOST,
         COAP_SERVER_PORT,
     ]
 
@@ -48,6 +48,7 @@ class CaliforniumCoapServer(AutomatedIUT):
 
     def _launch_automated_iut(self):
         # att this is a blocking function
+        logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
         with open(self.process_log_file, "w") as outfile:
             subprocess.call(self.iut_cmd, stdout=outfile)

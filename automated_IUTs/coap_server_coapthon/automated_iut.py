@@ -24,9 +24,9 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
         'python',
         'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py',
         '-i',
-        '::1',
+        COAP_SERVER_HOST,
         '-p',
-        '5683',
+        COAP_SERVER_PORT,
     ]
 
     def __init__(self):
@@ -48,13 +48,13 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
 
     def _launch_automated_iut(self):
         # att this is a blocking function
+        logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
         with open(self.process_log_file, "w") as outfile:
             subprocess.call(self.iut_cmd, stdout=outfile)
 
 
 class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
-
     component_id = 'automated_iut-coap_server-coapthon'
     node = 'coap_server'
 
@@ -67,16 +67,17 @@ class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
         '5683',
     ]
 
+
 if __name__ == '__main__':
-    logger.info('Starting IUT process')
-    logger.info('IUT process init')
+    logging.info('Starting IUT process')
+    logging.info('IUT process init')
     iut_v4 = CoapthonCoapServerIPv4()
     iut_v6 = CoapthonCoapServerIPv6()
 
-    logger.info('IUT process starting..')
+    logging.info('IUT process starting..')
     iut_v4.start()
     iut_v6.start()
-    logger.info('IUT process stopping..')
+    logging.info('IUT process stopping..')
     iut_v6.join()
     iut_v4.join()
-    logger.info('IUT process finished. Bye!..')
+    logging.info('IUT process finished. Bye!..')
