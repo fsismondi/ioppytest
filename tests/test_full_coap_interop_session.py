@@ -64,7 +64,11 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
 
-        tc_list = ['TD_COAP_CORE_01']  # the rest of the testcases are going to be skipped
+        tc_list = [
+            'TD_COAP_CORE_01',
+            'TD_COAP_CORE_02',
+            'TD_COAP_CORE_03'
+        ]  # the rest of the testcases are going to be skipped
 
         # thread
         msg_validator = AmqpListener(
