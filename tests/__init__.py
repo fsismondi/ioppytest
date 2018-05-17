@@ -39,11 +39,15 @@ COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
             log_line = "\n\tevent count: %s" % i
             log_line += "\n\tmsg_id: %s" % ev.message_id
             log_line += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
-            if isinstance(ev, MsgSessionLog):
-                complete_log_trace += "\n [%s] %s" % (ev.component, ev.message)
             logging.info(log_line)
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
+
+        try:
+            if isinstance(ev, MsgSessionLog):
+                complete_log_trace += "\n [%s] %s" % (ev.component, ev.message)
+        except AttributeError as e:
+            logging.warning(e)
 
     logging.info(complete_log_trace)
 
