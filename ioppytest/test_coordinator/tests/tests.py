@@ -24,6 +24,7 @@ default_configuration = {
 class TestSuiteTests(unittest.TestCase):
     """
     python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests
+    python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests.test_all_getters_of_testsuite_on_middle_way
     """
 
     def setUp(self):

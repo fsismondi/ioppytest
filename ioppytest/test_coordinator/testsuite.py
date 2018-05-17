@@ -1055,7 +1055,7 @@ class TestCase:
         """
         logger.debug("[VERDICT GENERATION] starting the verdict generation")
 
-        if self.state == 'skipped' or self.state == 'aborted':
+        if self.state is None or self.state == 'skipped' or self.state == 'aborted':
             return ('None', 'Testcase %s was %s.' % (self.id, self.state), [])
 
         # TODO hanlde frame id associated to the step , used for GUI purposes
