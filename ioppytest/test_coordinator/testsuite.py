@@ -286,12 +286,17 @@ class TestSuite:
         report = []
         for tc in self.teds.values():
             report_item = {'testcase_id': tc.id}
-
             if tc.report is None:
                 logger.warning("Empty report found. Generating dummy report for skipped testcase : %s" % tc.id)
-                tc.generate_testcases_verdict(None)
-            else:
-                report_item.update(tc.report)
+                # TODO this should be hanlded directly by generate_testcases_verdict method
+                gen_verdict, gen_description, rep = tc.generate_testcases_verdict(None)
+                final_report = OrderedDict()
+                final_report['verdict'] = gen_verdict
+                final_report['description'] = gen_description
+                final_report['partial_verdicts'] = rep
+                tc.report = final_report
+
+            report_item.update(tc.report)
             report.append(report_item)
         self.report = report
 
@@ -460,7 +465,7 @@ class TestSuite:
         # if skipped tc is current test case then current_tc -> None
         if self.current_tc is not None and (testcase_t.id == self.current_tc.id):
             self.current_tc = None
-            logger.debug("re-referencing current testcase to None")
+            logger.info("Skipping current TC, re-referenced current TC to None")
 
     def get_testcase(self, testcase_id):
         """
@@ -468,15 +473,12 @@ class TestSuite:
         """
         if testcase_id is None:
             return self.get_current_testcase()
-
         else:
-
             assert type(testcase_id) is str
-
             try:
                 return self.teds[testcase_id]
             except KeyError:
-                logger.info('testcase %s not found in list: %' % (testcase_id, self.teds.keys()))
+                logger.info('TC %s not found in list: %s' % (testcase_id, self.teds.keys()))
                 return None
 
     def get_current_testcase(self):
@@ -1051,6 +1053,11 @@ class TestCase:
                  where tc report is a list :
                                 [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
         """
+        logger.debug("[VERDICT GENERATION] starting the verdict generation")
+
+        if self.state is None or self.state == 'skipped' or self.state == 'aborted':
+            return ('None', 'Testcase %s was %s.' % (self.id, self.state), [])
+
         # TODO hanlde frame id associated to the step , used for GUI purposes
         if self.check_all_steps_finished() is False:
             logger.warning("Found non finished steps: %s" % json.dumps(self.seq_to_dict(verbose=False)))
@@ -1059,10 +1066,6 @@ class TestCase:
         final_verdict = Verdict()
         tc_report = []
 
-        if self.state == 'skipped' or self.state == 'aborted':
-            return ('None', 'Testcase: %s was %s.' % (self.id, self.state), [])
-
-        logger.debug("[VERDICT GENERATION] starting the verdict generation")
         for step in self.sequence:
             # for the verdict we use the info in the checks and verify steps
             if step.type in ("check", "verify", "feature"):

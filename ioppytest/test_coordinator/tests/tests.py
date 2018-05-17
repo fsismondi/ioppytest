@@ -1,3 +1,4 @@
+import pprint
 import unittest, logging, os, pika, json
 from time import sleep
 from ioppytest.utils.messages import *
@@ -5,6 +6,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
 from ioppytest.test_coordinator.testsuite import import_teds, TestSuite
 from ioppytest.test_coordinator.states_machine import Coordinator
 from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
+
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 # init logging to stnd output and log files
@@ -22,6 +24,7 @@ default_configuration = {
 class TestSuiteTests(unittest.TestCase):
     """
     python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests
+    python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests.test_all_getters_of_testsuite_on_middle_way
     """
 
     def setUp(self):
@@ -206,7 +209,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         """
 
         coap_client_address = ("cccc", "123:456")
-        coap_server_address = ("aaaa","123:456")
+        coap_server_address = ("aaaa", "123:456")
         assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
 
         self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
@@ -413,7 +416,7 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         """
 
         assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
-        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id = "TD_COAP_CORE_01"))
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id="TD_COAP_CORE_01"))
         self.test_coordinator.start_testsuite(MsgTestSuiteStart())
         assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
         self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id="TD_COAP_CORE_01"))
@@ -421,4 +424,37 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         logger.info(self.test_coordinator.testsuite.get_testcases_basic())
         logger.info(self.test_coordinator.testsuite.get_testcase_report())
         logger.info(self.test_coordinator.testsuite.get_report())
+
+    def test_skip_all_test_cases_check_states_and_report_generation(self):
+
+        assert self.test_coordinator.testsuite.get_report() is None
+
+        # config 3 TCs
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
+
+        # start TS
+        assert self.test_coordinator.state == 'waiting_for_testsuite_start', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # test suite finished, test suite report should not be null
+        assert self.test_coordinator.state == 'testsuite_finished', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.get_report() is not None
+
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_report()))
+
+
 

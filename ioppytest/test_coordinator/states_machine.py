@@ -360,19 +360,21 @@ class Coordinator(CoordinatorAmqpInterface):
                     report = []
 
             except AttributeError as ae:
-                error_msg += 'Failed to process Sniffer response. Wrongly formated resonse? : %s' % repr(
+                error_msg += 'Failed to process Sniffer response. Wrongly formated response? : %s' % repr(
                     sniffer_response)
                 logger.error(error_msg)
                 gen_verdict = 'error'
                 gen_description = error_msg
                 report = []
 
+            # TODO this should be hanlded directly by generate_testcases_verdict method
             # save sent message in RESULTS dir
             final_report = OrderedDict()
             final_report['verdict'] = gen_verdict
             final_report['description'] = gen_description
             final_report['partial_verdicts'] = report
 
+            # TODO this should be hanlded directly by generate_testcases_verdict method
             # lets generate test case report
             current_tc.report = final_report
 

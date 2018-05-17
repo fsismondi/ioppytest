@@ -1,6 +1,7 @@
 import threading
 import logging
 import pika
+import pprint
 import time
 import sys
 
@@ -26,21 +27,25 @@ MAX_LINE_LENGTH = 120
 
 def log_all_received_messages(event_types_sniffed_on_bus_list: list):
     logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+    complete_log_trace = """ 
+*****************************************************************
+COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
+*****************************************************************
+    """
     i = 0
     for ev in event_types_sniffed_on_bus_list:
         i += 1
         try:
-
             log_line = "\n\tevent count: %s" % i
             log_line += "\n\tmsg_id: %s" % ev.message_id
             log_line += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
             if isinstance(ev, MsgSessionLog):
-                log_line += "\n\tmessage from %s: %s" % (ev.component,ev.message)
-
+                complete_log_trace += "\n [%s] %s" % (ev.component, ev.message)
             logging.info(log_line)
-
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
+
+    logging.info(complete_log_trace)
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
@@ -76,10 +81,14 @@ def publish_terminate_signal_on_report_received(message: Message):
             connection,
             MsgTestingToolTerminate(description="Received report, functional test finished..")
         )
+        for tc_result_i in message.tc_results:
+            logging.info('-' * 30)
+            logging.info('TESTCASE: %s \n%s' % (tc_result_i['testcase_id'], pprint.pformat(tc_result_i)))
+            logging.info('-' * 30)
 
 
 def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=True):
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
 
     # it's ok if UI adaptor generates errors, as we there is not UI responding to request in the bus when testing
     if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:
