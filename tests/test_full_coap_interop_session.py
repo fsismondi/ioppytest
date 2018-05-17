@@ -22,6 +22,20 @@ from tests import (check_if_message_is_an_error_message,
                    log_all_received_messages,
                    MAX_LINE_LENGTH)
 
+"""
+Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
+Evaluates a normal test cycle with real automated IUTs. 
+
+EXECUTE AS:
+python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
+
+PRE-CONDITIONS:
+- Export AMQP_URL in the running environment
+- Have CoAP testing tool running & listening to the bus
+- Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
+"""
+
+
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 120
 
@@ -36,18 +50,6 @@ event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order 
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
-    """
-    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
-
-    EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
-
-    PRE-CONDITIONS:
-    - Export AMQP_URL in the running environment
-    - Have CoAP testing tool running & listening to the bus
-    - Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
-    """
-
     def setUp(self):
         self.is_comms_between_iuts_ok = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))

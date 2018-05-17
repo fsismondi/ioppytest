@@ -27,6 +27,19 @@ from tests import (check_if_message_is_an_error_message,
                    MAX_LINE_LENGTH,
                    )
 
+"""
+Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
+
+EXECUTE AS:
+python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
+or
+python3 -m unittest tests/test_api.py -vvv
+
+PRE-CONDITIONS:
+- Export AMQP_URL in the running environment
+- Have CoAP testing tool running & listening to the bus
+"""
+
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
 event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
@@ -39,12 +52,7 @@ logger = logging.getLogger(__name__)
 
 logging.getLogger('pika').setLevel(logging.WARNING)
 
-"""
-PRE-CONDITIONS:
-- Export AMQP_URL in the running environment
-- Have CoAP testing tool running & listening to the bus
-"""
-
+# this sequence of messages will simulate the user inputs, and exercise the test coordinator's FSM
 user_sequence = [
     MsgAgentTunStarted(
         name="someAgentName1",
@@ -77,7 +85,7 @@ user_sequence = [
     MsgTestSuiteGetStatus(),
 ]
 
-
+# this sequence of messages will test testing tool components
 service_api_calls = [
 
     # TAT calls
@@ -151,18 +159,6 @@ service_api_calls = [
 
 
 class ApiTests(unittest.TestCase):
-    """
-    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
-
-    EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
-    or
-    python3 -m unittest tests/test_api.py -vvv
-
-    PRE-CONDITIONS:
-    - Export AMQP_URL in the running environment
-    - Have CoAP testing tool running & listening to the bus
-    """
 
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -208,18 +204,6 @@ class ApiTests(unittest.TestCase):
             use_message_typing=True
         )
 
-        # # thread
-        # thread_ui_stub = AmqpListener(
-        #     amqp_url=AMQP_URL,
-        #     amqp_exchange=AMQP_EXCHANGE,
-        #     callback=reply_to_ui_configuration_request_stub,
-        #     topics=[
-        #         MsgUiRequestSessionConfiguration.routing_key,
-        #         MsgTestingToolTerminate.routing_key,
-        #     ],
-        #     use_message_typing=True
-        # )
-        # threads = [thread_msg_listener, thread_msg_gen, thread_ui_stub]
         threads = [thread_msg_listener, thread_msg_gen]
 
         for th in threads:
