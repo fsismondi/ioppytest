@@ -150,7 +150,7 @@ def run_checks_on_message_received(message: Message):
 
 
 def update_events_seen_on_bus_list(message: Message):
-    global event_types_sniffed_on_bus_list
+    global event_messages_sniffed_on_bus_list
     global events_sniffed_on_bus_dict
     events_sniffed_on_bus_dict[type(message)] = message
-    event_types_sniffed_on_bus_list.append(type(message))
+    event_messages_sniffed_on_bus_list.append(message)
