@@ -25,15 +25,15 @@ MAX_LINE_LENGTH = 120
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
 
-def log_all_received_messages(event_types_sniffed_on_bus_list: list):
-    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
+def log_all_received_messages(event_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_list))
     complete_log_trace = """ 
 *****************************************************************
 COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
 *****************************************************************
     """
     i = 0
-    for ev in event_types_sniffed_on_bus_list:
+    for ev in event_list:
         i += 1
         try:
             log_line = "\n\tevent count: %s" % i

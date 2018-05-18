@@ -45,7 +45,7 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
-event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
+event_messages_sniffed_on_bus_list = []  # the list of messages seen on the bus
 
 
 class CompleteFunctionalCoapSessionTests(unittest.TestCase):
@@ -56,10 +56,10 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
     def tearDown(self):
         self.connection.close()
-        log_all_received_messages(event_types_sniffed_on_bus_list)
+        log_all_received_messages(event_messages_sniffed_on_bus_list)
 
     def test_complete_interop_test_cycle(self):
-        global event_types_sniffed_on_bus_list
+        global event_messages_sniffed_on_bus_list
         global events_sniffed_on_bus_dict
         global THREAD_JOIN_TIMEOUT
 
@@ -124,7 +124,6 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     logger.warning("Thread %s didnt stop" % th.name)
                     th.stop()
 
-            assert MsgTestSuiteReport in event_types_sniffed_on_bus_list, "Testing tool didnt emit any report"
             assert MsgTestSuiteReport in events_sniffed_on_bus_dict, "Testing tool didnt emit any report"
             logging.info('Got TestSuiteReport. Test suite completely executed')
 
