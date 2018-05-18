@@ -36,7 +36,7 @@ PRE-CONDITIONS:
 """
 
 COMPONENT_ID = 'fake_session'
-THREAD_JOIN_TIMEOUT = 600
+SESSION_TIMEOUT = 600
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
     def test_complete_interop_test_cycle(self):
         global event_messages_sniffed_on_bus_list
         global events_sniffed_on_bus_dict
-        global THREAD_JOIN_TIMEOUT
+        global SESSION_TIMEOUT
 
         tc_list = [
             'TD_COAP_CORE_01',
@@ -111,9 +111,11 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             for th in threads:
                 th.start()
 
-            # waits THREAD_JOIN_TIMEOUT for the session to terminate
-            # be careful Jenkins scripts may have also a timeout for jobs
-            user_stub.join(THREAD_JOIN_TIMEOUT)
+            t = 0
+            # wait until we get MsgTestSuiteReport
+            while t < SESSION_TIMEOUT and MsgTestSuiteReport not in events_sniffed_on_bus_dict:
+                time.sleep(1)
+                t += 1
 
         except Exception as e:
             self.fail("Exception encountered %s" % e)
