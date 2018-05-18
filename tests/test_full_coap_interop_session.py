@@ -137,7 +137,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             if self.got_at_least_one_passed_tc:
                 logging.info('Got at least one PASS verdict')
             else:
-                logging.warning('(!) No PASS verdict found in the session results report')
+                logging.warning('(!)No PASS verdict found in the session results report')
 
 
 def run_checks_on_message_received(message: Message):
