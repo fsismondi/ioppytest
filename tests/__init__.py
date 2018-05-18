@@ -46,11 +46,14 @@ COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
         try:
             if isinstance(ev, MsgSessionLog):
                 complete_log_trace += "\n[%s] %s" % (ev.component, ev.message)
-            else:
-                complete_log_trace += "\n[ - ] get event %s" % type(ev)
         except AttributeError as e:
             logging.warning(e)
 
+    complete_log_trace += """ 
+*****************************************************************
+                    END OF LOG TRACE  
+*****************************************************************
+    """
     logging.info(complete_log_trace)
 
 
