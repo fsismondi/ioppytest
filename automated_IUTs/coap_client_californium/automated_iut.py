@@ -51,7 +51,6 @@ class CaliforniumCoapClient(AutomatedIUT):
     implemented_stimuli_list = list(stimuli_to_testcase_map.keys())
     implemented_testcases_list = list(stimuli_to_testcase_map.values())
 
-
     def __init__(self):
         super().__init__(self.node)
         logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
