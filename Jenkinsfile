@@ -176,7 +176,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         }
 
         stage("RUN mini-plugtest 1"){
-            gitlabCommitStatus("START respources for mini-plugtest 1") {
+            gitlabCommitStatus("START respources for mini-plugtest 2") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -185,7 +185,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E make _run-coap-mini-interop-californium-cli-vs-californium-server
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-coapthon-server
                             '''
                         }
 
@@ -201,7 +201,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 1") {
+            gitlabCommitStatus("EXECUTE mini-plugtest 2") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -230,7 +230,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         }
 
         stage("RUN mini-plugtest 2"){
-            gitlabCommitStatus("START respources for mini-plugtest 2") {
+            gitlabCommitStatus("START respources for mini-plugtest 1") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -239,7 +239,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E make _run-coap-mini-interop-californium-cli-vs-coapthon-server
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-californium-server
                             '''
                         }
 
@@ -255,7 +255,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 2") {
+            gitlabCommitStatus("EXECUTE mini-plugtest 1") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
