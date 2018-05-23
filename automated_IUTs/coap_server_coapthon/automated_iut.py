@@ -47,7 +47,7 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
         logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
         with open(self.process_log_file, "w") as outfile:
-            subprocess.call(self.iut_cmd, stdout=outfile)
+            subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
 
 class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
