@@ -14,6 +14,40 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
 
 # auxiliary functions
 
+
+def list_to_str(ls):
+    """
+    flattens a nested list up to two levels of depth
+
+    :param ls: the list, supports str also
+    :return: single string with all the items inside the list
+    """
+
+    ret = ''
+
+    if ls is None:
+        return 'None'
+
+    if type(ls) is str:
+        return ls
+
+    try:
+        for l in ls:
+            if l and isinstance(l, list):
+                for sub_l in l:
+                    if sub_l and not isinstance(sub_l, list):
+                        ret += str(sub_l) + ' \n '
+                    else:
+                        # I truncate in the second level
+                        pass
+            else:
+                ret += str(l) + ' \n '
+
+    except TypeError as e:
+        return str(ls)
+    return ret
+
+
 def get_field_keys_from_ui_request(ui_message):
     """
     :return: list with all field names in request

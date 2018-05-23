@@ -14,6 +14,7 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (wait_for_all_users_to_join_s
                                                     get_field_keys_from_ui_request,
                                                     get_field_keys_from_ui_reply,
                                                     get_field_value_from_ui_reply,
+                                                    list_to_str,
                                                     )
 
 from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
@@ -23,7 +24,6 @@ from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.interop_cli import list_to_str
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 
