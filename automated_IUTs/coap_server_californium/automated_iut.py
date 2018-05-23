@@ -21,7 +21,6 @@ class CaliforniumCoapServer(AutomatedIUT):
     component_id = 'automated_iut-coap_server-californium'
     node = 'coap_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
-
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
     iut_cmd = [
@@ -56,6 +55,10 @@ class CaliforniumCoapServer(AutomatedIUT):
 
 
 if __name__ == '__main__':
-    iut = CaliforniumCoapServer()
-    iut.start()
-    iut.join()
+
+    try:
+        iut = CaliforniumCoapServer()
+        iut.start()
+        iut.join()
+    except Exception as e:
+        logger.error(e)

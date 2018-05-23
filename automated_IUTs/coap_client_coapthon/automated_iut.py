@@ -94,6 +94,10 @@ class CoapthonCoapClient(AutomatedIUT):
 
 
 if __name__ == '__main__':
-    iut = CoapthonCoapClient()
-    iut.start()
-    iut.join()
+
+    try:
+        iut = CoapthonCoapClient()
+        iut.start()
+        iut.join()
+    except Exception as e:
+        logger.error(e)

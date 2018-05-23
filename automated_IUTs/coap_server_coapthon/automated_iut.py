@@ -19,6 +19,7 @@ coap_host_address = COAP_CLIENT_HOST
 class CoapthonCoapServerIPv6(AutomatedIUT):
     component_id = 'automated_iut-coap_server-coapthon'
     node = 'coap_server'
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
     iut_cmd = [
         'python',
@@ -31,7 +32,6 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
 
     def __init__(self):
         self.process_log_file = os.path.join(TMPDIR, self.component_id + self.__class__.__name__ + '.log')
-
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
@@ -65,15 +65,19 @@ class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
 
 
 if __name__ == '__main__':
-    logging.info('Starting IUT process')
-    logging.info('IUT process init')
-    iut_v4 = CoapthonCoapServerIPv4()
-    iut_v6 = CoapthonCoapServerIPv6()
+    try:
+        logger.info('Starting IUT process')
+        logger.info('IUT process init')
+        iut_v4 = CoapthonCoapServerIPv4()
+        iut_v6 = CoapthonCoapServerIPv6()
 
-    logging.info('IUT process starting..')
-    iut_v4.start()
-    iut_v6.start()
-    logging.info('IUT process stopping..')
-    iut_v6.join()
-    iut_v4.join()
-    logging.info('IUT process finished. Bye!..')
+        logger.info('IUT process starting..')
+        iut_v4.start()
+        iut_v6.start()
+        logger.info('IUT process stopping..')
+        iut_v6.join()
+        iut_v4.join()
+        logger.info('IUT process finished. Bye!..')
+
+    except Exception as e:
+        logger.error(e)

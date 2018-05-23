@@ -100,6 +100,10 @@ class CaliforniumCoapClient(AutomatedIUT):
 
 
 if __name__ == '__main__':
-    iut = CaliforniumCoapClient()
-    iut.start()
-    iut.join()
+
+    try:
+        iut = CaliforniumCoapClient()
+        iut.start()
+        iut.join()
+    except Exception as e:
+        logger.error(e)

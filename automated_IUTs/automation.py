@@ -13,6 +13,7 @@ import signal
 import logging
 import threading
 
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
@@ -22,8 +23,15 @@ STIMULI_HANDLER_TOUT = 10
 
 COMPONENT_ID = 'automation'
 
+# init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 @property
@@ -201,9 +209,7 @@ class AutomatedIUT(threading.Thread):
                 logger.info('*' * 72)
                 logger.info('*' * 72)
 
-
         elif isinstance(event, MsgTestingToolTerminate):
-
             logger.info('Test terminate signal received. Quitting..')
             time.sleep(2)
             self._exit()
