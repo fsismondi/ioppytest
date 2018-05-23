@@ -55,7 +55,7 @@ class CaliforniumCoapClient(AutomatedIUT):
         super().__init__(self.node)
         logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
 
-    def _execute_verify(self, verify_step_id, ):
+    def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_stimuli(self, stimuli_step_id, addr):

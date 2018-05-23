@@ -53,6 +53,7 @@ class AutomatedIUT(threading.Thread):
     implemented_stimuli_list = NotImplementedField
     component_id = NotImplementedField
     node = NotImplementedField
+    process_log_file = None  # child may override, it will be logged at the end of the session
 
     EVENTS = [
         MsgTestCaseReady,
@@ -161,7 +162,7 @@ class AutomatedIUT(threading.Thread):
             logger.info('event.node %s,%s' % (event.node, self.node))
             if event.node == self.node and event.step_id in self.implemented_stimuli_list:
                 step = event.step_id
-                addr = event.target_address # may be None
+                addr = event.target_address  # may be None
 
                 self._execute_stimuli(step, addr)  # blocking till stimuli execution
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
@@ -191,8 +192,18 @@ class AutomatedIUT(threading.Thread):
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Got final test suite report: %s' % event.to_json())
+            if self.process_log_file:
+                contents = open(self.process_log_file).read()
+                logger.info('*' * 72)
+                logger.info('AUTOMATED_IUT LOGS %s' % self.process_log_file)
+                logger.info('*' * 72)
+                logger.info(contents)
+                logger.info('*' * 72)
+                logger.info('*' * 72)
+
 
         elif isinstance(event, MsgTestingToolTerminate):
+
             logger.info('Test terminate signal received. Quitting..')
             time.sleep(2)
             self._exit()
@@ -337,9 +348,16 @@ class UserMock(threading.Thread):
 
     def stop(self):
         self.shutdown = True
+
+        if not self.connection.is_open:
+            self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
         publish_message(self.connection,
                         MsgTestingToolComponentShutdown(component=COMPONENT_ID))
-        self.channel.stop_consuming()
+
+        if self.channel.is_open:
+            self.channel.stop_consuming()
+
         self.connection.close()
 
     def exit(self):
