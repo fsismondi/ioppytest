@@ -96,13 +96,33 @@ class AutomatedIUT(threading.Thread):
         sys.exit(0)
 
     def _execute_verify(self, verify_step_id):
+        """
+        If IUT cannot perform verify validations then just override method with `pass` command
+
+        :param verify_step_id:
+        :return:
+        """
         raise NotImplementedError("Subclasses should implement this!")
 
     def _execute_stimuli(self, stimuli_step_id, addr):
+        """
+        When executing IUT stimuli, the call MUST NOT block thread forever
+
+        :param stimuli_step_id:
+        :param addr:
+        :return:
+        """
         raise NotImplementedError("Subclasses should implement this!")
 
     # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
     def _execute_configuration(self, testcase_id, node):
+        """
+        If IUT doesnt need to configure anything then just override method with `pass` command
+
+        :param testcase_id:
+        :param node:
+        :return:
+        """
         raise NotImplementedError("Subclasses should implement this!")
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
