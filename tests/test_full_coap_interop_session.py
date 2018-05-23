@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
-from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
+from ioppytest.utils.event_bus_utils import publish_message, AmqpListener, amqp_request
 from automated_IUTs.automation import UserMock
 
 from tests import (check_if_message_is_an_error_message,
@@ -36,7 +36,7 @@ PRE-CONDITIONS:
 """
 
 COMPONENT_ID = 'fake_session'
-SESSION_TIMEOUT = 600
+SESSION_TIMEOUT = 300
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -117,8 +117,21 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 time.sleep(1)
                 t += 1
 
+            if MsgTestingToolTerminate not in events_sniffed_on_bus_dict:
+                logging.warning('Never received TERMINATE signal')
+                connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+                r = amqp_request(connection, MsgTestSuiteGetStatus(), COMPONENT_ID)
+                logging.warning('Test suite status: \n&s' % r.to_json())
+                publish_message(
+                    connection,
+                    MsgTestingToolTerminate(description="Something went wrong")
+                )
+                connection.close()
+                for th in threads:
+                    th.join(10)
+
         except Exception as e:
-            self.fail("Exception encountered %s" % e)
+            self.fail("Exception encountered:\n%s" % e)
 
         finally:
             for th in threads:
