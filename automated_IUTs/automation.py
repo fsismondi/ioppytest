@@ -141,7 +141,7 @@ class AutomatedIUT(threading.Thread):
             logger.info('event.node %s,%s' % (event.node, self.node))
             if event.node == self.node and event.step_id in self.implemented_stimuli_list:
                 step = event.step_id
-                addr = event.target_address
+                addr = event.target_address # may be None
 
                 self._execute_stimuli(step, addr)  # blocking till stimuli execution
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
