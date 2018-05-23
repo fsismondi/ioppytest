@@ -73,13 +73,13 @@ class CoapthonCoapClient(AutomatedIUT):
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
             proc.wait(timeout=STIMULI_HANDLER_TOUT)
 
-            # # GET stdout IUT CMD for stimuli
-            # output = ''
-            # while proc.poll() is None:
-            #     output += str(proc.stdout.readline())
-            # output += str(proc.stdout.read())
-            # logger.info('EXECUTED: %s' % stimuli_step_id)
-            # logger.info('Process STDOUT: %s' % output)
+            # GET stdout IUT CMD for stimuli
+            output = ''
+            while proc.poll() is None:
+                output += str(proc.stdout.readline())
+            output += str(proc.stdout.read())
+            logger.info('EXECUTED: %s' % stimuli_step_id)
+            logger.info('Process STDOUT: %s' % output)
 
         except subprocess.TimeoutExpired as tout:
             logger.warning('Process TIMEOUT. info: %s' % str(tout))

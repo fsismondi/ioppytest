@@ -36,9 +36,7 @@ class CaliforniumCoapServer(AutomatedIUT):
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
-        th = threading.Thread(target=self._launch_automated_iut)
-        th.daemon = True
-        th.start()
+        self._launch_automated_iut_process()
 
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
@@ -46,15 +44,14 @@ class CaliforniumCoapServer(AutomatedIUT):
     def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
-    def _launch_automated_iut(self):
-        # att this is a blocking function
+    def _launch_automated_iut_process(self):
         logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
         with open(self.process_log_file, "w") as outfile:
-            subprocess.call(self.iut_cmd, stdout=outfile)
+            subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
     def _execute_configuration(self, testcase_id, node):
-        # shoud we restart californium process?
+        # should we restart californium process?
         return server_base_url
 
 if __name__ == '__main__':
