@@ -176,8 +176,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         }
 
 
-        stage("RUN mini-plugtest 4"){
-            gitlabCommitStatus("START resources for mini-plugtest 4") {
+        stage("RUN mini-plugtest: coapthon_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: coapthon_clie VS californium_serv") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -202,7 +202,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 4") {
+            gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS californium_serv") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -229,8 +229,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
-        stage("RUN mini-plugtest 1"){
-            gitlabCommitStatus("START resources for mini-plugtest 1") {
+        stage("RUN mini-plugtest: californium_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: californium_clie VS californium_serv") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -255,7 +255,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 1") {
+            gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS californium_serv") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -283,8 +283,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
 
         }
 
-        stage("RUN mini-plugtest 2"){
-            gitlabCommitStatus("START resources for mini-plugtest 2") {
+        stage("RUN mini-plugtest: californium_clie VS coapthon_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: californium_clie VS coapthon_serv") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -309,7 +309,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 2") {
+            gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS coapthon_serv") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -337,8 +337,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
 
         }
 
-        stage("RUN mini-plugtest 3"){
-            gitlabCommitStatus("START resources for mini-plugtest 3") {
+        stage("RUN mini-plugtest: coapthon_clie VS coapthon_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: coapthon_clie VS coapthon_serv") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -363,7 +363,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
 
-            gitlabCommitStatus("EXECUTE mini-plugtest 3") {
+            gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS coapthon_serv") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
