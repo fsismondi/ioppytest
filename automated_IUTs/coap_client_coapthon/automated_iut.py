@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-from urllib.parse import urlparse
 import subprocess
+import logging
+from urllib.parse import urlparse
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
-from automated_IUTs.automation import *
+from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
@@ -45,7 +46,7 @@ class CoapthonCoapClient(AutomatedIUT):
     implemented_stimuli_list = list(stimuli_to_testcase_map.keys())
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 11)]
 
-    def _execute_verify(self, verify_step_id, ):
+    def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_stimuli(self, stimuli_step_id, addr):
@@ -93,6 +94,10 @@ class CoapthonCoapClient(AutomatedIUT):
 
 
 if __name__ == '__main__':
-    iut = CoapthonCoapClient()
-    iut.start()
-    iut.join()
+
+    try:
+        iut = CoapthonCoapClient()
+        iut.start()
+        iut.join()
+    except Exception as e:
+        logger.error(e)

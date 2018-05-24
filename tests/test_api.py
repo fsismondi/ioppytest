@@ -42,7 +42,7 @@ PRE-CONDITIONS:
 
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
-event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
+event_messages_sniffed_on_bus_list = []  # list of all events in the bus
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 90
@@ -167,7 +167,7 @@ class ApiTests(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
         # print messages
-        log_all_received_messages(event_types_sniffed_on_bus_list)
+        log_all_received_messages(event_messages_sniffed_on_bus_list)
 
     def test_amqp_api_smoke_tests(self):
         """
@@ -243,8 +243,8 @@ class ApiTests(unittest.TestCase):
                     logger.warning("Thread %s didnt stop" % th.name)
 
             # finally checks
-            check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)
-            check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
+            check_request_with_no_correlation_id(event_messages_sniffed_on_bus_list)
+            check_every_request_has_a_reply(event_messages_sniffed_on_bus_list)
 
 
 def run_checks_on_message_received(message: Message):
@@ -304,7 +304,7 @@ def check_every_request_has_a_reply(events_tracelog):
 
 
 def update_events_seen_on_bus_list(message: Message):
-    global event_types_sniffed_on_bus_list
+    global event_messages_sniffed_on_bus_list
     global events_sniffed_on_bus_dict
     events_sniffed_on_bus_dict[type(message)] = message
-    event_types_sniffed_on_bus_list.append(message)
+    event_messages_sniffed_on_bus_list.append(message)

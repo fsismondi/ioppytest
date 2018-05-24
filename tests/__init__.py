@@ -25,27 +25,39 @@ MAX_LINE_LENGTH = 120
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
 
-def log_all_received_messages(event_types_sniffed_on_bus_list: list):
-    logging.info("Events sniffed in bus: %s" % len(event_types_sniffed_on_bus_list))
-    complete_log_trace = """ 
+def log_all_received_messages(event_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_list))
+    traces_of_all_messages_in_event_bus = ""
+    logs_traces_of_all_log_messages_in_event_bus = """ 
+    
 *****************************************************************
 COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
 *****************************************************************
     """
     i = 0
-    for ev in event_types_sniffed_on_bus_list:
+    for ev in event_list:
         i += 1
         try:
-            log_line = "\n\tevent count: %s" % i
-            log_line += "\n\tmsg_id: %s" % ev.message_id
-            log_line += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
-            if isinstance(ev, MsgSessionLog):
-                complete_log_trace += "\n [%s] %s" % (ev.component, ev.message)
-            logging.info(log_line)
+            traces_of_all_messages_in_event_bus += "\n\tevent count: %s" % i
+            traces_of_all_messages_in_event_bus += "\n\tmsg_id: %s" % ev.message_id
+            traces_of_all_messages_in_event_bus += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
+
         except AttributeError as e:
             logging.warning("No message id in message: %s" % repr(ev))
 
-    logging.info(complete_log_trace)
+        try:
+            if isinstance(ev, MsgSessionLog):
+                logs_traces_of_all_log_messages_in_event_bus += "\n[%s] %s" % (ev.component, ev.message)
+        except AttributeError as e:
+            logging.warning(e)
+
+    logs_traces_of_all_log_messages_in_event_bus += """ 
+*****************************************************************
+                    END OF LOG TRACE  
+*****************************************************************
+    """
+    logging.info(logs_traces_of_all_log_messages_in_event_bus)
+    logging.debug(traces_of_all_messages_in_event_bus)
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
