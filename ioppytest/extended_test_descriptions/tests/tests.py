@@ -1,7 +1,7 @@
 from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import import_teds
 from ioppytest.extended_test_descriptions import format_conversion
-import unittest
+import unittest, pprint
 
 """
 python3 -m  pytest ioppytest/extended_test_descriptions/tests/tests.py
@@ -39,7 +39,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
     def validate_config_description(self, config):
 
         tc_config_must_have_fields = {'id', 'uri', 'nodes', 'topology',
-                                      'nodes_description','configuration_diagram'}
+                                      'nodes_description', 'configuration_diagram'}
         tc_config_must_have_non_null_fields = {'id', 'uri', 'nodes', 'topology',
                                                'nodes_description'}
 
@@ -98,24 +98,41 @@ class ImportYamlInteropTestCases(unittest.TestCase):
 
 
 class TestDescriptionFormatReprAndConvertion(unittest.TestCase):
-
     def setUp(self):
 
         self.imported_tcs = []
         self.imported_tc_configs = []
 
         for td in TEST_DESCRIPTIONS:
-            self.imported_tcs = import_teds(td)
+            self.imported_tcs += import_teds(td)
+
+        print("got %s test cases: %s" % (
+            len(self.imported_tcs),
+            pprint.pformat([item.id for item in self.imported_tcs])
+        ))
 
         for td in TEST_DESCRIPTIONS_CONFIGS:
-            self.imported_tc_configs = import_teds(td)
+            print('parsing %s ' % td)
+            self.imported_tc_configs += import_teds(td)
+
+        print("got %s test cases configs: %s" % (
+            len(self.imported_tc_configs),
+            pprint.pformat([item.id for item in self.imported_tc_configs])
+        ))
+
+        assert len(self.imported_tc_configs) > 0
 
     def test_get_markdown_representation_of_testcase(self):
         for i in self.imported_tcs:
             print(format_conversion.get_markdown_representation_of_testcase(i.id))
 
+    def test_get_markdown_representation_of_testcase_config(self):
+        for i in self.imported_tc_configs:
+            print('markdown repr for %s' % i.id)
+            print(format_conversion.get_markdown_representation_of_testcase_configuration(i.id))
+            print(format_conversion.get_markdown_representation_of_testcase_configuration(i.id, include_diagram=True))
+
     def test_ascii_art_diagrams_in_test_config_yaml_documents(self):
         for tc_conf in self.imported_tc_configs:
-                if hasattr(tc_conf, 'configuration_diagram') and tc_conf.configuration_diagram:
-                    print(tc_conf.configuration_diagram)
-
+            if hasattr(tc_conf, 'configuration_diagram') and tc_conf.configuration_diagram:
+                print(tc_conf.configuration_diagram)

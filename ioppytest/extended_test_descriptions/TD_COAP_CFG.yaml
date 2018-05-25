@@ -111,7 +111,8 @@ topology:
       - gateway
       - coap_server
 description:
-  - coap_server:
+  - node: coap_client
+    message:
     - CoAP servers running service at [bbbb::2]:5683
     - CoAP servers are requested to offer the following resources
     - - /test

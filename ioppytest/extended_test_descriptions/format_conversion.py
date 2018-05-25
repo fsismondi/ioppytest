@@ -18,9 +18,7 @@ from ioppytest.utils import tabulate
 
 tabulate.PRESERVE_WHITESPACE = True
 
-COMPONENT_ID = 'webserver'
-
-logger = logging.getLogger(COMPONENT_ID)
+logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
 td_list = list()
@@ -97,6 +95,9 @@ def list_to_str(ls, max_width=200):
                     else:
                         # I truncate in the second level
                         pass
+            elif l and isinstance(l, dict):
+                for tup in l.items():
+                    ret += "    - " + textwrap.fill("%s: %s" % tup, width=max_width) + '\n'
             else:
                 ret += "- " + textwrap.fill(str(l), width=max_width) + '\n'
 
@@ -115,7 +116,6 @@ def get_markdown_representation_of_testcase(testcase_id: str):
         for item in step_info.split('\n'):
             cell += "{indentation}{step_info_line}\n".format(indentation=" " * STEP_COLUMN_IDENTATION,
                                                              step_info_line=item)
-
         return cell
 
     table = []
@@ -145,28 +145,44 @@ def get_markdown_representation_of_testcase(testcase_id: str):
     return tabulate.tabulate(table, tablefmt=TABLE_STYLE_MARKDOWN)
 
 
-def get_markdown_representation_of_testcase_configuration(testcase_config_id: str):
+def get_markdown_representation_of_testcase_configuration(testcase_config_id: str, include_diagram=False):
     assert type(testcase_config_id) is str
+
+    testcase = td_config_dict[testcase_config_id.upper()]
 
     table = []
     header_fields = [
-        ('id', 'Tescase Config ID'),
-        ('uri', 'Testcase Config URL'),
-        ('nodes_description', 'Nodes'),
-        ('topology', 'Topology'),
-        ('default_addressing', 'Addressing'),
-        ('configuration_diagram', 'Diagram'),
+        ('id', 'Config ID'),
+        ('uri', 'Config URL'),
     ]
 
     # first let's add the header
-    testcase = td_config_dict[testcase_config_id.upper()]
     for i in header_fields:
         col1 = i[1]
         col2 = getattr(testcase, i[0])
         col2 = list_to_str(col2)  # flattens info
         table.append([col1, col2])
 
-    return tabulate.tabulate(table, tablefmt=TABLE_STYLE_MARKDOWN)
+    # process special fields (list of list and list of dicts)
+    for sub_field in getattr(testcase, 'nodes_description'):
+        table.append(["Config \ndescription\n(%s)" % sub_field['node'], list_to_str(sub_field['message'])])
+
+    for sub_field in getattr(testcase, 'default_addressing'):
+        table.append(
+            ["Node address  \n(%s)" % sub_field['node'], "%s:%s" % (sub_field['ipv6_prefix'], sub_field['ipv6_host'])])
+
+    ascii_table = tabulate.tabulate(table, tablefmt=TABLE_STYLE_MARKDOWN)
+
+    # include diagram if requested
+    if include_diagram:
+        ascii_table += "\n\n"
+        ascii_table += "Configuration diagram\n"
+        try:
+            ascii_table += getattr(testcase, 'configuration_diagram')
+        except TypeError:
+            logger.warning('Test config doesnt have any diagram')
+
+    return ascii_table
 
 
 def get_html_representation_of_testcase(testcase_id):

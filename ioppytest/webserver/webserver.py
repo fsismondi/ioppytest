@@ -17,16 +17,20 @@ import posixpath
 import mimetypes
 from jinja2 import Template
 
-from ioppytest import (TEST_DESCRIPTIONS,
-                       RESULTS_DIR,
-                       AUTO_DISSECTION_FILE,
-                       PROJECT_DIR,
-                       LOG_LEVEL,
-                       TEST_DESCRIPTIONS_DICT, )
+from ioppytest import (
+    TEST_DESCRIPTIONS,
+    RESULTS_DIR,
+    AUTO_DISSECTION_FILE,
+    PROJECT_DIR,
+    LOG_LEVEL,
+    TEST_DESCRIPTIONS_DICT,
+    TEST_DESCRIPTIONS_CONFIGS_DICT
+)
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from ioppytest.test_coordinator.testsuite import TestCase
-from ioppytest.extended_test_descriptions.format_conversion import get_markdown_representation_of_testcase
+from ioppytest.test_coordinator.testsuite import TestCase, TestConfig
+from ioppytest.extended_test_descriptions.format_conversion import get_markdown_representation_of_testcase, \
+    get_markdown_representation_of_testcase_configuration
 
 COMPONENT_ID = 'webserver'
 FILENAME_HTML_REPORT = 'testsuite_results.html'
@@ -61,6 +65,21 @@ def get_tc_list_from_yaml(testdescription_yamlfile):
         yaml_docs = yaml.load_all(stream)
         for yaml_doc in yaml_docs:
             if type(yaml_doc) is TestCase:
+                list.append(yaml_doc)
+    return list
+
+
+def get_tc_confs_list_from_yaml(testdescription_yamlfile):
+    """
+    :param testdescription_yamlfile:
+    :return: TC config objects
+    """
+
+    list = []
+    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
+        yaml_docs = yaml.load_all(stream)
+        for yaml_doc in yaml_docs:
+            if type(yaml_doc) is TestConfig:
                 list.append(yaml_doc)
     return list
 
@@ -248,9 +267,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return None
 
         tc_list = list()
+        tc_list_configs = list()
+
         test_suite_list_of_test_description = TEST_DESCRIPTIONS_DICT[testsuite_name]
+        test_suite_list_of_test_description_config = TEST_DESCRIPTIONS_CONFIGS_DICT[testsuite_name]
+
         for item in test_suite_list_of_test_description:
             tc_list += get_tc_list_from_yaml(item)
+
+        for item in test_suite_list_of_test_description_config:
+            tc_list_configs += get_tc_confs_list_from_yaml(item)
 
         head = """
         <html>
@@ -292,6 +318,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                       'utf-8'
                       ))
         self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+
+        for tc_conf in tc_list_configs:
+            config = get_markdown_representation_of_testcase_configuration(tc_conf.id, include_diagram=True)
+            self.wfile.write(bytes("<ascii-art>%s</ascii-art>" % config, 'utf-8'))
+            self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+
         self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
         self.wfile.write(bytes("</html>\n", 'utf-8'))
         return
@@ -366,7 +398,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 break
 
         if tc is None:
-            self.send_error(404, "Testcase %s couldn't be found in list %s" % (tc_name,testcases_path_list))
+            self.send_error(404, "Testcase %s couldn't be found in list %s" % (tc_name, testcases_path_list))
             return None
 
         self.send_response(200)

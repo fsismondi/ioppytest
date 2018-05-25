@@ -70,7 +70,9 @@ TD_6LOWPAN_RS_RA_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 TD_6LOWPAN_ND = os.path.join(TD_DIR, "TD_6LOWPAN_ND.yaml")
 TD_6LOWPAN_ND_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
+# deprecate this, change name of config to TD_6LOWPAN_CFG
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
 TD_6LOWPAN = [
     TD_6LOWPAN_HC,
     TD_6LOWPAN_FORMAT,
@@ -104,6 +106,13 @@ TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG,
                              TD_COMI_CFG,
                              TD_6LOWPAN_FORMAT_CFG,
                              TD_6LOWPAN_RS_RA_CFG]
+
+TEST_DESCRIPTIONS_CONFIGS_DICT = {
+    'coap': [TD_COAP_CFG],
+    '6lowpan': [TD_6LOWPAN_CFG],
+    'onem2m': [TD_ONEM2M_CFG],
+    'comi': [TD_COMI_CFG]
+}
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 
