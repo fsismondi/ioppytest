@@ -783,12 +783,13 @@ class TestConfig:
     This class is for generating objects containing a copy of the information of the test configuration yaml file
     """
 
-    def __init__(self, configuration_id, uri, nodes, topology, addressing, description):
+    def __init__(self, configuration_id, uri, nodes, topology, addressing, description, configuration_diagram):
         self.id = configuration_id
         self.uri = uri
         self.nodes = nodes
         self.nodes_description = description
         self.default_addressing = addressing
+        self.configuration_diagram = configuration_diagram
 
         # list of link dictionaries, each link has link id, nodes list, and capture_filter configuring the sniffer
         # see test configuration yaml file

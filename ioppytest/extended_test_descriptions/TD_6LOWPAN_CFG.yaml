@@ -26,7 +26,7 @@ description:
   - node: eut2
     message:
       - EUT is a simple host.
-
+configuration_diagram: null
 
 --- !configuration
 configuration_id: 6LOWPAN_CFG_02
@@ -54,3 +54,4 @@ description:
   - node: 6ln
     message:
       - EUT is a 6LoWPAN Node (Router Or Host).
+configuration_diagram: null

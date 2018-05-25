@@ -1,5 +1,6 @@
 from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import import_teds
+from ioppytest.extended_test_descriptions import format_conversion
 import unittest
 
 """
@@ -38,7 +39,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
     def validate_config_description(self, config):
 
         tc_config_must_have_fields = {'id', 'uri', 'nodes', 'topology',
-                                      'nodes_description'}
+                                      'nodes_description','configuration_diagram'}
         tc_config_must_have_non_null_fields = {'id', 'uri', 'nodes', 'topology',
                                                'nodes_description'}
 
@@ -95,18 +96,26 @@ class ImportYamlInteropTestCases(unittest.TestCase):
                 assert tc_conf.id == tc_conf.id.upper(), \
                     'TC %s contains lower cases in test config id' % tc_conf.id
 
-    # def test_last_line_is_empty_line(self):
-    #     valid_last_lines = [
-    #         '       ',
-    #         '\t',
-    #         '\n',
-    #         '\n\n',
-    #         '\r\n'
-    #     ]
-    #     import os
-    #     for td in TEST_DESCRIPTIONS:
-    #         with open(td, 'r') as f:
-    #             lines = f.readlines()
-    #             last_line = lines[-1].rsplit(os.linesep+os.linesep)
-    #             print('>>>>%s' % last_line)
-    #
+
+class TestDescriptionFormatReprAndConvertion(unittest.TestCase):
+
+    def setUp(self):
+
+        self.imported_tcs = []
+        self.imported_tc_configs = []
+
+        for td in TEST_DESCRIPTIONS:
+            self.imported_tcs = import_teds(td)
+
+        for td in TEST_DESCRIPTIONS_CONFIGS:
+            self.imported_tc_configs = import_teds(td)
+
+    def test_get_markdown_representation_of_testcase(self):
+        for i in self.imported_tcs:
+            print(format_conversion.get_markdown_representation_of_testcase(i.id))
+
+    def test_ascii_art_diagrams_in_test_config_yaml_documents(self):
+        for tc_conf in self.imported_tc_configs:
+                if hasattr(tc_conf, 'configuration_diagram') and tc_conf.configuration_diagram:
+                    print(tc_conf.configuration_diagram)
+
