@@ -1192,7 +1192,7 @@ pre_conditions:
   - Device is switched on and operational.
   - Client is registred with the LwM2M Server
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_LWM2M_1_INT_301_step_01'
     type: stimuli
@@ -1463,7 +1463,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Generic Sensor (ID:3300) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3300_03_step_01'
     type: stimuli
@@ -1510,7 +1510,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Generic Sensor (ID:3300) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3300_04_step_01'
     type: stimuli
@@ -1586,7 +1586,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Generic Sensor (ID:3300) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3300_05_step_01'
     type: stimuli
@@ -1711,7 +1711,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Presence object (ID:3302) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3302_03_step_01'
     type: stimuli
@@ -1791,7 +1791,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Presence object (ID:3302) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3302_04_step_01'
     type: stimuli
@@ -1838,7 +1838,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Presence object (ID:3302) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3302_05_step_01'
     type: stimuli
@@ -1918,7 +1918,7 @@ sequence:
       - - Type = 0 (CON)
         - Code = 1 (GET)
 
-  - step_id: 'TD_ IPSO_3303_01_step_06'
+  - step_id: 'TD_IPSO_3303_01_step_06'
     type: check
     description:
       - 'The request sent by the server contains'
@@ -1933,7 +1933,7 @@ sequence:
         - - Code = 2.05 (Content)
           - Non-empty Payload
 
-  - step_id: 'TD_ IPSO_3303_01_step_08'
+  - step_id: 'TD_IPSO_3303_01_step_08'
     type: verify
     node: lwm2m_server
     description:
@@ -1999,7 +1999,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Temperature object (ID:3303) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3303_03_step_01'
     type: stimuli
@@ -2085,7 +2085,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Humidity Sensor (ID:3304) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3304_02_step_01'
     type: stimuli
@@ -2161,7 +2161,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Humidity Sensor (ID:3304) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3304_03_step_01'
     type: stimuli
@@ -2253,7 +2253,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Actuation (ID:3306) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3306_02_step_01'
     type: stimuli
@@ -2300,7 +2300,7 @@ pre_conditions:
   - - LWM2M Device Object (ID = 3) Instance 0 with mandatory resources. 
   - The Client supports IPSO Actuation (ID:3306) with mandatory resources. 
 notes: null
-references: 'OMA-ETS-LightweightM2M-V1_0_1-20170926-A'
+references: null
 sequence:
   - step_id: 'TD_IPSO_3306_03_step_01'
     type: stimuli
