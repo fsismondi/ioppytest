@@ -38,12 +38,44 @@ FILENAME_HTML_REPORT = 'testsuite_results.html'
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
 
+head = """
+<html>
+    <head>
+    <meta charset='utf-8'>
+    <style>
+        title1 {
+            font-family: Consolas, monaco, monospace;
+            font-style: normal;
+            font-weight: normal;
+            font-size: 20px;
+        }
+
+        tail {
+            font-family: Consolas, monaco, monospace;
+            font-style: normal;
+            font-weight: normal;
+            font-size: 10px;
+        }
+        ascii-art {
+            font-family: Consolas, monaco, monospace;
+            font-style: normal;
+            font-weight: normal;
+            white-space: pre;
+            font-size: 12px;
+        }
+    </style>
+    </head>\n
+
+    """
+
 tail = """
 "mantainer": "Federico Sismondi",
 "mantainer_email": "federico.sismondi@inria.fr"
 
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
+
+
 
 td_objects_list = []
 for TD in TEST_DESCRIPTIONS:
@@ -215,39 +247,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         <a href="linkhere.html">Click Me</a>
 
         """
-
-        head = """
-        <html>
-            <head>
-            <meta charset='utf-8'>
-            <style>
-                tail {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    font-size: 10px;
-                }
-                ascii-art {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    white-space: pre;
-                    font-size: 12px;
-                }
-            </style>
-            </head>\n
-
-            """
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes(head, 'utf-8'))
-        self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
+        self.wfile.write(bytes("""<body>\n<basefont face="Consolas" size="20" color="#ff0000">""", 'utf-8'))
         self.wfile.write(bytes("<title>Test Suites</title>", 'utf-8'))
+        self.wfile.write(bytes("<title1>Test Suites</title1>", 'utf-8'))
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
         for ts in test_suite_list:
             self.wfile.write(
-                bytes('<ascii-art><li><a href="%s%s">%s</a></li></ascii-art>\n' % (path, ts, ts), 'utf-8'))
+                bytes('<ascii-art><li><a href="%s/%s">%s</a></li></ascii-art>\n' % (path, ts, ts), 'utf-8'))
         self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
         self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
         self.wfile.write(bytes("</html>\n", 'utf-8'))
@@ -283,6 +293,19 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             <head>
             <meta charset='utf-8'>
             <style>
+                title1 {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    font-size: 20px;
+                }
+                title2 {
+                    font-family: Consolas, monaco, monospace;
+                    font-style: normal;
+                    font-weight: normal;
+                    font-size: 15px;
+                }
+
                 tail {
                     font-family: Consolas, monaco, monospace;
                     font-style: normal;
@@ -306,7 +329,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes(head, 'utf-8'))
         self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
         self.wfile.write(bytes("<title>Test Suite</title>", 'utf-8'))
-        self.wfile.write(bytes("<ascii-art>Test Suite [%s]:</ascii-art>" % testsuite_name.upper(), 'utf-8'))
+        self.wfile.write(bytes("<title1>%s Test Suite</title1>" % testsuite_name.upper(), 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
+
+        self.wfile.write(bytes("<title2>Test Cases List</title2>", 'utf-8'))
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
         for tc in tc_list:
             self.wfile.write(
@@ -317,12 +343,23 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                           tc.id),
                       'utf-8'
                       ))
-        self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
 
+        self.wfile.write(bytes("<title2>Test Configurations</title2>", 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
         for tc_conf in tc_list_configs:
             config = get_markdown_representation_of_testcase_configuration(tc_conf.id, include_diagram=True)
             self.wfile.write(bytes("<ascii-art>%s</ascii-art>" % config, 'utf-8'))
-            self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
+            self.wfile.write(bytes("<br /><br />", 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
+
+        self.wfile.write(bytes("<title2>Test Cases</title2>", 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
+        for tc in tc_list:
+            tc_table = get_markdown_representation_of_testcase(tc.id)
+            self.wfile.write(bytes("<ascii-art>%s</ascii-art>" % tc_table, 'utf-8'))
+            self.wfile.write(bytes("<br /><br />", 'utf-8'))
+        self.wfile.write(bytes("<br /><br />", 'utf-8'))
 
         self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
         self.wfile.write(bytes("</html>\n", 'utf-8'))
