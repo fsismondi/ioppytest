@@ -49,6 +49,12 @@ head = """
             font-weight: normal;
             font-size: 20px;
         }
+        title2 {
+            font-family: Consolas, monaco, monospace;
+            font-style: normal;
+            font-weight: normal;
+            font-size: 15px;
+        }
 
         tail {
             font-family: Consolas, monaco, monospace;
@@ -74,8 +80,6 @@ tail = """
 
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
-
-
 
 td_objects_list = []
 for TD in TEST_DESCRIPTIONS:
@@ -288,41 +292,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         for item in test_suite_list_of_test_description_config:
             tc_list_configs += get_tc_confs_list_from_yaml(item)
 
-        head = """
-        <html>
-            <head>
-            <meta charset='utf-8'>
-            <style>
-                title1 {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    font-size: 20px;
-                }
-                title2 {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    font-size: 15px;
-                }
-
-                tail {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    font-size: 10px;
-                }
-                ascii-art {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    white-space: pre;
-                    font-size: 12px;
-                }
-            </style>
-            </head>\n
-
-            """
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
@@ -336,13 +305,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
         for tc in tc_list:
             self.wfile.write(
-                bytes('<ascii-art><li><a href="/testsuites/%s/%s">%s</a></li></ascii-art>\n' %
+                bytes("<ascii-art><li><a href=/testsuites/%s/%s>%s</a> : %s </li></ascii-art>" %
                       (
                           testsuite_name,
                           tc.id,
-                          tc.id),
+                          tc.id,
+                          tc.objective
+                      ),
                       'utf-8'
-                      ))
+
+                      )
+            )
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
 
         self.wfile.write(bytes("<title2>Test Configurations</title2>", 'utf-8'))
@@ -445,28 +418,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         ascii_table = get_markdown_representation_of_testcase(tc_name)
         ascii_table = "<br />".join(ascii_table.split("\n"))
 
-        head = """
-        <html>
-            <head>
-            <meta charset='utf-8'>
-            <style>
-                tail {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    font-size: 10px;
-                }
-                ascii-art {
-                    font-family: Consolas, monaco, monospace;
-                    font-style: normal;
-                    font-weight: normal;
-                    white-space: pre;
-                    font-size: 12px;
-                }
-            </style>
-            </head>\n
-
-            """
         self.wfile.write(bytes(head, 'utf-8'))
         self.wfile.write(bytes("""<body>\n<basefont face="Arial" size="2" color="#ff0000">""", 'utf-8'))
         self.wfile.write(bytes("<title>Testcase description</title>", 'utf-8'))
