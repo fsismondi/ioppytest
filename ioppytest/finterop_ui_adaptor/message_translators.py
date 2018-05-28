@@ -80,7 +80,7 @@ def list_to_str(ls, max_width=79):
     return ret
 
 
-def bootstrap_vpn_interfaces():
+def send_start_test_suite_event():
     con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     ui_request = MsgTestSuiteStart()
     print("publishing .. %s" % repr(ui_request))
@@ -151,7 +151,7 @@ class GenericBidirectonalTranslator(object):
             {
                 'value': True,
                 'type': 'button',
-                'name': 'start_test_suite'
+                'name': 'skip_test_case'
             }
             (...)
         ]
@@ -159,7 +159,7 @@ class GenericBidirectonalTranslator(object):
         Reply format:
         Message(fields = [
             {
-                'start_test_suite': True
+                'skip_test_case': True
             },
             (..)
         ]
@@ -1391,7 +1391,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # 3. starts the agent interfaces
         if resp_confirm_agent_up:
-            bootstrap_vpn_interfaces()
+            send_start_test_suite_event()
 
             disp = MsgUiDisplay(
                 tags=UI_TAG_BOOTSTRAPPING,
@@ -1702,6 +1702,8 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
             )
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
+
+        send_start_test_suite_event()
 
         return True
 
