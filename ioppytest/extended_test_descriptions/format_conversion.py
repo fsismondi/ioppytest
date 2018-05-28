@@ -3,16 +3,22 @@ import yaml
 import logging
 import textwrap
 
-from ioppytest import TEST_DESCRIPTIONS, RESULTS_DIR, AUTO_DISSECTION_FILE, PROJECT_DIR, LOG_LEVEL
+from ioppytest import (
+    TEST_DESCRIPTIONS,
+    TEST_DESCRIPTIONS_CONFIGS,
+    RESULTS_DIR,
+    AUTO_DISSECTION_FILE,
+    PROJECT_DIR,
+    LOG_LEVEL
+)
+
 from ioppytest.test_coordinator.testsuite import TestCase, TestConfig
 
 from ioppytest.utils import tabulate
 
 tabulate.PRESERVE_WHITESPACE = True
 
-COMPONENT_ID = 'webserver'
-
-logger = logging.getLogger(COMPONENT_ID)
+logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
 td_list = list()
@@ -32,7 +38,7 @@ tail = """
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
 
-for TD in TEST_DESCRIPTIONS:
+for TD in TEST_DESCRIPTIONS + TEST_DESCRIPTIONS_CONFIGS:
     with open(TD, "r", encoding="utf-8") as stream:
         yaml_docs = yaml.load_all(stream)
         for yaml_doc in yaml_docs:
@@ -89,6 +95,9 @@ def list_to_str(ls, max_width=200):
                     else:
                         # I truncate in the second level
                         pass
+            elif l and isinstance(l, dict):
+                for tup in l.items():
+                    ret += "    - " + textwrap.fill("%s: %s" % tup, width=max_width) + '\n'
             else:
                 ret += "- " + textwrap.fill(str(l), width=max_width) + '\n'
 
@@ -99,16 +108,15 @@ def list_to_str(ls, max_width=200):
     return ret
 
 
-def build_step_cell(step_id, step_type, step_info):
-    cell = "{step_type} - {step_id}\n\n".format(step_type=step_type.upper(), step_id=step_id)
-    for item in step_info.split('\n'):
-        cell += "{indentation}{step_info_line}\n".format(indentation=" " * STEP_COLUMN_IDENTATION, step_info_line=item)
-
-    return cell
-
-
 def get_markdown_representation_of_testcase(testcase_id: str):
     assert type(testcase_id) is str
+
+    def build_step_cell(step_id, step_type, step_info):
+        cell = "{step_type} - {step_id}\n\n".format(step_type=step_type.upper(), step_id=step_id)
+        for item in step_info.split('\n'):
+            cell += "{indentation}{step_info_line}\n".format(indentation=" " * STEP_COLUMN_IDENTATION,
+                                                             step_info_line=item)
+        return cell
 
     table = []
     header_fields = [
@@ -137,6 +145,46 @@ def get_markdown_representation_of_testcase(testcase_id: str):
     return tabulate.tabulate(table, tablefmt=TABLE_STYLE_MARKDOWN)
 
 
+def get_markdown_representation_of_testcase_configuration(testcase_config_id: str, include_diagram=False):
+    assert type(testcase_config_id) is str
+
+    testcase = td_config_dict[testcase_config_id.upper()]
+
+    table = []
+    header_fields = [
+        ('id', 'Config ID'),
+        ('uri', 'Config URL'),
+    ]
+
+    # first let's add the header
+    for i in header_fields:
+        col1 = i[1]
+        col2 = getattr(testcase, i[0])
+        col2 = list_to_str(col2)  # flattens info
+        table.append([col1, col2])
+
+    # process special fields (list of list and list of dicts)
+    for sub_field in getattr(testcase, 'nodes_description'):
+        table.append(["Config \ndescription\n(%s)" % sub_field['node'], list_to_str(sub_field['message'])])
+
+    for sub_field in getattr(testcase, 'default_addressing'):
+        table.append(
+            ["Node address  \n(%s)" % sub_field['node'], "%s:%s" % (sub_field['ipv6_prefix'], sub_field['ipv6_host'])])
+
+    ascii_table = tabulate.tabulate(table, tablefmt=TABLE_STYLE_MARKDOWN)
+
+    # include diagram if requested
+    if include_diagram:
+        ascii_table += "\n\n"
+        ascii_table += "Configuration diagram\n"
+        try:
+            ascii_table += getattr(testcase, 'configuration_diagram')
+        except TypeError:
+            logger.warning('Test config doesnt have any diagram')
+
+    return ascii_table
+
+
 def get_html_representation_of_testcase(testcase_id):
     l = [(list_to_str(item[0]), list_to_str(item[1])) for item in td_dict[testcase_id].to_dict(verbose=True).items()]
     return tabulate.tabulate(l, tablefmt=TABLE_STYLE_HTML)
@@ -155,16 +203,21 @@ if __name__ == '__main__':
     #             #     with open(os.path.join(TMPDIR, i.id + '.html'), 'w') as test_case_md_file:
     #             #         test_case_md_file.write(get_html_representation_of_testcase(i.id))
 
-    # one .md for all TC
-    testsuite_filename = 'TD_6LoWPAN_interoperability.md'
-    with open(os.path.join(TMPDIR, testsuite_filename), 'w') as test_case_md_file:
+    # # one .md for all TC
+    # testsuite_filename = 'TD_6LoWPAN_interoperability.md'
+    # with open(os.path.join(TMPDIR, testsuite_filename), 'w') as test_case_md_file:
+    #
+    #     for i in td_list:
+    #         if "6LOWPAN" in i.id:
+    #             test_case_md_file.write("# Interoperability Test Description: %s\n" % i.id)
+    #             test_case_md_file.write(get_markdown_representation_of_testcase(i.id))
+    #             test_case_md_file.write("\n\n")
+    #
+    #     for i in td_list:
+    #         if "6LOWPAN" in i.id:
+    #             print("\n{\n'value': 'http://doc.f-interop.eu/tests/%s'\n},"%i.id)
 
-        for i in td_list:
-            if "6LOWPAN" in i.id:
-                test_case_md_file.write("# Interoperability Test Description: %s\n" % i.id)
-                test_case_md_file.write(get_markdown_representation_of_testcase(i.id))
-                test_case_md_file.write("\n\n")
-
-        for i in td_list:
-            if "6LOWPAN" in i.id:
-                print("\n{\n'value': 'http://doc.f-interop.eu/tests/%s'\n},"%i.id)
+    print(td_config_list)
+    for i in td_config_list:
+        print(i.id)
+        print(get_markdown_representation_of_testcase_configuration(i.id))

@@ -1529,6 +1529,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
     def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+        # TODO fix harcoded values!
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",

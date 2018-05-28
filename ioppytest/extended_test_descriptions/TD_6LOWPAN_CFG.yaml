@@ -14,10 +14,10 @@ topology:
       - eut2
 addressing:
     - node: eut1
-      ipv6_prefix : ????
+      ipv6_prefix : fe80
       ipv6_host: 1
     - node: eut2
-      ipv6_prefix : ????
+      ipv6_prefix : fe80
       ipv6_host: 2
 description:
   - node: eut1
@@ -26,7 +26,59 @@ description:
   - node: eut2
     message:
       - EUT is a simple host.
+configuration_diagram: |+
 
+  (remote user-to-user session)
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                     6LoWPAN Testing Tool                       |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+-------------------+---------------------+----+-----+
+        |     ^                   ^                     |    ^
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        v     |                   |                     v    |
+  +-----+-----+---+ +------+      |       +------+ +----+----+-----+
+  |               | |  A   |      |       |  A   | |               |
+  |               | |  G   | +----+-----> |  G   | |               |
+  |     eut1      | |  E   |              |  E   | |     eut2      |
+  |               | |  N   | <----------+ |  N   | |               |
+  |               | |  T   |              |  T   | |               |
+  +---------------+ +------+              +------+ +---------------+
+  (*) here agents are active probes, they send and receive 802.15.4 frames
+
+
+  (local deployment session)
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                    6LoWPAN Testing Tool                        |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+---------------------+-------------------+----+-----+
+        |     ^                     ^                   ^    |
+        |     |                     |                   |    |
+        |     |                     |                   |    |
+        |     |                     |                   |    |
+        |     |             +-------+-------+           |    |
+        |     |             |   AGENT       |           |    |
+        |     |             |   (passive    |           |    |
+        |     |             |    probe)     |           |    |
+        |     |             +-------+-------+           |    |
+  +-----v-----+---+                 ^              +----+----v-----+
+  |               |                 |              |               |
+  |               |                 |              |               |
+  |     EUT 1     | +------------802.15.4---------->     EUT 2     |
+  |               | <------------------------------+               |
+  |               |                                |               |
+  +---------------+                                +---------------+
+  (*) here agent is a passive probe, it only sniffs 802.15.4 frames
 
 --- !configuration
 configuration_id: 6LOWPAN_CFG_02
@@ -42,10 +94,10 @@ topology:
       - 6ln
 addressing:
     - node: 6lr
-      ipv6_prefix : ????
+      ipv6_prefix : fe80
       ipv6_host: 1
     - node: 6ln
-      ipv6_prefix : ????
+      ipv6_prefix : fe80
       ipv6_host: 2
 description:
   - node: 6lr
@@ -54,3 +106,56 @@ description:
   - node: 6ln
     message:
       - EUT is a 6LoWPAN Node (Router Or Host).
+configuration_diagram: |+
+
+  (remote user-to-user session)
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                     6LoWPAN Testing Tool                       |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+-------------------+---------------------+----+-----+
+        |     ^                   ^                     |    ^
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        v     |                   |                     v    |
+  +-----+-----+---+ +------+      |       +------+ +----+----+-----+
+  |               | |  A   |      |       |  A   | |               |
+  |               | |  G   | +----+-----> |  G   | |               |
+  |     EUT 1     | |  E   |     tun      |  E   | |     EUT 2     |
+  |               | |  N   | <----------+ |  N   | |               |
+  |               | |  T(*)|              |  T(*)| |               |
+  +---------------+ +------+              +------+ +---------------+
+  (*) here agents are active probes, they send and receive 802.15.4 frames
+
+
+  (local deployment session)
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                    6LoWPAN Testing Tool                        |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+---------------------+-------------------+----+-----+
+        |     ^                     ^                   ^    |
+        |     |                     |                   |    |
+        |     |                     |                   |    |
+        |     |                     |                   |    |
+        |     |             +-------+-------+           |    |
+        |     |             |   AGENT (*)   |           |    |
+        |     |             |    passive    |           |    |
+        |     |             |     probe     |           |    |
+        |     |             +-------+-------+           |    |
+  +-----v-----+---+                 ^              +----+----v-----+
+  |               |                 |              |               |
+  |               |                 |              |               |
+  |     EUT 1     | +------------802.15.4---------->     EUT 2     |
+  |               | <------------------------------+               |
+  |               |                                |               |
+  +---------------+                                +---------------+
+  (*) here agent is a passive probe, it only sniffs 802.15.4 frames
