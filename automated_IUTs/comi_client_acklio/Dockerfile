@@ -29,6 +29,10 @@ RUN python3 -m pip install pika
 #ADD automated_IUTs/comi_server_acklio/examples /CoMI/examples/
 
 
+# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.2.2
+
 EXPOSE 5683
 
 # launch processes
