@@ -1643,8 +1643,12 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # 1. user needs to config AGENT and PROBE
 
         # in 6lowpan we redirect the user towards the official doc
-        agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
-        agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
+        agents_kickstart_help = """Please read documentation for 6LoWPAN (802.15.4) testing suite:
+        
+testbed setup: http://doc.f-interop.eu/interop/6lowpan_test_suite
+        
+test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
+"""
 
         req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
@@ -1652,10 +1656,6 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
                 {
                     "type": "p",
                     "value": agents_kickstart_help
-                },
-                {
-                    "type": "p",
-                    "value": agents_kickstart_help_2
                 },
                 {
                     "name": "continue",
