@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pika
 import logging
 import traceback
 import textwrap
@@ -9,6 +10,7 @@ import datetime
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.messages import *
+from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.tabulate import tabulate
 from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
@@ -16,7 +18,8 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply
                                                     get_field_value_from_ui_reply)
 from ioppytest.finterop_ui_adaptor.user_help_text import *
 from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
-                                           STDOUT_MAX_STRING_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
                                            STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
                                            UI_TAG_BOOTSTRAPPING,
@@ -32,6 +35,8 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
+
+TESTING_TOOL_AGENT_NAME = 'agent_TT'
 
 
 @property
@@ -75,40 +80,11 @@ def list_to_str(ls, max_width=79):
     return ret
 
 
-# TODO delete unused
-# def list_to_str(ls):
-#     """
-#     flattens a nested list up to two levels of depth
-#
-#     :param ls: the list, supports str also
-#     :return: single string with all the items inside the list
-#     """
-#
-#     ret = ''
-#
-#     if ls is None:
-#         return 'None'
-#
-#     if type(ls) is str:
-#         return ls
-#
-#     try:
-#         for l in ls:
-#             if l and isinstance(l, list):
-#                 for sub_l in l:
-#                     if sub_l and not isinstance(sub_l, list):
-#                         ret += str(sub_l) + '\n'
-#                     else:
-#                         # I truncate in the second level
-#                         pass
-#             else:
-#                 ret += str(l) + '\n'
-#
-#     except TypeError as e:
-#         logger.error(e)
-#         return str(ls)
-#
-#     return ret
+def send_start_test_suite_event():
+    con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+    ui_request = MsgTestSuiteStart()
+    print("publishing .. %s" % repr(ui_request))
+    publish_message(con, ui_request)
 
 
 class GenericBidirectonalTranslator(object):
@@ -175,7 +151,7 @@ class GenericBidirectonalTranslator(object):
             {
                 'value': True,
                 'type': 'button',
-                'name': 'start_test_suite'
+                'name': 'skip_test_case'
             }
             (...)
         ]
@@ -183,7 +159,7 @@ class GenericBidirectonalTranslator(object):
         Reply format:
         Message(fields = [
             {
-                'start_test_suite': True
+                'skip_test_case': True
             },
             (..)
         ]
@@ -233,9 +209,7 @@ class GenericBidirectonalTranslator(object):
             MsgSessionConfiguration: self._echo_as_debug_messages,
             MsgSessionLog: self._echo_as_debug_messages,
             MsgTestingToolComponentReady: self._echo_as_debug_messages,
-            MsgAgentConfigured: self._echo_as_debug_messages,
-            MsgAgentTunStart: self._echo_as_debug_messages,
-            MsgAgentTunStarted: self._echo_as_debug_messages,
+            MsgAgentTunStarted: self._echo_agent_messages,
 
             # barely important enough to not be in the debugging
             MsgTestingToolComponentShutdown: self._echo_message_description_and_component,
@@ -246,28 +220,23 @@ class GenericBidirectonalTranslator(object):
             MsgConfigurationExecuted: self._echo_message_highlighted_description,
         }
 
-        # init:
-        # 1. receive Msg TT confiured -> action _ui_request_env_config
-        # 2. received OK for ENV config -> request agent config
-        # 3. received OK for agen conf -> _ui_request_testsuite_start
-
         self.tt_to_ui_message_translation = {
-            MsgTestingToolConfigured: self._ui_request_testsuite_start,
+            # MsgTestingToolConfigured: self._ui_request_testsuite_start, let the user bootstrap this process
             MsgTestCaseReady: self._ui_request_testcase_start,
             MsgStepStimuliExecute: self._ui_request_step_stimuli_executed,
             MsgStepVerifyExecute: self._ui_request_step_verification,
         }
 
         self.ui_to_tt_message_translation = {
-            'ts_start': self._tt_message_testsuite_start,
-            'ts_abort': self._tt_message_testsuite_abort,
-            'tc_start': self._tt_message_testcase_start,
-            'tc_restart': self._tt_message_testcase_restart,
-            'tc_skip': self._tt_message_testcase_skip,
+            'ts_start': self.get_tt_message_testsuite_start,
+            'ts_abort': self.get_tt_message_testsuite_abort,
+            'tc_start': self.get_tt_message_testcase_start,
+            'tc_restart': self.get_tt_message_testcase_restart,
+            'tc_skip': self.get_tt_message_testcase_skip,
             # 'tc_list': self._handle_get_testcase_list,
             # 'tc_select': self._handle_testcase_select,
-            'verify_executed': self._tt_message_step_verify_executed,
-            'stimuli_executed': self._tt_message_step_stimuli_executed,
+            'verify_executed': self.get_tt_message_step_verify_executed,
+            'stimuli_executed': self.get_tt_message_step_stimuli_executed,
         }
 
     def bootstrap(self, amqp_connector):
@@ -334,6 +303,47 @@ class GenericBidirectonalTranslator(object):
 
         return msg
 
+    def truncate_if_text_too_long(self, msg):
+
+        """
+            Updates message body text of message before being sent to UI.
+            method before being published
+        """
+
+        if msg:
+            try:
+                new_fields_list = []
+                for f in msg.fields:
+                    try:
+
+                        if f["type"] == "p" and len(f["value"]) > STDOUT_MAX_TEXT_LENGTH:  # text too long
+                            f["value"] = f["value"][:STDOUT_MAX_TEXT_LENGTH]
+                            new_fields_list.append(
+                                {
+                                    "type": f["type"],
+                                    "value": f["value"]
+                                }
+                            )
+
+                            new_fields_list.append(
+                                {
+                                    "type": f["type"],
+                                    "value": "(WARNING: this message has been truncated)"
+                                }
+                            )
+                        else:  # text, accepted length
+                            new_fields_list.append(f)
+
+                    except KeyError:  # this is not text
+                        new_fields_list.append(f)
+
+                msg.fields = new_fields_list
+
+            except AttributeError:
+                logging.error("UI Message doesnt contain FILDS field")
+
+        return msg
+
     def get_ui_request_action_message(self, message_from_tt: Message):
         """
         translates:  (message_from_tt) -> a UI request
@@ -377,12 +387,13 @@ class GenericBidirectonalTranslator(object):
 
         try:
             # get handler based on the ui response action (e.g. ts_start, tc_skip , etc)
-            ui_to_tt_message_handler = self.ui_to_tt_message_translation[user_input_action]
+            ui_to_tt_message_translator_func = self.ui_to_tt_message_translation[user_input_action]
 
             # run handler with user reply value + tt message that triggered the UI request in the first place
-            message_for_tt = ui_to_tt_message_handler(user_input_value, tt_message)
+            message_for_tt = ui_to_tt_message_translator_func(user_input_value, tt_message)
         except KeyError:
-            logger.debug("No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_STRING_LENGTH])
+            logger.debug(
+                "No chained action to reply %s" % repr(reply_received_from_ui)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE])
             return None
 
         logger.debug("UI reply :%s translated into TT message %s"
@@ -397,15 +408,18 @@ class GenericBidirectonalTranslator(object):
 
         # search for specialized visualization, returns fields
         if type(message) in self.specialized_visualization:
-            specialized_visualization = self.specialized_visualization[type(message)]
-            msg_ret = specialized_visualization(message)
+            specialized_visualization_handler = self.specialized_visualization[type(message)]
+            msg_ret = specialized_visualization_handler(message)
 
         # generic message visualization (message as a table)
         else:
             logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
             msg_ret = self._echo_message_as_table(message)
 
-        msg_ret = self.tag_message(msg_ret)
+        if msg_ret:
+            msg_ret = self.tag_message(msg_ret)
+            msg_ret = self.truncate_if_text_too_long(msg_ret)
+
         return msg_ret
 
     @classmethod
@@ -510,25 +524,25 @@ class GenericBidirectonalTranslator(object):
 
     # # # # # # #  UI -> TT translation to be implemented BY CHILD CLASS # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_start(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_skip(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
-    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
     # # # # # # # # # # # GENERIC MESSAGE UI VISUALISATION # # # # # # # # # # # # # # #
@@ -638,10 +652,7 @@ class GenericBidirectonalTranslator(object):
             except KeyError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         # 'warning' is yellow, 'highlighted' is green, and 'error' is red
 
@@ -674,25 +685,15 @@ class GenericBidirectonalTranslator(object):
                     logger.error(traceback.format_exc())
                     break
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "Checks:"
-                }
-            )
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': "%s" % tabulate(frames, tablefmt="grid")
-                }
-            )
+            fields.extend([
+                {'type': 'p', 'value': "Analysis Tool Checks:"},
+                {'type': 'p', 'value': "%s" % tabulate(frames, tablefmt="grid")}
+            ])
 
-            fields.append(
-                {
-                    'type': 'p',
-                    'value': tabulate(table_partial_verdicts, tablefmt="grid", headers="firstrow")
-                }
-            )
+            fields.extend([
+                {'type': 'p', 'value': "Step results:"},
+                {'type': 'p', 'value': tabulate(table_partial_verdicts, tablefmt="grid", headers="firstrow")}
+            ])
 
         return tc_report['testcase_id'], display_color, fields
 
@@ -801,21 +802,12 @@ class GenericBidirectonalTranslator(object):
                 logger.error("not a list: %s" % ui_fields)
 
         # add summary
-        fields.append({
-            'type': 'p',
-            'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))
-        })
+        fields.append({'type': 'p', 'value': '%s' % (tabulate(summary_table, tablefmt="grid", headers="firstrow"))})
 
-        fields.append({
-            'type': 'p',
-            'value': 'see details on verdicts below'
-        })
+        fields.append({'type': 'p', 'value': 'see details on verdicts below'})
 
         # add long line as delimiter
-        fields.append({
-            'type': 'p',
-            'value': '-' * 70
-        })
+        fields.append({'type': 'p', 'value': '-' * 70})
 
         # add tail (verdict details like checks etc..)
         fields = fields + fields_tail
@@ -924,13 +916,10 @@ class GenericBidirectonalTranslator(object):
             except AttributeError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
-            title="Please execute the %s STEP: %s" % (message.step_type, message.step_id),
+            title="Please execute the %s STEP:" % message.step_type,
             level='info',
             fields=fields
         )
@@ -1004,14 +993,8 @@ class GenericBidirectonalTranslator(object):
                 # 'state' gets special treatment
                 table.append(('state', state))
 
-            fields.append({
-                'type': 'p',
-                'value': '%s' % (tabulate(table, tablefmt="grid"))
-            })
-            fields.append({
-                'type': 'p',
-                'value': '---\n'
-            })
+            fields.append({'type': 'p', 'value': '%s' % (tabulate(table, tablefmt="grid"))})
+            fields.append({'type': 'p', 'value': '---\n'})
 
         return MsgUiDisplayMarkdownText(
             title=list_to_str(message.description),
@@ -1061,10 +1044,7 @@ class GenericBidirectonalTranslator(object):
                     ]
                 )
 
-        fields.append({
-            'type': 'p',
-            'value': '%s' % (tabulate(table, tablefmt="grid", headers="firstrow"))
-        })
+        fields.append({'type': 'p', 'value': '%s' % (tabulate(table, tablefmt="grid", headers="firstrow"))})
 
         return MsgUiDisplayMarkdownText(
             title="Test cases list:",
@@ -1080,6 +1060,7 @@ class GenericBidirectonalTranslator(object):
         step_message_fields = [
             ('testcase_id', 'Test Case ID'),
             ('testcase_ref', 'Test Case URL'),
+            ('objective', 'Test Case Objective'),
             ('configuration_id', 'Configuration ID'),
             ('configuration_ref', 'Configuration URL'),
             ('pre_conditions', 'Test Case pre-conditions'),
@@ -1099,10 +1080,7 @@ class GenericBidirectonalTranslator(object):
         for desc in getattr(message, 'nodes_description'):
             table.append([desc['node'], list_to_str(desc['message'])])
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
             title='Next test case to be executed',
@@ -1132,10 +1110,7 @@ class GenericBidirectonalTranslator(object):
             except AttributeError as e:
                 logger.warning(e)
 
-        fields.append({
-            'type': 'p',
-            'value': tabulate(table, tablefmt="grid")
-        })
+        fields.append({'type': 'p', 'value': tabulate(table, tablefmt="grid")})
 
         return MsgUiDisplayMarkdownText(
             title="Please configure the IUT as indicated",
@@ -1209,35 +1184,9 @@ class GenericBidirectonalTranslator(object):
             except KeyError as ae:
                 logger.error("Some attribute was not found: %s" % str(frame_dict))
             try:
-                fields.append({
-                    'type': 'p',
-                    'value': '-' * 70
-                })
-                fields.append({
-                    'type': 'p',
-                    'value': 'Frame:\n%s' % tabulate(frame_header, tablefmt="grid")
-                })
+                fields.append({'type': 'p', 'value': '-' * 70})
+                fields.append({'type': 'p', 'value': 'Frame:\n%s' % tabulate(frame_header, tablefmt="grid")})
 
-                # for protocol_layer_dict in frame_dict['protocol_stack']:
-                #     fields.append({
-                #         'type': 'p',
-                #         'value': 'Frame header:\n%s' % tabulate(frame_header)
-                #     })
-                #
-                #     try:
-                #         for protocol_layer_dict in frame_dict['protocol_stack']:
-                #             fields.append({
-                #                 'type': 'p',
-                #                 'value': '%s:%s\n%s' % (
-                #                     protocol_layer_dict.pop('_protocol') if '_protocol' in protocol_layer_dict else 'misc',
-                #                     tabulate(protocol_layer_dict.items())
-                #                 )
-                #             })
-
-                # fields.append({
-                #     'type': 'p',
-                #     'value': '\n%s\n' % frames_as_list_of_strings.pop(0)
-                # })
             except KeyError as ae:
                 logger.error("Some attribute was not found in protocol stack dict: %s" % str(frame_dict))
 
@@ -1250,25 +1199,28 @@ class GenericBidirectonalTranslator(object):
     def _echo_packet_raw(self, message):
         fields = []
 
-        dir = []
+        try:
+            agent_name = message.routing_key.split('.')[1]
+        except IndexError:
+            agent_name = 'unknown_agent'
+
+        # dont echo TT's agent messages
+        if TESTING_TOOL_AGENT_NAME in agent_name:
+            return
+
         if 'fromAgent' in message.routing_key:
-            dir = 'AGENT -> TESTING TOOL'
+            dir = '%s -> TESTING TOOL' % agent_name
+
         elif 'toAgent' in message.routing_key:
-            dir = 'TESTING TOOL -> AGENT'
+            dir = 'TESTING TOOL -> %s' % agent_name
 
-        fields.append({
-            'type': 'p',
-            'value': '%s: %s' % ('data packet', dir)
-        })
+        fields.append({'type': 'p', 'value': '%s: %s' % ('data packet', dir)})
 
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('timestamp', message.timestamp)
-        })
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('interface', message.interface_name)
-        })
+        if message.timestamp:
+            fields.append({'type': 'p', 'value': '%s:%s' % (
+                'timestamp', datetime.datetime.fromtimestamp(int(message.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))})
+
+        fields.append({'type': 'p', 'value': '%s:%s' % ('interface', message.interface_name)})
 
         network_bytes_aligned = ''
         count = 0
@@ -1284,10 +1236,7 @@ class GenericBidirectonalTranslator(object):
                 network_bytes_aligned += ' '
                 count += 1
 
-        fields.append({
-            'type': 'p',
-            'value': '\n%s' % (network_bytes_aligned)
-        })
+        fields.append({'type': 'p', 'value': '\n%s' % (network_bytes_aligned)})
 
         return MsgUiDisplayMarkdownText(
             level='info',
@@ -1298,35 +1247,20 @@ class GenericBidirectonalTranslator(object):
     def _echo_session_configuration(self, message):
         fields = []
 
-        fields.append({
-            'type': 'p',
-            'value': '%s: %s' % ('session_id', message.session_id)
-        })
-
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('users', message.users)
-        })
-        fields.append({
-            'type': 'p',
-            'value': '%s:%s' % ('testing_tools', message.testing_tools)
-        })
+        fields.append({'type': 'p', 'value': '%s: %s' % ('session_id', message.session_id)})
+        fields.append({'type': 'p', 'value': '%s:%s' % ('users', message.users)})
+        fields.append({'type': 'p', 'value': '%s:%s' % ('testing_tools', message.testing_tools)})
 
         try:
             testcases = message.configuration['testsuite.testcases']
-            fields.append({
-                'type': 'p',
-                'value': '%s:%s' % ('testcases', testcases)
-            })
+            fields.append({'type': 'p', 'value': '%s:%s' % ('testcases', testcases)})
         except Exception as e:
             logger.warning('No testsuite.testcases in %s ' % repr(message))
 
         try:
             additional_session_resource = message.configuration['testsuite.additional_session_resource']
-            fields.append({
-                'type': 'p',
-                'value': '%s:%s' % ('additional_session_resource', additional_session_resource)
-            })
+            fields.append(
+                {'type': 'p', 'value': '%s:%s' % ('additional_session_resource', additional_session_resource)})
         except Exception as e:
             logger.warning("No testsuite.additional_session_resource in %s " % repr(message))
 
@@ -1340,6 +1274,26 @@ class GenericBidirectonalTranslator(object):
         ret_msg = self._echo_message_as_table(message)
         ret_msg.tags = {"logs": ""}
         return ret_msg
+
+    def _echo_agent_messages(self, message):
+        fields = []
+
+        if MsgAgentTunStarted:
+            fields.append(
+                {
+                    'type': 'p',
+                    'value': '%s TUN started, IPv6 interface %s::%s' % (
+                        message.name, message.ipv6_prefix, message.ipv6_host)
+                }
+            )
+        else:
+            raise NotImplementedError()
+
+        return MsgUiDisplayMarkdownText(
+            tags=UI_TAG_SETUP,
+            level='info',
+            fields=fields
+        )
 
 
 class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
@@ -1358,8 +1312,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         """
 
         # # # Set Up the VPN between users' IUTs # # #
-        # 1. user needs to export ENV VARS
 
+        # 1. user needs to export ENV VARS
         disp = MsgUiDisplay(
             tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
@@ -1372,13 +1326,18 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that variables have been exported",
             tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
-            }, ]
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that variables have been exported",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
         )
 
         try:
@@ -1389,8 +1348,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 2. user needs to config AGENT:
-
+        # 2. user needs to setup AGENT's environment:
         agents_kickstart_help = agents_IP_tunnel_config
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
@@ -1408,13 +1366,119 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            title="Confirm that agent component is up and running",
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that agent component is running",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        resp_confirm_agent_up = None
+        try:
+            resp_confirm_agent_up = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # 3. starts the agent interfaces
+        if resp_confirm_agent_up:
+            send_start_test_suite_event()
+
+            disp = MsgUiDisplay(
+                tags=UI_TAG_BOOTSTRAPPING,
+                fields=[{
+                    "type": "p",
+                    "value": "bootstrapping agent interface.."
+                }, ]
+            )
+
+            amqp_connector.publish_ui_display(
+                message=disp,
+                user_id='all'
+            )
+
+            #  TODO some prettier solution for this maybe?
+            time.sleep(5)
+
+        # 4. give some more info to the user about the agent
+        agents_kickstart_help = vpn_setup
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
             tags=UI_TAG_BOOTSTRAPPING,
             fields=[{
-                "name": "confirm",
-                "type": "button",
-                "value": True
+                "type": "p",
+                "value": agents_kickstart_help
             }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm to continue",
+                },
+
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # 5. give some more info to the user about how to TEST the agent setup
+
+        agents_kickstart_help = vpn_ping_tests
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_BOOTSTRAPPING,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm to continue",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                }, ]
         )
 
         try:
@@ -1427,28 +1491,24 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         return True
 
-        # 3. TODO trigger agents configuration
-        # 4. TODO automate ping test from tt
-        # 5. TODO ask user to ping other user's endpoint
-
     # # # # # # # TT Messages # # # # # # # # # # # # # #
 
-    def _tt_message_testsuite_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_start(self, user_input, origin_tt_message=None):
         return MsgTestSuiteStart()
 
-    def _tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
+    def get_tt_message_testsuite_abort(self, user_input, origin_tt_message=None):
         return MsgTestSuiteAbort()
 
-    def _tt_message_testcase_start(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_start(self, user_input, origin_tt_message=None):
         return MsgTestCaseStart(testcase_id=self._current_tc)
 
-    def _tt_message_testcase_restart(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_restart(self, user_input, origin_tt_message=None):
         return MsgTestCaseRestart()
 
-    def _tt_message_testcase_skip(self, user_input, origin_tt_message=None):
+    def get_tt_message_testcase_skip(self, user_input, origin_tt_message=None):
         return MsgTestCaseSkip(testcase_id=origin_tt_message.testcase_id)
 
-    def _tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_verify_executed(self, user_input, origin_tt_message=None):
         logger.info("processing: %s | %s" % (user_input, type(user_input)))
 
         if type(user_input) is str and user_input.lower() == 'true':
@@ -1468,7 +1528,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
-    def _tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+    def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+        # TODO fix harcoded values!
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
@@ -1582,9 +1643,12 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # 1. user needs to config AGENT and PROBE
 
         # in 6lowpan we redirect the user towards the official doc
-        agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
-        agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
-
+        agents_kickstart_help = """Please read documentation for 6LoWPAN (802.15.4) testing suite:
+        
+testbed setup: http://doc.f-interop.eu/interop/6lowpan_test_suite
+        
+test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
+"""
 
         req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
@@ -1592,10 +1656,6 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
                 {
                     "type": "p",
                     "value": agents_kickstart_help
-                },
-                {
-                    "type": "p",
-                    "value": agents_kickstart_help_2
                 },
                 {
                     "name": "continue",
@@ -1643,6 +1703,8 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
+        send_start_test_suite_event()
+
         return True
 
         # 3. TODO trigger agents configuration
@@ -1651,6 +1713,8 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
+    IUT_ROLES = ['example_role_1', 'example_role_2']
+
     def _bootstrap(self, amqp_connector):
         import inspect
 

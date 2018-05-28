@@ -1,6 +1,7 @@
 import threading
 import logging
 import pika
+import pprint
 import time
 import sys
 
@@ -19,8 +20,44 @@ default_configuration = {
     ]
 }
 
+MAX_LINE_LENGTH = 120
+
 
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
+
+def log_all_received_messages(event_list: list):
+    logging.info("Events sniffed in bus: %s" % len(event_list))
+    traces_of_all_messages_in_event_bus = ""
+    logs_traces_of_all_log_messages_in_event_bus = """ 
+    
+*****************************************************************
+COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
+*****************************************************************
+    """
+    i = 0
+    for ev in event_list:
+        i += 1
+        try:
+            traces_of_all_messages_in_event_bus += "\n\tevent count: %s" % i
+            traces_of_all_messages_in_event_bus += "\n\tmsg_id: %s" % ev.message_id
+            traces_of_all_messages_in_event_bus += "\n\tmsg repr: %s" % repr(ev)[:MAX_LINE_LENGTH]
+
+        except AttributeError as e:
+            logging.warning("No message id in message: %s" % repr(ev))
+
+        try:
+            if isinstance(ev, MsgSessionLog):
+                logs_traces_of_all_log_messages_in_event_bus += "\n[%s] %s" % (ev.component, ev.message)
+        except AttributeError as e:
+            logging.warning(e)
+
+    logs_traces_of_all_log_messages_in_event_bus += """ 
+*****************************************************************
+                    END OF LOG TRACE  
+*****************************************************************
+    """
+    logging.info(logs_traces_of_all_log_messages_in_event_bus)
+    logging.debug(traces_of_all_messages_in_event_bus)
 
 
 def reply_to_ui_configuration_request_stub(message: Message):
@@ -56,19 +93,27 @@ def publish_terminate_signal_on_report_received(message: Message):
             connection,
             MsgTestingToolTerminate(description="Received report, functional test finished..")
         )
+        for tc_result_i in message.tc_results:
+            logging.info('-' * 30)
+            logging.info('TESTCASE: %s \n%s' % (tc_result_i['testcase_id'], pprint.pformat(tc_result_i)))
+            logging.info('-' * 30)
 
 
 def check_if_message_is_an_error_message(message: Message, fail_on_reply_nok=True):
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, type(message)))
 
     # it's ok if UI adaptor generates errors, as we there is not UI responding to request in the bus when testing
     if isinstance(message, MsgSessionLog) and 'ui_adaptor' in message.component:
         return
 
-    assert 'error' not in message.routing_key, 'Got an error %s' % repr(message)
-    assert not isinstance(message, MsgErrorReply), 'Got an error reply %s' % repr(message)
+    assert 'error' not in message.routing_key, \
+        'Got an error on message, \n\tid: %s ,\n\tmsg repr: %s' % (message.message_id, repr(message))
+
+    assert not isinstance(message, MsgErrorReply), \
+        'Got an ErrorReply on message, \n\tid: %s ,\n\tmsg repr: %s' % (message.message_id, repr(message))
+
     if fail_on_reply_nok:
-        assert not (isinstance(message, MsgReply) and message.ok == False), \
+        assert not (isinstance(message, MsgReply) and not message.ok), \
             'Got a reply with a NOK reponse %s' % repr(message)
 
 
@@ -79,7 +124,7 @@ def check_api_version(message: Message):
         logging.warning('Message didnt enclude API version metadata %s' % repr(message))
         return
 
-    assert message._api_version.startswith("1"), "Running incompatible version of API %s" % repr(message)
+    assert message._api_version.startswith("1"), "Using very old version of API spec %s" % repr(message)
 
 
 class MessageGenerator(threading.Thread):

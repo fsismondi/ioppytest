@@ -29,4 +29,4 @@ description:
       - CoAP client requests
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683
-
+configuration_diagram: null

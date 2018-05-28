@@ -14,19 +14,12 @@ from ioppytest.utils.amqp_synch_call import publish_message
 
 COMPONENT_ID = 'packet_router'
 
-# init logging to stnd output and log files
-logger = logging.getLogger(COMPONENT_ID)
-
 logging.basicConfig(
     level=LOG_LEVEL,
     format=LOGGER_FORMAT
 )
 
-# AMQP log handler with f-interop's json formatter
-rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
-json_formatter = JsonFormatter()
-rabbitmq_handler.setFormatter(json_formatter)
-logger.addHandler(rabbitmq_handler)
+logging.getLogger('pika').setLevel(logging.WARNING)
 
 
 class PacketRouter(threading.Thread):
@@ -40,32 +33,46 @@ class PacketRouter(threading.Thread):
 
         self.routing_table = routing_table
 
-        logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
+        # component identification & bus params
+        self.component_id = COMPONENT_ID
+
+        # init logging to stnd output and log files
+        self.logger = logging.getLogger(self.component_id)
+        self.logger.setLevel(LOG_LEVEL)
+
+        self.logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
 
         self.message_count = 0
-        self.set_up_connection()
-        self.queues_init()
+        self._set_up_connection()
+        self._queues_init()
 
         msg = MsgTestingToolComponentReady(
             component='packetrouting'
         )
         publish_message(self.connection, msg)
 
-        logger.info('packet router waiting for new messages in the data plane..')
+        self.logger.info('packet router waiting for new messages in the data plane..')
 
-    def set_up_connection(self):
+    def _set_up_connection(self):
+
+        # AMQP log handler with f-interop's json formatter
+        rabbitmq_handler = RabbitMQHandler(self.url, self.component_id)
+        json_formatter = JsonFormatter()
+        rabbitmq_handler.setFormatter(json_formatter)
+        self.logger.addHandler(rabbitmq_handler)
+
         try:
-            logger.info('Setting up AMQP connection..')
+            self.logger.info('Setting up AMQP connection..')
             # setup AMQP connection
             self.connection = pika.BlockingConnection(pika.URLParameters(self.url))
             self.channel = self.connection.channel()
             self.channel.basic_qos(prefetch_count=1)
 
         except pika.exceptions.ConnectionClosed as cc:
-            logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
+            self.logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
             sys.exit(1)
 
-    def queues_init(self):
+    def _queues_init(self):
         for src_rkey, dst_rkey_list in self.routing_table.items():
             assert type(src_rkey) is str
             assert type(dst_rkey_list) is list
@@ -81,8 +88,8 @@ class PacketRouter(threading.Thread):
                                     queue=src_queue,
                                     routing_key=src_rkey)
 
-            # bind all src queues to on_request callback
-            self.channel.basic_consume(self.on_request, queue=src_queue)
+            # bind all src queues to _on_request callback
+            self.channel.basic_consume(self._on_request, queue=src_queue)
 
     def stop(self):
 
@@ -96,29 +103,29 @@ class PacketRouter(threading.Thread):
 
         self.channel.stop_consuming()
 
-    def on_request(self, ch, method, props, body):
+    def _on_request(self, ch, method, props, body):
 
         # TODO implement forced message drop mechanism
-
         # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
         body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         self.message_count += 1
+        self.logger.info("Routing message, count %s" % self.message_count)
 
         # let's route the message to the right agent
         try:
-            data = body_dict['data']
+            m = MsgPacketInjectRaw(data=body_dict['data'],
+                                   timestamp=body_dict['timestamp'],
+                                   interface_name=body_dict['interface_name'])
         except:
-            logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
+            self.logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
             return
 
         src_rkey = method.routing_key
         if src_rkey in self.routing_table.keys():
+            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
-                m = MsgPacketInjectRaw(
-                    data=data
-                )
                 # forward to dst_rkey
                 self.channel.basic_publish(
                     body=m.to_json(),
@@ -128,14 +135,14 @@ class PacketRouter(threading.Thread):
                         content_type='application/json',
                     )
                 )
-                logger.info(
+                self.logger.info(
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
 
         elif 'toAgent' in src_rkey:
             pass  # echo of router message
 
         else:
-            logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
             return
 
     def _notify_component_shutdown(self):
@@ -268,7 +275,7 @@ def main():
         r.start()
         r.join()
     except (KeyboardInterrupt, SystemExit):
-        logger.info('got SIGINT. Bye bye!')
+        logging.info('got SIGINT. Bye bye!')
         r.stop()
 
 

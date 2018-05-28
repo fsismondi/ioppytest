@@ -14,6 +14,7 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (wait_for_all_users_to_join_s
                                                     get_field_keys_from_ui_request,
                                                     get_field_keys_from_ui_reply,
                                                     get_field_value_from_ui_reply,
+                                                    list_to_str,
                                                     )
 
 from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
@@ -23,7 +24,6 @@ from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.interop_cli import list_to_str
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 
@@ -31,7 +31,7 @@ from ioppytest.utils.messages import *
 from ioppytest.finterop_ui_adaptor import (UiResponseError,
                                            SessionError,
                                            COMPONENT_ID,
-                                           STDOUT_MAX_STRING_LENGTH,
+                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            MESSAGES_NOT_TO_BE_ECHOED,
                                            TESTING_TOOL_TOPIC_SUBSCRIPTIONS)
 from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
@@ -192,9 +192,9 @@ class AmqpMessagePublisher:
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("publishing to routing_key: %s, msg: %s"
+        logger.info("PUBLISHING to routing_key: %s, msg: %s"
                     % (message.routing_key,
-                       repr(message)[:STDOUT_MAX_STRING_LENGTH],))
+                       repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
         try:
             time.sleep(PUBLISH_DELAY)
@@ -295,7 +295,7 @@ class AmqpMessagePublisher:
 
     def publish_ui_request(self, request, user_id=None):
         """
-        ASYNCRHONOUS UI request: sends message, and exits, Response needs to be consumed using the queuing system
+        ASYNCHRONOUS UI request: sends message, and exits, Response needs to be consumed using the queuing system
         """
 
         if user_id:
@@ -406,7 +406,7 @@ def process_message_from_ui(message_translator, message_received):
     logger.info("routing TT <- UI: %s correlation_id %s, msg: %s"
                 % (message_received.routing_key,
                    message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
-                   repr(message_received)[:STDOUT_MAX_STRING_LENGTH],))
+                   repr(message_received)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
     # 0. print pending responses table
     message_translator.print_table_of_pending_responses()
@@ -442,7 +442,7 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
     logger.info("routing TT -> UI: %s correlation_id %s, msg: %s"
                 % (message_received.routing_key,
                    message_received.correlation_id if hasattr(message_received, 'correlation_id') else None,
-                   repr(message_received)[:STDOUT_MAX_STRING_LENGTH],))
+                   repr(message_received)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
     # 0. update message factory states
     message_translator.update_state(message_received)
@@ -452,12 +452,13 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         ui_display_message = message_translator.transform_message_to_ui_markdown_display(
             message=message_received)
 
-        # fixme I should access _private method
-        ui_display_message = message_publisher._update_ui_message_rkeys(
-            ui_message=ui_display_message,
-            tt_message=message_received)
-
         if ui_display_message:
+
+            # fixme I shouldnt access _private method
+            ui_display_message = message_publisher._update_ui_message_rkeys(
+                ui_message=ui_display_message,
+                tt_message=message_received)
+
             queue_messages_display_to_ui.put(ui_display_message)
 
     else:
@@ -571,7 +572,6 @@ def main():
              "value": err_msg}
         ])
         logger.error(err_msg)
-        # logger.error(traceback.format_exc())
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
     except UiResponseError as ui_error:

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import datetime
-import logging
 import os
+import pika
+import logging
+import datetime
 
 from transitions.core import MachineError
-# TODO fix me! dont do agent stuff in coordinator
-from ioppytest.agent.utils import bootstrap_agent
-from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
 from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
@@ -71,7 +69,11 @@ class CoordinatorAmqpInterface(object):
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
             MsgSessionConfiguration: 'configure_testsuite',
+
+            # same handler
             MsgConfigurationExecuted: 'iut_configuration_executed',
+            MsgAgentTunStarted: 'iut_configuration_executed',
+
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',
             MsgStepVerifyExecuted: 'step_executed',
@@ -79,6 +81,7 @@ class CoordinatorAmqpInterface(object):
             MsgTestCaseSelect: 'select_testcase',
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseSkip: 'skip_testcase',
+
         }
 
         # amqp connect to bus & subscribe to events
@@ -126,7 +129,7 @@ class CoordinatorAmqpInterface(object):
                                    no_ack=False)
 
     def run(self):
-        logger.info('starting to consume events from the bus..')
+        logger.info(' %s ready, listening to events in the bus..' % COMPONENT_ID)
 
         # NOTE TO SELF, if blocking connections combined with start_consuming start
         # getting a lot of ConnectionResetByPeerErrors then implement our own loop
@@ -166,7 +169,7 @@ class CoordinatorAmqpInterface(object):
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("publishing to routing_key: %s, msg: %s"
+        logger.info("PUBLISHING to routing_key: %s, msg: %s"
                     % (message.routing_key,
                        repr(message)[:70],))
         try:
@@ -205,13 +208,12 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('[%s] START handling SERVICE request received: %s' %
-                    (str(datetime.timedelta(seconds=666)), type(request)))
+        logger.info('RECEIVED request: %s' % type(request))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
 
-            logger.info('Processing request: %s' % type(request))
+            logger.info('HANDLING request: %s' % type(request))
             callback = self.request_reply_handlers[type(request)]
 
             try:
@@ -226,37 +228,36 @@ class CoordinatorAmqpInterface(object):
             self._publish_message(response)
 
         else:
-            logger.debug('Ignoring service request: %s' % repr(request))
+            logger.debug('Ignoring service REQUEST: %s' % repr(request))
 
-        logger.info('[%s] FINISH handling SERVICE request received: %s' %
-                    (str(datetime.timedelta(seconds=666)), type(request)))
+        logger.info('Finished with REQUEST: %s' % type(request))
 
     def handle_control(self, ch, method, props, body):
 
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('[%s] START handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
+        logger.info('RECEIVED event: %s' % type(event))
 
         # let's process request
         if type(event) in self.control_events_triggers:
 
-            logger.info('Processing request: %s' % type(event))
+            logger.info('HANDLING request: %s' % type(event))
             trigger_callback = self.control_events_triggers[type(event)]
 
             try:
                 self.trigger(trigger_callback, event)  # dispatches event to FSM
 
             except MachineError as fsm_err:
-                logger.error('[Coordination FSM error] %s' % fsm_err)
+                logger.error('Coordination FSM error: %s' % fsm_err)
 
             except CoordinatorError as e:
-                logger.error('[Coordination FSM error] %s' % e)
+                logger.error('Coordination error: %s' % e)
 
         else:
-            logger.debug('Ignoring event: %s' % repr(event))
+            logger.debug('Ignoring EVENT: %s' % repr(event))
 
-        logger.info('[%s] FINISHED handling EVENT received: %s' % (str(datetime.timedelta(seconds=666)), type(event)))
+        logger.info('Finished with EVENT: %s' % type(event))
 
     # # # FSM coordination publish/notify functions # # #
 
@@ -355,22 +356,24 @@ class CoordinatorAmqpInterface(object):
         logger.debug("Let's start the bootstrap the agents")
 
         # fixme desable this for tests that dont require TUNs
-        nodes = self.testsuite.get_agents_addressing_from_configurations()
+        nodes = self.testsuite.get_addressing_table()
 
         for node_name, address_tuple in nodes.items():
             # convention -> agents are named the same as the node roles (coap_client, etc..)
-            ipv6_network_prefix = address_tuple[0]
-            ipv6_host = address_tuple[1]
+            ipv6_network_prefix = str(address_tuple[0])
+            ipv6_host = str(address_tuple[1])
             assigned_ip = ":%s" % ipv6_host
 
-            bootstrap_agent.bootstrap(
-                amqp_url=AMQP_URL,
-                amqp_exchange=AMQP_EXCHANGE,
-                agent_id=node_name,
-                ipv6_host=assigned_ip,
+            msg = MsgAgentTunStart(
+                name=node_name,
                 ipv6_prefix=ipv6_network_prefix,
-                ipv6_no_forwarding=False
+                ipv6_host=ipv6_host,
+                ipv6_no_forwarding=False,
             )
+
+            msg.routing_key = msg.routing_key.replace('*', node_name)
+
+            self._publish_message(msg)
 
     def notify_testsuite_ready(self, received_event):
         pass
@@ -441,7 +444,7 @@ class CoordinatorAmqpInterface(object):
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_sniffer_stop(self):
 
@@ -450,7 +453,7 @@ class CoordinatorAmqpInterface(object):
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_sniffer_get_capture(self, **kwargs):
 
@@ -459,11 +462,13 @@ class CoordinatorAmqpInterface(object):
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_testcase_analysis(self, **kwargs):
 
-        request = MsgInteropTestCaseAnalyze(**kwargs)
-        response = amqp_request(self.connection, request, COMPONENT_ID)
-        logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
-        return response
+        try:
+            response = amqp_request(self.connection, MsgInteropTestCaseAnalyze(**kwargs), COMPONENT_ID, 30)
+            logger.info("Received answer from TAT: %s, answer: %s" % (response.routing_key, repr(response)))
+            return response
+        except AmqpSynchCallTimeoutError as e:
+            raise e  # let caller handle it

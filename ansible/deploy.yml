@@ -49,6 +49,13 @@
   pip:
     requirements: "{{ testing_tool_dir }}/ioppytest/webserver/requirements.txt"
     executable: pip3
+    
+- name: Install python requirements for utils
+  tags: coap_test_suite
+  become: True
+  pip:
+    requirements: "{{ testing_tool_dir }}/ioppytest/utils/requirements.txt"
+    executable: pip3
 
 - name: Install python3 requirements for agent
   tags: coap_test_suite

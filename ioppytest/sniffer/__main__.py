@@ -101,7 +101,7 @@ class Sniffer:
             return
 
         if isinstance(request, MsgSniffingGetCaptureLast):
-            self.logger.debug('Processing request: %s' % repr(request))
+            self.logger.debug('HANDLING request: %s' % repr(request))
 
             if self.last_capture_name:
                 capture_id = self.last_capture_name
@@ -163,7 +163,7 @@ class Sniffer:
 
         elif isinstance(request, MsgSniffingGetCapture):
 
-            self.logger.debug('Processing request: %s' % repr(request))
+            self.logger.debug('HANDLING request: %s' % repr(request))
 
             try:
                 capture_id = request.capture_id
@@ -207,7 +207,7 @@ class Sniffer:
             return
 
         elif isinstance(request, MsgSniffingStart):
-            self.logger.debug('Processing request: %s' % repr(request))
+            self.logger.debug('HANDLING request: %s' % repr(request))
             try:
                 capture_id = request.capture_id
                 filename = "{0}.pcap".format(capture_id)

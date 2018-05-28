@@ -16,7 +16,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS, LOGGER_FORMAT,
 from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from ioppytest.test_coordinator.states_machine import Coordinator
 
@@ -44,7 +44,7 @@ TT_check_list = [
     'packetrouting',
 ]
 # time to wait for components to send for READY signal
-READY_SIGNAL_TOUT = 20
+READY_SIGNAL_TOUT = 45
 
 if __name__ == '__main__':
 
@@ -122,12 +122,9 @@ if __name__ == '__main__':
 
     if no_component_checks:
         logger.info('Skipping component readiness checks')
-
     else:
-
         def on_ready_signal(ch, method, props, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
-
             event = Message.load_from_pika(method, props, body)
 
             if isinstance(event, MsgTestingToolComponentReady):
@@ -136,7 +133,6 @@ if __name__ == '__main__':
                 if component in TT_check_list:
                     TT_check_list.remove(component)
                     return
-
             elif isinstance(event, MsgTestingToolReady):  # listen to self generated event
                 logger.info('all signals processed')
                 channel.queue_delete('bootstrapping')
