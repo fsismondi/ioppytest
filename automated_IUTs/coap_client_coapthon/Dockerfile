@@ -26,6 +26,10 @@ RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/requirements.t
 
 #RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
 
+# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.2.2
+
 EXPOSE 5671 5672
 
 # launch processes
