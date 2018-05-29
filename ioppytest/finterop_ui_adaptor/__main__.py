@@ -34,11 +34,15 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
                                            STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            MESSAGES_NOT_TO_BE_ECHOED,
                                            TESTING_TOOL_TOPIC_SUBSCRIPTIONS)
-from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
-                                                               CoMISessionMessageTranslator,
-                                                               CoAPSessionMessageTranslator,
-                                                               SixLoWPANSessionMessageTranslator,
-                                                               OneM2MSessionMessageTranslator)
+
+from ioppytest.finterop_ui_adaptor.message_translators import (
+    DummySessionMessageTranslator,
+    CoMISessionMessageTranslator,
+    CoAPSessionMessageTranslator,
+    SixLoWPANSessionMessageTranslator,
+    OneM2MSessionMessageTranslator,
+    LwM2MSessionMessageTranslator
+)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
@@ -60,7 +64,8 @@ mapping_testsuite_to_message_translator = {
     'coap': CoAPSessionMessageTranslator,
     'onem2m': OneM2MSessionMessageTranslator,
     '6lowpan': SixLoWPANSessionMessageTranslator,
-    'comi': CoMISessionMessageTranslator
+    'comi': CoMISessionMessageTranslator,
+    'lwm2m': LwM2MSessionMessageTranslator,
 }
 
 # see doc from GenericBidirectonalTranslator.__doc__
@@ -453,7 +458,6 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
             message=message_received)
 
         if ui_display_message:
-
             # fixme I shouldnt access _private method
             ui_display_message = message_publisher._update_ui_message_rkeys(
                 ui_message=ui_display_message,
@@ -481,7 +485,7 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         message_translator.add_pending_response(
             corr_id=ui_request_message.correlation_id,
             ui_request_message=ui_request_message,
-            tt_request_originator = message_received,
+            tt_request_originator=message_received,
             ui_requested_field_name_list=requested_fields,
         )
 

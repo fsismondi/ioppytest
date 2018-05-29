@@ -212,10 +212,10 @@ _docker-build-lwm2m:
 	@echo "Starting to build the lwm2m testing tools.."
 
 	# let's build the testing tool image (same for interop and conformance)
-	docker build --quiet -t testing_tool-interoperability-lwm2m-v$(version) -f envs/lwm2m/Dockerfile .
+	docker build --quiet -t testing_tool-interoperability-lwm2m-v$(version) -f envs/lwm2m_testing_tool/Dockerfile .
 
 	# tag all last version images also with a version-less name
-	docker tag testing_tool-interoperability-onem2m-v$(version):latest testing_tool-interoperability-lwm2m
+	docker tag testing_tool-interoperability-lwm2m-v$(version):latest testing_tool-interoperability-lwm2m
 
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
