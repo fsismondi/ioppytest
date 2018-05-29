@@ -12,7 +12,8 @@ import logging
 import argparse
 from threading import Timer
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS, LOGGER_FORMAT, LOG_LEVEL
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_DICT, TEST_DESCRIPTIONS_CONFIGS_DICT, LOGGER_FORMAT, \
+    LOG_LEVEL
 from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -55,7 +56,7 @@ if __name__ == '__main__':
 
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("testsuite", help="Test Suite", choices=['coap', '6lowpan', 'onem2m', 'comi'])
+        parser.add_argument("testsuite", help="Test Suite", choices=list(TEST_DESCRIPTIONS_DICT.keys()))
         parser.add_argument("-ncc", "--no_component_checks", help="Do not check if other processes send ready message",
                             action="store_true")
         args = parser.parse_args()
@@ -63,22 +64,10 @@ if __name__ == '__main__':
         testsuite = args.testsuite
         no_component_checks = args.no_component_checks
 
-        if testsuite == 'coap':
-            ted_tc_file = TD_COAP
-            ted_config_file = TD_COAP_CFG
-
-        elif testsuite == '6lowpan':
-            ted_tc_file = TD_6LOWPAN
-            ted_config_file = TD_6LOWPAN_CFG
-
-        elif testsuite == 'onem2m':
-            ted_tc_file = TD_ONEM2M
-            ted_config_file = TD_ONEM2M_CFG
-
-        elif testsuite == 'comi':
-            ted_tc_file = TD_COMI
-            ted_config_file = TD_COMI_CFG
-
+        if testsuite in TEST_DESCRIPTIONS_DICT and testsuite in TEST_DESCRIPTIONS_CONFIGS_DICT:
+            ted_tc_file = TEST_DESCRIPTIONS_DICT[testsuite]
+            ted_config_file = TEST_DESCRIPTIONS_CONFIGS_DICT[testsuite]
+            logger.info("Starting test suite: %s" % ted_tc_file)
         else:
             logger.error("Error , please see coordinator help (-h)")
             sys.exit(1)
@@ -140,6 +129,7 @@ if __name__ == '__main__':
             else:
                 pass
 
+
         # bind callback function to signal queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
@@ -148,9 +138,11 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
+
         def timeout_f():
             global timeout
             timeout = True
+
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()
@@ -171,7 +163,7 @@ if __name__ == '__main__':
 
     # lets start the test coordination
     try:
-        logger.info('Starting test-coordinator for test suite: %s' % testsuite)
+        logger.info('Starting test-coordinator for test suite: \n\t%s\n\t%s\n\t%s' %(ted_tc_file, ted_config_file, testsuite))
         coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file, testsuite)
         coordinator.bootstrap()
         publish_message(connection, MsgTestingToolReady())
