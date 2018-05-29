@@ -2021,5 +2021,5 @@ __all__ = [
     OneM2MSessionMessageTranslator,
     LwM2MSessionMessageTranslator,
     SixLoWPANSessionMessageTranslator,
-    CoMISessionMessageTranslator
+    CoMISessionMessageTranslator,
 ]
