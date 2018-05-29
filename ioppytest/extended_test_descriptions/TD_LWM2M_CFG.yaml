@@ -53,3 +53,25 @@ description:
         - Device object
         - Mandatory Device object resources are =  Reboot (ID:4), Error Code (ID:11), Supported Binding and Modes (ID:16)
         - Optional Device object resources that should be implemented are = Manufacturer Name (ID:0), Model Name (ID:1), Serial Number (ID:2), Firmware Version (ID:3)
+configuration_diagram: |+
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                       CoAP Testing Tool                        |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+-------------------+---------------------+----+-----+
+        |     ^                   ^                     |    ^
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        v     |                   |                     v    |
+  +-----+-----+---+ +------+      |       +------+ +----+----+-----+
+  |               | |  A   |      |       |  A   | |               |
+  |               | |  G   | +----+-----> |  G   | |               |
+  |  lwm2m_client | |  E   |              |  E   | | lwm2m_server  |
+  |               | |  N   | <----------+ |  N   | |               |
+  |               | |  T   |              |  T   | |               |
+  +---------------+ +------+              +------+ +---------------+
