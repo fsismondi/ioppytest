@@ -1,5 +1,33 @@
 version = 1.0
 
+info_message = """ \\n\
+	******************************************************************************************\n\
+	docker images naming must follow the following conventions: \n\
+	\n\
+	resource_type-sub_type-resource_name-version \n\
+	\n\
+	resource_type, sub_type and resource_name cannot contain any special character, nor  '-' \n\
+	version format must comply to vx.x \n\
+	\n\
+	examples: \n\
+	\n\
+	automated_iut-coap_client-coapthon \n\
+	automated_iut-coap_server-californium \n\
+	automated_iut-coap_client-coapthon-v$(version) \n\
+	automated_iut-coap_server-californium-v$(version) \n\
+	\n\
+	testing_tool-performance-coap-v$(version) \n\
+	testing_tool-interoperability-coap-v$(version) \n\
+	testing_tool-interoperability-coap (alias to last version) \n\
+	testing_tool-conformance-coap-v$(version) \n\
+	testing_tool-conformance-coap (alias to last version) \n\
+	testing_tool-conformance-6tisch-v$(version) \n\
+	\n\
+	reference_iut-coap_client (alias) \n\
+	reference_iut-coap_server (alias) \n\
+	******************************************************************************************\n\\n\
+	"""
+
 info:
 	@echo $(info_message)
 
@@ -20,6 +48,8 @@ help: ## Help dialog.
 		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
+
+# # # # Testing Tool & other resources BUILD commands # # # #
 
 build-tools: ## builds all testing tool docker images (only testing tool)
 	@echo $(info_message)
@@ -43,6 +73,9 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 	@echo "Starting to build all docker images.. "
 	$(MAKE) build-tools
 	$(MAKE) build-automated-iuts
+
+
+# # # # Testing Tool & other resources RUN commands # # # #
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -133,6 +166,8 @@ stop-all: ## Stop testing tools running as docker containers
 	$(MAKE) stop-coap-client-coapthon --keep-going ; exit 0
 	$(MAKE) stop-coap-server-coapthon --keep-going ; exit 0
 
+# # # # UNITTEST commands # # # #
+
 validate-test-description-syntax: ## validate (yaml) test description file syntax
 	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py -vvv
 
@@ -194,7 +229,7 @@ install-python-dependencies: ## installs all python pip dependencies
 	@python3 -m pip -qq install -r ioppytest/webserver/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
 
-
+# # # # other AUXILIARY commands  # # # #
 _check-sudo:
 	@runner=`whoami` ;\
 	if test $$runner != "root" ;\
@@ -283,15 +318,12 @@ _docker-build-coap-additional-resources:
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
-	@echo "TBD"
+	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automated_IUTs/lwm2m_client_leshan/Dockerfile .
+	docker tag automated_iut-lwm2m_client-leshan-v$(version):latest automated_iut-lwm2m_client-leshan
 
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
 	@echo "TBD"
-
-_docker-build-automated-lwm2m-client: 
-	@echo "Starting to build automated-lwm2m-client"
-	docker build --quiet -t automated_iut-lwm2m-client-v$(version) -f automated_IUTs/lwm2m_client/Dockerfile .
 
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
@@ -357,30 +389,4 @@ _stop-coap-mini-interop-coapthon-cli-vs-coapthon-server:
 
 
 
-info_message = """ \\n\
-	******************************************************************************************\n\
-	docker images naming must follow the following conventions: \n\
-	\n\
-	resource_type-sub_type-resource_name-version \n\
-	\n\
-	resource_type, sub_type and resource_name cannot contain any special character, nor  '-' \n\
-	version format must comply to vx.x \n\
-	\n\
-	examples: \n\
-	\n\
-	automated_iut-coap_client-coapthon \n\
-	automated_iut-coap_server-californium \n\
-	automated_iut-coap_client-coapthon-v$(version) \n\
-	automated_iut-coap_server-californium-v$(version) \n\
-	\n\
-	testing_tool-performance-coap-v$(version) \n\
-	testing_tool-interoperability-coap-v$(version) \n\
-	testing_tool-interoperability-coap (alias to last version) \n\
-	testing_tool-conformance-coap-v$(version) \n\
-	testing_tool-conformance-coap (alias to last version) \n\
-	testing_tool-conformance-6tisch-v$(version) \n\
-	\n\
-	reference_iut-coap_client (alias) \n\
-	reference_iut-coap_server (alias) \n\
-	******************************************************************************************\n\\n\
-	"""
+
