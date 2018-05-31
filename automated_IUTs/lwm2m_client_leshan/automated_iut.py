@@ -13,27 +13,23 @@ logger.setLevel(LOG_LEVEL)
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
 
-SERVER_HOST = '[bbbb::2]'
-
+# note that lwm2m client are CoAP servers
 server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
-coap_host_address = COAP_CLIENT_HOST
 
 
 class LwM2MClient(AutomatedIUT):
-    component_id = 'automated_iut-lwm2m_client'
+    component_id = 'automated_iut-lwm2m_client_leshan'
     node = 'lwm2m_client'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
 
-    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
-
-    stimuli_cmd_dict = NotImplementedField
+    implemented_testcases_list = []  # special case: all test cases can be executed by IUT
 
     iut_cmd = [
         'java',
         '-jar',
-        'automated_IUTs/lwm2m_client/target/leshan-last-client.jar',
+        'automated_IUTs/lwm2m_client_leshan/target/leshan-last-client.jar',
         '-u', 
-        SERVER_HOST, 
+        '[{ipv6}]'.format(ipv6=COAP_SERVER_HOST),
     ]
 
     def __init__(self):
@@ -42,11 +38,10 @@ class LwM2MClient(AutomatedIUT):
         logging.info('spawning process %s' % str(self.iut_cmd))
         self._launch_automated_iut_process()
 
-
     def _execute_verify(self, verify_step_id, ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
     def _launch_automated_iut_process(self):
@@ -55,13 +50,9 @@ class LwM2MClient(AutomatedIUT):
         with open(self.process_log_file, "w") as outfile:
             subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
-
-
     def _execute_configuration(self, testcase_id, node):
-        # shoud we restart californium process?
-        return coap_host_address
-
-
+        # shoud we restart the process?
+        return server_base_url
 
 
 if __name__ == '__main__':
@@ -72,4 +63,3 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
-

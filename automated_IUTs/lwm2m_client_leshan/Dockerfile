@@ -27,8 +27,6 @@ RUN python -m pip install -r ioppytest/agent/requirements.txt
 #py3 requierements
 RUN python3 -m pip install pika
 
-#RUN cp automated_IUTs/lwm2m_client/supervisor.conf supervisor.conf
-
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2
 RUN python -m pip install -Iv amqp==2.2.2
@@ -36,4 +34,4 @@ RUN python -m pip install -Iv amqp==2.2.2
 EXPOSE 5671 5672
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/lwm2m_client/supervisor.conf"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/lwm2m_client_leshan/supervisor.conf"]
