@@ -159,6 +159,11 @@ class AutomatedIUT(threading.Thread):
         logger.info('Event received: %s' % repr(event))
 
         if isinstance(event, MsgTestCaseReady):
+
+            if self.implemented_testcases_list == []:
+                logger.info('IUT didnt declare testcases capabilities, we asume that any can be run')
+                return
+
             if event.testcase_id not in self.implemented_testcases_list:
                 time.sleep(0.1)
                 logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
