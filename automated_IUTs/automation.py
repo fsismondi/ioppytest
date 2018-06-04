@@ -48,9 +48,7 @@ def signal_int_handler(signal, frame):
     )
 
     logger.info('got SIGINT. Bye bye!')
-
     sys.exit(0)
-
 
 signal.signal(signal.SIGINT, signal_int_handler)
 
