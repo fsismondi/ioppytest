@@ -3,9 +3,11 @@
 import os
 import subprocess
 
-from ioppytest import TMPDIR
-from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
+from automated_IUTs import LOG_LEVEL
 from automated_IUTs.automation import *
+
+from ioppytest import TMPDIR, TD_LWM2M, TD_LWM2M_CFG
+from ioppytest.test_coordinator.testsuite import TestSuite
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
@@ -13,8 +15,7 @@ logger.setLevel(LOG_LEVEL)
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
 
-# note that lwm2m client are CoAP servers
-server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+lwm2m_client_ip_prefix, lwm2m_client_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_client')
 
 
 class LwM2MClient(AutomatedIUT):
@@ -28,8 +29,9 @@ class LwM2MClient(AutomatedIUT):
         'java',
         '-jar',
         'automated_IUTs/lwm2m_client_leshan/target/leshan-last-client.jar',
-        '-u', 
-        '[{ipv6}]'.format(ipv6=COAP_SERVER_HOST),
+        '-u',
+        '[{ipv6_prefix}::{ipv6_host}]'.format(ipv6_prefix=lwm2m_client_ip_prefix,
+                                              ipv6_host=lwm2m_client_ip_host),
     ]
 
     def __init__(self):
@@ -52,7 +54,7 @@ class LwM2MClient(AutomatedIUT):
 
     def _execute_configuration(self, testcase_id, node):
         # shoud we restart the process?
-        return server_base_url
+        return None
 
 
 if __name__ == '__main__':
