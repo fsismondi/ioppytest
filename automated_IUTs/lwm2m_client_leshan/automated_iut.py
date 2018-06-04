@@ -15,7 +15,7 @@ logger.setLevel(LOG_LEVEL)
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 3600
 
-lwm2m_client_ip_prefix, lwm2m_client_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_client')
+lwm2m_server_ip_prefix, lwm2m_server_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_server')
 
 
 class LwM2MClient(AutomatedIUT):
@@ -30,8 +30,8 @@ class LwM2MClient(AutomatedIUT):
         '-jar',
         'automated_IUTs/lwm2m_client_leshan/target/leshan-last-client.jar',
         '-u',
-        '[{ipv6_prefix}::{ipv6_host}]'.format(ipv6_prefix=lwm2m_client_ip_prefix,
-                                              ipv6_host=lwm2m_client_ip_host),
+        '[{ipv6_prefix}::{ipv6_host}]'.format(ipv6_prefix=lwm2m_server_ip_prefix,
+                                              ipv6_host=lwm2m_server_ip_host),
     ]
 
     def __init__(self):
