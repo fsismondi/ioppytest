@@ -1624,6 +1624,13 @@ class OneM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
         super().__init__()
 
 
+class LwM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
+    IUT_ROLES = ['lwm2m_client', 'lwm2m_server']
+
+    def __init__(self):
+        super().__init__()
+
+
 class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
     IUT_ROLES = ['eut1', 'eut2']
 
@@ -2012,6 +2019,7 @@ __all__ = [
     GenericBidirectonalTranslator,
     CoAPSessionMessageTranslator,
     OneM2MSessionMessageTranslator,
+    LwM2MSessionMessageTranslator,
     SixLoWPANSessionMessageTranslator,
-    CoMISessionMessageTranslator
+    CoMISessionMessageTranslator,
 ]

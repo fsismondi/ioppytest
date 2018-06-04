@@ -50,7 +50,7 @@ class CaliforniumCoapServer(AutomatedIUT):
             subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
     def _execute_configuration(self, testcase_id, node):
-        # should we restart californium process?
+        # should we restart process?
         return server_base_url
 
 
