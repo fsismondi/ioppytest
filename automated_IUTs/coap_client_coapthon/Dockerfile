@@ -22,7 +22,9 @@ RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 #py3 requirements
 RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
-RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/requirements.txt
+
+# requirements on autoamted-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
 
 #RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
 

@@ -4,7 +4,6 @@ import os
 import json
 import yaml
 import logging
-import fileinput
 
 from itertools import cycle
 from collections import OrderedDict
