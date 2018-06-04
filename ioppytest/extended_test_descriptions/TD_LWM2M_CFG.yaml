@@ -9,10 +9,10 @@ nodes:
 addressing:
     - node: lwm2m_client
       ipv6_prefix : bbbb
-      ipv6_host: 2
+      ipv6_host: 1
     - node: lwm2m_server
       ipv6_prefix : bbbb
-      ipv6_host: 1
+      ipv6_host: 2
 topology:
   - link_id : link_01
     capture_filter: udp
