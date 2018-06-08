@@ -261,7 +261,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
         for ts in test_suite_list:
             self.wfile.write(
-                bytes('<ascii-art><li><a href="%s/%s">%s</a></li></ascii-art>\n' % (path, ts, ts), 'utf-8'))
+                bytes('<ascii-art><li><a href="%s%s">%s</a></li></ascii-art>\n' % (path, ts, ts), 'utf-8'))
         self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
         self.wfile.write(bytes("<tail>%s</tail> </body>\n" % tail, 'utf-8'))
         self.wfile.write(bytes("</html>\n", 'utf-8'))
