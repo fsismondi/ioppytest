@@ -1098,10 +1098,17 @@ class TestCase:
 
         # hack to overwrite the final verdict MESSAGE in case of pass
         if final_verdict.get_value() == 'pass':
-            final_verdict.update('pass', 'No interoperability error was detected,')
+            final_verdict.update('pass', 'No interoperability error was detected.')
             logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
             logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
             logger.debug("[VERDICT GENERATION] info: %s' " % final_verdict.get_value())
 
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
+
+
+if __name__ == '__main__':
+    COMPONENT_ID = '%s' % ('testsuite_tests')
+    # init logging to stnd output and log files
+    logger = logging.getLogger(COMPONENT_ID)
+    logger.setLevel(logging.DEBUG)

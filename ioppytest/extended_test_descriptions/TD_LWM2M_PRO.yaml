@@ -1065,7 +1065,7 @@ sequence:
 
   - step_id: 'TD_LWM2M_1_INT_241_step_04'
     type: verify
-    node: LwM2M Server
+    node: lwm2m_server
     description:
         - 'Device reboots successfully and re-registers at the server again.'
 
