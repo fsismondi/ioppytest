@@ -30,10 +30,10 @@ processes regarding the IUT and the integration scripts
     ```sudo docker run -it --env AMQP_EXCHANGE=$AMQP_EXCHANGE --env AMQP_URL=$AMQP_URL --privileged automated_iut-coap_client-coapthon-v0.1```
 
 
-- Modify the build_all_docker_images.sh at the root dir of the project
+- Modify the Makefile at the root dir of the project
 
 
-- Add ansible scripts for building the IUT
+- Add ansible scripts for building the IUT (optional)
 
 
 

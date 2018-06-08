@@ -80,7 +80,7 @@ def list_to_str(ls, max_width=79):
     return ret
 
 
-def bootstrap_vpn_interfaces():
+def send_start_test_suite_event():
     con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     ui_request = MsgTestSuiteStart()
     print("publishing .. %s" % repr(ui_request))
@@ -151,7 +151,7 @@ class GenericBidirectonalTranslator(object):
             {
                 'value': True,
                 'type': 'button',
-                'name': 'start_test_suite'
+                'name': 'skip_test_case'
             }
             (...)
         ]
@@ -159,7 +159,7 @@ class GenericBidirectonalTranslator(object):
         Reply format:
         Message(fields = [
             {
-                'start_test_suite': True
+                'skip_test_case': True
             },
             (..)
         ]
@@ -1391,7 +1391,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # 3. starts the agent interfaces
         if resp_confirm_agent_up:
-            bootstrap_vpn_interfaces()
+            send_start_test_suite_event()
 
             disp = MsgUiDisplay(
                 tags=UI_TAG_BOOTSTRAPPING,
@@ -1529,6 +1529,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
     def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
+        # TODO fix harcoded values!
         return MsgStepStimuliExecuted(
             node="coap_client",
             node_execution_mode="user_assisted",
@@ -1623,6 +1624,13 @@ class OneM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
         super().__init__()
 
 
+class LwM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
+    IUT_ROLES = ['lwm2m_client', 'lwm2m_server']
+
+    def __init__(self):
+        super().__init__()
+
+
 class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
     IUT_ROLES = ['eut1', 'eut2']
 
@@ -1642,8 +1650,12 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         # 1. user needs to config AGENT and PROBE
 
         # in 6lowpan we redirect the user towards the official doc
-        agents_kickstart_help = "Please see documentation for configuring 6LoWPAN (802.15.4) testing setup:"
-        agents_kickstart_help_2 = "http://doc.f-interop.eu/interop/6lowpan_test_suite"
+        agents_kickstart_help = """Please read documentation for 6LoWPAN (802.15.4) testing suite:
+        
+testbed setup: http://doc.f-interop.eu/interop/6lowpan_test_suite
+        
+test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
+"""
 
         req = MsgUiRequestConfirmationButton(
             tags=UI_TAG_BOOTSTRAPPING,
@@ -1651,10 +1663,6 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
                 {
                     "type": "p",
                     "value": agents_kickstart_help
-                },
-                {
-                    "type": "p",
-                    "value": agents_kickstart_help_2
                 },
                 {
                     "name": "continue",
@@ -1702,6 +1710,8 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
+        send_start_test_suite_event()
+
         return True
 
         # 3. TODO trigger agents configuration
@@ -1710,7 +1720,7 @@ class SixLoWPANSessionMessageTranslator(CoAPSessionMessageTranslator):
 
 
 class DummySessionMessageTranslator(GenericBidirectonalTranslator):
-    IUT_ROLES = ['dummy_1', 'dummy_1']
+    IUT_ROLES = ['example_role_1', 'example_role_2']
 
     def _bootstrap(self, amqp_connector):
         import inspect
@@ -2009,6 +2019,7 @@ __all__ = [
     GenericBidirectonalTranslator,
     CoAPSessionMessageTranslator,
     OneM2MSessionMessageTranslator,
+    LwM2MSessionMessageTranslator,
     SixLoWPANSessionMessageTranslator,
-    CoMISessionMessageTranslator
+    CoMISessionMessageTranslator,
 ]

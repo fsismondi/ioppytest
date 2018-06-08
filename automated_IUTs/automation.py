@@ -13,6 +13,7 @@ import signal
 import logging
 import threading
 
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 from ioppytest.utils.amqp_synch_call import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
@@ -22,8 +23,15 @@ STIMULI_HANDLER_TOUT = 10
 
 COMPONENT_ID = 'automation'
 
+# init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 @property
@@ -40,9 +48,7 @@ def signal_int_handler(signal, frame):
     )
 
     logger.info('got SIGINT. Bye bye!')
-
     sys.exit(0)
-
 
 signal.signal(signal.SIGINT, signal_int_handler)
 
@@ -50,9 +56,10 @@ signal.signal(signal.SIGINT, signal_int_handler)
 class AutomatedIUT(threading.Thread):
     # attributes to be provided by subclass
     implemented_testcases_list = NotImplementedField
-    stimuli_cmd_dict = NotImplementedField
+    implemented_stimuli_list = NotImplementedField
     component_id = NotImplementedField
     node = NotImplementedField
+    process_log_file = None  # child may override, it will be logged at the end of the session
 
     EVENTS = [
         MsgTestCaseReady,
@@ -86,6 +93,47 @@ class AutomatedIUT(threading.Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=services_queue_name)
 
+        # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
+
+    def _exit(self):
+        m = MsgTestingToolComponentShutdown(component=self.component_id)
+        publish_message(self.connection, m)
+        time.sleep(2)
+        self.connection.close()
+        sys.exit(0)
+
+    def _execute_verify(self, verify_step_id):
+        """
+        If IUT cannot perform verify validations then just override method with `pass` command
+
+        :param verify_step_id:
+        :return:
+        """
+        raise NotImplementedError("Subclasses should implement this!")
+
+    def _execute_stimuli(self, stimuli_step_id, addr):
+        """
+        When executing IUT stimuli, the call MUST NOT block thread forever
+
+        :param stimuli_step_id:
+        :param addr:
+        :return:
+        """
+        raise NotImplementedError("Subclasses should implement this!")
+
+    # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
+    def _execute_configuration(self, testcase_id, node):
+        """
+        If IUT doesnt need to configure anything then just override method with `pass` command
+
+        :param testcase_id:
+        :param node:
+        :return:
+        """
+        raise NotImplementedError("Subclasses should implement this!")
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def run(self):
         logger.info("Starting thread listening on the event bus")
         self.channel.start_consuming()
@@ -109,6 +157,11 @@ class AutomatedIUT(threading.Thread):
         logger.info('Event received: %s' % repr(event))
 
         if isinstance(event, MsgTestCaseReady):
+
+            if self.implemented_testcases_list == []:
+                logger.info('IUT didnt declare testcases capabilities, we asume that any can be run')
+                return
+
             if event.testcase_id not in self.implemented_testcases_list:
                 time.sleep(0.1)
                 logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
@@ -118,17 +171,14 @@ class AutomatedIUT(threading.Thread):
 
         elif isinstance(event, MsgStepStimuliExecute):
             logger.info('event.node %s,%s' % (event.node, self.node))
-            if event.node == self.node and event.step_id in self.stimuli_cmd_dict:
-                # TODO Fix me: No  need to go fetch CMD to child object, just call as _execute_simuli(step_id,target_address)
-                cmd = self.stimuli_cmd_dict[event.step_id]
+            if event.node == self.node and event.step_id in self.implemented_stimuli_list:
                 step = event.step_id
-                addr = event.target_address
-                if cmd:
-                    self._execute_stimuli(step, cmd,
-                                          addr)  # this should be a blocking call until stimuli has been executed
+                addr = event.target_address  # may be None
+
+                self._execute_stimuli(step, addr)  # blocking till stimuli execution
                 publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
             else:
-                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
+                logger.info('Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
                             (
                                 type(event),
                                 event.node,
@@ -145,12 +195,22 @@ class AutomatedIUT(threading.Thread):
                                                                        ))
             else:
                 logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                            (type(event),
-                             event.node,
-                             event.step_id,))
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
 
         elif isinstance(event, MsgTestSuiteReport):
             logger.info('Got final test suite report: %s' % event.to_json())
+            if self.process_log_file:
+                contents = open(self.process_log_file).read()
+                logger.info('*' * 72)
+                logger.info('AUTOMATED_IUT LOGS %s' % self.process_log_file)
+                logger.info('*' * 72)
+                logger.info(contents)
+                logger.info('*' * 72)
+                logger.info('*' * 72)
 
         elif isinstance(event, MsgTestingToolTerminate):
             logger.info('Test terminate signal received. Quitting..')
@@ -162,30 +222,12 @@ class AutomatedIUT(threading.Thread):
                 logger.info('Configure test case %s', event.testcase_id)
                 # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
                 ipaddr = self._execute_configuration(event.testcase_id,
-                                                     event.node)  # this should be a blocking call until configuration has been done
+                                                     event.node)  # blocking till complete config execution
                 if ipaddr != '':
                     m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
                     publish_message(self.connection, m)
         else:
             logger.info('Event received and ignored: %s' % type(event))
-
-    def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=self.component_id)
-        publish_message(self.connection, m)
-        time.sleep(2)
-        self.connection.close()
-        sys.exit(0)
-
-    def _execute_verify(self, verify_step_id):
-        raise NotImplementedError("Subclasses should implement this!")
-
-    # TODO fix me! no cmd should be passed, this is child class related stuff
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
-        raise NotImplementedError("Subclasses should implement this!")
-
-    # TODO fix me! no node should be passed, mabe pass config ID (test description defines one)
-    def _execute_configuration(self, testcase_id, node):
-        raise NotImplementedError("Subclasses should implement this!")
 
 
 class UserMock(threading.Thread):
@@ -315,9 +357,16 @@ class UserMock(threading.Thread):
 
     def stop(self):
         self.shutdown = True
+
+        if not self.connection.is_open:
+            self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
         publish_message(self.connection,
                         MsgTestingToolComponentShutdown(component=COMPONENT_ID))
-        self.channel.stop_consuming()
+
+        if self.channel.is_open:
+            self.channel.stop_consuming()
+
         self.connection.close()
 
     def exit(self):

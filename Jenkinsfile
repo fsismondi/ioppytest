@@ -97,7 +97,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                 echo Do you smell the smoke in the room??
                 echo processes logs :
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 tat
-                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 test-coordinator
+                sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -100000 test-coordinator
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 agent
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-router
                 sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE tail -10000 packet-sniffer
@@ -122,17 +122,25 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 if(env.JOB_NAME =~ 'CoAP testing tool/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
+        /* attention, here we use external RMQ server*/
+        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
+        stage("Check if DOCKER is installed on node"){
+            sh '''
+                docker version
+            '''
+        }
+
         stage("Clone repo and submodules"){
             checkout scm
             sh '''
                 git submodule update --init
-                tree .
+                # tree .
             '''
         }
 
@@ -167,8 +175,9 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
-        stage("RUN CoAP containers for mini-plugtests"){
-            gitlabCommitStatus("RUN CoAP containers for mini-plugtests") {
+
+        stage("RUN mini-plugtest: coapthon_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: coapthon_clie VS californium_serv") {
                 gitlabCommitStatus("Docker run") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -177,9 +186,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                                sudo -E make run-coap-client
-                                sudo -E make run-coap-server
-                                sudo -E make run-coap-testing-tool
+                                sudo -E make _run-coap-mini-interop-coapthon-cli-vs-californium-server
                             '''
                         }
 
@@ -194,10 +201,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-         }
 
-        stage("EXECUTE CoAP mini-plugtests"){
-            gitlabCommitStatus("EXECUTE CoAP mini-plugtests") {
+            gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS californium_serv") {
                 long timeoutInSeconds = 600
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -217,14 +222,172 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
                 finally {
                     sh '''
-                        sudo -E make stop-coap-client
-                        sudo -E make stop-coap-server
-                        sudo -E make stop-coap-testing-tool
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+        }
+
+        stage("RUN mini-plugtest: californium_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: californium_clie VS californium_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-californium-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS californium_serv") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
                         sudo -E docker ps
                     '''
                 }
             }
 
+        }
+
+        stage("RUN mini-plugtest: californium_clie VS coapthon_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: californium_clie VS coapthon_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-californium-cli-vs-coapthon-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS coapthon_serv") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+
+        }
+
+        stage("RUN mini-plugtest: coapthon_clie VS coapthon_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: coapthon_clie VS coapthon_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-coapthon-cli-vs-coapthon-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS coapthon_serv") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
         }
     }
 }
@@ -244,7 +407,7 @@ if(env.JOB_NAME =~ 'ioppytest - build all tools/'){
             checkout scm
             sh '''
                 git submodule update --init
-                tree .
+                # tree .
             '''
         }
 

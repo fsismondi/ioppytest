@@ -14,6 +14,7 @@ from ioppytest.finterop_ui_adaptor.ui_tasks import (wait_for_all_users_to_join_s
                                                     get_field_keys_from_ui_request,
                                                     get_field_keys_from_ui_reply,
                                                     get_field_value_from_ui_reply,
+                                                    list_to_str,
                                                     )
 
 from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
@@ -23,7 +24,6 @@ from ioppytest.finterop_ui_adaptor.tt_tasks import (configure_testing_tool,
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
 from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.interop_cli import list_to_str
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.messages import *
 
@@ -34,11 +34,15 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
                                            STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                            MESSAGES_NOT_TO_BE_ECHOED,
                                            TESTING_TOOL_TOPIC_SUBSCRIPTIONS)
-from ioppytest.finterop_ui_adaptor.message_translators import (DummySessionMessageTranslator,
-                                                               CoMISessionMessageTranslator,
-                                                               CoAPSessionMessageTranslator,
-                                                               SixLoWPANSessionMessageTranslator,
-                                                               OneM2MSessionMessageTranslator)
+
+from ioppytest.finterop_ui_adaptor.message_translators import (
+    DummySessionMessageTranslator,
+    CoMISessionMessageTranslator,
+    CoAPSessionMessageTranslator,
+    SixLoWPANSessionMessageTranslator,
+    OneM2MSessionMessageTranslator,
+    LwM2MSessionMessageTranslator
+)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
@@ -60,7 +64,8 @@ mapping_testsuite_to_message_translator = {
     'coap': CoAPSessionMessageTranslator,
     'onem2m': OneM2MSessionMessageTranslator,
     '6lowpan': SixLoWPANSessionMessageTranslator,
-    'comi': CoMISessionMessageTranslator
+    'comi': CoMISessionMessageTranslator,
+    'lwm2m': LwM2MSessionMessageTranslator,
 }
 
 # see doc from GenericBidirectonalTranslator.__doc__
@@ -453,7 +458,6 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
             message=message_received)
 
         if ui_display_message:
-
             # fixme I shouldnt access _private method
             ui_display_message = message_publisher._update_ui_message_rkeys(
                 ui_message=ui_display_message,
@@ -481,7 +485,7 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         message_translator.add_pending_response(
             corr_id=ui_request_message.correlation_id,
             ui_request_message=ui_request_message,
-            tt_request_originator = message_received,
+            tt_request_originator=message_received,
             ui_requested_field_name_list=requested_fields,
         )
 
@@ -572,7 +576,6 @@ def main():
              "value": err_msg}
         ])
         logger.error(err_msg)
-        # logger.error(traceback.format_exc())
         amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
     except UiResponseError as ui_error:

@@ -55,6 +55,10 @@ TD_COAP = [
     TD_COAP_CORE
 ]
 
+# TODO FIX REDUNDANT INFORATION IN TD AND TD CONFIGS!!!
+TD_LWM2M = os.path.join(TD_DIR, "TD_LWM2M_PRO.yaml")
+TD_LWM2M_CFG = os.path.join(TD_DIR, "TD_LWM2M_CFG.yaml")
+
 TD_COMI = os.path.join(TD_DIR, "TD_COMI.yaml")
 TD_COMI_CFG = os.path.join(TD_DIR, "TD_COMI_CFG.yaml")
 
@@ -70,7 +74,9 @@ TD_6LOWPAN_RS_RA_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 TD_6LOWPAN_ND = os.path.join(TD_DIR, "TD_6LOWPAN_ND.yaml")
 TD_6LOWPAN_ND_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
 
+# deprecate this, change name of config to TD_6LOWPAN_CFG
 TD_6LOWPAN_CFG = os.path.join(TD_DIR, "TD_6LOWPAN_CFG.yaml")
+
 TD_6LOWPAN = [
     TD_6LOWPAN_HC,
     TD_6LOWPAN_FORMAT,
@@ -85,7 +91,8 @@ TEST_DESCRIPTIONS_DICT = {
     'coap': TD_COAP,  # it's already a list
     '6lowpan': TD_6LOWPAN,  # it's already a list
     'onem2m': [TD_ONEM2M],
-    'comi': [TD_COMI]
+    'comi': [TD_COMI],
+    'lwm2m': [TD_LWM2M],
 }
 
 TEST_DESCRIPTIONS = [
@@ -96,14 +103,26 @@ TEST_DESCRIPTIONS = [
     TD_6LOWPAN_FORMAT,
     TD_6LOWPAN_RS_RA,
     TD_6LOWPAN_ND,
+    TD_LWM2M,
 ]
 
-TEST_DESCRIPTIONS_CONFIGS = [TD_COAP_CFG,
-                             TD_6LOWPAN_CFG,
-                             TD_ONEM2M_CFG,
-                             TD_COMI_CFG,
-                             TD_6LOWPAN_FORMAT_CFG,
-                             TD_6LOWPAN_RS_RA_CFG]
+TEST_DESCRIPTIONS_CONFIGS = [
+    TD_COAP_CFG,
+    TD_6LOWPAN_CFG,
+    TD_ONEM2M_CFG,
+    TD_COMI_CFG,
+    TD_6LOWPAN_FORMAT_CFG,
+    TD_6LOWPAN_RS_RA_CFG,
+    TD_LWM2M_CFG,
+]
+
+TEST_DESCRIPTIONS_CONFIGS_DICT = {
+    'coap': [TD_COAP_CFG],
+    '6lowpan': [TD_6LOWPAN_CFG],
+    'onem2m': [TD_ONEM2M_CFG],
+    'comi': [TD_COMI_CFG],
+    'lwm2m': [TD_LWM2M_CFG],
+}
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
 

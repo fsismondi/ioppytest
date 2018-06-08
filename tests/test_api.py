@@ -16,7 +16,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
 
-from tests import MessageGenerator
+from tests import MessageGenerator, default_configuration
 from tests.pcap_base64_examples import *
 
 from tests import (check_if_message_is_an_error_message,
@@ -27,9 +27,22 @@ from tests import (check_if_message_is_an_error_message,
                    MAX_LINE_LENGTH,
                    )
 
+"""
+Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
+
+EXECUTE AS:
+python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
+or
+python3 -m unittest tests/test_api.py -vvv
+
+PRE-CONDITIONS:
+- Export AMQP_URL in the running environment
+- Have CoAP testing tool running & listening to the bus
+"""
+
 # queue which tracks all non answered services requests
 events_sniffed_on_bus_dict = {}  # the dict allows us to index last received messages of each type
-event_types_sniffed_on_bus_list = []  # the list allows us to monitor the order of events
+event_messages_sniffed_on_bus_list = []  # list of all events in the bus
 
 COMPONENT_ID = 'fake_session'
 THREAD_JOIN_TIMEOUT = 90
@@ -39,15 +52,43 @@ logger = logging.getLogger(__name__)
 
 logging.getLogger('pika').setLevel(logging.WARNING)
 
-"""
-PRE-CONDITIONS:
-- Export AMQP_URL in the running environment
-- Have CoAP testing tool running & listening to the bus
-"""
+# this sequence of messages will simulate the user inputs, and exercise the test coordinator's FSM
+user_sequence = [
+    MsgAgentTunStarted(
+        name="someAgentName1",
+        ipv6_prefix="bbbb",
+        ipv6_host="1",
+    ),
+    MsgAgentTunStarted(
+        name="someAgentName2",
+        ipv6_prefix="bbbb",
+        ipv6_host="2",
+    ),
 
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
+    MsgTestSuiteGetStatus(),
+    MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
+    MsgTestSuiteGetStatus(),
+    MsgStepStimuliExecuted(),
+    MsgTestSuiteGetStatus(),
+    MsgStepVerifyExecuted(
+        verify_response=False,
+        description='User indicates that IUT didnt behave as expected '),
+    MsgTestSuiteGetStatus(),
+    MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
+    MsgTestCaseRestart(),
+    MsgTestSuiteGetStatus(),
+    MsgTestSuiteAbort(),
+    MsgTestSuiteGetStatus(),
+]
+
+# this sequence of messages will test testing tool components
 service_api_calls = [
-    #
-    # # TAT calls
+
+    # TAT calls
     MsgTestSuiteGetStatus(),
     MsgTestSuiteGetTestCases(),
     MsgInteropTestCaseAnalyze(
@@ -115,53 +156,9 @@ service_api_calls = [
         value=PCAP_COAP_GET_OVER_TUN_INTERFACE_base64,
     )
 ]
-user_sequence = [
-
-    MsgAgentTunStarted(
-        name="someAgentName1",
-        ipv6_prefix="bbbb",
-        ipv6_host="1",
-    ),
-    MsgAgentTunStarted(
-        name="someAgentName2",
-        ipv6_prefix="bbbb",
-        ipv6_host="2",
-    ),
-
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_02'),
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseSkip(testcase_id='TD_COAP_CORE_03'),
-    MsgTestSuiteGetStatus(),
-    MsgTestCaseStart(),  # execute TC1  ( w/ no IUT in the bus )
-    MsgTestSuiteGetStatus(),
-    MsgStepStimuliExecuted(),
-    MsgTestSuiteGetStatus(),
-    MsgStepVerifyExecuted(
-        verify_response=False,
-        description='User indicates that IUT didnt behave as expected '),
-    MsgTestSuiteGetStatus(),
-    MsgTestSuiteGetStatus(),  # at this point we should see a TC verdict
-    MsgTestCaseRestart(),
-    MsgTestSuiteGetStatus(),
-    MsgTestSuiteAbort(),
-    MsgTestSuiteGetStatus(),
-]
 
 
 class ApiTests(unittest.TestCase):
-    """
-    Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
-
-    EXECUTE AS:
-    python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
-    or
-    python3 -m unittest tests/test_api.py -vvv
-
-    PRE-CONDITIONS:
-    - Export AMQP_URL in the running environment
-    - Have CoAP testing tool running & listening to the bus
-    """
 
     def setUp(self):
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -170,7 +167,7 @@ class ApiTests(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
         # print messages
-        log_all_received_messages(event_types_sniffed_on_bus_list)
+        log_all_received_messages(event_messages_sniffed_on_bus_list)
 
     def test_amqp_api_smoke_tests(self):
         """
@@ -184,8 +181,8 @@ class ApiTests(unittest.TestCase):
 
         # prepare the message generator
         messages = []  # list of messages to send
-        messages += service_api_calls
         messages += user_sequence
+        messages += service_api_calls
         messages.append(MsgTestingToolTerminate())  # message that triggers stop_generator_signal
 
         # thread
@@ -207,27 +204,23 @@ class ApiTests(unittest.TestCase):
             use_message_typing=True
         )
 
-        # thread
-        thread_ui_stub = AmqpListener(
-            amqp_url=AMQP_URL,
-            amqp_exchange=AMQP_EXCHANGE,
-            callback=reply_to_ui_configuration_request_stub,
-            topics=[
-                MsgUiRequestSessionConfiguration.routing_key,
-                MsgTestingToolTerminate.routing_key,
-            ],
-            use_message_typing=True
-        )
-        threads = [thread_msg_listener, thread_msg_gen, thread_ui_stub]
+        threads = [thread_msg_listener, thread_msg_gen]
 
         for th in threads:
             th.setName(th.__class__.__name__)
 
-        time.sleep(10)  # wait for the testing tool to enter test suite ready state
+        time.sleep(15)  # wait for the testing tool to enter test suite ready state
 
         try:
             for th in threads:
                 th.start()
+
+            publish_message(
+                self.connection,
+                MsgSessionConfiguration(configuration=default_configuration),
+            )  # configures test suite
+
+            time.sleep(1)
 
             publish_message(
                 self.connection,
@@ -250,13 +243,13 @@ class ApiTests(unittest.TestCase):
                     logger.warning("Thread %s didnt stop" % th.name)
 
             # finally checks
-            check_request_with_no_correlation_id(event_types_sniffed_on_bus_list)
-            check_every_request_has_a_reply(event_types_sniffed_on_bus_list)
+            check_request_with_no_correlation_id(event_messages_sniffed_on_bus_list)
+            check_every_request_has_a_reply(event_messages_sniffed_on_bus_list)
 
 
 def run_checks_on_message_received(message: Message):
     assert message
-    logging.info('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+    logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
     update_events_seen_on_bus_list(message=message)
     check_if_message_is_an_error_message(message=message, fail_on_reply_nok=False)
     check_api_version(message=message)
@@ -311,7 +304,7 @@ def check_every_request_has_a_reply(events_tracelog):
 
 
 def update_events_seen_on_bus_list(message: Message):
-    global event_types_sniffed_on_bus_list
+    global event_messages_sniffed_on_bus_list
     global events_sniffed_on_bus_dict
     events_sniffed_on_bus_dict[type(message)] = message
-    event_types_sniffed_on_bus_list.append(message)
+    event_messages_sniffed_on_bus_list.append(message)

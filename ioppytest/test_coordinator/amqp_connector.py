@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import datetime
-import logging
 import os
+import pika
+import logging
+import datetime
 
 from transitions.core import MachineError
-from ioppytest.utils.amqp_synch_call import *
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
 from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
@@ -208,7 +208,7 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         request = Message.load_from_pika(method, props, body)
-        logger.info('Received REQUEST: %s' % type(request))
+        logger.info('RECEIVED request: %s' % type(request))
 
         # let's process request
         if type(request) in self.request_reply_handlers:
@@ -237,7 +237,7 @@ class CoordinatorAmqpInterface(object):
         # acknowledge message reception
         ch.basic_ack(delivery_tag=method.delivery_tag)
         event = Message.load_from_pika(method, props, body)
-        logger.info('Received EVENT: %s' % type(event))
+        logger.info('RECEIVED event: %s' % type(event))
 
         # let's process request
         if type(event) in self.control_events_triggers:
@@ -369,7 +369,6 @@ class CoordinatorAmqpInterface(object):
                 ipv6_prefix=ipv6_network_prefix,
                 ipv6_host=ipv6_host,
                 ipv6_no_forwarding=False,
-
             )
 
             msg.routing_key = msg.routing_key.replace('*', node_name)
@@ -445,7 +444,7 @@ class CoordinatorAmqpInterface(object):
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_sniffer_stop(self):
 
@@ -454,7 +453,7 @@ class CoordinatorAmqpInterface(object):
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_sniffer_get_capture(self, **kwargs):
 
@@ -463,11 +462,13 @@ class CoordinatorAmqpInterface(object):
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
-            logger.error("Sniffer API doesn't respond. Maybe it isn't up yet?")
+            logger.error("Sniffer API didn't respond. Maybe it isn't up yet?. More info: %s" % e)
 
     def call_service_testcase_analysis(self, **kwargs):
 
-        request = MsgInteropTestCaseAnalyze(**kwargs)
-        response = amqp_request(self.connection, request, COMPONENT_ID)
-        logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
-        return response
+        try:
+            response = amqp_request(self.connection, MsgInteropTestCaseAnalyze(**kwargs), COMPONENT_ID, 30)
+            logger.info("Received answer from TAT: %s, answer: %s" % (response.routing_key, repr(response)))
+            return response
+        except AmqpSynchCallTimeoutError as e:
+            raise e  # let caller handle it

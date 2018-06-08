@@ -1,3 +1,4 @@
+import pprint
 import unittest, logging, os, pika, json
 from time import sleep
 from ioppytest.utils.messages import *
@@ -5,6 +6,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
 from ioppytest.test_coordinator.testsuite import import_teds, TestSuite
 from ioppytest.test_coordinator.states_machine import Coordinator
 from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
+
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 # init logging to stnd output and log files
@@ -22,6 +24,7 @@ default_configuration = {
 class TestSuiteTests(unittest.TestCase):
     """
     python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests
+    python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests.test_all_getters_of_testsuite_on_middle_way
     """
 
     def setUp(self):
@@ -188,6 +191,62 @@ class CoordinatorStateMachineTests(unittest.TestCase):
                                             ted_tc_file=TD_COAP)
         self.test_coordinator.bootstrap()
 
+    def test_session_flow_and_emulate_agent_as_a_router_towards_another_network(self):
+        """
+        python3 -m unittest ioppytest.test_coordinator.tests.tests.CoordinatorStateMachineTests.test_session_flow_and_emulate_agent_as_a_router_towards_another_network
+
+        MsgAgentTunStarted message fields:
+                name                     agent_TT
+                ipv4_network
+                ipv4_netmask
+                ipv4_host
+                ipv6_no_forwarding       False
+                ipv6_host                :3
+                ipv6_prefix              bbbb
+                re_route_packets_if
+                re_route_packets_prefix
+                re_route_packets_host
+        """
+
+        coap_client_address = ("cccc", "123:456")
+        coap_server_address = ("aaaa", "123:456")
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
+        assert self.test_coordinator.state != 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (0) before first Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(
+            name="coap_client",
+            re_route_packets_if='some_other_tuntap',
+            re_route_packets_prefix=coap_client_address[0],
+            re_route_packets_host=coap_client_address[1],
+        ))
+
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is False
+
+        logger.info('>>> (1) before second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        self.test_coordinator.handle_iut_configuration_executed(MsgAgentTunStarted(
+            name="coap_server",
+            re_route_packets_if='some_other_tuntap',
+            re_route_packets_prefix=coap_server_address[0],
+            re_route_packets_host=coap_server_address[1],
+        ))
+
+        logger.info('>>> (2) after second Agent Tun Started: %s' % self.test_coordinator.get_nodes_addressing_table())
+        assert self.test_coordinator.state == 'waiting_for_testcase_start', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.check_all_iut_nodes_configured() is True
+
+        logger.warning(self.test_coordinator.testsuite.get_node_address('coap_client'))
+        assert self.test_coordinator.testsuite.get_node_address('coap_client') == coap_client_address
+        assert self.test_coordinator.testsuite.get_node_address('coap_server') == coap_server_address
+
     def test_session_flow_0(self):
         """
         Checks transition
@@ -348,3 +407,54 @@ class CoordinatorStateMachineTests(unittest.TestCase):
         assert self.test_coordinator.state == 'testsuite_finished', \
             "expected waiting for iut confnig, but found %s" % self.test_coordinator.state
         logger.info(self.test_coordinator.state)
+
+    def test_skip_test_cases(self):
+        """
+        Checks transition
+        waiting_for_iut_configuration_executed -> waiting_for_testcase_start
+        on events MsgAgentTunStarted
+        """
+
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id="TD_COAP_CORE_01"))
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id="TD_COAP_CORE_01"))
+
+        logger.info(self.test_coordinator.testsuite.get_testcases_basic())
+        logger.info(self.test_coordinator.testsuite.get_testcase_report())
+        logger.info(self.test_coordinator.testsuite.get_report())
+
+    def test_skip_all_test_cases_check_states_and_report_generation(self):
+
+        assert self.test_coordinator.testsuite.get_report() is None
+
+        # config 3 TCs
+        assert self.test_coordinator.state == 'waiting_for_testsuite_config', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.configure_testsuite(MsgSessionConfiguration(configuration=default_configuration))
+
+        # start TS
+        assert self.test_coordinator.state == 'waiting_for_testsuite_start', 'got: %s' % self.test_coordinator.state
+        self.test_coordinator.start_testsuite(MsgTestSuiteStart())
+        assert self.test_coordinator.state == 'waiting_for_iut_configuration_executed', 'got: %s' % self.test_coordinator.state
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # skip current
+        self.test_coordinator.skip_testcase(MsgTestCaseSkip(testcase_id=None))
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_testcases_basic()))
+
+        # test suite finished, test suite report should not be null
+        assert self.test_coordinator.state == 'testsuite_finished', 'got: %s' % self.test_coordinator.state
+        assert self.test_coordinator.testsuite.get_report() is not None
+
+        logger.info(pprint.pformat(self.test_coordinator.testsuite.get_report()))
+
+
+
