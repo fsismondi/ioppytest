@@ -1,12 +1,10 @@
 import pprint
-import unittest, logging, os, pika, json
+import unittest
 from time import sleep
-from ioppytest.utils.messages import *
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
-from ioppytest.test_coordinator.testsuite import import_teds, TestSuite
-from ioppytest.test_coordinator.states_machine import Coordinator
-from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest.test_coordinator.states_machine import Coordinator
+from ioppytest.utils.messages import *
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 logger = logging.getLogger(COMPONENT_ID)

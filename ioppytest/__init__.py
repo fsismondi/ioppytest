@@ -61,7 +61,7 @@ DATADIR = os.path.join(project_dir, 'data')
 RESULTS_DIR = os.path.join(DATADIR, 'results')
 PCAP_DIR = os.path.join(DATADIR, 'dumps')
 LOGDIR = os.path.join(project_dir, 'log')
-TD_DIR = os.path.join(project_dir, 'ioppytest', 'extended_test_descriptions')
+TD_DIR = os.path.join(project_dir, 'ioppytest', 'test_descriptions')
 
 # yaml test descriptions:
 # fixme: refact the code so TD_XXX is a list of yaml files containing test cases from several groups

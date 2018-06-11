@@ -1,21 +1,12 @@
-import os
-import yaml
+import logging
 import logging
 import textwrap
 
 from ioppytest import (
-    TEST_DESCRIPTIONS_CONFIGS_DICT,
-    TEST_DESCRIPTIONS_DICT,
-    RESULTS_DIR,
-    AUTO_DISSECTION_FILE,
-    PROJECT_DIR,
     LOG_LEVEL
 )
-
-from ioppytest.extended_test_descriptions import (get_dict_of_all_test_cases,
-                                                  get_dict_of_all_test_cases_configurations)
-from ioppytest.test_coordinator.testsuite import TestCase, TestConfig
-
+from ioppytest.test_descriptions import (get_dict_of_all_test_cases,
+                                         get_dict_of_all_test_cases_configurations)
 from ioppytest.utils import tabulate
 
 tabulate.PRESERVE_WHITESPACE = True
@@ -177,7 +168,6 @@ def get_html_representation_of_testcase(testcase_id):
 
 
 if __name__ == '__main__':
-    from ioppytest import TMPDIR
 
     # # one .md per TC
     # for i in td_list:

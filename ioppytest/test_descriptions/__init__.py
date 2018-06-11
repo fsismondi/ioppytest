@@ -1,11 +1,12 @@
-import yaml
 import logging
-from ioppytest.test_coordinator.testsuite import TestCase, TestSuite, TestConfig, TestSuiteError
+
+import yaml
 
 from ioppytest import (
     TEST_DESCRIPTIONS_CONFIGS_DICT,
     TEST_DESCRIPTIONS_DICT,
 )
+from ioppytest.test_descriptions.testsuite import TestCase, TestSuite, TestConfig
 
 _test_descriptions_and_configurations_paths = []
 _test_descriptions_and_configurations_paths += list(TEST_DESCRIPTIONS_DICT.values())

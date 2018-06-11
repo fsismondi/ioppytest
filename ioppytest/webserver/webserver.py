@@ -29,12 +29,12 @@ from ioppytest import (
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from ioppytest.extended_test_descriptions import (get_list_of_all_test_cases,
-                                                  get_test_cases_list_from_yaml,
-                                                  get_test_configurations_list_from_yaml)
+from ioppytest.test_descriptions import (get_list_of_all_test_cases,
+                                         get_test_cases_list_from_yaml,
+                                         get_test_configurations_list_from_yaml)
 
-from ioppytest.extended_test_descriptions.format_conversion import (get_markdown_representation_of_testcase,
-                                                                    get_markdown_representation_of_testcase_configuration)
+from ioppytest.test_descriptions.format_conversion import (get_markdown_representation_of_testcase,
+                                                           get_markdown_representation_of_testcase_configuration)
 
 COMPONENT_ID = 'webserver'
 FILENAME_HTML_REPORT = 'testsuite_results.html'

@@ -2,15 +2,15 @@ import pprint
 import unittest
 
 from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
-from ioppytest.test_coordinator.testsuite import import_teds
-from ioppytest.extended_test_descriptions import format_conversion
+from ioppytest.test_descriptions import format_conversion
+from ioppytest.test_descriptions.testsuite import import_teds
 
 """
-python3 -m  pytest ioppytest/extended_test_descriptions/tests/tests.py
+python3 -m  pytest ioppytest/test_descriptions/tests/tests.py
 
 or verbose unitest:
 
-python3 -m unittest ioppytest/extended_test_descriptions/tests/tests.py
+python3 -m unittest ioppytest/test_descriptions/tests/tests.py
 """
 
 

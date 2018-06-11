@@ -1,24 +1,20 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import os
-import logging
 import base64
-from time import sleep
 from urllib.parse import urlparse
 
 from transitions import Machine
-from transitions.core import MachineError
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from ioppytest import TMPDIR, TD_DIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL
+from ioppytest import TMPDIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, LOG_LEVEL
+from ioppytest.test_descriptions.testsuite import TestSuite
+from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
+from ioppytest.test_coordinator.states_and_transitions import transitions, states
 from ioppytest.utils.amqp_synch_call import *
+from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.utils.messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.exceptions import CoordinatorError
-from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
-from ioppytest.test_coordinator.testsuite import TestSuite
-from ioppytest.test_coordinator.states_and_transitions import transitions, states
 
 # TODO get filter from config of the TEDs
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?

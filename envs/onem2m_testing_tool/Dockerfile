@@ -31,7 +31,7 @@ RUN python -m pip install -r ioppytest/agent/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/test_coordinator/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/test_analysis_tool/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/packet_router/requirements.txt --upgrade
-RUN python3 -m pip install -r ioppytest/sniffer/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/packet_sniffer/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/webserver/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/utils/requirements.txt
 

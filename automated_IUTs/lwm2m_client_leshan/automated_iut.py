@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-import os
 import subprocess
 
-from automated_IUTs import LOG_LEVEL
 from automated_IUTs.automation import *
-
 from ioppytest import TMPDIR, TD_LWM2M, TD_LWM2M_CFG
-from ioppytest.test_coordinator.testsuite import TestSuite
+from ioppytest.test_descriptions.testsuite import TestSuite
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
