@@ -28,15 +28,21 @@ from ioppytest import (
 )
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from ioppytest.test_coordinator.testsuite import TestCase, TestConfig
-from ioppytest.extended_test_descriptions.format_conversion import get_markdown_representation_of_testcase, \
-    get_markdown_representation_of_testcase_configuration
+
+from ioppytest.extended_test_descriptions import (get_list_of_all_test_cases,
+                                                  get_test_cases_list_from_yaml,
+                                                  get_test_configurations_list_from_yaml)
+
+from ioppytest.extended_test_descriptions.format_conversion import (get_markdown_representation_of_testcase,
+                                                                    get_markdown_representation_of_testcase_configuration)
 
 COMPONENT_ID = 'webserver'
 FILENAME_HTML_REPORT = 'testsuite_results.html'
 
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
+
+td_objects_list = get_list_of_all_test_cases()
 
 head = """
 <html>
@@ -81,57 +87,26 @@ tail = """
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
 
-td_objects_list = []
-for TD in TEST_DESCRIPTIONS:
-    with open(TD, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            if type(yaml_doc) is TestCase:
-                td_objects_list.append(yaml_doc)
-
-
-def get_tc_list_from_yaml(testdescription_yamlfile):
-    """
-    :param testdescription_yamlfile:
-    :return: TC objects
-    """
-
-    list = []
-    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            if type(yaml_doc) is TestCase:
-                list.append(yaml_doc)
-    return list
-
-
-def get_tc_confs_list_from_yaml(testdescription_yamlfile):
-    """
-    :param testdescription_yamlfile:
-    :return: TC config objects
-    """
-
-    list = []
-    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            if type(yaml_doc) is TestConfig:
-                list.append(yaml_doc)
-    return list
-
-
-test_suite_list = TEST_DESCRIPTIONS_DICT.keys()
-testsuites_path_list = ['/testsuites/{}'.format(ts) for ts in test_suite_list]
-testcases_path_list = list()
-
+# - - - - - - HTTP rest API entrypoints: - - - - - - - -
+""" 
+list of allowed testsuites URLs, like:
+    /testsuites
+    /testsuites/<testsuite>
+    /testsuites/<testsuite>/<testcaseid> 
+    /tests/<testcaseid> (alias of previous one)
+    
+"""
+test_suites = list(TEST_DESCRIPTIONS_DICT.keys())
+testsuites_paths = ['/testsuites/{}'.format(ts) for ts in test_suites]
+testcases_paths = list()
 for ts_name, test_descriptions_list in TEST_DESCRIPTIONS_DICT.items():
     for test_desc in test_descriptions_list:
-        testcases_path_list += ['/testsuites/{}/{}'.format(ts_name, tc.id) for tc in get_tc_list_from_yaml(test_desc)]
+        tescases_in_td = get_test_cases_list_from_yaml(test_desc)
+        testcases_paths += ['/tests/{}'.format(tc.id) for tc in tescases_in_td]  # the legacy format
+        testcases_paths += ['/testsuites/{}/{}'.format(ts_name, tc.id) for tc in tescases_in_td]
 
-        # the legacy ones:
-        testcases_path_list += ['/tests/{}'.format(tc.id) for tc in get_tc_list_from_yaml(test_desc)]
-
-print('routes built:%s' % testcases_path_list)
+print('routes built:%s' % testcases_paths)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 def create_html_test_results():
@@ -195,11 +170,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             logger.info('Handling TESTSUITES  LIST request: %s' % self.path)
             return self.testsuites_list(self.path)
 
-        elif self.path in testcases_path_list:
+        elif self.path in testcases_paths:
             logger.info('Handling TESTCASE request: %s' % self.path)
             return self.handle_testcase(self.path)
 
-        elif self.path in testsuites_path_list:
+        elif self.path in testsuites_paths:
             logger.info('Handling TESTSUITE request: %s' % self.path)
             return self.testsuite_description(self.path)
 
@@ -259,7 +234,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<title>Test Suites</title>", 'utf-8'))
         self.wfile.write(bytes("<title1>Test Suites</title1>", 'utf-8'))
         self.wfile.write(bytes("<br /><br />", 'utf-8'))
-        for ts in test_suite_list:
+        for ts in test_suites:
             self.wfile.write(
                 bytes('<ascii-art><li><a href="%s/%s">%s</a></li></ascii-art>\n' % (path, ts, ts), 'utf-8'))
         self.wfile.write(bytes("<br /><br /><br />", 'utf-8'))
@@ -287,10 +262,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         test_suite_list_of_test_description_config = TEST_DESCRIPTIONS_CONFIGS_DICT[testsuite_name]
 
         for item in test_suite_list_of_test_description:
-            tc_list += get_tc_list_from_yaml(item)
+            tc_list += get_test_cases_list_from_yaml(item)
 
         for item in test_suite_list_of_test_description_config:
-            tc_list_configs += get_tc_confs_list_from_yaml(item)
+            tc_list_configs += get_test_configurations_list_from_yaml(item)
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")
@@ -408,7 +383,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 break
 
         if tc is None:
-            self.send_error(404, "Testcase %s couldn't be found in list %s" % (tc_name, testcases_path_list))
+            self.send_error(404, "Testcase %s couldn't be found in list %s" % (tc_name, testcases_paths))
             return None
 
         self.send_response(200)

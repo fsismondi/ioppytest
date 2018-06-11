@@ -4,14 +4,16 @@ import logging
 import textwrap
 
 from ioppytest import (
-    TEST_DESCRIPTIONS,
-    TEST_DESCRIPTIONS_CONFIGS,
+    TEST_DESCRIPTIONS_CONFIGS_DICT,
+    TEST_DESCRIPTIONS_DICT,
     RESULTS_DIR,
     AUTO_DISSECTION_FILE,
     PROJECT_DIR,
     LOG_LEVEL
 )
 
+from ioppytest.extended_test_descriptions import (get_dict_of_all_test_cases,
+                                                  get_dict_of_all_test_cases_configurations)
 from ioppytest.test_coordinator.testsuite import TestCase, TestConfig
 
 from ioppytest.utils import tabulate
@@ -21,11 +23,6 @@ tabulate.PRESERVE_WHITESPACE = True
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
-td_list = list()
-td_dict = dict()
-
-td_config_list = list()
-td_config_dict = dict()
 TABLE_STYLE_MARKDOWN = 'grid'  # either grid or
 TABLE_STYLE_HTML = 'html'  # either grid or
 FILENAME_HTML_REPORT = 'testsuite_results.html'
@@ -37,19 +34,6 @@ tail = """
 
 if you spotted any errors or you want to comment on sth don't hesitate to contact me.
 """
-
-for TD in TEST_DESCRIPTIONS + TEST_DESCRIPTIONS_CONFIGS:
-    with open(TD, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            if type(yaml_doc) is TestCase:
-                td_list.append(yaml_doc)
-                td_dict[yaml_doc.id] = yaml_doc
-            elif type(yaml_doc) is TestConfig:
-                td_config_list.append(yaml_doc)
-                td_config_dict[yaml_doc.id] = yaml_doc
-            else:
-                logging.warning("Unrecognised yaml structure: %s" % str(yaml_doc))
 
 
 def count_max_row_length(items_to_count, initial_count=0):
@@ -130,7 +114,7 @@ def get_markdown_representation_of_testcase(testcase_id: str):
     ]
 
     # first let's add the header
-    testcase = td_dict[testcase_id.upper()]
+    testcase = get_dict_of_all_test_cases()[testcase_id.upper()]
     for i in header_fields:
         col1 = i[1]
         col2 = getattr(testcase, i[0])
@@ -148,6 +132,7 @@ def get_markdown_representation_of_testcase(testcase_id: str):
 def get_markdown_representation_of_testcase_configuration(testcase_config_id: str, include_diagram=False):
     assert type(testcase_config_id) is str
 
+    td_config_dict = get_dict_of_all_test_cases_configurations()
     testcase = td_config_dict[testcase_config_id.upper()]
 
     table = []
@@ -186,6 +171,7 @@ def get_markdown_representation_of_testcase_configuration(testcase_config_id: st
 
 
 def get_html_representation_of_testcase(testcase_id):
+    td_dict = get_dict_of_all_test_cases()
     l = [(list_to_str(item[0]), list_to_str(item[1])) for item in td_dict[testcase_id].to_dict(verbose=True).items()]
     return tabulate.tabulate(l, tablefmt=TABLE_STYLE_HTML)
 
@@ -217,7 +203,11 @@ if __name__ == '__main__':
     #         if "6LOWPAN" in i.id:
     #             print("\n{\n'value': 'http://doc.f-interop.eu/tests/%s'\n},"%i.id)
 
-    print(td_config_list)
-    for i in td_config_list:
-        print(i.id)
-        print(get_markdown_representation_of_testcase_configuration(i.id))
+    # print(td_config_list)
+    # for i in td_config_list:
+    #     print(i.id)
+    #     print(get_markdown_representation_of_testcase_configuration(i.id))
+
+    for TD in TEST_DESCRIPTIONS + TEST_DESCRIPTIONS_CONFIGS:
+        print(type(TD))
+        print(TD)

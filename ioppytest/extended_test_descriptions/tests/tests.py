@@ -1,7 +1,9 @@
+import pprint
+import unittest
+
 from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_coordinator.testsuite import import_teds
 from ioppytest.extended_test_descriptions import format_conversion
-import unittest, pprint
 
 """
 python3 -m  pytest ioppytest/extended_test_descriptions/tests/tests.py

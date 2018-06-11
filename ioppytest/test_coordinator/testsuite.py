@@ -67,22 +67,30 @@ def merge_yaml_files(filelist: list):
 
 def import_teds(yamlfile):
     """
-    :param yamlfile: TED yaml file
+    Imports TestCases objects or TestConfig objects from yamlfile(s)
+    :param yamlfile: TED yaml file(s)
     :return: list of imported testCase(s) and testConfig(s) object(s)
     """
+    if type(yamlfile) is str:
+        yamlfile_list = [yamlfile]
+    elif type(yamlfile) is list:
+        yamlfile_list = yamlfile
+    else:
+        raise TypeError('Expected list or str, got instead : %s' % type(yamlfile))
+
     td_list = []
-    with open(yamlfile, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            # TODO use same yaml for both test cases and config descriptions
-            if type(yaml_doc) is TestCase:
-                logger.debug(' Parsed test case: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
-                td_list.append(yaml_doc)
-            elif type(yaml_doc) is TestConfig:
-                logger.debug(' Parsed test case config: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
-                td_list.append(yaml_doc)
-            else:
-                logger.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
+    for yml in yamlfile_list:
+        with open(yml, "r", encoding="utf-8") as stream:
+            yaml_docs = yaml.load_all(stream)
+            for yaml_doc in yaml_docs:
+                if type(yaml_doc) is TestCase:
+                    logger.debug(' Parsed test case: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
+                    td_list.append(yaml_doc)
+                elif type(yaml_doc) is TestConfig:
+                    logger.debug(' Parsed test case config: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
+                    td_list.append(yaml_doc)
+                else:
+                    logger.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
     return td_list
 
 

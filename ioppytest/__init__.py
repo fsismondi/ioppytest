@@ -12,6 +12,22 @@ except ImportError:
 
 __version__ = (0, 0, 6)
 
+
+__all__ = [
+    '__version__',
+    'TMPDIR',
+    'DATADIR',
+    'RESULTS_DIR',
+    'PCAP_DIR',
+    'LOGDIR',
+    'TD_DIR',
+    'AMQP_URL',
+    'TEST_DESCRIPTIONS_DICT',
+    'TEST_DESCRIPTIONS_CONFIGS_DICT',
+    'INTERACTIVE_SESSION',
+    'LOGGER_FORMAT'
+]
+
 project_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
 
 if os.sep + 'ioppytest' in project_dir:
@@ -81,9 +97,11 @@ TD_ONEM2M = [
 ]
 TD_ONEM2M_CFG = os.path.join(TD_DIR, "TD_ONEM2M_PRO_CFG.yaml")
 
+
+# dict values are lists of test descriptions!
 TEST_DESCRIPTIONS_DICT = {
-    'coap': TD_COAP,  # it's already a list
-    '6lowpan': TD_6LOWPAN,  # it's already a list
+    'coap': TD_COAP,
+    '6lowpan': TD_6LOWPAN,
     'onem2m': TD_ONEM2M,
     'comi': TD_COMI,
     'lwm2m': TD_LWM2M,
@@ -127,7 +145,6 @@ except KeyError as e:
     AMQP_EXCHANGE = "amq.topic"
 
 try:
-
     # append to URL AMQP connection parameters
     env_url = str(os.environ['AMQP_URL'])
     if 'heartbeat_interval' not in env_url:
@@ -167,27 +184,3 @@ except KeyError as e:
 #         'exchange': AMQP_EXCHANGE
 #     }
 # ))
-
-# # # # # # variables coming from index.json # # # # # # # # # #
-
-
-__all__ = [
-    __version__,
-    TMPDIR,
-    DATADIR,
-    RESULTS_DIR,
-    PCAP_DIR,
-    LOGDIR,
-    TD_DIR,
-    AMQP_URL,
-    INTERACTIVE_SESSION,
-    TD_6LOWPAN,
-    TD_6LOWPAN_CFG,
-    TD_ONEM2M,
-    TD_ONEM2M_CFG,
-    TD_COMI,
-    TD_COMI_CFG,
-    TD_COAP,
-    TD_COAP_CFG,
-    LOGGER_FORMAT
-]
