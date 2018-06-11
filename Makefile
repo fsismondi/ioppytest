@@ -169,11 +169,11 @@ stop-all: ## Stop testing tools running as docker containers
 # # # # UNITTEST commands # # # #
 
 validate-test-description-syntax: ## validate (yaml) test description file syntax
-	@python3 -m pytest -p no:cacheprovider ioppytest/test_descriptionss/tests/tests.py -vvv
+	@python3 -m pytest -p no:cacheprovider ioppytest/test_descriptions/tests/tests.py -vvv
 
 run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m pytest -p no:cacheprovider ioppytest/test_descriptionss/tests/tests.py -vvv
+	@python3 -m pytest -p no:cacheprovider ioppytest/test_descriptions/tests/tests.py -vvv
 	@python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/__init__.py -vvv
 	@python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py -vvv
 	@python3 -m pytest -p no:cacheprovider ioppytest/packet_sniffer/tests/__init__.py -vvv
