@@ -6,11 +6,11 @@ from ioppytest.test_descriptions import format_conversion
 from ioppytest.test_suite import import_test_description_from_yaml
 
 """
-python3 -m  pytest ioppytest/test_descriptions/tests/test_packet_router.py
+python3 -m  pytest tests/test_test_descriptions.py
 
 or verbose unitest:
 
-python3 -m unittest ioppytest/test_descriptions/tests/test_packet_router.py
+python3 -m unittest tests/test_test_descriptions.py
 """
 
 
