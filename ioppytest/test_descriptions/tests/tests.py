@@ -3,7 +3,7 @@ import unittest
 
 from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_descriptions import format_conversion
-from ioppytest.test_descriptions.testsuite import import_teds
+from ioppytest.test_descriptions.testsuite import import_test_description_from_yaml
 
 """
 python3 -m  pytest ioppytest/test_descriptions/tests/tests.py
@@ -53,7 +53,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
 
     def test_validate_test_descriptions(self):
         for td in TEST_DESCRIPTIONS:
-            imported_tcs = import_teds(td)
+            imported_tcs = import_test_description_from_yaml(td)
             for tc in imported_tcs:
                 print('validating %s (...)' % str(tc)[:70])
                 self.validate_testcase_description(tc)
@@ -63,7 +63,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
 
     def test_validate_test_description_configurations(self):
         for td in TEST_DESCRIPTIONS_CONFIGS:
-            imported_configs = import_teds(td)
+            imported_configs = import_test_description_from_yaml(td)
             for tc_config in imported_configs:
                 print('validating %s (...)' % str(tc_config)[:70])
                 self.validate_config_description(tc_config)
@@ -71,7 +71,7 @@ class ImportYamlInteropTestCases(unittest.TestCase):
     def test_check_that_every_testcase_uses_an_existent_config_id(self):
         tc_configs = []
         for tc_config_filename in TEST_DESCRIPTIONS_CONFIGS:
-            imported_configs = import_teds(tc_config_filename)
+            imported_configs = import_test_description_from_yaml(tc_config_filename)
             assert type(imported_configs) is list
 
             # get all test config ids
@@ -79,21 +79,21 @@ class ImportYamlInteropTestCases(unittest.TestCase):
                 tc_configs.append(i.id)
 
         for td in TEST_DESCRIPTIONS:
-            imported_tcs = import_teds(td)
+            imported_tcs = import_test_description_from_yaml(td)
             for tc in imported_tcs:
                 assert tc.configuration_id in tc_configs, 'couldnt find <{}> among config files'.format(
                     tc.configuration_id)
 
     def test_all_testcases_id_are_uppercase(self):
         for td in TEST_DESCRIPTIONS:
-            imported_tcs = import_teds(td)
+            imported_tcs = import_test_description_from_yaml(td)
             for tc in imported_tcs:
                 assert tc.configuration_id == tc.configuration_id.upper(), \
                     'TC %s contains lower cases in testcase id' % tc.id
 
     def test_all_testcases_config_ids_are_uppercase(self):
         for tc_config_filename in TEST_DESCRIPTIONS_CONFIGS:
-            imported_tcs = import_teds(tc_config_filename)
+            imported_tcs = import_test_description_from_yaml(tc_config_filename)
             for tc_conf in imported_tcs:
                 assert tc_conf.id == tc_conf.id.upper(), \
                     'TC %s contains lower cases in test config id' % tc_conf.id
@@ -106,7 +106,7 @@ class TestDescriptionFormatReprAndConvertion(unittest.TestCase):
         self.imported_tc_configs = []
 
         for td in TEST_DESCRIPTIONS:
-            self.imported_tcs += import_teds(td)
+            self.imported_tcs += import_test_description_from_yaml(td)
 
         print("got %s test cases: %s" % (
             len(self.imported_tcs),
@@ -115,7 +115,7 @@ class TestDescriptionFormatReprAndConvertion(unittest.TestCase):
 
         for td in TEST_DESCRIPTIONS_CONFIGS:
             print('parsing %s ' % td)
-            self.imported_tc_configs += import_teds(td)
+            self.imported_tc_configs += import_test_description_from_yaml(td)
 
         print("got %s test cases configs: %s" % (
             len(self.imported_tc_configs),

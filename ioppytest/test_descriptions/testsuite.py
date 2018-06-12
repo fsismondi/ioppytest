@@ -65,7 +65,7 @@ def merge_yaml_files(filelist: list):
     return new_merged_file
 
 
-def import_teds(yamlfile):
+def import_test_description_from_yaml(yamlfile):
     """
     Imports TestCases objects or TestConfig objects from yamlfile(s)
     :param yamlfile: TED yaml file(s)
@@ -137,7 +137,7 @@ class TestSuite:
         # first let's import the TC configurations
         if type(ted_config_file) is list:
             ted_config_file = merge_yaml_files(ted_config_file)
-        imported_configs = import_teds(ted_config_file)
+        imported_configs = import_test_description_from_yaml(ted_config_file)
         self.tc_configs = OrderedDict()
 
         self.agents = set()
@@ -171,19 +171,19 @@ class TestSuite:
         # lets import TCs and make sure there's a tc config for each one of them
         if type(ted_tc_file) is list:
             ted_tc_file = merge_yaml_files(ted_tc_file)
-        imported_teds = import_teds(ted_tc_file)
-        self.teds = OrderedDict()
-        for ted in imported_teds:
-            self.teds[ted.id] = ted
+        imported_TDs = import_test_description_from_yaml(ted_tc_file)
+        self.test_descriptions_dict = OrderedDict()
+        for ted in imported_TDs:
+            self.test_descriptions_dict[ted.id] = ted
             assert ted.configuration_id in self.tc_configs, \
                 "Missing config: %s for test case: %s " % (ted.configuration_id, ted.id)
 
-        logger.info('Import: %s TC execution scripts imported' % len(self.teds))
-        for key, val in self.teds.items():
+        logger.info('Import: %s TC execution scripts imported' % len(self.test_descriptions_dict))
+        for key, val in self.test_descriptions_dict.items():
             logger.info('test case imported from YAML: %s' % key)
 
         # test cases iterator (over the TC objects, not the keys)
-        self._ted_it = cycle(self.teds.values())
+        self._TD_it = cycle(self.test_descriptions_dict.values())
         self.current_tc = None
 
         # session info (published in bus after testing tool is spawned):
@@ -224,13 +224,13 @@ class TestSuite:
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
-        # _ted_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
-        self.current_tc = next(self._ted_it)
+        # _TD_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
+        self.current_tc = next(self._TD_it)
 
         # get next not executed nor skipped testcase:
-        max_iters = len(self.teds)
+        max_iters = len(self.test_descriptions_dict)
         while self.current_tc.state is not None:
-            self.current_tc = self._ted_it.__next__()
+            self.current_tc = self._TD_it.__next__()
             max_iters -= 1
             if max_iters < 0:
                 self.current_tc = None
@@ -291,7 +291,7 @@ class TestSuite:
         :return: list of reports
         """
         report = []
-        for tc in self.teds.values():
+        for tc in self.test_descriptions_dict.values():
             report_item = {'testcase_id': tc.id}
             if tc.report is None:
                 logger.warning("Empty report found. Generating dummy report for skipped testcase : %s" % tc.id)
@@ -312,7 +312,7 @@ class TestSuite:
 
     def reinit(self, tc_list_selection=None):
         # resets all previously executed TC
-        for tc in self.teds.values():
+        for tc in self.test_descriptions_dict.values():
             tc.reinit()
 
         # reconfigure test cases selection
@@ -385,10 +385,10 @@ class TestSuite:
 
     def check_testsuite_finished(self):
         # cyclic as user may not have started by the first TC
-        it = cycle(self.teds.values())
+        it = cycle(self.test_descriptions_dict.values())
 
         # we need to check if we already did a cycle (cycle doesnt raises StopIteration)
-        iter_counts = len(self.teds)
+        iter_counts = len(self.test_descriptions_dict)
         tc = next(it)
 
         while iter_counts >= 0:
@@ -483,9 +483,9 @@ class TestSuite:
         else:
             assert type(testcase_id) is str
             try:
-                return self.teds[testcase_id]
+                return self.test_descriptions_dict[testcase_id]
             except KeyError:
-                logger.info('TC %s not found in list: %s' % (testcase_id, self.teds.keys()))
+                logger.info('TC %s not found in list: %s' % (testcase_id, self.test_descriptions_dict.keys()))
                 return None
 
     def get_current_testcase(self):
@@ -547,7 +547,7 @@ class TestSuite:
     def get_testcases_basic(self, verbose=None):
 
         tc_list = []
-        for tc_v in self.teds.values():
+        for tc_v in self.test_descriptions_dict.values():
             tc_list.append(tc_v.to_dict(verbose))
         # If no test case found
         if len(tc_list) == 0:
@@ -556,7 +556,7 @@ class TestSuite:
         return tc_list
 
     def get_testcases_list(self):
-        return list(self.teds.keys())
+        return list(self.test_descriptions_dict.keys())
 
     def set_current_testcase_state(self, state):
         assert type(state) is str
@@ -658,7 +658,7 @@ class TestSuite:
     def get_detailed_status(self):
         tc_list = []
         step_list = []
-        for tc_v in self.teds.values():
+        for tc_v in self.test_descriptions_dict.values():
             tc_list.append(tc_v.to_dict(True))
             step_list.append(tc_v.seq_to_dict(True))
 
