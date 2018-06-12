@@ -5,8 +5,8 @@ import textwrap
 from ioppytest import (
     LOG_LEVEL
 )
-from ioppytest.test_descriptions import (get_dict_of_all_test_cases,
-                                         get_dict_of_all_test_cases_configurations)
+from ioppytest.test_suite import (get_dict_of_all_test_cases,
+                                  get_dict_of_all_test_cases_configurations)
 from ioppytest.utils import tabulate
 
 tabulate.PRESERVE_WHITESPACE = True

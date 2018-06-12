@@ -8,9 +8,9 @@ from transitions import Machine
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
 from ioppytest import TMPDIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, LOG_LEVEL
-from ioppytest.test_descriptions.testsuite import TestSuite
 from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
 from ioppytest.test_coordinator.states_and_transitions import transitions, states
+from ioppytest.test_suite.testsuite import TestSuite
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.utils.messages import *

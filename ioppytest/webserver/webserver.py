@@ -29,9 +29,9 @@ from ioppytest import (
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from ioppytest.test_descriptions import (get_list_of_all_test_cases,
-                                         get_test_cases_list_from_yaml,
-                                         get_test_configurations_list_from_yaml)
+from ioppytest.test_suite import (get_list_of_all_test_cases,
+                                  get_test_cases_list_from_yaml,
+                                  get_test_configurations_list_from_yaml)
 
 from ioppytest.test_descriptions.format_conversion import (get_markdown_representation_of_testcase,
                                                            get_markdown_representation_of_testcase_configuration)
@@ -106,6 +106,8 @@ for ts_name, test_descriptions_list in TEST_DESCRIPTIONS_DICT.items():
         testcases_paths += ['/testsuites/{}/{}'.format(ts_name, tc.id) for tc in tescases_in_td]
 
 print('routes built:%s' % testcases_paths)
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
