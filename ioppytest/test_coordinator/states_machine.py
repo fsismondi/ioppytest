@@ -16,11 +16,9 @@ from ioppytest.utils.exceptions import CoordinatorError
 from ioppytest.utils.messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
-# TODO get filter from config of the TEDs
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
 
 # if left empty => packet_sniffer chooses the loopback
-# TODO send flag to sniffer telling him to look for a tun interface instead!
 SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
 
 # TODO 6lo FIX ME !
@@ -39,9 +37,8 @@ json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
 
-# make pika logger less verbose
+# make pika and transitions loggers less verbose
 logging.getLogger('pika').setLevel(logging.WARNING)
-
 logging.getLogger('transitions').setLevel(logging.INFO)
 
 
@@ -51,6 +48,11 @@ class CustomStateMachine(Machine):
 
 
 class Coordinator(CoordinatorAmqpInterface):
+    """
+    Coordinator object glues together the AMQP interface to the Test Suite FSM.
+    Basically translates AMQP event bus messages
+
+    """
     component_id = 'test_coordinator'
 
     def __init__(self, amqp_url, amqp_exchange, ted_tc_file, ted_config_file, testsuite_name):
