@@ -3,7 +3,7 @@ import pprint
 import unittest
 
 from ioppytest import TEST_DESCRIPTIONS_DICT, TEST_DESCRIPTIONS_CONFIGS_DICT
-from ioppytest.test_descriptions.testsuite import TestSuite
+from ioppytest.test_suite.testsuite import TestSuite
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)

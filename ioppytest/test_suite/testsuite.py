@@ -12,7 +12,7 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TD_DIR
 from ioppytest.utils.exceptions import TestSuiteError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
-COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
+COMPONENT_ID = 'testsuite'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)

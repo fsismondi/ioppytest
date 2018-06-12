@@ -89,7 +89,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
                     sleep 15
 
                     sudo -E supervisorctl -c $SUPERVISOR_CONFIG_FILE status
-                    python3 -m pytest -p no:cacheprovider tests/test_api.py -v
+                    python3 -m pytest -p no:cacheprovider tests/black_box_test___test_testing_tool_event_bus_api.py -v
                 '''
           }
           catch (e){
@@ -208,7 +208,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
                         '''
                     }
                 }
@@ -261,7 +261,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
                         '''
                     }
                 }
@@ -315,7 +315,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
                         '''
                     }
                 }
@@ -369,7 +369,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            python3 -m pytest -s -p no:cacheprovider tests/test_full_coap_interop_session.py -v
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
                         '''
                     }
                 }
