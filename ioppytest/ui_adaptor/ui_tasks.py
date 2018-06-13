@@ -2,14 +2,14 @@ import json
 import time
 import logging
 
-from ioppytest.finterop_ui_adaptor import (UiResponseError,
-                                           SessionError,
-                                           MsgUiRequestSessionConfiguration,
-                                           WAITING_TIME_FOR_SECOND_USER,
-                                           MsgUiDisplay,
-                                           MsgUiRequestConfirmationButton,
-                                           UI_TAG_SETUP,
-                                           )
+from ioppytest.ui_adaptor import (UiResponseError,
+                                  SessionError,
+                                  MsgUiRequestSessionConfiguration,
+                                  WAITING_TIME_FOR_SECOND_USER,
+                                  MsgUiDisplay,
+                                  MsgUiRequestConfirmationButton,
+                                  UI_TAG_SETUP,
+                                  )
 
 
 # auxiliary functions

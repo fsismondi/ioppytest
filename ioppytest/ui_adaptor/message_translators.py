@@ -13,18 +13,18 @@ from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.tabulate import tabulate
-from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
-                                                    get_field_keys_from_ui_request,
-                                                    get_field_value_from_ui_reply)
-from ioppytest.finterop_ui_adaptor.user_help_text import *
-from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
-                                           STDOUT_MAX_TEXT_LENGTH,
-                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
-                                           STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
-                                           STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
-                                           UI_TAG_BOOTSTRAPPING,
-                                           UI_TAG_SETUP,
-                                           UI_TAG_REPORT)
+from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
+                                           get_field_keys_from_ui_request,
+                                           get_field_value_from_ui_reply)
+from ioppytest.ui_adaptor.user_help_text import *
+from ioppytest.ui_adaptor import (COMPONENT_ID,
+                                  STDOUT_MAX_TEXT_LENGTH,
+                                  STDOUT_MAX_TEXT_LENGTH_PER_LINE,
+                                  STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
+                                  STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
+                                  UI_TAG_BOOTSTRAPPING,
+                                  UI_TAG_SETUP,
+                                  UI_TAG_REPORT)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))

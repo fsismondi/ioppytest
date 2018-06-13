@@ -1,11 +1,11 @@
 import logging
 import time
 
-from ioppytest.finterop_ui_adaptor.ui_tasks import get_session_configuration_from_ui
-from ioppytest.finterop_ui_adaptor import (AmqpSynchCallTimeoutError,
-                                           MsgSessionConfiguration,
-                                           SessionError,
-                                           MsgTestSuiteGetTestCases, )
+from ioppytest.ui_adaptor.ui_tasks import get_session_configuration_from_ui
+from ioppytest.ui_adaptor import (AmqpSynchCallTimeoutError,
+                                  MsgSessionConfiguration,
+                                  SessionError,
+                                  MsgTestSuiteGetTestCases, )
 
 
 def send_default_testing_tool_configuration(amqp_publisher):
