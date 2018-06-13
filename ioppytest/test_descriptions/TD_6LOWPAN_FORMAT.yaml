@@ -9,7 +9,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 64.
 references: 'RFC 4944 section 5.1'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_FORMAT_01_step_00
     type: stimuli

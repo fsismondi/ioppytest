@@ -1,15 +1,12 @@
 import pprint
-import unittest, logging, os, pika, json
+import unittest
 from time import sleep
-from ioppytest.utils.messages import *
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TD_COAP_CFG, TD_COAP
-from ioppytest.test_coordinator.testsuite import import_teds, TestSuite
-from ioppytest.test_coordinator.states_machine import Coordinator
-from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest.test_coordinator.states_machine import Coordinator
+from ioppytest.utils.messages import *
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
-# init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
 
 default_configuration = {
@@ -21,164 +18,9 @@ default_configuration = {
 }
 
 
-class TestSuiteTests(unittest.TestCase):
-    """
-    python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests
-    python3 -m unittest ioppytest.test_coordinator.tests.tests.TestSuiteTests.test_all_getters_of_testsuite_on_middle_way
-    """
-
-    def setUp(self):
-        logger.setLevel(logging.DEBUG)
-        from ioppytest import TD_COAP_CFG, TD_COAP
-        self.testsuite = TestSuite(
-            ted_tc_file=TD_COAP,
-            ted_config_file=TD_COAP_CFG)
-
-    def _run_all_getters(self):
-        # logger.info(self.testsuite.get_detailed_status())
-
-        self.testsuite.get_addressing_table()
-        self.testsuite.get_testsuite_configuration()
-        self.testsuite.get_testcases_basic()
-
-        try:
-            self.testsuite.get_testcase('foo')
-        except ValueError:
-            pass  # passed
-
-        self.testsuite.get_addressing_table()
-
-        self.testsuite.get_agent_names()
-
-        self.testsuite.get_current_step()
-        self.testsuite.get_current_step_id()
-        self.testsuite.get_current_step_state()
-        self.testsuite.get_current_step_target_address()
-
-        self.testsuite.get_testcases_list()
-
-        self.testsuite.get_current_testcase()
-        self.testsuite.get_current_testcase_id()
-        self.testsuite.get_current_testcase_state()
-        self.testsuite.get_current_testcase_configuration()
-        self.testsuite.get_current_testcase_configuration_id()
-
-        self.testsuite.get_report()
-        self.testsuite.get_testcases_basic()
-        self.testsuite.get_testcase_report()
-
-        self.testsuite.get_detailed_status()
-        self.testsuite.get_default_iut_addressing_from_configurations()
-
-    def test_all_getters_of_testsuite_on_init(self):
-        self._run_all_getters()
-
-    def test_all_getters_of_testsuite_on_middle_way(self):
-        log_trace = []
-
-        self._run_all_getters()
-
-        logger.info(self.testsuite.states_summary())
-        tc = self.testsuite.next_testcase()
-
-        for t in range(0, 83):
-            tc = self.testsuite.get_current_testcase()
-            if self.testsuite.check_testcase_finished():
-                tc = self.testsuite.next_testcase()
-                self._run_all_getters()
-
-            ts = self.testsuite.next_step()
-            self._run_all_getters()
-
-            if ts:
-                if ts.type != 'stimuli':
-                    ts.set_result('pass', 'faked passed verdict')
-                ts.change_state('finished')
-
-            if tc and ts:
-                log_trace.append((tc.id, ts.id))
-            elif tc:
-                log_trace.append((tc.id, '-'))
-            else:
-                log_trace.append(('-', '-'))
-
-            self._run_all_getters()
-
-        for item in log_trace:
-            logger.info(item)
-
-        self._run_all_getters()
-
-        logger.info("report: %s" % self.testsuite.generate_report())
-
-    def test_all_getters_of_testsuite_on_finished(self):
-        log_trace = []
-
-        self._run_all_getters()
-
-        tc = self.testsuite.next_testcase()
-
-        while tc:
-
-            if self.testsuite.check_testcase_finished():
-                logger.info('finished %s' % self.testsuite.get_current_testcase().id)
-                self.testsuite.get_current_testcase().change_state('finished')
-                tc = self.testsuite.next_testcase()
-                self._run_all_getters()
-
-            ts = self.testsuite.next_step()
-            self._run_all_getters()
-
-            if ts:
-                if ts.type != 'stimuli':
-                    ts.set_result('pass', 'faked passed verdict')
-                ts.change_state('finished')
-
-            if tc and ts:
-                log_trace.append((tc.id, ts.id))
-            elif tc:
-                log_trace.append((tc.id, '-'))
-            else:
-                log_trace.append(('-', '-'))
-
-            self._run_all_getters()
-
-        for item in log_trace:
-            logger.info(item)
-
-        self._run_all_getters()
-
-        logger.info("report: %s" % self.testsuite.generate_report())
-
-    def test_check_testcase_finished(self):
-        assert self.testsuite.current_tc is None
-        self.testsuite.get_testsuite_configuration()
-        self.testsuite.get_testsuite_configuration()
-
-    def test_address_table_updates(self):
-
-        add_table_1 = self.testsuite.get_addressing_table().copy()
-        logger.info(add_table_1)
-        assert add_table_1 is not None
-
-        self.testsuite.update_node_address(node='foo', address=('var1', 'var2'))
-        add_table_2 = self.testsuite.get_addressing_table().copy()
-        logger.info(add_table_2)
-        assert len(add_table_1) == len(add_table_2) - 1
-
-        assert self.testsuite.check_all_iut_nodes_configured() is False
-
-        self.testsuite.update_node_address(node='foo2', address=('var1', 'var2'))
-        add_table_3 = self.testsuite.get_addressing_table().copy()
-        logger.info(add_table_3)
-        assert len(add_table_2) == len(add_table_3) - 1
-
-        assert self.testsuite.check_all_iut_nodes_configured() is True
-
-
 class CoordinatorStateMachineTests(unittest.TestCase):
     """
-    python3 -m unittest ioppytest.test_coordinator.tests.tests.CoordinatorStateMachineTests
+    python3 -m unittest ioppytest.test_coordinator.tests.test_fsm_and_coordinator.CoordinatorStateMachineTests
     """
 
     def setUp(self):

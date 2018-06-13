@@ -58,7 +58,7 @@ class AcklioCoMiServer(AutomatedIUT):
         # shoud we restart process?
         return server_base_url
 
-if __name__ == '__main__'`:
+if __name__ == '__main__':
     iut = AcklioCoMiServer()
     iut.start()
     iut.join()

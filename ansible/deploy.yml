@@ -33,7 +33,7 @@
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/ioppytest/sniffer/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/packet_sniffer/requirements.txt"
     executable: pip3
 
 - name: Install python requirements for TAT

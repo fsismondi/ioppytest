@@ -169,16 +169,12 @@ stop-all: ## Stop testing tools running as docker containers
 # # # # UNITTEST commands # # # #
 
 validate-test-description-syntax: ## validate (yaml) test description file syntax
-	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py -vvv
+	@python3 -m pytest -p no:cacheprovider tests/test_test_descriptions.py -vvv
 
 run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/sniffer/tests/__init__.py -vvv
+	@python3 -m pytest -p no:cacheprovider tests/ -vvv
 	$(MAKE) _test_submodules
-
 
 _test_ttproto:
 	cd ioppytest/test_analysis_tool ;python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
@@ -225,7 +221,7 @@ install-python-dependencies: ## installs all python pip dependencies
 	@python3 -m pip -qq install -r ioppytest/test_coordinator/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/packet_router/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/sniffer/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/packet_sniffer/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/webserver/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
 

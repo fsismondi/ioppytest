@@ -49,10 +49,11 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 TOUT_waiting_for_iut_configuration_executed = 5
 
 
-class CoordinatorAmqpInterface(object):
+class CoordinatorAmqpInterface:
     """
-    This class listens to the event bus for test coordination services (like get testcases list etc..)
-    and to test coordination events (like testcase start event etc..).
+    This class listens to the following event bus messages:
+        - Coordinator SERVICES (request/reply messages) like get testcases list etc..
+        - Coordination EVENTS (like testcase start event, skip, etc..), these are dispatched to the FSM
     """
 
     def __init__(self, amqp_url, amqp_exchange):

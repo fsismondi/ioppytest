@@ -5,11 +5,11 @@ from ioppytest.utils.messages import *
 import multiprocessing
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.event_bus_utils import amqp_request, publish_message
-from ioppytest.sniffer.__main__ import Sniffer, DLT_RAW
+from ioppytest.packet_sniffer.__main__ import Sniffer, DLT_RAW
 
 """
 launch it as
-    python3 -m unittest ioppytest.sniffer.tests.SnifferTestCase
+    python3 -m unittest ioppytest.packet_sniffer.tests.SnifferTestCase
 """
 
 

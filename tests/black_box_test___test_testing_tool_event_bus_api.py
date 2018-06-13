@@ -31,9 +31,9 @@ from tests import (check_if_message_is_an_error_message,
 Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
 
 EXECUTE AS:
-python3 -m pytest -p no:cacheprovider tests/test_api.py -vvv
+python3 -m pytest -p no:cacheprovider tests/black_box_test___test_testing_tool_event_bus_api.py -vvv
 or
-python3 -m unittest tests/test_api.py -vvv
+python3 -m unittest tests/black_box_test___test_testing_tool_event_bus_api.py -vvv
 
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment

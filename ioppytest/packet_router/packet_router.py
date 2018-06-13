@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
+import argparse
+import sys
+import threading
+
 import pika
 import yaml
-import threading
-import sys
-import argparse
-import logging
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
-from ioppytest.test_coordinator.testsuite import TestConfig
-from ioppytest.utils.messages import *
+from ioppytest.test_suite.testsuite import TestConfig
 from ioppytest.utils.amqp_synch_call import publish_message
+from ioppytest.utils.messages import *
+from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'packet_router'
 

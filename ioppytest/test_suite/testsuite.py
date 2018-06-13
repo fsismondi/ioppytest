@@ -4,15 +4,111 @@ import os
 import json
 import yaml
 import logging
-
 from itertools import cycle
 from collections import OrderedDict
-
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TD_DIR
 from ioppytest.utils.exceptions import TestSuiteError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest import (
+    TEST_DESCRIPTIONS_CONFIGS_DICT,
+    TEST_DESCRIPTIONS_DICT,
+    TD_DIR,
+)
 
-COMPONENT_ID = '%s|%s' % ('test_coordinator', 'testsuite')
+"""
+Module used for importing form yaml files Test Descriptions.
+Usefule for handling Interop test suite information included in the Test Descriptions and Test Configurations.
+Provides iterators over Test Cases and Test Steps.
+Provides functions for session dynamic data like IUT configurations, agents roles, agent's IPs, etc.
+Provides functions for building verdicts based on Step results (notably checks and verifies)
+
+>>> from ioppytest.test_suite import *
+>>> dir()
+['Iut', 'Step', 'TestCase', 'TestConfig', 'TestSuite', '__annotations__', '__builtins__', '__doc__', '__loader__', 
+'__name__', '__package__', '__spec__', 'get_dict_of_all_test_cases', 'get_dict_of_all_test_cases_configurations', 
+'get_list_of_all_test_cases', 'get_list_of_all_test_cases_configurations', 'get_test_cases_list_from_yaml', 
+'get_test_configurations_list_from_yaml', 'import_test_description_from_yaml']
+
+>>> from ioppytest import *
+>>> TEST_DESCRIPTIONS_DICT['coap']
+['/Users/fsismondi/dev/ioppytest/ioppytest/test_descriptions/TD_COAP_CORE.yaml']
+
+>>> ts = TestSuite(TEST_DESCRIPTIONS_DICT['coap'],TEST_DESCRIPTIONS_CONFIGS_DICT['coap'])
+INFO:testsuite:Import: 2 TC_CONFIG imported
+INFO:testsuite:Import: agents participating in TC_CONFIG: ['coap_server', 'gateway', 'coap_client']
+INFO:testsuite:Import: default addressing table loaded from TC_CONFIGs: {'coap_client': ('bbbb', 1), ...
+INFO:testsuite:Import: test configuration imported from YAML: COAP_CFG_01
+INFO:testsuite:Import: test configuration imported from YAML: COAP_CFG_02
+INFO:testsuite:Import: 24 TC execution scripts imported
+INFO:testsuite:test case imported from YAML: TD_COAP_CORE_01
+INFO:testsuite:test case imported from YAML: TD_COAP_CORE_02
+INFO:testsuite:test case imported from YAML: TD_COAP_CORE_03
+INFO:testsuite:test case imported from YAML: TD_COAP_CORE_04
+(...)
+
+>>> ts.get_testcases_basic()
+[OrderedDict([('testcase_id', 'TD_COAP_CORE_01'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_01'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_02'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_02'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_03'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_03'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_04'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_04'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_05'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_05'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_06'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_06'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_07'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_07'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_08'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_08'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_09'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_09'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_10'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_09'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_11'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_11'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_12'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_12'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_13'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_13'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_14'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_14'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_15'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_15'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_16'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_16'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_17'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_17'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_18'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_18'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_19'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_19'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_20'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_20'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_21'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_21'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_22'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_22'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_23'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_23'), ('state', None)]), OrderedDict([('testcase_id', 'TD_COAP_CORE_31'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_31'), ('state', None)])]
+
+>>> ts.get_report() is None
+True
+
+>>> ts.generate_report()
+WARNING:testsuite:Empty report found. Generating dummy report for skipped testcase : TD_COAP_CORE_01
+WARNING:testsuite:Empty report found. Generating dummy report for skipped testcase : TD_COAP_CORE_02
+WARNING:testsuite:Empty report found. Generating dummy report for skipped testcase : TD_COAP_CORE_03
+WARNING:testsuite:Empty report found. Generating dummy report for skipped testcase : TD_COAP_CORE_04
+(...)
+
+>>> ts.
+(autocomplete:)
+ts.abort_current_testcase(                         ts.get_agent_names(                                
+ts.addressing_table                                ts.get_current_step(                               
+ts.agents                                          ts.get_current_step_id(                            
+ts.check_all_iut_nodes_configured(                 ts.get_current_step_state(                         
+ts.check_testcase_finished(                        ts.get_current_step_target_address(                
+ts.check_testsuite_finished(                       ts.get_current_testcase(                           
+ts.configure_testsuite(                            ts.get_current_testcase_configuration(             
+ts.current_tc                                      ts.get_current_testcase_configuration_id(          
+ts.finish_check_step(                              ts.get_current_testcase_id(                        
+ts.finish_stimuli_step(                            ts.get_current_testcase_state(                     
+ts.finish_verify_step(                             ts.get_default_iut_addressing_from_configurations( 
+ts.generate_report(                                ts.get_detailed_status(                            
+ts.get_addressing_table(                           ts.get_node_address(                               
+ts.get_report(                                     ts.session_configuration
+ts.get_testcase(                                   ts.session_id
+ts.get_testcase_report(                            ts.session_selected_tc_list
+ts.get_testcases_basic(                            ts.session_users
+ts.get_testcases_list(                             ts.set_current_testcase_state(
+ts.get_testsuite_configuration(                    ts.skip_testcase(
+ts.go_to_testcase(                                 ts.states_summary(
+ts.next_step(                                      ts.tc_configs
+ts.next_testcase(                                  ts.test_descriptions_dict
+ts.nodes_configured                                ts.update_node_address(
+ts.reinit(
+ts.reinit_testcase(
+
+
+>>> ts.current_tc is None
+True
+
+>>> ts.next_testcase()
+TestCase(testcase_id=TD_COAP_CORE_01, uri=http://doc.f-interop.eu/tests/TD_COAP_CORE_01, objective=Perform GET transaction(CON mode), configuration=COAP_CFG_01, notes=We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document, test_sequence=[Step(step_id=TD_COAP_CORE_01_step_01, type=stimuli, description=['Client is requested to send a GET request with', ['Type = 0(CON)', 'Code = 1(GET)']], iut node=coap_client, iut execution mode =user_assisted), Step(step_id=TD_COAP_CORE_01_step_02, type=check, description=['The request sent by the client contains', ['Type=0 and Code=1', 'Client-generated Message ID (* CMID)', 'Client-generated Token (* CTOK)', 'UTEST Uri-Path option "test"']], iut node=, iut execution mode =), Step(step_id=TD_COAP_CORE_01_step_03, type=check, description=['Server sends response containing', ['Code = 2.05(Content)', 'Message ID = CMID, Token = CTOK', 'Content-format option', 'Non-empty Payload']], iut node=, iut execution mode =), Step(step_id=TD_COAP_CORE_01_step_04, type=verify, description=['Client displays the received information'], iut node=coap_client, iut execution mode =user_assisted)])
+
+>>> ts.get_current_testcase()
+TestCase(testcase_id=TD_COAP_CORE_01, uri=http://doc.f-interop.eu/tests/TD_COAP_CORE_01, objective=Perform GET transaction(CON mode), configuration=COAP_CFG_01, notes=We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document, test_sequence=[Step(step_id=TD_COAP_CORE_01_step_01, type=stimuli, description=['Client is requested to send a GET request with', ['Type = 0(CON)', 'Code = 1(GET)']], iut node=coap_client, iut execution mode =user_assisted), Step(step_id=TD_COAP_CORE_01_step_02, type=check, description=['The request sent by the client contains', ['Type=0 and Code=1', 'Client-generated Message ID (* CMID)', 'Client-generated Token (* CTOK)', 'UTEST Uri-Path option "test"']], iut node=, iut execution mode =), Step(step_id=TD_COAP_CORE_01_step_03, type=check, description=['Server sends response containing', ['Code = 2.05(Content)', 'Message ID = CMID, Token = CTOK', 'Content-format option', 'Non-empty Payload']], iut node=, iut execution mode =), Step(step_id=TD_COAP_CORE_01_step_04, type=verify, description=['Client displays the received information'], iut node=coap_client, iut execution mode =user_assisted)])
+
+>>> ts.get_current_testcase().id
+'TD_COAP_CORE_01'
+
+>>> ts.get_current_testcase().to_dict()
+OrderedDict([('testcase_id', 'TD_COAP_CORE_01'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_01'), ('state', None)])
+
+>>> ts.get_current_testcase().to_dict(verbose=True)
+OrderedDict([('testcase_id', 'TD_COAP_CORE_01'), ('testcase_ref', 'http://doc.f-interop.eu/tests/TD_COAP_CORE_01'), ('state', None), ('objective', 'Perform GET transaction(CON mode)'), ('pre_conditions', ['Server offers the resource /test with resource content is not empty that handles GET with an arbitrary payload']), ('notes', 'We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document')])
+
+"""
+
+COMPONENT_ID = 'testsuite'
 
 # init logging to stnd output and log files
 logger = logging.getLogger(COMPONENT_ID)
@@ -25,76 +121,6 @@ rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
 rabbitmq_handler.setFormatter(json_formatter)
 logger.addHandler(rabbitmq_handler)
-
-
-# # # YAML parser methods # # #
-def testcase_constructor(loader, node):
-    instance = TestCase.__new__(TestCase)
-    yield instance
-    state = loader.construct_mapping(node, deep=True)
-    logger.debug("pasing test case: " + str(state))
-    instance.__init__(**state)
-
-
-def test_config_constructor(loader, node):
-    instance = TestConfig.__new__(TestConfig)
-    yield instance
-    state = loader.construct_mapping(node, deep=True)
-    # logger.debug("passing test case: " + str(state))
-    instance.__init__(**state)
-
-
-# these build Testcase and Configuration objects from yaml files
-yaml.add_constructor(u'!configuration', test_config_constructor)
-yaml.add_constructor(u'!testcase', testcase_constructor)
-
-
-def merge_yaml_files(filelist: list):
-    new_merged_file = os.path.join(TD_DIR, 'merged_files.yaml')
-
-    with open(new_merged_file, 'w', encoding="utf-8") as fout:
-        for file in filelist:
-            with open(file, 'r', encoding="utf-8") as fin:
-                for line in fin:
-                    if line.startswith("#"):
-                        pass
-                    else:
-                        fout.write(line)
-            fout.write(os.linesep)
-
-    return new_merged_file
-
-
-def import_teds(yamlfile):
-    """
-    :param yamlfile: TED yaml file
-    :return: list of imported testCase(s) and testConfig(s) object(s)
-    """
-    td_list = []
-    with open(yamlfile, "r", encoding="utf-8") as stream:
-        yaml_docs = yaml.load_all(stream)
-        for yaml_doc in yaml_docs:
-            # TODO use same yaml for both test cases and config descriptions
-            if type(yaml_doc) is TestCase:
-                logger.debug(' Parsed test case: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
-                td_list.append(yaml_doc)
-            elif type(yaml_doc) is TestConfig:
-                logger.debug(' Parsed test case config: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
-                td_list.append(yaml_doc)
-            else:
-                logger.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
-    return td_list
-
-
-# def yaml_include(loader, node):
-#     # Get the path out of the yaml file
-#     file_name = os.path.join(os.path.dirname(loader.name), node.value)
-#
-#     with open(file_name) as inputfile:
-#         return yaml.load(inputfile)
-#
-# yaml.add_constructor("!include", yaml_include)
-# yaml.add_constructor(u'!configuration', testcase_constructor)
 
 
 # # # Auxiliary functions # # #
@@ -121,7 +147,9 @@ def list_to_str(ls):
     return ret
 
 
-# # # Test suite models # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # TestSuite, TestCase and TestConfig Models # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 class TestSuite:
     def __init__(self, ted_tc_file, ted_config_file):
@@ -129,7 +157,7 @@ class TestSuite:
         # first let's import the TC configurations
         if type(ted_config_file) is list:
             ted_config_file = merge_yaml_files(ted_config_file)
-        imported_configs = import_teds(ted_config_file)
+        imported_configs = import_test_description_from_yaml(ted_config_file)
         self.tc_configs = OrderedDict()
 
         self.agents = set()
@@ -163,19 +191,19 @@ class TestSuite:
         # lets import TCs and make sure there's a tc config for each one of them
         if type(ted_tc_file) is list:
             ted_tc_file = merge_yaml_files(ted_tc_file)
-        imported_teds = import_teds(ted_tc_file)
-        self.teds = OrderedDict()
-        for ted in imported_teds:
-            self.teds[ted.id] = ted
+        imported_TDs = import_test_description_from_yaml(ted_tc_file)
+        self.test_descriptions_dict = OrderedDict()
+        for ted in imported_TDs:
+            self.test_descriptions_dict[ted.id] = ted
             assert ted.configuration_id in self.tc_configs, \
                 "Missing config: %s for test case: %s " % (ted.configuration_id, ted.id)
 
-        logger.info('Import: %s TC execution scripts imported' % len(self.teds))
-        for key, val in self.teds.items():
+        logger.info('Import: %s TC execution scripts imported' % len(self.test_descriptions_dict))
+        for key, val in self.test_descriptions_dict.items():
             logger.info('test case imported from YAML: %s' % key)
 
         # test cases iterator (over the TC objects, not the keys)
-        self._ted_it = cycle(self.teds.values())
+        self._TD_it = cycle(self.test_descriptions_dict.values())
         self.current_tc = None
 
         # session info (published in bus after testing tool is spawned):
@@ -216,13 +244,13 @@ class TestSuite:
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
-        # _ted_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
-        self.current_tc = next(self._ted_it)
+        # _TD_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
+        self.current_tc = next(self._TD_it)
 
         # get next not executed nor skipped testcase:
-        max_iters = len(self.teds)
+        max_iters = len(self.test_descriptions_dict)
         while self.current_tc.state is not None:
-            self.current_tc = self._ted_it.__next__()
+            self.current_tc = self._TD_it.__next__()
             max_iters -= 1
             if max_iters < 0:
                 self.current_tc = None
@@ -283,7 +311,7 @@ class TestSuite:
         :return: list of reports
         """
         report = []
-        for tc in self.teds.values():
+        for tc in self.test_descriptions_dict.values():
             report_item = {'testcase_id': tc.id}
             if tc.report is None:
                 logger.warning("Empty report found. Generating dummy report for skipped testcase : %s" % tc.id)
@@ -304,7 +332,7 @@ class TestSuite:
 
     def reinit(self, tc_list_selection=None):
         # resets all previously executed TC
-        for tc in self.teds.values():
+        for tc in self.test_descriptions_dict.values():
             tc.reinit()
 
         # reconfigure test cases selection
@@ -377,10 +405,10 @@ class TestSuite:
 
     def check_testsuite_finished(self):
         # cyclic as user may not have started by the first TC
-        it = cycle(self.teds.values())
+        it = cycle(self.test_descriptions_dict.values())
 
         # we need to check if we already did a cycle (cycle doesnt raises StopIteration)
-        iter_counts = len(self.teds)
+        iter_counts = len(self.test_descriptions_dict)
         tc = next(it)
 
         while iter_counts >= 0:
@@ -475,9 +503,9 @@ class TestSuite:
         else:
             assert type(testcase_id) is str
             try:
-                return self.teds[testcase_id]
+                return self.test_descriptions_dict[testcase_id]
             except KeyError:
-                logger.info('TC %s not found in list: %s' % (testcase_id, self.teds.keys()))
+                logger.info('TC %s not found in list: %s' % (testcase_id, self.test_descriptions_dict.keys()))
                 return None
 
     def get_current_testcase(self):
@@ -539,7 +567,7 @@ class TestSuite:
     def get_testcases_basic(self, verbose=None):
 
         tc_list = []
-        for tc_v in self.teds.values():
+        for tc_v in self.test_descriptions_dict.values():
             tc_list.append(tc_v.to_dict(verbose))
         # If no test case found
         if len(tc_list) == 0:
@@ -548,7 +576,7 @@ class TestSuite:
         return tc_list
 
     def get_testcases_list(self):
-        return list(self.teds.keys())
+        return list(self.test_descriptions_dict.keys())
 
     def set_current_testcase_state(self, state):
         assert type(state) is str
@@ -650,7 +678,7 @@ class TestSuite:
     def get_detailed_status(self):
         tc_list = []
         step_list = []
-        for tc_v in self.teds.values():
+        for tc_v in self.test_descriptions_dict.values():
             tc_list.append(tc_v.to_dict(True))
             step_list.append(tc_v.seq_to_dict(True))
 
@@ -1098,10 +1126,173 @@ class TestCase:
 
         # hack to overwrite the final verdict MESSAGE in case of pass
         if final_verdict.get_value() == 'pass':
-            final_verdict.update('pass', 'No interoperability error was detected,')
+            final_verdict.update('pass', 'No interoperability error was detected.')
             logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
             logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
             logger.debug("[VERDICT GENERATION] info: %s' " % final_verdict.get_value())
 
         return final_verdict.get_value(), final_verdict.get_message(), tc_report
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # IMPORT TestCase and TestConfig FUNCTIONS (FROM YAML FILES) # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# def yaml_include(loader, node):
+#     # Get the path out of the yaml file
+#     file_name = os.path.join(os.path.dirname(loader.name), node.value)
+#
+#     with open(file_name) as inputfile:
+#         return yaml.load(inputfile)
+#
+# yaml.add_constructor("!include", yaml_include)
+# yaml.add_constructor(u'!configuration', testcase_constructor)
+
+
+_test_descriptions_and_configurations_paths = []
+_test_descriptions_and_configurations_paths += list(TEST_DESCRIPTIONS_DICT.values())
+_test_descriptions_and_configurations_paths += list(TEST_DESCRIPTIONS_CONFIGS_DICT.values())
+
+_flat_list_of_test_descriptions_and_configurations = [
+    item for sublist in _test_descriptions_and_configurations_paths for item in sublist
+]
+
+
+# # # YAML parser methods # # #
+def testcase_constructor(loader, node):
+    instance = TestCase.__new__(TestCase)
+    yield instance
+    state = loader.construct_mapping(node, deep=True)
+    logging.debug("pasing test case: " + str(state))
+    instance.__init__(**state)
+
+
+def test_config_constructor(loader, node):
+    instance = TestConfig.__new__(TestConfig)
+    yield instance
+    state = loader.construct_mapping(node, deep=True)
+    # logger.debug("passing test case: " + str(state))
+    instance.__init__(**state)
+
+
+# these build Testcase and Configuration objects from yaml files
+yaml.add_constructor(u'!configuration', test_config_constructor)
+yaml.add_constructor(u'!testcase', testcase_constructor)
+
+__td_testcases_list = []
+__td_testcases_dict = {}
+__td_config_list = []
+__td_config_dict = {}
+
+for _td in _flat_list_of_test_descriptions_and_configurations:
+    with open(_td, "r", encoding="utf-8") as stream:
+        _yaml_docs = yaml.load_all(stream)
+        for _yaml_doc in _yaml_docs:
+            if type(_yaml_doc) is TestCase:
+                __td_testcases_list.append(_yaml_doc)
+                __td_testcases_dict[_yaml_doc.id] = _yaml_doc
+            elif type(_yaml_doc) is TestConfig:
+                __td_config_list.append(_yaml_doc)
+                __td_config_dict[_yaml_doc.id] = _yaml_doc
+            else:
+                logging.warning("Unrecognised yaml structure: %s" % str(_yaml_doc))
+
+
+def get_list_of_all_test_cases():
+    return __td_testcases_list
+
+
+def get_dict_of_all_test_cases():
+    return __td_testcases_dict
+
+
+def get_list_of_all_test_cases_configurations():
+    return __td_config_list
+
+
+def get_dict_of_all_test_cases_configurations():
+    return __td_config_dict
+
+
+def get_test_cases_list_from_yaml(testdescription_yamlfile):
+    """
+    :param testdescription_yamlfile:
+    :return: TC objects
+    """
+
+    list = []
+    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
+        _yaml_docs = yaml.load_all(stream)
+        for _yaml_doc in _yaml_docs:
+            if type(_yaml_doc) is TestCase:
+                list.append(_yaml_doc)
+    return list
+
+
+def get_test_configurations_list_from_yaml(testdescription_yamlfile):
+    """
+    :param testdescription_yamlfile:
+    :return: TC config objects
+    """
+
+    list = []
+    with open(testdescription_yamlfile, "r", encoding="utf-8") as stream:
+        _yaml_docs = yaml.load_all(stream)
+        for _yaml_doc in _yaml_docs:
+            if type(_yaml_doc) is TestConfig:
+                list.append(_yaml_doc)
+    return list
+
+
+def merge_yaml_files(filelist: list):
+    new_merged_file = os.path.join(TD_DIR, 'merged_files.yaml')
+
+    with open(new_merged_file, 'w', encoding="utf-8") as fout:
+        for file in filelist:
+            with open(file, 'r', encoding="utf-8") as fin:
+                for line in fin:
+                    if line.startswith("#"):
+                        pass
+                    else:
+                        fout.write(line)
+            fout.write(os.linesep)
+
+    return new_merged_file
+
+
+def import_test_description_from_yaml(yamlfile):
+    """
+    Imports TestCases objects or TestConfig objects from yamlfile(s)
+    :param yamlfile: TED yaml file(s)
+    :return: list of imported testCase(s) and testConfig(s) object(s)
+    """
+
+    if type(yamlfile) is str:
+        yamlfile_list = [yamlfile]
+    elif type(yamlfile) is list:
+        yamlfile_list = yamlfile
+    else:
+        raise TypeError('Expected list or str, got instead : %s' % type(yamlfile))
+
+    td_list = []
+    for yml in yamlfile_list:
+        with open(yml, "r", encoding="utf-8") as stream:
+            yaml_docs = yaml.load_all(stream)
+            for yaml_doc in yaml_docs:
+                if type(yaml_doc) is TestCase:
+                    logging.debug(' Parsed test case: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
+                    td_list.append(yaml_doc)
+                elif type(yaml_doc) is TestConfig:
+                    logging.debug(' Parsed test case config: %s from yaml file: %s :' % (yaml_doc.id, yamlfile))
+                    td_list.append(yaml_doc)
+                else:
+                    logging.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
+    return td_list
+
+
+if __name__ == '__main__':
+    COMPONENT_ID = '%s' % ('testsuite_tests')
+    # init logging to stnd output and log files
+    logger = logging.getLogger(COMPONENT_ID)
+    logger.setLevel(logging.DEBUG)

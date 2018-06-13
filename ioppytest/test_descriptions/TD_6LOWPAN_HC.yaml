@@ -10,7 +10,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 64.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_01_step_00
     type: stimuli
@@ -96,7 +96,7 @@ pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
 references: 'RFC 4944 section 5'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_02_step_00
     type: stimuli
@@ -151,7 +151,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_03_step_00
     type: stimuli
@@ -239,7 +239,7 @@ pre_conditions:
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_04_step_00
     type: stimuli
@@ -326,7 +326,7 @@ pre_conditions:
   - EUT1 is configured to use EUI-64 address.
   - EUT2 is configured to use 16-bit address.
 references: 'RFC 4944 section 10'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_05_step_00
     type: stimuli
@@ -385,7 +385,7 @@ pre_conditions:
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_06_step_00
     type: stimuli
@@ -474,7 +474,7 @@ pre_conditions:
   - EUT2 is configured to use EUI-64 address.
   - EUT1 and EUT2 are configured with a default hop limit of 64.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_07_step_00
     type: stimuli
@@ -561,7 +561,7 @@ pre_conditions:
   - EUT1 is configured to use 16-bit address.
   - EUT2 is configured to use EUI-64 address.
 references: 'RFC 4944 section 10'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_08_step_00
     type: stimuli
@@ -619,7 +619,7 @@ pre_conditions:
   - EUT2 is configured to use EUI-64 address.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_09_step_00
     type: stimuli
@@ -706,7 +706,7 @@ pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit addresses.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_10_step_00
     type: stimuli
@@ -792,7 +792,7 @@ pre_conditions:
   - Header compression is enabled on both EUT1 and EUT2.
   - EUT1 and EUT2 are configured to use 16-bit addresses.
 references: 'RFC 4944 section 10'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_11_step_00
     type: stimuli
@@ -846,7 +846,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use 16-bit addresses.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_12_step_00
     type: stimuli
@@ -934,7 +934,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use EUI-64 addresses.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_13_step_00
     type: stimuli
@@ -1023,7 +1023,7 @@ pre_conditions:
   - EUT2 is configured to use 16-bit address.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_14_step_00
     type: stimuli
@@ -1112,7 +1112,7 @@ pre_conditions:
   - EUT2 is configured to use EUI-64 address.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_15_step_00
     type: stimuli
@@ -1200,7 +1200,7 @@ pre_conditions:
   - EUT1 and EUT2 are configured to use 16-bit addresses.
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_16_step_00
     type: stimuli
@@ -1289,7 +1289,7 @@ pre_conditions:
   - A UDP ping server is installed on port 5683 of the EUT2
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_17_step_00
     type: stimuli
@@ -1345,7 +1345,7 @@ pre_conditions:
   - A UDP ping server is installed on port 5683 of the EUT2
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_18_step_00
     type: stimuli
@@ -1401,7 +1401,7 @@ pre_conditions:
   - A UDP ping server is installed on port 5683 of the EUT2
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_19_step_00
     type: stimuli
@@ -1457,7 +1457,7 @@ pre_conditions:
   - A UDP ping server is installed on port 5683 of the EUT2
   - Hop limit is set as 1.
 references: 'RFC 6282 section 3; RFC 4944 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_HC_20_step_00
     type: stimuli

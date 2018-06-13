@@ -10,7 +10,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6282 section 3; RFC 6775 5.6'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_ND_01_step_00
     type: stimuli
@@ -130,7 +130,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6775 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_ND_02_step_00
     type: stimuli
@@ -250,7 +250,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6775 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_ND_03_step_00
     type: stimuli
@@ -369,7 +369,7 @@ pre_conditions:
   - EUT1 is configured as 6LN.
   - EUT2 is configured as 6LR.
 references: 'RFC 6775 section 4'
-notes: null
+notes: We acknowledge the efforts made by ETSI CTI and ProbeIT who have contributed to the content of this document
 sequence:
   - step_id: TD_6LOWPAN_ND_04_step_00
     type: stimuli

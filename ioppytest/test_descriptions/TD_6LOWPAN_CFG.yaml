@@ -84,26 +84,26 @@ configuration_diagram: |+
 configuration_id: 6LOWPAN_CFG_02
 uri: http://doc.f-interop.eu/tests/6LOWPAN_CFG_02
 nodes:
-  - 6lr
-  - 6ln
+  - eut1
+  - eut2
 topology:
   - link_id : link_01
     capture_filter: none
     nodes:
-      - 6lr
-      - 6ln
+      - eut1
+      - eut2
 addressing:
-    - node: 6lr
+    - node: eut1
       ipv6_prefix : fe80
       ipv6_host: 1
-    - node: 6ln
+    - node: eut2
       ipv6_prefix : fe80
       ipv6_host: 2
 description:
-  - node: 6lr
+  - node: eut1
     message:
       - EUT is a 6LoWPAN Router.
-  - node: 6ln
+  - node: eut2
     message:
       - EUT is a 6LoWPAN Node (Router Or Host).
 configuration_diagram: |+
