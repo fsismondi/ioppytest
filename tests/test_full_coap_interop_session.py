@@ -6,6 +6,7 @@ import pika
 import pprint
 import logging
 import unittest
+import os
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.messages import *
@@ -42,6 +43,7 @@ PRE-CONDITIONS:
 
 COMPONENT_ID = 'fake_session'
 SESSION_TIMEOUT = 300
+EXECUTE_ALL_TESTS=os.environ.get('CI', 'False') == 'True'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -68,13 +70,16 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         log_all_received_messages(event_messages_sniffed_on_bus_list)
 
     def test_complete_interop_test_cycle(self):
-
-        tc_list = [
-            'TD_COAP_CORE_01',
-            'TD_COAP_CORE_02',
-            'TD_COAP_CORE_03'
-        ]  # the rest of the testcases are going to be skipped
-
+        if EXECUTE_ALL_TESTS:
+            tc_list=None
+            logger.info("Detected CI environment. Executing all tests")
+        else:
+            tc_list = [
+                'TD_COAP_CORE_01',
+                'TD_COAP_CORE_02',
+                'TD_COAP_CORE_03'
+            ]  # the rest of the testcases are going to be skipped
+    
         # thread
         msg_validator = AmqpListener(
             amqp_url=AMQP_URL,

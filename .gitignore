@@ -58,6 +58,9 @@ coverage.xml
 *,cover
 .hypothesis/
 
+#pytest
+.pytest_cache
+
 # Translations
 *.mo
 *.pot
@@ -101,3 +104,5 @@ ENV/
 #Jetbrains local files
 .idea
 
+#vim swap files
+*.swp
