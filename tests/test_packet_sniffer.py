@@ -7,13 +7,11 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.event_bus_utils import amqp_request, publish_message
 from ioppytest.packet_sniffer.__main__ import Sniffer, DLT_RAW
 
-"""
-launch it as
-    python3 -m unittest ioppytest.packet_sniffer.tests.SnifferTestCase
-"""
-
 
 class SnifferTestCase(unittest.TestCase):
+    """
+    python3 -m unittest tests/test_packet_sniffer.py
+    """
     def setUp(self):
         logging.info('using AMQP vars: %s, %s' % (AMQP_URL, AMQP_EXCHANGE,))
         self.capture_id = "test_capture_id"

@@ -27,7 +27,7 @@ MESSAGES_NOT_TO_BE_ECHOED = [
 WAITING_TIME_FOR_SECOND_USER = 900  # in seconds
 
 UI_TAG_SETUP = {"session_setup": ""}
-UI_TAG_BOOTSTRAPPING = {"session_boostrap": ""}
+UI_TAG_BOOTSTRAPPING = {"agents_setup": ""}
 UI_TAG_REPORT = {"testsuite_report": ""}
 
 

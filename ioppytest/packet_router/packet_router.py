@@ -119,12 +119,15 @@ class PacketRouter(threading.Thread):
                                    timestamp=body_dict['timestamp'],
                                    interface_name=body_dict['interface_name'])
         except:
-            self.logger.error('wrong message format, no data field found in : {msg}'.format(msg=json.dumps(body_dict)))
+            self.logger.error(
+                'wrong message format, <data> , <timestamp> and <interface_name> fields expected, got: {msg}'.
+                    format(msg=json.dumps(body_dict))
+            )
             return
 
         src_rkey = method.routing_key
         if src_rkey in self.routing_table.keys():
-            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+            self.logger.debug('Routing key found in routing table: {r_key}'.format(r_key=src_rkey))
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
                 # forward to dst_rkey

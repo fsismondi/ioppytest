@@ -5,16 +5,11 @@ from ioppytest import TEST_DESCRIPTIONS, TEST_DESCRIPTIONS_CONFIGS
 from ioppytest.test_descriptions import format_conversion
 from ioppytest.test_suite import import_test_description_from_yaml
 
-"""
-python3 -m  pytest tests/test_test_descriptions.py
-
-or verbose unitest:
-
-python3 -m unittest tests/test_test_descriptions.py
-"""
-
 
 class ImportYamlInteropTestCases(unittest.TestCase):
+    """
+    python3 -m  pytest tests/test_test_descriptions.py
+    """
     def validate_testcase_description(self, tc):
         tc_must_have_fields = {'id', 'uri', 'objective', 'configuration_id', 'references', 'pre_conditions', 'notes',
                                'sequence'}

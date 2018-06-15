@@ -19,7 +19,7 @@ from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
-from ioppytest.test_coordinator.states_machine import Coordinator
+from ioppytest.test_coordinator.coordinator import Coordinator
 
 COMPONENT_ID = 'test_coordinator|main'
 logging.basicConfig(format=LOGGER_FORMAT)
@@ -129,8 +129,7 @@ if __name__ == '__main__':
             else:
                 pass
 
-
-        # bind callback function to signal queue
+        # bind on_ready_signal callback to signals queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
                               queue='bootstrapping')
@@ -138,11 +137,9 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
-
         def timeout_f():
             global timeout
             timeout = True
-
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()

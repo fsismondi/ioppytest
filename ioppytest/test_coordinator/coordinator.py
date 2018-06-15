@@ -394,6 +394,18 @@ class Coordinator(CoordinatorAmqpInterface):
 
         return current_tc.report
 
+    def handle_testcase_restart(self, received_event):
+        """
+        Restarts current testcase.
+        """
+        current_tc_id = self.testsuite.get_current_testcase_id()
+        if current_tc_id:
+            self.testsuite.reinit_testcase(self.testsuite.get_current_testcase_id())
+        else:
+            raise CoordinatorError("No current testcase, no info on what TC to restart")
+
+        # test case switch is handled by prepare_next_testcase
+
     def handle_testcase_select(self, received_event):
         """
         this is more like a jump to function rather than select
@@ -470,6 +482,11 @@ class Coordinator(CoordinatorAmqpInterface):
                 if testcase_to_execute:
                     logger.info("Event received provided test case id to execute: %s" % testcase_to_execute.id)
                     self.testsuite.go_to_testcase(testcase_to_execute.id)
+
+            elif isinstance(received_event, MsgTestCaseRestart):
+                testcase_to_execute = self.testsuite.get_current_testcase()
+                logger.info("Restarting current testcase: %s" % testcase_to_execute.id)
+
         except AttributeError:  # no testcase id provided, go to next tc
             logger.debug('No testcase id provided')
             pass
