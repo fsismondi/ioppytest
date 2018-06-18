@@ -7,15 +7,11 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED = 5  # estimation
 
-"""
-launch it as
-    python3 -m unittest ioppytest.packet_router.tests.tests.PacketRouterTestCase
-for running single a single test:
-    python3 -m unittest test_module.TestClass.test_method
-"""
-
 
 class PacketRouterTestCase(unittest.TestCase):
+    """
+    python3 -m unittest tests/test_packet_router.py
+    """
     def setUp(self):
         logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
         self.queue_name = 'testing_packet_router'

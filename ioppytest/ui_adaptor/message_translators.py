@@ -13,18 +13,18 @@ from ioppytest.utils.messages import *
 from ioppytest.utils.event_bus_utils import publish_message
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.tabulate import tabulate
-from ioppytest.finterop_ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
-                                                    get_field_keys_from_ui_request,
-                                                    get_field_value_from_ui_reply)
-from ioppytest.finterop_ui_adaptor.user_help_text import *
-from ioppytest.finterop_ui_adaptor import (COMPONENT_ID,
-                                           STDOUT_MAX_TEXT_LENGTH,
-                                           STDOUT_MAX_TEXT_LENGTH_PER_LINE,
-                                           STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
-                                           STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
-                                           UI_TAG_BOOTSTRAPPING,
-                                           UI_TAG_SETUP,
-                                           UI_TAG_REPORT)
+from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
+                                           get_field_keys_from_ui_request,
+                                           get_field_value_from_ui_reply)
+from ioppytest.ui_adaptor.user_help_text import *
+from ioppytest.ui_adaptor import (COMPONENT_ID,
+                                  STDOUT_MAX_TEXT_LENGTH,
+                                  STDOUT_MAX_TEXT_LENGTH_PER_LINE,
+                                  STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
+                                  STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
+                                  UI_TAG_BOOTSTRAPPING,
+                                  UI_TAG_SETUP,
+                                  UI_TAG_REPORT)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
@@ -225,6 +225,7 @@ class GenericBidirectonalTranslator(object):
             MsgTestCaseReady: self._ui_request_testcase_start,
             MsgStepStimuliExecute: self._ui_request_step_stimuli_executed,
             MsgStepVerifyExecute: self._ui_request_step_verification,
+            MsgTestCaseVerdict: self._ui_request_testcase_restart,  # this is an optional action
         }
 
         self.ui_to_tt_message_translation = {
@@ -234,7 +235,7 @@ class GenericBidirectonalTranslator(object):
             'tc_restart': self.get_tt_message_testcase_restart,
             'tc_skip': self.get_tt_message_testcase_skip,
             # 'tc_list': self._handle_get_testcase_list,
-            # 'tc_select': self._handle_testcase_select,
+            'restart_testcase': self.get_tt_message_testcase_restart_last_executed,
             'verify_executed': self.get_tt_message_step_verify_executed,
             'stimuli_executed': self.get_tt_message_step_stimuli_executed,
         }
@@ -273,12 +274,14 @@ class GenericBidirectonalTranslator(object):
             Updates message factory states, every received message needs to be passed to this method
         """
         try:
-            self._current_tc = message.testcase_id
+            if message.testcase_id:
+                self._current_tc = message.testcase_id
         except AttributeError:
             pass
 
         try:
-            self._current_step = message.step_id
+            if message.step_id:
+                self._current_step = message.step_id
         except AttributeError:
             pass
 
@@ -1192,7 +1195,7 @@ class GenericBidirectonalTranslator(object):
 
         return MsgUiDisplayMarkdownText(
             level='info',
-            tags={"packets": ""},
+            tags={"packets": self._current_tc if self._current_tc else ""},
             fields=fields,
         )
 
@@ -1240,7 +1243,7 @@ class GenericBidirectonalTranslator(object):
 
         return MsgUiDisplayMarkdownText(
             level='info',
-            tags={"packets": ""},
+            tags={"packets": self._current_tc if self._current_tc else ""},
             fields=fields,
         )
 
@@ -1528,6 +1531,17 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             # "node_execution_mode": "user_assisted",
         )
 
+    def get_tt_message_testcase_restart_last_executed(self, user_input, origin_tt_message=None):
+        logger.info("processing: %s | %s" % (user_input, type(user_input)))
+
+        if type(user_input) is not str:
+            logger.error("Couldn't process user input %s" % user_input)
+            return
+
+        return MsgTestCaseSelect(
+            testcase_id=user_input  # user_input = last executed testcase_id
+        )
+
     def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         # TODO fix harcoded values!
         return MsgStepStimuliExecuted(
@@ -1605,6 +1619,22 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 "name": "verify_executed",
                 "type": "radio",
                 "value": False
+            },
+        ]
+        return message_ui_request
+
+    def _ui_request_testcase_restart(self, message_from_tt):
+        message_ui_request = MsgUiRequestConfirmationButton(
+        )
+        message_ui_request.fields = [
+            {
+                "type": "p",
+                "value": "Restart testcase %s ?" % self._current_tc
+            },
+            {
+                "name": "restart_testcase",
+                "type": "button",
+                "value": self._current_tc
             },
         ]
         return message_ui_request

@@ -202,8 +202,6 @@ class TestSuite:
         for key, val in self.test_descriptions_dict.items():
             logger.info('test case imported from YAML: %s' % key)
 
-        # test cases iterator (over the TC objects, not the keys)
-        self._TD_it = cycle(self.test_descriptions_dict.values())
         self.current_tc = None
 
         # session info (published in bus after testing tool is spawned):
@@ -244,7 +242,10 @@ class TestSuite:
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
-        # _TD_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
+        # _TD_it is a circular iterator over TC objects
+        # (testcase can eventually be executed out of order due tu user selection)
+        self._TD_it = cycle(self.test_descriptions_dict.values())
+
         self.current_tc = next(self._TD_it)
 
         # get next not executed nor skipped testcase:
@@ -999,9 +1000,9 @@ class TestCase:
             s.reinit()
 
     def __repr__(self):
-        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, notes=%s, test_sequence=%s)" % (
+        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, notes=%s)" % (
             self.__class__.__name__, self.id,
-            self.uri, self.objective, self.configuration_id, self.notes, self.sequence)
+            self.uri, self.objective, self.configuration_id, self.notes)
 
     def to_dict(self, verbose=None):
 

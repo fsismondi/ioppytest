@@ -147,10 +147,10 @@ except KeyError as e:
 try:
     # append to URL AMQP connection parameters
     env_url = str(os.environ['AMQP_URL'])
-    if 'heartbeat_interval' not in env_url:
+    if 'heartbeat' not in env_url:
         AMQP_URL = '%s?%s&%s&%s&%s&%s' % (
             env_url,
-            "heartbeat_interval=0",
+            "heartbeat=0",
             "blocked_connection_timeout=2",
             "retry_delay=1",
             "socket_timeout=5",

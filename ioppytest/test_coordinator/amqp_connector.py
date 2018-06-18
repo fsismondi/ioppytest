@@ -81,6 +81,7 @@ class CoordinatorAmqpInterface:
             MsgStepCheckExecuted: 'step_executed',
             MsgTestCaseSelect: 'select_testcase',
             MsgTestSuiteStart: 'start_testsuite',
+            MsgTestCaseRestart: 'restart_testcase',
             MsgTestCaseSkip: 'skip_testcase',
 
         }
