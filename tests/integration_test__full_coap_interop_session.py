@@ -9,7 +9,7 @@ import unittest
 import os
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest.utils.messages import *
+from messages import *
 from ioppytest.utils.event_bus_utils import publish_message, AmqpListener, amqp_request
 from automated_IUTs.automation import UserMock
 

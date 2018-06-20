@@ -5,7 +5,7 @@ from time import sleep
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.test_coordinator.coordinator import Coordinator
 from ioppytest import TD_COAP_CFG, TD_COAP
-from ioppytest.utils.messages import *
+from messages import *
 
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'unitesting')
 logger = logging.getLogger(COMPONENT_ID)

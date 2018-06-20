@@ -1,6 +1,6 @@
 import os
 
-from ioppytest.utils.messages import *
+from messages import *
 from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
 
 
@@ -12,6 +12,8 @@ STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN = STDOUT_MAX_TEXT_LENGTH_PER_LINE - STDOUT
 COMPONENT_ID = 'ui_adaptor'
 
 MESSAGES_NOT_TO_BE_ECHOED = [
+    MsgSniffingGetCaptureReply,
+    MsgSniffingGetCapture,
     MsgTestSuiteStart,
     MsgTestCaseStarted,
     MsgSessionLog,
@@ -32,6 +34,7 @@ UI_TAG_REPORT = {"testsuite_report": ""}
 
 
 TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
+    'sniffing.getcapture.*',
     'testingtool.#',
     'testsuite.#',
     'session.#',

@@ -13,7 +13,7 @@ from ioppytest.test_coordinator.states_and_transitions import transitions, state
 from ioppytest.test_suite.testsuite import TestSuite
 from ioppytest.utils.amqp_synch_call import *
 from ioppytest.utils.exceptions import CoordinatorError
-from ioppytest.utils.messages import *
+from messages import *
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?

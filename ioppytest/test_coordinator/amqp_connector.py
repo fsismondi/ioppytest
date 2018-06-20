@@ -12,7 +12,7 @@ from ioppytest import RESULTS_DIR
 from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
 from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.utils.exceptions import CoordinatorError
-from ioppytest.utils.messages import *
+from messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs

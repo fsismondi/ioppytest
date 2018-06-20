@@ -1,7 +1,7 @@
 import unittest, logging, os
 import time, json
 import pika
-from ioppytest.utils.messages import *
+from messages import *
 import multiprocessing
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from ioppytest.utils.event_bus_utils import amqp_request, publish_message
