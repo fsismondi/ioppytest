@@ -19,30 +19,43 @@ and export environment variables:
 
 agents_IP_tunnel_config = """
 
-### Please download the agent component (python script):
+### Please install the agent using PyPi (python script):
 
 \n\n
 
-`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
+using virtual env:
+
+\n\n
+
+```
+pip install virtualenv
+virtualenv -p /usr/bin/python2.7 my_venv
+source my_venv/bin/activate
+```
+
+\n
+
+or else:
+
+\n
+
+`python2.7 -m pip install ioppytest-agent`
+ 
+ \n
+ 
+ you can execute directly from source code, for this use, and check out README.md:
+ 
+ \n
+ 
+`
+git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
 
 ------------------------------------------------------------------------------
 
-### Install dependencies:
-(ptyhon 2.7 needed)
+### Installation didn't work? Check the agent dependencies:
+- python 2.7 needed
+- for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
 
-`pip install -r requirements.txt`
-
-\n\n
-
-------------------------------------------------------------------------------
-
-\n\n
-
-Coming soon:
-
-\n\n
-
-PyPI (The Python Package Index ) agent python package distribution and installation process.
 
 \n\n
 
@@ -54,7 +67,7 @@ PyPI (The Python Package Index ) agent python package distribution and installat
 
 \n\n
 
-`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
 
 \n\n
 
@@ -62,7 +75,7 @@ or
 
 \n\n
 
-`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
 
 ------------------------------------------------------------------------------
 ```
@@ -140,7 +153,7 @@ If everything goes well you should see in your terminal sth like this:
 \n\n
 
 ```
-fsismondi@carbonero250:~/dev/agent$ sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
+fsismondi@carbonero250:~/dev/agent$ sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
 Password: ********
 
   _                              _              _                                     _
