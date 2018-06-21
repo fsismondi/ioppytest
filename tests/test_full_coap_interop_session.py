@@ -43,7 +43,9 @@ PRE-CONDITIONS:
 
 COMPONENT_ID = 'fake_session'
 SESSION_TIMEOUT = 300
-EXECUTE_ALL_TESTS=os.environ.get('CI', 'False') == 'True'
+EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
+COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
+COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
     def test_complete_interop_test_cycle(self):
         if EXECUTE_ALL_TESTS:
-            tc_list=None
+            tc_list = None
             logger.info("Detected CI environment. Executing all tests")
         else:
             tc_list = [
@@ -79,7 +81,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 'TD_COAP_CORE_02',
                 'TD_COAP_CORE_03'
             ]  # the rest of the testcases are going to be skipped
-    
+
         # thread
         msg_validator = AmqpListener(
             amqp_url=AMQP_URL,
@@ -102,8 +104,14 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         )
 
         # thread
+        non_automated_iuts = []
+        if not COAP_CLIENT_IS_AUTOMATED:
+            non_automated_iuts.append('coap_client')
+        if not COAP_CLIENT_IS_AUTOMATED:
+            non_automated_iuts.append('coap_server')
         user_stub = UserMock(
-            iut_testcases=tc_list
+            iut_testcases=tc_list,
+            iut_to_mock_verifications_for=non_automated_iuts
         )
 
         msg_validator.setName('msg_validator')

@@ -50,6 +50,7 @@ def signal_int_handler(signal, frame):
     logger.info('got SIGINT. Bye bye!')
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
@@ -245,13 +246,16 @@ class UserMock(threading.Thread):
         MsgTestingToolConfigured,
         MsgTestCaseConfiguration,
         MsgTestCaseVerdict,
+        MsgStepVerifyExecute,
         MsgTestSuiteReport,
         MsgTestingToolTerminate,
     ]
 
-    def __init__(self, iut_testcases=None):
+    def __init__(self, iut_testcases=None, iut_to_mock_verifications_for=None):
 
         threading.Thread.__init__(self)
+
+        self.iut_to_mock_verifications_for = iut_to_mock_verifications_for
 
         self.shutdown = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -326,6 +330,27 @@ class UserMock(threading.Thread):
                 m = MsgTestCaseSkip(testcase_id=event.testcase_id)
                 publish_message(self.connection, m)
                 logger.info('Event pushed %s' % m)
+
+        elif isinstance(event, MsgStepVerifyExecute):
+
+            if event.node in self.iut_to_mock_verifications_for:
+                publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
+                                                                       node=event.node
+                                                                       ))
+                logger.info('Mocked verify response for m: %s (node: %s - step: %s)' %
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
+
+            else:
+                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
+                            (
+                                type(event),
+                                event.node,
+                                event.step_id,
+                            ))
 
         elif isinstance(event, MsgTestCaseVerdict):
             logger.info('Event received %s' % type(event))
