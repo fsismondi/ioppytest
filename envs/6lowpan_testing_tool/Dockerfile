@@ -9,8 +9,8 @@ RUN apt-get -y -qq install python3-dev
 RUN apt-get -y -qq install build-essential
 RUN apt-get -y -qq install python3-setuptools
 RUN	apt-get -y -qq install python3-pip
+RUN	apt-get -y -qq install python-pip
 RUN	apt-get -y -qq install supervisor
-RUN	apt-get -y -qq install tcpdump
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y -qq install make
 
