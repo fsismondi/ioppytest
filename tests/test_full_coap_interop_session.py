@@ -107,7 +107,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         non_automated_iuts = []
         if not COAP_CLIENT_IS_AUTOMATED:
             non_automated_iuts.append('coap_client')
-        if not COAP_CLIENT_IS_AUTOMATED:
+        if not COAP_SERVER_IS_AUTOMATED:
             non_automated_iuts.append('coap_server')
         user_stub = UserMock(
             iut_testcases=tc_list,
