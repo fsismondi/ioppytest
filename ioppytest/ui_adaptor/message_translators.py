@@ -1373,7 +1373,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_AGENT_CONNECT,
+            tags=UI_TAG_AGENT_INFO,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help

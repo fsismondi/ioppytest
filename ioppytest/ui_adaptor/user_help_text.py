@@ -27,35 +27,35 @@ using virtual env (recommended):
 
 \n
 
-install virtualenv:
+    install virtualenv:
 
 \n
 
-`pip install virtualenv`
+        `pip install virtualenv`
 
 \n
 
-create a python 2.7 evironment:
+    create a python 2.7 evironment:
 
 \n
 
-`virtualenv -p /usr/bin/python2.7 my_venv`
+        `virtualenv -p /usr/bin/python2.7 my_venv`
 
 \n
 
-activate environment:
+    activate environment:
 
 \n
 
-`source my_venv/bin/activate`
+        `source my_venv/bin/activate`
 
 \n
 
-install package:
+    install package:
 
 \n
 
-`pip install ioppytest-agent`
+        `pip install ioppytest-agent`
 
 \n
 \n
@@ -65,16 +65,16 @@ or else (without virtualenv):
 \n
 \n
 
-`python2.7 -m pip install ioppytest-agent`
+        `python2.7 -m pip install ioppytest-agent`
  
 \n
 \n
  
- you can execute directly from source code, for this use, and check out README.md:
+You can execute directly from source code, for this use, and check out README.md:
  
 \n
  
-`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
+        `git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
 
 \n\n
 ------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ Installation didn't work? Check the agent dependencies:
 
 \n\n
 
-`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+    `sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
 
 \n\n
 
@@ -101,7 +101,7 @@ or
 
 \n\n
 
-`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
+    `sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
 
 ------------------------------------------------------------------------------
 ```
@@ -109,11 +109,12 @@ or
 """
 
 vpn_setup = """
-### What is this for?
+### How does my implementation will reach other implementations?
 
 \n\n
 
-The agent creates a tun interface in your PC which allows you to comminicate with other implementations, the 
+We need to set up a IP tunnel between both implementations under test (IUT). 
+The agent component creates a tun interface in your PC which allows you to communicate with other implementations, the 
 solution goes more or less like this:
 
 \n\n
@@ -161,7 +162,7 @@ r_key_4=toAgent.agent_2_name.ip.tun.packet.raw
 
 \n\n
 
-[link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
+    [link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
 
 \n\n
 """
