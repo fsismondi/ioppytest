@@ -24,13 +24,12 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
-#py2 requirements
-RUN python -m pip install -r ioppytest/agent/requirements.txt
+# install aux ioppytest packages
+RUN python -m pip install ioppytest-agent
+RUN python3 -m pip install ioppytest-utils
 
-# requirements on autoamted-iut python code
+# requirements on automated-iut python code
 RUN python3 -m pip install -r automated_IUTs/requirements.txt
-
-#RUN cp automated_IUTs/coap_server_californium/supervisor.conf supervisor.conf
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2

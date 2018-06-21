@@ -21,8 +21,12 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
-#py2 requirements
-RUN python -m pip install -r ioppytest/agent/requirements.txt
+# install aux ioppytest packages
+RUN python -m pip install ioppytest-agent
+RUN python3 -m pip install ioppytest-utils
+
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
 
 #py3 requirements
 RUN python3 -m pip install -r automated_IUTs/coap_server_coapthon/CoAPthon/requirements.txt

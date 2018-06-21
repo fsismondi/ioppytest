@@ -107,11 +107,11 @@ run-comi-testing-tool: ## Run CoMI testing tool in docker container
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
+	ioppytest-agent connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
+	ioppytest-agent connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
 
 run-coap-client:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -215,10 +215,12 @@ get-logs: ## Get logs from the running containers
 
 install-python-dependencies: ## installs all python pip dependencies
 	@echo "installing py2 submodule's dependencies..."
-	@python -m pip -qq install -r ioppytest/agent/requirements.txt
+	@python -m pip -qq install ioppytest-agent
+
 	@echo "installing py3 submodule's dependencies..."
 	@python3 -m pip -qq install pytest
 	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
+	@python3 -m pip -qq install ioppytest-utils
 
 	@echo "installing py3 ioppytest's dependencies..."
 	@python3 -m pip -qq install -r ioppytest/requirements.txt

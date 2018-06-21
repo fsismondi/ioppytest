@@ -27,11 +27,6 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
-
-
-#installing py2 dependencies
-RUN python -m pip install -r ioppytest/agent/requirements.txt --upgrade
-
 # Makefile entrypoint
 RUN make install-python-dependencies
 
