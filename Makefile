@@ -214,14 +214,13 @@ get-logs: ## Get logs from the running containers
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
 install-python-dependencies: ## installs all python pip dependencies
-	@echo 'installing py2 submodule's dependencies...'
+	@echo "installing py2 submodule's dependencies..."
 	@python -m pip -qq install -r ioppytest/agent/requirements.txt
-	@echo 'installing py3 submodule's dependencies...'
+	@echo "installing py3 submodule's dependencies..."
 	@python3 -m pip -qq install pytest
-	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
 
-	@echo 'installing py3 ioppytest's dependencies...'
+	@echo "installing py3 ioppytest's dependencies..."
 	@python3 -m pip -qq install -r ioppytest/requirements.txt
 	@python3 -m pip -qq install -r automated_IUTs/requirements.txt
 
