@@ -23,7 +23,9 @@ from ioppytest.ui_adaptor import (COMPONENT_ID,
                                   STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                   STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
                                   STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
-                                  UI_TAG_BOOTSTRAPPING,
+                                  UI_TAG_AGENT_CONNECT,
+                                  UI_TAG_AGENT_TEST,
+                                  UI_TAG_AGENT_INFO,
                                   UI_TAG_SETUP,
                                   UI_TAG_REPORT)
 
@@ -297,9 +299,10 @@ class GenericBidirectonalTranslator(object):
 
         if type(message) in self.session_history_messages_types_to_save:
             self.session_history_messages.append(message)
-            logger.info('Saving message %s into session history' %repr(message))
+            logger.info('Saving message %s into session history' % repr(message))
         else:
-            logger.info('Message type %s not into %s session history message types' %(type(message), pprint.pformat(self.session_history_messages_types_to_save)))
+            logger.info('Message type %s not into %s session history message types' % (
+            type(message), pprint.pformat(self.session_history_messages_types_to_save)))
 
         # print states table
         status_table = list()
@@ -1364,9 +1367,50 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # # # Set Up the VPN between users' IUTs # # #
 
-        # 1. user needs to export ENV VARS
+        # AGENT INFO
+        agents_kickstart_help = vpn_setup
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_AGENT_INFO,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm to continue",
+                },
+
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                }, ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # AGENT CONNECT
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "type": "p",
                 "value": env_vars_export
@@ -1377,7 +1421,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1399,13 +1443,12 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 2. user needs to setup AGENT's environment:
         agents_kickstart_help = agents_IP_tunnel_config
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1417,7 +1460,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1440,12 +1483,12 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 3. starts the agent interfaces
+        # BOOTSTRAP INTERFACES
         if resp_confirm_agent_up:
             send_start_test_suite_event()
 
             disp = MsgUiDisplay(
-                tags=UI_TAG_BOOTSTRAPPING,
+                tags=UI_TAG_AGENT_CONNECT,
                 fields=[{
                     "type": "p",
                     "value": "bootstrapping agent interface.."
@@ -1460,54 +1503,14 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             #  TODO some prettier solution for this maybe?
             time.sleep(5)
 
-        # 4. give some more info to the user about the agent
-        agents_kickstart_help = vpn_setup
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
-
-        disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "type": "p",
-                "value": agents_kickstart_help
-            }, ]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm to continue",
-                },
-
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                }, ]
-        )
-
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
-            )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
-
-        # 5. give some more info to the user about how to TEST the agent setup
+        # TEST AGENT
 
         agents_kickstart_help = vpn_ping_tests
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_TEST,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1519,7 +1522,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_TEST,
             fields=[
                 {
                     "type": "p",
@@ -1735,7 +1738,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
 """
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1758,7 +1761,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
             pass
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1771,7 +1774,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
         )
         req = MsgUiRequestConfirmationButton(
             title="Confirm that agent and probe are up and running",
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "name": "confirm",
                 "type": "button",

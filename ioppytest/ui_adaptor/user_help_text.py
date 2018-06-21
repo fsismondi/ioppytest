@@ -23,47 +23,73 @@ agents_IP_tunnel_config = """
 
 \n\n
 
-using virtual env:
-
-\n\n
-
-```
-pip install virtualenv
-virtualenv -p /usr/bin/python2.7 my_venv
-source my_venv/bin/activate
-```
+using virtual env (recommended): 
 
 \n
 
-or else:
+install virtualenv:
 
+\n
+
+`pip install virtualenv`
+
+\n
+
+create a python 2.7 evironment:
+
+\n
+
+`virtualenv -p /usr/bin/python2.7 my_venv`
+
+\n
+
+activate environment:
+
+\n
+
+`source my_venv/bin/activate`
+
+\n
+
+install package:
+
+\n
+
+`pip install ioppytest-agent`
+
+\n
+\n
+
+or else (without virtualenv):
+
+\n
 \n
 
 `python2.7 -m pip install ioppytest-agent`
  
- \n
+\n
+\n
  
  you can execute directly from source code, for this use, and check out README.md:
  
- \n
+\n
  
-`
-git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
+`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
 
+\n\n
 ------------------------------------------------------------------------------
 
-### Installation didn't work? Check the agent dependencies:
-- python 2.7 needed
-- for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
+\n\n
 
+Installation didn't work? Check the agent dependencies:
+    - python 2.7 needed (virtualenv use recommended if no py2.7 version installed in OS )
+    - for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
 
 \n\n
 
 ------------------------------------------------------------------------------
 
 ### Run (choose if either SomeAgentName1 or SomeAgentName2):
-
-(from inside agent repo, python 2.7 needed)
 
 \n\n
 
