@@ -27,35 +27,23 @@ using virtual env (recommended):
 
 \n
 
-    install virtualenv:
+    
 
 \n
 
-        `pip install virtualenv`
+`pip install virtualenv` (installs venv)
 
 \n
 
-    create a python 2.7 evironment:
+`virtualenv -p /usr/bin/python2.7 my_venv` (creates a python 2.7 env)
 
 \n
 
-        `virtualenv -p /usr/bin/python2.7 my_venv`
+`source my_venv/bin/activate` (activates env)
 
 \n
 
-    activate environment:
-
-\n
-
-        `source my_venv/bin/activate`
-
-\n
-
-    install package:
-
-\n
-
-        `pip install ioppytest-agent`
+`pip install ioppytest-agent` (install package) 
 
 \n
 \n
@@ -65,7 +53,7 @@ or else (without virtualenv):
 \n
 \n
 
-        `python2.7 -m pip install ioppytest-agent`
+`python2.7 -m pip install ioppytest-agent`
  
 \n
 \n
@@ -74,7 +62,7 @@ You can execute directly from source code, for this use, and check out README.md
  
 \n
  
-        `git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
+`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
 
 \n\n
 ------------------------------------------------------------------------------
@@ -82,6 +70,8 @@ You can execute directly from source code, for this use, and check out README.md
 \n\n
 
 Installation didn't work? Check the agent dependencies:
+
+\n
     - python 2.7 needed (virtualenv use recommended if no py2.7 version installed in OS )
     - for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
 
@@ -93,7 +83,7 @@ Installation didn't work? Check the agent dependencies:
 
 \n\n
 
-    `sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
 
 \n\n
 
@@ -101,7 +91,7 @@ or
 
 \n\n
 
-    `sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
 
 ------------------------------------------------------------------------------
 ```
