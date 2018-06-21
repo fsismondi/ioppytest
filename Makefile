@@ -79,11 +79,11 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m ioppytest.utils.interop_cli connect -ll
+	@python3 -m ioppytest_cli connect -ll
 
 run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m ioppytest.utils.interop_cli repl
+	@python3 -m ioppytest_cli repl
 
 run-6lowpan-testing-tool: ## Run 6LoWPAN testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -214,16 +214,16 @@ get-logs: ## Get logs from the running containers
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
 install-python-dependencies: ## installs all python pip dependencies
-	@echo 'installing py2 dependencies...'
+	@echo 'installing py2 submodule's dependencies...'
 	@python -m pip -qq install -r ioppytest/agent/requirements.txt
-	@echo 'installing py3 dependencies...'
+	@echo 'installing py3 submodule's dependencies...'
 	@python3 -m pip -qq install pytest
-	@python3 -m pip -qq install -r ioppytest/test_coordinator/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/packet_router/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/packet_sniffer/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/webserver/requirements.txt
 	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
+	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
+
+	@echo 'installing py3 ioppytest's dependencies...'
+	@python3 -m pip -qq install -r ioppytest/requirements.txt
+	@python3 -m pip -qq install -r automated_IUTs/requirements.txt
 
 # # # # other AUXILIARY commands  # # # #
 _check-sudo:

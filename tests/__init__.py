@@ -7,7 +7,7 @@ import sys
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from messages import *
-from ioppytest.utils.event_bus_utils import publish_message
+from event_bus_utils import publish_message
 
 logging.basicConfig(level=logging.INFO,
                     format='[%(levelname)s] (%(threadName)-10s): %(message)s', )

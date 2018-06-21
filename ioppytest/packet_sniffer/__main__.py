@@ -12,12 +12,16 @@ import traceback
 import multiprocessing
 from datetime import time
 
-from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL,LOGGER_FORMAT
-from ioppytest.utils.amqp_synch_call import publish_message
-from ioppytest.utils.pure_pcapy import DLT_RAW, DLT_IEEE802_15_4_NOFCS
+import pure_pcapy
 from messages import *
-from ioppytest.utils.packet_dumper import launch_amqp_data_to_pcap_dumper
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from event_bus_utils import (
+    publish_message,
+    packet_dumper,
+    rmq_handler,
+)
+
+from ioppytest import TMPDIR, DATADIR, LOGDIR, AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
+
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -63,8 +67,8 @@ class Sniffer:
     def connect(self):
 
         # AMQP log handler with f-interop's json formatter
-        rabbitmq_handler = RabbitMQHandler(self.url, self.COMPONENT_ID)
-        json_formatter = JsonFormatter()
+        rabbitmq_handler = rmq_handler.RabbitMQHandler(self.url, self.COMPONENT_ID)
+        json_formatter = rmq_handler.JsonFormatter()
         rabbitmq_handler.setFormatter(json_formatter)
         self.logger.addHandler(rabbitmq_handler)
 
@@ -228,9 +232,11 @@ class Sniffer:
 
                 else:
                     self.pcap_dumper_subprocess = multiprocessing.Process(
-                        target=launch_amqp_data_to_pcap_dumper,
+                        target=packet_dumper.launch_amqp_data_to_pcap_dumper,
                         name='process_%s_%s' % (self.COMPONENT_ID, capture_id),
-                        args=(TMPDIR, LOG_LEVEL, filename, self.traffic_dlt, self.url, self.exchange, self.DEFAULT_TOPICS))
+                        args=(
+                            TMPDIR, LOG_LEVEL, filename, self.traffic_dlt, self.url, self.exchange,
+                            self.DEFAULT_TOPICS))
                     self.pcap_dumper_subprocess.start()
                     self.logger.info("Sniffer process started %s, pid %s" % (
                         self.pcap_dumper_subprocess, self.pcap_dumper_subprocess.pid))
@@ -325,9 +331,9 @@ def main():
     mode = args.mode
 
     if mode == 'ipv6_tun':
-        traffic_dlt = DLT_RAW
+        traffic_dlt = pure_pcapy.DLT_RAW
     elif mode == '802_15_4_tun':
-        traffic_dlt = DLT_IEEE802_15_4_NOFCS
+        traffic_dlt = pure_pcapy.DLT_IEEE802_15_4_NOFCS
     else:
         print(' Unknown mode %s' % mode)
         return

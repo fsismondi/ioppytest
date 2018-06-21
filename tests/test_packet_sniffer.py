@@ -1,11 +1,16 @@
-import unittest, logging, os
-import time, json
-import pika
-from messages import *
 import multiprocessing
+import unittest
+import logging
+import time
+import json
+import pika
+import os
+
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest.utils.event_bus_utils import amqp_request, publish_message
-from ioppytest.packet_sniffer.__main__ import Sniffer, DLT_RAW
+from event_bus_utils import amqp_request, publish_message
+from ioppytest.packet_sniffer.__main__ import Sniffer
+from messages import *
+import pure_pcapy
 
 
 class SnifferTestCase(unittest.TestCase):
@@ -21,7 +26,7 @@ class SnifferTestCase(unittest.TestCase):
 
         def sniffer_run():
             sniffer = Sniffer(
-                traffic_dlt=DLT_RAW,
+                traffic_dlt=pure_pcapy.DLT_RAW,
                 amqp_url=AMQP_URL,
                 amqp_exchange=AMQP_EXCHANGE
             )

@@ -1,7 +1,7 @@
 import os
 
 from messages import *
-from ioppytest.utils.event_bus_utils import AmqpSynchCallTimeoutError
+from event_bus_utils import AmqpSynchCallTimeoutError
 
 
 STDOUT_MAX_TEXT_LENGTH_PER_LINE = 120

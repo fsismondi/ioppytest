@@ -4,16 +4,20 @@ import os
 import json
 import yaml
 import logging
-from itertools import cycle
-from collections import OrderedDict
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TD_DIR
-from ioppytest.utils.exceptions import TestSuiteError
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
 from ioppytest import (
     TEST_DESCRIPTIONS_CONFIGS_DICT,
     TEST_DESCRIPTIONS_DICT,
     TD_DIR,
+    AMQP_URL,
+    AMQP_EXCHANGE,
+    LOG_LEVEL,
 )
+
+from itertools import cycle
+from collections import OrderedDict
+from ioppytest.exceptions import TestSuiteError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 """
 Module used for importing form yaml files Test Descriptions.

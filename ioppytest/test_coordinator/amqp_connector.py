@@ -9,9 +9,9 @@ import datetime
 from transitions.core import MachineError
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
-from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.exceptions import CoordinatorError
+from event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.exceptions import CoordinatorError
 from messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files

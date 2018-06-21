@@ -16,9 +16,9 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_DICT, TEST_DESC
     LOG_LEVEL
 from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
 from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.event_bus_utils import publish_message
-from ioppytest.utils.messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from event_bus_utils import publish_message
+from messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
 from ioppytest.test_coordinator.coordinator import Coordinator
 
 COMPONENT_ID = 'test_coordinator|main'

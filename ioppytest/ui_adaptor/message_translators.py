@@ -11,9 +11,9 @@ import traceback
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
 from messages import *
-from ioppytest.utils.event_bus_utils import publish_message
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.tabulate import tabulate
+from event_bus_utils import publish_message
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from tabulate import tabulate
 from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
@@ -1836,8 +1836,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message
+        from messages import MsgUiDisplayMarkdownText
+        from event_bus_utils import amqp_request, publish_message
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1868,8 +1868,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1918,8 +1918,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1959,8 +1959,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -2000,8 +2000,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -2041,8 +2041,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -2072,8 +2072,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
                            tags={"snippet": "file_upload"})
 
     def basic_display(self, text: str, tags={}):
-        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
-        from ioppytest.utils.event_bus_utils import publish_message
+        from messages import MsgUiDisplayMarkdownText
+        from event_bus_utils import publish_message
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])

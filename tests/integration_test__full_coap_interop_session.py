@@ -8,9 +8,9 @@ import logging
 import unittest
 import os
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from messages import *
-from ioppytest.utils.event_bus_utils import publish_message, AmqpListener, amqp_request
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from event_bus_utils import publish_message, AmqpListener, amqp_request
 from automated_IUTs.automation import UserMock
 
 from tests import (
@@ -43,7 +43,7 @@ PRE-CONDITIONS:
 
 COMPONENT_ID = 'fake_session'
 SESSION_TIMEOUT = 300
-EXECUTE_ALL_TESTS=os.environ.get('CI', 'False') == 'True'
+EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
     def test_complete_interop_test_cycle(self):
         if EXECUTE_ALL_TESTS:
-            tc_list=None
+            tc_list = None
             logger.info("Detected CI environment. Executing all tests")
         else:
             tc_list = [
@@ -79,7 +79,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 'TD_COAP_CORE_02',
                 'TD_COAP_CORE_03'
             ]  # the rest of the testcases are going to be skipped
-    
+
         # thread
         msg_validator = AmqpListener(
             amqp_url=AMQP_URL,
