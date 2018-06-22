@@ -302,15 +302,24 @@ class GenericBidirectonalTranslator(object):
             logger.info('Saving message %s into session history' % repr(message))
         else:
             logger.info('Message type %s not into %s session history message types' % (
-            type(message), pprint.pformat(self.session_history_messages_types_to_save)))
+                type(message), pprint.pformat(self.session_history_messages_types_to_save)))
 
         # print states table
         status_table = list()
         status_table.append(['current testcase id', 'current test step id'])
         status_table.append([self._current_tc, self._current_step])
 
-        logger.info(tabulate(status_table, tablefmt="grid", headers="firstrow"))
-        logger.info('session history:\n %s' % pprint.pformat(self.session_history_messages))
+        logger.info("\n%s" % tabulate(
+            tabular_data=status_table,
+            tablefmt="grid",
+            headers="firstrow"))
+
+        data = [['session message history message type']]
+        for i in self.session_history_messages:
+            data.append([type(i)])
+        logger.info("\n%s" % tabulate(tabular_data=data,
+                                      tablefmt="grid",
+                                      headers="firstrow"))
 
     def tag_message(self, msg):
         """
@@ -715,10 +724,16 @@ class GenericBidirectonalTranslator(object):
                     logger.error(traceback.format_exc())
                     break
 
+            # add line
+            fields.extend([{'type': 'p', 'value': '---\n'}])
+
             fields.extend([
                 {'type': 'p', 'value': "Analysis Tool Checks:"},
                 {'type': 'p', 'value': "%s" % tabulate(frames, tablefmt="grid")}
             ])
+
+            # add line
+            fields.extend([{'type': 'p', 'value': '---\n'}])
 
             fields.extend([
                 {'type': 'p', 'value': "Step results:"},
@@ -729,6 +744,11 @@ class GenericBidirectonalTranslator(object):
 
     def _generate_ui_fields_for_pcap_download(self, testcase_id):
         pcap_download_fields = []
+
+        pcap_download_fields = pcap_download_fields + [{
+            'type': 'p',
+            'value': 'Testcase captures:\n'
+        }]
 
         # TODO change API for MsgSniffingGetCaptureReply! (this is ugly: `testcase_id in i.filename`)
         for m in [i for i in self.session_history_messages if
@@ -754,8 +774,13 @@ class GenericBidirectonalTranslator(object):
         # fixme find a way of managing the "printable" fields, in a generic way
         verdict.pop('_api_version')  # we dont want to display the api version in UI
 
+        # build report table
         tc_id, display_color, ui_fields = self._generate_ui_fields_for_testcase_report(verdict)
 
+        # add line
+        ui_fields.extend([{'type': 'p', 'value': '---\n'}])
+
+        # add pcap downloads
         ui_fields += self._generate_ui_fields_for_pcap_download(message.testcase_id)
 
         return MsgUiDisplayMarkdownText(
@@ -1407,7 +1432,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # AGENT CONNECT
+        # ENV VAR export
 
         disp = MsgUiDisplay(
             tags=UI_TAG_AGENT_CONNECT,
@@ -1443,7 +1468,49 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        agents_kickstart_help = agents_IP_tunnel_config
+        # AGENT INSTALL
+        agents_kickstart_help = agent_install_help
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm installation finished",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        resp_confirm_agent_up = None
+        try:
+            resp_confirm_agent_up = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # AGENT RUN
+        agents_kickstart_help = agents_run_help
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
@@ -1480,7 +1547,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 request=req,
                 timeout=300,
             )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+        except Exception:
             pass
 
         # BOOTSTRAP INTERFACES
