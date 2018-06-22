@@ -9,9 +9,9 @@ import yaml
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
 from ioppytest.test_suite.testsuite import TestConfig
-from ioppytest.utils.amqp_synch_call import publish_message
-from ioppytest.utils.messages import *
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from event_bus_utils import publish_message
+from messages import *
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'packet_router'
 

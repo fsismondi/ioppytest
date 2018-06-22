@@ -13,9 +13,9 @@ import signal
 import logging
 import threading
 
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.messages import *
-from ioppytest.utils.amqp_synch_call import publish_message
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from messages import *
+from event_bus_utils import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
 # timeout in seconds

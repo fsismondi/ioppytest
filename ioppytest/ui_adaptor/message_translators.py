@@ -3,16 +3,17 @@
 
 import os
 import pika
+import pprint
 import logging
-import traceback
 import textwrap
 import datetime
+import traceback
 
 from ioppytest import LOG_LEVEL, LOGGER_FORMAT
-from ioppytest.utils.messages import *
-from ioppytest.utils.event_bus_utils import publish_message
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.tabulate import tabulate
+from messages import *
+from event_bus_utils import publish_message
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from tabulate import tabulate
 from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
@@ -22,7 +23,9 @@ from ioppytest.ui_adaptor import (COMPONENT_ID,
                                   STDOUT_MAX_TEXT_LENGTH_PER_LINE,
                                   STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
                                   STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
-                                  UI_TAG_BOOTSTRAPPING,
+                                  UI_TAG_AGENT_CONNECT,
+                                  UI_TAG_AGENT_TEST,
+                                  UI_TAG_AGENT_INFO,
                                   UI_TAG_SETUP,
                                   UI_TAG_REPORT)
 
@@ -176,48 +179,57 @@ class GenericBidirectonalTranslator(object):
         self._current_step = None
         self._report = None
         self._pending_responses = {}
+
+        self.session_history_messages_types_to_save = [
+            MsgSniffingGetCaptureReply,
+            MsgTestCaseVerdict,
+            MsgTestSuiteReport
+        ]
+
+        self.session_history_messages = []
+
         self.specialized_visualization = {
 
             # test suite /test cases /test steps messages
-            MsgTestingToolReady: self._echo_message_highlighted_description,
-            MsgTestCaseFinished: self._echo_message_highlighted_description,
-            MsgTestCaseReady: self._echo_testcase_ready,
-            MsgStepStimuliExecute: self._echo_message_steps,
-            MsgStepStimuliExecuted: self._echo_message_highlighted_description,
-            MsgStepVerifyExecute: self._echo_message_steps,
-            MsgStepVerifyExecuted: self._echo_message_highlighted_description,
-            MsgConfigurationExecute: self._echo_testcase_configure,
-            MsgTestCaseSkip: self._echo_testcase_skip,
+            MsgTestingToolReady: self._get_ui_message_highlighted_description,
+            MsgTestCaseFinished: self._get_ui_message_highlighted_description,
+            MsgTestCaseReady: self._get_ui_testcase_ready,
+            MsgStepStimuliExecute: self._get_ui_message_steps,
+            MsgStepStimuliExecuted: self._get_ui_message_highlighted_description,
+            MsgStepVerifyExecute: self._get_ui_message_steps,
+            MsgStepVerifyExecuted: self._get_ui_message_highlighted_description,
+            MsgConfigurationExecute: self._get_ui_testcase_configure,
+            MsgTestCaseSkip: self._get_ui_testcase_skip,
 
             # info
-            MsgTestSuiteGetTestCasesReply: self._echo_testcases_list,
-            MsgTestingToolConfigured: self._echo_testing_tool_configured,
+            MsgTestSuiteGetTestCasesReply: self._get_ui_testcases_list,
+            MsgTestingToolConfigured: self._get_ui_testing_tool_configured,
 
             # verdicts and results
-            MsgTestCaseVerdict: self._echo_testcase_verdict,
-            MsgTestSuiteReport: self._echo_test_suite_results,
+            MsgTestCaseVerdict: self._get_ui_testcase_verdict,
+            MsgTestSuiteReport: self._get_ui_test_suite_results,
 
             # important messages
-            MsgTestingToolTerminate: self._echo_message_highlighted_description,
+            MsgTestingToolTerminate: self._get_ui_message_highlighted_description,
 
             # agents data messages and dissected messages
-            MsgPacketInjectRaw: self._echo_packet_raw,
-            MsgPacketSniffedRaw: self._echo_packet_raw,
-            MsgDissectionAutoDissect: self._echo_packet_dissected,
+            MsgPacketInjectRaw: self._get_ui_packet_raw,
+            MsgPacketSniffedRaw: self._get_ui_packet_raw,
+            MsgDissectionAutoDissect: self._get_ui_packet_dissected,
 
             # tagged as debugging
-            MsgSessionConfiguration: self._echo_as_debug_messages,
-            MsgSessionLog: self._echo_as_debug_messages,
-            MsgTestingToolComponentReady: self._echo_as_debug_messages,
-            MsgAgentTunStarted: self._echo_agent_messages,
+            MsgSessionConfiguration: self._get_ui_as_debug_messages,
+            MsgSessionLog: self._get_ui_as_debug_messages,
+            MsgTestingToolComponentReady: self._get_ui_as_debug_messages,
+            MsgAgentTunStarted: self._get_ui_agent_messages,
 
             # barely important enough to not be in the debugging
-            MsgTestingToolComponentShutdown: self._echo_message_description_and_component,
-            MsgTestCaseStarted: self._echo_message_highlighted_description,
-            MsgTestCaseStart: self._echo_message_highlighted_description,
-            MsgTestSuiteStarted: self._echo_message_highlighted_description,
-            MsgTestSuiteStart: self._echo_message_highlighted_description,
-            MsgConfigurationExecuted: self._echo_message_highlighted_description,
+            MsgTestingToolComponentShutdown: self._get_ui_message_description_and_component,
+            MsgTestCaseStarted: self._get_ui_message_highlighted_description,
+            MsgTestCaseStart: self._get_ui_message_highlighted_description,
+            MsgTestSuiteStarted: self._get_ui_message_highlighted_description,
+            MsgTestSuiteStart: self._get_ui_message_highlighted_description,
+            MsgConfigurationExecuted: self._get_ui_message_highlighted_description,
         }
 
         self.tt_to_ui_message_translation = {
@@ -225,7 +237,7 @@ class GenericBidirectonalTranslator(object):
             MsgTestCaseReady: self._ui_request_testcase_start,
             MsgStepStimuliExecute: self._ui_request_step_stimuli_executed,
             MsgStepVerifyExecute: self._ui_request_step_verification,
-            MsgTestCaseVerdict: self._ui_request_testcase_restart,  # this is an optional action
+            MsgTestCaseVerdict: self._ui_request_testcase_restart,  # this is an optional action, user may ignore it
         }
 
         self.ui_to_tt_message_translation = {
@@ -285,11 +297,29 @@ class GenericBidirectonalTranslator(object):
         except AttributeError:
             pass
 
+        if type(message) in self.session_history_messages_types_to_save:
+            self.session_history_messages.append(message)
+            logger.info('Saving message %s into session history' % repr(message))
+        else:
+            logger.info('Message type %s not into %s session history message types' % (
+                type(message), pprint.pformat(self.session_history_messages_types_to_save)))
+
         # print states table
         status_table = list()
         status_table.append(['current testcase id', 'current test step id'])
         status_table.append([self._current_tc, self._current_step])
-        logger.debug(tabulate(status_table, tablefmt="grid", headers="firstrow"))
+
+        logger.info("\n%s" % tabulate(
+            tabular_data=status_table,
+            tablefmt="grid",
+            headers="firstrow"))
+
+        data = [['session message history message type']]
+        for i in self.session_history_messages:
+            data.append([type(i)])
+        logger.info("\n%s" % tabulate(tabular_data=data,
+                                      tablefmt="grid",
+                                      headers="firstrow"))
 
     def tag_message(self, msg):
         """
@@ -334,7 +364,7 @@ class GenericBidirectonalTranslator(object):
                                     "value": "(WARNING: this message has been truncated)"
                                 }
                             )
-                        else:  # text, accepted length
+                        else:  # not markdown, or markdown & accepted length
                             new_fields_list.append(f)
 
                     except KeyError:  # this is not text
@@ -406,7 +436,7 @@ class GenericBidirectonalTranslator(object):
                      ))
         return message_for_tt
 
-    def transform_message_to_ui_markdown_display(self, message: Message):
+    def translate_tt_to_ui_message(self, message: Message):
         msg_ret = None
 
         # search for specialized visualization, returns fields
@@ -417,7 +447,7 @@ class GenericBidirectonalTranslator(object):
         # generic message visualization (message as a table)
         else:
             logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
-            msg_ret = self._echo_message_as_table(message)
+            msg_ret = self._get_ui_message_as_table(message)
 
         if msg_ret:
             msg_ret = self.tag_message(msg_ret)
@@ -522,6 +552,9 @@ class GenericBidirectonalTranslator(object):
     def _ui_request_step_verification(self, message_from_tt):
         raise NotImplementedError()
 
+    def _ui_request_testcase_restart(self, message_from_tt):
+        raise NotImplementedError()
+
     def _ui_request_step_stimuli_executed(self, message_from_tt):
         raise NotImplementedError()
 
@@ -548,9 +581,12 @@ class GenericBidirectonalTranslator(object):
     def get_tt_message_step_stimuli_executed(self, user_input, origin_tt_message=None):
         raise NotImplementedError()
 
+    def get_tt_message_testcase_restart_last_executed(self, user_input, origin_tt_message=None):
+        raise NotImplementedError()
+
     # # # # # # # # # # # GENERIC MESSAGE UI VISUALISATION # # # # # # # # # # # # # # #
 
-    def _echo_message_as_table(self, message):
+    def _get_ui_message_as_table(self, message):
 
         msg_ret = MsgUiDisplayMarkdownText()
 
@@ -688,10 +724,16 @@ class GenericBidirectonalTranslator(object):
                     logger.error(traceback.format_exc())
                     break
 
+            # add line
+            fields.extend([{'type': 'p', 'value': '---\n'}])
+
             fields.extend([
                 {'type': 'p', 'value': "Analysis Tool Checks:"},
                 {'type': 'p', 'value': "%s" % tabulate(frames, tablefmt="grid")}
             ])
+
+            # add line
+            fields.extend([{'type': 'p', 'value': '---\n'}])
 
             fields.extend([
                 {'type': 'p', 'value': "Step results:"},
@@ -700,12 +742,46 @@ class GenericBidirectonalTranslator(object):
 
         return tc_report['testcase_id'], display_color, fields
 
-    def _echo_testcase_verdict(self, message):
+    def _generate_ui_fields_for_pcap_download(self, testcase_id):
+        pcap_download_fields = []
+
+        pcap_download_fields = pcap_download_fields + [{
+            'type': 'p',
+            'value': 'Testcase captures:\n'
+        }]
+
+        # TODO change API for MsgSniffingGetCaptureReply! (this is ugly: `testcase_id in i.filename`)
+        for m in [i for i in self.session_history_messages if
+                  isinstance(i, MsgSniffingGetCaptureReply) and testcase_id in i.filename]:
+
+            if m.ok:
+                logger.info("Found pcap in session history for %s" % testcase_id)
+                pcap_download_fields.append({
+                    "name": m.filename,
+                    "type": "data",
+                    "value": m.value,
+                })
+            else:
+                logging.error('Sniffer responded with error to network traffic capture request: %s' % m)
+
+            if not pcap_download_fields:  # syntax means if list is empty
+                logging.warning('No capture found for testcase: %s' % testcase_id)
+
+        return pcap_download_fields
+
+    def _get_ui_testcase_verdict(self, message):
         verdict = message.to_dict()
         # fixme find a way of managing the "printable" fields, in a generic way
         verdict.pop('_api_version')  # we dont want to display the api version in UI
 
+        # build report table
         tc_id, display_color, ui_fields = self._generate_ui_fields_for_testcase_report(verdict)
+
+        # add line
+        ui_fields.extend([{'type': 'p', 'value': '---\n'}])
+
+        # add pcap downloads
+        ui_fields += self._generate_ui_fields_for_pcap_download(message.testcase_id)
 
         return MsgUiDisplayMarkdownText(
             title="Verdict on TEST CASE: %s" % tc_id,
@@ -713,7 +789,7 @@ class GenericBidirectonalTranslator(object):
             fields=ui_fields,
         )
 
-    def _echo_test_suite_results(self, message):
+    def _get_ui_test_suite_results(self, message):
         """
         format of the message's body:
         {
@@ -822,7 +898,7 @@ class GenericBidirectonalTranslator(object):
             tags=UI_TAG_REPORT,
         )
 
-    def _echo_message_description_and_component(self, message):
+    def _get_ui_message_description_and_component(self, message):
         fields = [
             {
                 'type': 'p',
@@ -831,7 +907,7 @@ class GenericBidirectonalTranslator(object):
         ]
         return MsgUiDisplayMarkdownText(fields=fields)
 
-    def _echo_testcase_skip(self, message):
+    def _get_ui_testcase_skip(self, message):
 
         # default TC is current TC
         tc_id = message.testcase_id if message.testcase_id else 'current testcase'
@@ -844,7 +920,7 @@ class GenericBidirectonalTranslator(object):
         ]
         return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
 
-    def _echo_message_highlighted_description(self, message):
+    def _get_ui_message_highlighted_description(self, message):
         fields = [
             {
                 'type': 'p',
@@ -854,7 +930,7 @@ class GenericBidirectonalTranslator(object):
 
         return MsgUiDisplayMarkdownText(level='highlighted', tags={"testsuite": ""}, fields=fields)
 
-    def _echo_message_steps(self, message):
+    def _get_ui_message_steps(self, message):
         """
         STIMULI:
 
@@ -927,7 +1003,7 @@ class GenericBidirectonalTranslator(object):
             fields=fields
         )
 
-    def _echo_testing_tool_configured(self, message):
+    def _get_ui_testing_tool_configured(self, message):
         """
         {
             "_api_version": "1.0.8",
@@ -1006,7 +1082,7 @@ class GenericBidirectonalTranslator(object):
             tags={"testsuite": ""}
         )
 
-    def _echo_testcases_list(self, message):
+    def _get_ui_testcases_list(self, message):
         """
         {
             "_api_version": "1.0.8",
@@ -1056,7 +1132,7 @@ class GenericBidirectonalTranslator(object):
             tags={"testsuite": ""}
         )
 
-    def _echo_testcase_ready(self, message):
+    def _get_ui_testcase_ready(self, message):
         table = list()
         fields = []
 
@@ -1092,7 +1168,7 @@ class GenericBidirectonalTranslator(object):
             tags={"testcase": message.testcase_id}
         )
 
-    def _echo_testcase_configure(self, message):
+    def _get_ui_testcase_configure(self, message):
 
         table = list()
         fields = []
@@ -1121,7 +1197,7 @@ class GenericBidirectonalTranslator(object):
             fields=fields
         )
 
-    def _echo_packet_dissected(self, message):
+    def _get_ui_packet_dissected(self, message):
         """
             "_type": "dissection.autotriggered",
              "token": "0lzzb_Bx30u8Gu-xkt1DFE1GmB4",
@@ -1199,7 +1275,7 @@ class GenericBidirectonalTranslator(object):
             fields=fields,
         )
 
-    def _echo_packet_raw(self, message):
+    def _get_ui_packet_raw(self, message):
         fields = []
 
         try:
@@ -1247,7 +1323,7 @@ class GenericBidirectonalTranslator(object):
             fields=fields,
         )
 
-    def _echo_session_configuration(self, message):
+    def _get_ui_session_configuration(self, message):
         fields = []
 
         fields.append({'type': 'p', 'value': '%s: %s' % ('session_id', message.session_id)})
@@ -1272,13 +1348,13 @@ class GenericBidirectonalTranslator(object):
             level='info',
             fields=fields)
 
-    def _echo_as_debug_messages(self, message):
+    def _get_ui_as_debug_messages(self, message):
 
-        ret_msg = self._echo_message_as_table(message)
+        ret_msg = self._get_ui_message_as_table(message)
         ret_msg.tags = {"logs": ""}
         return ret_msg
 
-    def _echo_agent_messages(self, message):
+    def _get_ui_agent_messages(self, message):
         fields = []
 
         if MsgAgentTunStarted:
@@ -1316,109 +1392,13 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # # # Set Up the VPN between users' IUTs # # #
 
-        # 1. user needs to export ENV VARS
-        disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "type": "p",
-                "value": env_vars_export
-            }]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm that variables have been exported",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                },
-            ]
-        )
-
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
-            )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
-
-        # 2. user needs to setup AGENT's environment:
-        agents_kickstart_help = agents_IP_tunnel_config
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
-
-        disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[{
-                "type": "p",
-                "value": agents_kickstart_help
-            }, ]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm that agent component is running",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                },
-            ]
-        )
-
-        resp_confirm_agent_up = None
-        try:
-            resp_confirm_agent_up = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
-            )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
-
-        # 3. starts the agent interfaces
-        if resp_confirm_agent_up:
-            send_start_test_suite_event()
-
-            disp = MsgUiDisplay(
-                tags=UI_TAG_BOOTSTRAPPING,
-                fields=[{
-                    "type": "p",
-                    "value": "bootstrapping agent interface.."
-                }, ]
-            )
-
-            amqp_connector.publish_ui_display(
-                message=disp,
-                user_id='all'
-            )
-
-            #  TODO some prettier solution for this maybe?
-            time.sleep(5)
-
-        # 4. give some more info to the user about the agent
+        # AGENT INFO
         agents_kickstart_help = vpn_setup
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_INFO,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1430,7 +1410,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_INFO,
             fields=[
                 {
                     "type": "p",
@@ -1452,14 +1432,49 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
             pass
 
-        # 5. give some more info to the user about how to TEST the agent setup
+        # ENV VAR export
 
-        agents_kickstart_help = vpn_ping_tests
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": env_vars_export
+            }]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that variables have been exported",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        try:
+            resp = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # AGENT INSTALL
+        agents_kickstart_help = agent_install_help
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1471,7 +1486,110 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm installation finished",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        resp_confirm_agent_up = None
+        try:
+            resp_confirm_agent_up = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+            pass
+
+        # AGENT RUN
+        agents_kickstart_help = agents_run_help
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[
+                {
+                    "type": "p",
+                    "value": "Confirm that agent component is running",
+                },
+                {
+                    "name": "confirm",
+                    "type": "button",
+                    "value": True
+                },
+            ]
+        )
+
+        resp_confirm_agent_up = None
+        try:
+            resp_confirm_agent_up = amqp_connector.synch_request(
+                request=req,
+                timeout=300,
+            )
+        except Exception:
+            pass
+
+        # BOOTSTRAP INTERFACES
+        if resp_confirm_agent_up:
+            send_start_test_suite_event()
+
+            disp = MsgUiDisplay(
+                tags=UI_TAG_AGENT_CONNECT,
+                fields=[{
+                    "type": "p",
+                    "value": "bootstrapping agent interface.."
+                }, ]
+            )
+
+            amqp_connector.publish_ui_display(
+                message=disp,
+                user_id='all'
+            )
+
+            #  TODO some prettier solution for this maybe?
+            time.sleep(5)
+
+        # TEST AGENT
+
+        agents_kickstart_help = vpn_ping_tests
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_TEST,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        req = MsgUiRequestConfirmationButton(
+            tags=UI_TAG_AGENT_TEST,
             fields=[
                 {
                     "type": "p",
@@ -1624,8 +1742,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         return message_ui_request
 
     def _ui_request_testcase_restart(self, message_from_tt):
-        message_ui_request = MsgUiRequestConfirmationButton(
-        )
+        message_ui_request = MsgUiRequestConfirmationButton()
         message_ui_request.fields = [
             {
                 "type": "p",
@@ -1688,7 +1805,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
 """
 
         req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1711,7 +1828,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
             pass
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[
                 {
                     "type": "p",
@@ -1724,7 +1841,7 @@ test descriptions: http://doc.f-interop.eu/testsuites/6lowpan
         )
         req = MsgUiRequestConfirmationButton(
             title="Confirm that agent and probe are up and running",
-            tags=UI_TAG_BOOTSTRAPPING,
+            tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "name": "confirm",
                 "type": "button",
@@ -1789,8 +1906,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
         [utils](https://gitlab.f-interop.eu/f-interop-contributors/utils) library
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message
+        from messages import MsgUiDisplayMarkdownText
+        from event_bus_utils import amqp_request, publish_message
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1821,8 +1938,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1871,8 +1988,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1912,8 +2029,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1953,8 +2070,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -1994,8 +2111,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
 
         """
         # this imports are absolute, for your case these will probably change
-        from ioppytest.utils.messages import MsgUiRequestConfirmationButton
-        from ioppytest.utils.event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
+        from messages import MsgUiRequestConfirmationButton
+        from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])
@@ -2025,8 +2142,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
                            tags={"snippet": "file_upload"})
 
     def basic_display(self, text: str, tags={}):
-        from ioppytest.utils.messages import MsgUiDisplayMarkdownText
-        from ioppytest.utils.event_bus_utils import publish_message
+        from messages import MsgUiDisplayMarkdownText
+        from event_bus_utils import publish_message
         import pika
 
         AMQP_EXCHANGE = str(os.environ['AMQP_EXCHANGE'])

@@ -13,8 +13,8 @@ import threading
 import datetime
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest.utils.messages import *
-from ioppytest.utils.event_bus_utils import publish_message, AmqpListener
+from messages import *
+from event_bus_utils import publish_message, AmqpListener
 
 from tests import MessageGenerator, default_configuration
 from tests.pcap_base64_examples import *

@@ -11,6 +11,3 @@
 [submodule "ioppytest/agent"]
 	path = ioppytest/agent
 	url = https://gitlab.f-interop.eu/f-interop-contributors/agent.git
-[submodule "ioppytest/utils"]
-	path = ioppytest/utils
-	url = https://gitlab.f-interop.eu/f-interop-contributors/utils.git

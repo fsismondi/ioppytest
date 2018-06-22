@@ -2,59 +2,101 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 env_vars_export = """
 
+### Agent requirements
+
+The agent component, which is needed for running interop tests works for both MacOs (tested with MacOs 10.12.x)
+and also debian-based distributions.
+
+(!) Windows is for the time being not supported by the agent. If your implementation can run into a virtual machine
+or docker container please setup that environment so yo can run the agent from within.
+
+------------------------------------------------------------------------------
+
 ### Prepare environment
-Please open a Terminal where to execute the agent component (VPN client)
+
+Please open a Terminal where to execute the agent component 
 and export environment variables: 
 
-------------------------------------------------------------------------------
-
-`export AMQP_URL="%s"`
+`export AMQP_URL="{url}"`
 
 ------------------------------------------------------------------------------
+""".format(url=AMQP_URL)
 
-`export AMQP_EXCHANGE=%s`
 
-------------------------------------------------------------------------------
-""" % (AMQP_URL, AMQP_EXCHANGE)
+agent_install_help = """
 
-agents_IP_tunnel_config = """
-
-### Please download the agent component (python script):
+### Please install the agent using PyPi (python script):
 
 \n\n
 
-`git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent`
+using virtual env (recommended):
 
-------------------------------------------------------------------------------
+\n
 
-### Install dependencies:
-(ptyhon 2.7 needed)
+\n
+```
 
-`pip install -r requirements.txt`
+# install venv
+> pip install virtualenv 
 
+# create a python 2.7 env
+> virtualenv -p /usr/bin/python2.7 my_venv 
+
+# activate env
+> source my_venv/bin/activate
+
+# install package
+> pip install ioppytest-agent 
+
+```
+\n\n
+
+or else (without virtualenv):
+
+```
+
+> python2.7 -m pip install ioppytest-agent
+
+```
 \n\n
 
 ------------------------------------------------------------------------------
 
 \n\n
 
-Coming soon:
+You can execute directly from source code, for this use, and check out README.md:
+
+\n
+
+```
+
+> git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent
+
+```
+
+\n\n
+------------------------------------------------------------------------------
 
 \n\n
 
-PyPI (The Python Package Index ) agent python package distribution and installation process.
+Installation didn't work? Check the agent dependencies:
+
+\n
+    - python 2.7 needed (virtualenv use recommended if no py2.7 version installed in OS )
+    - for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
 
 \n\n
+"""
+
+agents_run_help = """
 
 ------------------------------------------------------------------------------
 
 ### Run (choose if either SomeAgentName1 or SomeAgentName2):
 
-(from inside agent repo, python 2.7 needed)
-
 \n\n
 
-`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName1`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --name SomeAgentName1`
 
 \n\n
 
@@ -62,7 +104,7 @@ or
 
 \n\n
 
-`sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE  --name SomeAgentName2`
+`sudo -E ioppytest-agent connect --url $AMQP_URL --name SomeAgentName2`
 
 ------------------------------------------------------------------------------
 ```
@@ -70,14 +112,22 @@ or
 """
 
 vpn_setup = """
-### What is this for?
+### How does my implementation will reach other implementations?
 
-\n\n
+\n
+\n
 
-The agent creates a tun interface in your PC which allows you to comminicate with other implementations, the 
-solution goes more or less like this:
+For running the tests both implementations need to be reachable, for this
+we will set up a IP tunnel (ipv6 only) between both implementations under test (IUT). 
+The software component for setting this up is called the agent, it plays a role similar to a VPN client.
 
-\n\n
+\n
+
+The following doc will describe how to install and launch the agent. This component will create a tun interface in your 
+PC which allows you to communicate with other implementations, the solution goes more or less like this:
+
+\n
+\n
 
 ```
        +--------------------------------+                                             +--------------------------------+
@@ -122,7 +172,7 @@ r_key_4=toAgent.agent_2_name.ip.tun.packet.raw
 
 \n\n
 
-[link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
+    [link to agent README](https://gitlab.f-interop.eu/f-interop-contributors/agent/blob/master/README.md)
 
 \n\n
 """
@@ -140,7 +190,7 @@ If everything goes well you should see in your terminal sth like this:
 \n\n
 
 ```
-fsismondi@carbonero250:~/dev/agent$ sudo -E python -m agent connect --url $AMQP_URL --exchange $AMQP_EXCHANGE --name coap_client
+fsismondi@carbonero250:~/dev/agent$ sudo -E ioppytest-agent connect --url $AMQP_URL --name coap_client
 Password: ********
 
   _                              _              _                                     _

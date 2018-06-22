@@ -23,9 +23,9 @@ from ioppytest.ui_adaptor.tt_tasks import (configure_testing_tool,
                                            )
 
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, LOGGER_FORMAT
-from ioppytest.utils.event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.messages import *
+from event_bus_utils import AmqpListener, amqp_request, AmqpSynchCallTimeoutError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from messages import *
 
 # TODO synthesise imports in __all__
 from ioppytest.ui_adaptor import (UiResponseError,
@@ -454,7 +454,7 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
 
     # 1. echo message to user (if applicable)
     if type(message_received) not in MESSAGES_NOT_TO_BE_ECHOED:
-        ui_display_message = message_translator.transform_message_to_ui_markdown_display(
+        ui_display_message = message_translator.translate_tt_to_ui_message(
             message=message_received)
 
         if ui_display_message:

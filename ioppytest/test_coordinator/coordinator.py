@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import os
 import base64
 from urllib.parse import urlparse
+
 
 from transitions import Machine
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
-from ioppytest import TMPDIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, LOG_LEVEL
+from ioppytest import TMPDIR, PCAP_DIR, RESULTS_DIR, AMQP_URL, LOG_LEVEL, AMQP_EXCHANGE
 from ioppytest.test_coordinator.amqp_connector import CoordinatorAmqpInterface
 from ioppytest.test_coordinator.states_and_transitions import transitions, states
 from ioppytest.test_suite.testsuite import TestSuite
-from ioppytest.utils.amqp_synch_call import *
-from ioppytest.utils.exceptions import CoordinatorError
-from ioppytest.utils.messages import *
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
+from ioppytest.exceptions import CoordinatorError
+from messages import *
+from event_bus_utils import AmqpSynchCallTimeoutError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
 

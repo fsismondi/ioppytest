@@ -22,34 +22,20 @@
     - python-pip
     - python-setuptools
 
-- name: Install python requirements for coordinator
+- name: Install python requirements for ioppytest test suite framework
   tags: coap_test_suite
   become: True
   pip:
-    requirements: "{{ testing_tool_dir }}/ioppytest/test_coordinator/requirements.txt"
+    requirements: "{{ testing_tool_dir }}/ioppytest/requirements.txt"
     executable: pip3
 
-- name: Install python requirements for sniffer
-  tags: coap_test_suite
-  become: True
-  pip:
-    requirements: "{{ testing_tool_dir }}/ioppytest/packet_sniffer/requirements.txt"
-    executable: pip3
-
-- name: Install python requirements for TAT
+- name: Install python requirements for TAT (ttproto)
   tags: coap_test_suite
   become: True
   pip:
     requirements: "{{ testing_tool_dir }}/ioppytest/test_analysis_tool/requirements.txt"
     executable: pip3
 
-- name: Install python requirements for webserver (serving files)
-  tags: coap_test_suite
-  become: True
-  pip:
-    requirements: "{{ testing_tool_dir }}/ioppytest/webserver/requirements.txt"
-    executable: pip3
-    
 - name: Install python requirements for utils
   tags: coap_test_suite
   become: True

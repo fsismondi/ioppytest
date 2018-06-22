@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from ioppytest import __all__
 from ioppytest import get_from_environment
 
 INTERACTIVE_SESSION = get_from_environment("INTERACTIVE_SESSION", True)

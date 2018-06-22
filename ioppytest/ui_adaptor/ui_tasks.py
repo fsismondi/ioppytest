@@ -1,15 +1,17 @@
 import json
 import time
 import logging
+from messages import (MsgUiRequestSessionConfiguration,
+                      MsgUiDisplay,
+                      MsgSniffingGetCaptureLast,
+                      MsgSniffingGetCapture,
+                      MsgUiSendFileToDownload,
+                      MsgUiRequestConfirmationButton,)
 
 from ioppytest.ui_adaptor import (UiResponseError,
                                   SessionError,
-                                  MsgUiRequestSessionConfiguration,
                                   WAITING_TIME_FOR_SECOND_USER,
-                                  MsgUiDisplay,
-                                  MsgUiRequestConfirmationButton,
-                                  UI_TAG_SETUP,
-                                  )
+                                  UI_TAG_SETUP,)
 
 
 # auxiliary functions
@@ -46,6 +48,33 @@ def list_to_str(ls):
     except TypeError as e:
         return str(ls)
     return ret
+
+
+def send_testcase_pcap_to_ui_file_for_download(amqp_publisher, testcase_id=None, user_id='all'):
+    if testcase_id:
+        resp = amqp_publisher.synch_request(MsgSniffingGetCapture(testcase_id=testcase_id))
+    else:
+        resp = amqp_publisher.synch_request(MsgSniffingGetCaptureLast())
+
+    if resp is None:
+        logging.error('Sniffer didnt respond to network traffic capture request.')
+        return
+
+    if not resp.ok:
+        logging.error('Sniffer responded with error to network traffic capture request: %s' % resp)
+        return
+
+    m = MsgUiSendFileToDownload()
+    m.routing_key = m.routing_key.replace('.all.', '.{}.'.format(user_id))
+    m.fields = [
+        {
+            "name": resp.filename,
+            "type": "data",
+            "value": resp.value,
+        }
+    ]
+    if testcase_id:
+        m.tags = {"testcase": testcase_id}
 
 
 def get_field_keys_from_ui_request(ui_message):
@@ -133,8 +162,10 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
         retries = 0
         max_retries = WAITING_TIME_FOR_SECOND_USER
 
-        msg_text = "Please click on the 'share' button on the top-right corner of the GUI, " \
+        msg_text = "This is a User-to-User interop sesssion." \
+                   "Please click on the 'share' button on the top-right corner of the GUI, " \
                    "then share the link with another F-Interop user so he/she can join the session"
+
         m = MsgUiDisplay(
             tags=UI_TAG_SETUP,
             level='info',
