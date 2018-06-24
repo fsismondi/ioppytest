@@ -21,7 +21,7 @@ RUN python3 -m pip install --upgrade pip
 # copying ioppytest code for automating the IUT
 # `RUN git clone` instead of `ADD`, so this Dockerfile can be used "standalone"
 # TODO put ioppytest in pypi and install as python package
-RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git -b iut_august_cellars_automation --single-branch /ioppytest
+RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
 
 ENV PATH="/ioppytest:$PATH"
 
