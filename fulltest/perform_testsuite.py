@@ -8,9 +8,11 @@ import os
 from fulltest.messagelogger import MessageLogger, log_all_received_messages
 from fulltest.ui_stub import default_configuration, UIStub
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
-from ioppytest.utils.messages import *
-from ioppytest.utils.event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
 from automated_IUTs.automation import UserMock
+
+#note that these imports are from the utils-package. To make isinstance-checking work, this package needs to be present in the PYTHONPATH
+from messages import *
+from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
 
 """
 Testing Tool tested as a black box, it uses the event bus API as stimulation and evaluation point.
