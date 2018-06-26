@@ -4,6 +4,7 @@
 import pika
 import pprint
 import os
+import time
 
 from fulltest.messagelogger import MessageLogger, log_all_received_messages
 from fulltest.ui_stub import default_configuration, UIStub

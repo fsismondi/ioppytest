@@ -1,8 +1,8 @@
 import logging
 import sys
 
-from ioppytest.utils.event_bus_utils import AmqpListener
-from ioppytest.utils.messages import MsgTestingToolTerminate, MsgSessionLog
+from event_bus_utils import AmqpListener
+from messages import MsgTestingToolTerminate, MsgSessionLog
 
 logger = logging.getLogger(__name__)
 

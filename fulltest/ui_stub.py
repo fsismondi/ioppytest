@@ -3,8 +3,8 @@ import logging
 import os
 from collections.__init__ import OrderedDict
 
-from ioppytest.utils.event_bus_utils import AmqpListener, publish_message
-from ioppytest.utils.messages import MsgUiRequestSessionConfiguration, MsgTestingToolTerminate, MsgTestSuiteReport, \
+from event_bus_utils import AmqpListener, publish_message
+from messages import MsgUiRequestSessionConfiguration, MsgTestingToolTerminate, MsgTestSuiteReport, \
     MsgUiSessionConfigurationReply
 
 logger = logging.getLogger(__name__)
