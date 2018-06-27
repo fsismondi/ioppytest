@@ -41,10 +41,13 @@ class CoapthonCoapClient(AutomatedIUT):
         'TD_COAP_CORE_08_step_01': 'test_td_coap_core_08',
         'TD_COAP_CORE_09_step_01': 'test_td_coap_core_09',
         'TD_COAP_CORE_10_step_01': 'test_td_coap_core_10',
+        'TD_COAP_CORE_11_step_01': 'test_td_coap_core_11',
+        'TD_COAP_CORE_12_step_01': 'test_td_coap_core_12',
+        'TD_COAP_CORE_13_step_01': 'test_td_coap_core_13',
     }
 
     implemented_stimuli_list = list(stimuli_to_testcase_map.keys())
-    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 11)]
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, len(stimuli_to_testcase_map + 1)]
 
     def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
