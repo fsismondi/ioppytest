@@ -1,6 +1,9 @@
 [submodule "automated_IUTs/coap_client_coapthon/CoAPthon"]
 	path = automated_IUTs/coap_client_coapthon/CoAPthon
 	url = https://github.com/fsismondi/CoAPthon.git
+[submodule "automated_IUTs/coap_server_coapthon/CoAPthon"]
+	path = automated_IUTs/coap_server_coapthon/CoAPthon
+	url = https://github.com/fsismondi/CoAPthon.git
 [submodule "ioppytest/test_analysis_tool"]
 	path = ioppytest/test_analysis_tool
 	url = https://gitlab.f-interop.eu/fsismondi/ttproto.git
