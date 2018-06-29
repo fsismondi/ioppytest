@@ -6,7 +6,7 @@ import json
 import pika
 
 from messages import MsgPacketInjectRaw
-from ioppytest.packet_router.packet_router import PacketRouter
+from ioppytest.packet_router.__main__ import PacketRouter
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED = 5  # estimation
