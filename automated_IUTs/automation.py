@@ -159,7 +159,7 @@ class AutomatedIUT(threading.Thread):
 
         if type(event) in self.event_to_handler_map:
             callback = self.event_to_handler_map[type(event)]
-            callback()
+            callback(event)
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
@@ -288,7 +288,7 @@ class UserMock(threading.Thread):
 
         if type(event) in self.event_to_handler_map:
             callback = self.event_to_handler_map[type(event)]
-            callback()
+            callback(event)
         else:
             if hasattr(event, 'description'):
                 logger.info('Event received and ignored: < %s >  %s' % (type(event), event.description))
