@@ -50,6 +50,7 @@ def signal_int_handler(signal, frame):
     logger.info('got SIGINT. Bye bye!')
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
@@ -61,46 +62,37 @@ class AutomatedIUT(threading.Thread):
     node = NotImplementedField
     process_log_file = None  # child may override, it will be logged at the end of the session
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgStepVerifyExecute,
-        MsgStepStimuliExecute,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-        MsgConfigurationExecute,
-    ]
-
-    event_to_handler_map = {
-        MsgTestCaseReady: handle_test_case_ready,
-        MsgStepVerifyExecute: handle_test_case_verify_execute,
-        MsgStepStimuliExecute: handle_stimuli_execute,
-        MsgTestSuiteReport: handle_test_suite_report,
-        MsgTestingToolTerminate: handle_testing_tool_terminate,
-        MsgConfigurationExecute: handle_configuration_execute,
-    }
-
     def __init__(self, node):
 
+        threading.Thread.__init__(self)
         self.node = node
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgStepVerifyExecute: self.handle_test_case_verify_execute,
+            MsgStepStimuliExecute: self.handle_stimuli_execute,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+            MsgConfigurationExecute: self.handle_configuration_execute,
+        }
 
         # lets setup the AMQP stuff
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
-        threading.Thread.__init__(self)
+
         self.message_count = 0
 
         # queues & default exchange declaration
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in list(self.event_to_handler_map):
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
 
@@ -187,7 +179,6 @@ class AutomatedIUT(threading.Thread):
         if event.node == self.node and event.step_id in self.implemented_stimuli_list:
             step = event.step_id
             addr = event.target_address  # may be None
-
             self._execute_stimuli(step, addr)  # blocking till stimuli execution
             publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
         else:
@@ -197,6 +188,7 @@ class AutomatedIUT(threading.Thread):
                             event.node,
                             event.step_id,
                         ))
+
     def handle_test_case_verify_execute(self, event):
         if event.node == self.node:
             step = event.step_id
@@ -250,27 +242,18 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgTestingToolReady,
-        MsgTestingToolConfigured,
-        MsgTestCaseConfiguration,
-        MsgTestCaseVerdict,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-    ]
-
-    Event_to_handler_map = {
-                MsgTestCaseReady: handle_test_case_ready,
-                MsgTestingToolReady: handle_testing_tool_ready,
-                MsgTestingToolConfigured: handle_testing_tool_configured,
-                MsgTestSuiteReport: handle_test_suite_report,
-                MsgTestingToolTerminate: handle_testing_tool_terminate,
-    }
-
     def __init__(self, iut_testcases=None):
 
         threading.Thread.__init__(self)
+
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgTestingToolReady: self.handle_testing_tool_ready,
+            MsgTestingToolConfigured: self.handle_testing_tool_configured,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestCaseVerdict: self.handle_test_case_verdict,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+        }
 
         self.shutdown = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -284,27 +267,25 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in list(self.event_to_handler_map):
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
     def on_request(self, ch, method, props, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
         event = Message.load_from_pika(method, props, body)
-
         self.message_count += 1
 
-        if event in event_to_handler_map:
+        if event in list(self.event_to_handler_map):
             self.event_to_handler_map[event]()
         else:
             if hasattr(event, 'description'):
@@ -367,7 +348,7 @@ class UserMock(threading.Thread):
     def handle_test_suite_report(self, event):
         logger.info('Got final report: %s' % event.to_json())
 
-    def MsgTestingToolTerminate(self, event):
+    def handle_testing_tool_terminate(self, event):
         logger.info('Event received %s' % type(event))
         logger.info('Event description %s' % event.description)
         logger.info('Terminating execution.. ')
