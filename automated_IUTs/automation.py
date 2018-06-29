@@ -243,6 +243,42 @@ class AutomatedIUT(threading.Thread):
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
+        @classmethod
+        def test_l3_reachability(cls, ip_address):
+            """
+            Check if the peer (e.g another AutomatedIUT) designed by the given
+            ip address is reachable at network layer.
+            """
+            opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
+
+            sucess = subprocess.check_output("ping -{switch} 4 {ip}"
+                                             .format(switch=opt_switch,
+                                                     ip=ip_address))
+            if sucess:
+                logger.info('Ping test sucessful for {}'.format(ip_address))
+            else:
+                logger.info('Ping failed sucessful for {}'.format(ip_address))
+
+        @classmethod
+        def test_l4_reachability(cls, ip_address, port):
+            """
+            Check if the host designed by the given ip address listen and
+            accept connection to the given port.
+            This test must be only called from the client automated IUT to
+            check if the server is running an implementation of the desired
+            protocol
+            """
+            s = socket(AF_INET, SOCK_STREAM)
+
+            try:
+                s.connect((ip_address, port))
+                logger.info('Ip address {} is listening on port {}'
+                            .format(ip_address, port))
+            except ConnectionRefusedError:
+                logger.info('Ip address {} refused connection on port {}'
+                            .format(ip_address, port))
+
+            s.close()
 
 class UserMock(threading.Thread):
     """
@@ -389,43 +425,6 @@ class UserMock(threading.Thread):
             self.channel.stop_consuming()
 
         self.connection.close()
-
-    @classmethod
-    def test_l3_connectivity(cls, ip_address):
-        """
-        Check if the peer (e.g another AutomatedIUT) designed by the given
-        ip address is reachable at network layer.
-        """
-        opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
-
-        sucess = subprocess.check_output("ping -{switch} 4 {ip}"
-                                         .format(switch=opt_switch,
-                                                 ip=ip_address))
-        if sucess:
-            logger.info('Ping test sucessful for {}'.format(ip_address))
-        else:
-            logger.info('Ping failed sucessful for {}'.format(ip_address))
-
-    @classmethod
-    def test_l4_connectivity(cls, ip_address, port):
-        """
-        Check if the host designed by the given ip address listen and
-        accept connection to the given port.
-        This test must be only called from the client automated IUT to
-        check if the server is running an implementation of the desired
-        protocol
-        """
-        s = socket(AF_INET, SOCK_STREAM)
-
-        try:
-            s.connect((ip_address, port))
-            logger.info('Ip address {} is listening on port {}'
-                        .format(ip_address, port))
-        except ConnectionRefusedError:
-            logger.info('Ip address {} refused connection on port {}'
-                        .format(ip_address, port))
-
-        s.close()
 
     def exit(self):
         logger.info('%s exiting..' % self.component_id)
