@@ -85,7 +85,7 @@ class AutomatedIUT(threading.Thread):
         queue_name = '%s::eventbus_subscribed_messages' % self.component_id
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in list(self.event_to_handler_map):
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                     queue=queue_name,
                                     routing_key=ev.routing_key)
@@ -157,8 +157,9 @@ class AutomatedIUT(threading.Thread):
 
         logger.info('Event received: %s' % repr(event))
 
-        if event in self.event_to_handler_map:
-            self.event_to_handler_map[event]()
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback()
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
@@ -270,7 +271,7 @@ class UserMock(threading.Thread):
         queue_name = '%s::eventbus_subscribed_messages' % self.component_id
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in list(self.event_to_handler_map):
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
                                     queue=queue_name,
                                     routing_key=ev.routing_key)
@@ -285,20 +286,21 @@ class UserMock(threading.Thread):
         event = Message.load_from_pika(method, props, body)
         self.message_count += 1
 
-        if event in list(self.event_to_handler_map):
-            self.event_to_handler_map[event]()
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback()
         else:
             if hasattr(event, 'description'):
-                logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
+                logger.info('Event received and ignored: < %s >  %s' % (type(event), event.description))
             else:
                 logger.info('Event received and ignored: %s' % type(event))
 
     def handle_testing_tool_configured(self, event):
         m = MsgTestSuiteStart()
         publish_message(self.connection, m)
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
-        logger.info('Event pushed %s' % m)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Event pushed: %s' % m)
 
     def handle_testing_tool_ready(self, event):
         # m = MsgSessionConfiguration(
@@ -312,12 +314,12 @@ class UserMock(threading.Thread):
         # )  # from TC1 to TC3
         #
         # publish_message(self.connection, m)
-        logger.info('Event received %s' % type(event))
+        logger.info('Event received: %s' % type(event))
         # logger.info('Event pushed %s' % m)
 
     def handle_test_case_ready(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
 
         # m = MsgTestCaseStart()
         # publish_message(self.connection, m)
@@ -326,16 +328,16 @@ class UserMock(threading.Thread):
             m = MsgTestCaseStart()
             publish_message(self.connection, m)
 
-            logger.info('Event pushed %s' % m)
+            logger.info('Event pushed: %s' % m)
         else:
             m = MsgTestCaseSkip(testcase_id=event.testcase_id)
             publish_message(self.connection, m)
-            logger.info('Event pushed %s' % m)
+            logger.info('Event pushed: %s' % m)
 
     def handle_test_case_verdict(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
-        logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Got a verdict: %s , complete message: %s' % (event.verdict, repr(event)))
 
         #  Save verdict
         json_file = os.path.join(
@@ -349,8 +351,8 @@ class UserMock(threading.Thread):
         logger.info('Got final report: %s' % event.to_json())
 
     def handle_testing_tool_terminate(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
         logger.info('Terminating execution.. ')
         self.stop()
 
