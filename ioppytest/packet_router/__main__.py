@@ -7,10 +7,10 @@ import threading
 import pika
 import yaml
 
+from messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
 from ioppytest.test_suite.testsuite import TestConfig
 from event_bus_utils import publish_message
-from messages import *
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 COMPONENT_ID = 'packet_router'
@@ -111,7 +111,6 @@ class PacketRouter(threading.Thread):
         body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         self.message_count += 1
-        self.logger.info("Routing message, count %s" % self.message_count)
 
         # let's route the message to the right agent
         try:
@@ -127,7 +126,6 @@ class PacketRouter(threading.Thread):
 
         src_rkey = method.routing_key
         if src_rkey in self.routing_table.keys():
-            self.logger.debug('Routing key found in routing table: {r_key}'.format(r_key=src_rkey))
             list_dst_rkey = self.routing_table[src_rkey]
             for dst_rkey in list_dst_rkey:
                 # forward to dst_rkey
@@ -139,6 +137,7 @@ class PacketRouter(threading.Thread):
                         content_type='application/json',
                     )
                 )
+
                 self.logger.info(
                     "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
 

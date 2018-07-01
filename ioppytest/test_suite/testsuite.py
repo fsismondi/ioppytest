@@ -233,7 +233,7 @@ class TestSuite:
                 }
             )
             if self.current_tc.current_step:
-                summary.update(self.current_tc.current_step.to_dict(verbose=True))
+                summary.update(self.current_tc.current_step.to_dict(verbose=False))
         else:
             summary.update({'testcase_id': None,
                             'testcase_state': None, })
@@ -466,7 +466,7 @@ class TestSuite:
         resp.update({'session_id': self.session_id})
         resp.update({'users': self.session_users})
         resp.update({'configuration': self.session_configuration})
-        resp.update({'tc_list': self.get_testcases_basic(verbose=True)})
+        resp.update({'tc_list': self.get_testcases_basic(verbose=False)})
         return resp
 
     def skip_testcase(self, testcase_id=None):
@@ -1004,9 +1004,10 @@ class TestCase:
             s.reinit()
 
     def __repr__(self):
-        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, notes=%s)" % (
+        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s)" % (
             self.__class__.__name__, self.id,
-            self.uri, self.objective, self.configuration_id, self.notes)
+            self.uri, self.objective, self.configuration_id
+        )
 
     def to_dict(self, verbose=None):
 

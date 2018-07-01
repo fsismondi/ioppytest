@@ -50,6 +50,7 @@ def signal_int_handler(signal, frame):
     logger.info('got SIGINT. Bye bye!')
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
@@ -61,37 +62,37 @@ class AutomatedIUT(threading.Thread):
     node = NotImplementedField
     process_log_file = None  # child may override, it will be logged at the end of the session
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgTestCaseConfiguration,
-        MsgStepVerifyExecute,
-        MsgStepStimuliExecute,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-    ]
-
     def __init__(self, node):
 
+        threading.Thread.__init__(self)
         self.node = node
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgStepVerifyExecute: self.handle_test_case_verify_execute,
+            MsgStepStimuliExecute: self.handle_stimuli_execute,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+            MsgConfigurationExecute: self.handle_configuration_execute,
+        }
 
         # lets setup the AMQP stuff
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
-        threading.Thread.__init__(self)
+
         self.message_count = 0
 
         # queues & default exchange declaration
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
 
@@ -156,76 +157,79 @@ class AutomatedIUT(threading.Thread):
 
         logger.info('Event received: %s' % repr(event))
 
-        if isinstance(event, MsgTestCaseReady):
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback(event)
+        else:
+            logger.info('Event received and ignored: %s' % type(event))
 
-            if self.implemented_testcases_list == []:
-                logger.info('IUT didnt declare testcases capabilities, we asume that any can be run')
-                return
+    def handle_test_case_ready(self, event):
+        if self.implemented_testcases_list == []:
+            logger.info('IUT didnt declare testcases capabilities, we asume that any can be run')
+            return
 
-            if event.testcase_id not in self.implemented_testcases_list:
-                time.sleep(0.1)
-                logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
-                publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
-            else:
-                logger.info('IUT %s ready to execute testcase' % self.component_id)
+        if event.testcase_id not in self.implemented_testcases_list:
+            time.sleep(0.1)
+            logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
+            publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
+        else:
+            logger.info('IUT %s ready to execute testcase' % self.component_id)
 
-        elif isinstance(event, MsgStepStimuliExecute):
-            logger.info('event.node %s,%s' % (event.node, self.node))
-            if event.node == self.node and event.step_id in self.implemented_stimuli_list:
-                step = event.step_id
-                addr = event.target_address  # may be None
+    def handle_stimuli_execute(self, event):
+        logger.info('event.node %s,%s' % (event.node, self.node))
+        if event.node == self.node and event.step_id in self.implemented_stimuli_list:
+            step = event.step_id
+            addr = event.target_address  # may be None
+            self._execute_stimuli(step, addr)  # blocking till stimuli execution
+            publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
+        else:
+            logger.info('Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
+                        (
+                            type(event),
+                            event.node,
+                            event.step_id,
+                        ))
 
-                self._execute_stimuli(step, addr)  # blocking till stimuli execution
-                publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
-            else:
-                logger.info('Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
-                            (
-                                type(event),
-                                event.node,
-                                event.step_id,
-                            ))
+    def handle_test_case_verify_execute(self, event):
+        if event.node == self.node:
+            step = event.step_id
+            self._execute_verify(step)
+            publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
+                                                                   node=self.node
+                                                                   ))
+        else:
+            logger.info('Event received and ignored: %s (node: %s - step: %s)' %
+                        (
+                            type(event),
+                            event.node,
+                            event.step_id,
+                        ))
 
-        elif isinstance(event, MsgStepVerifyExecute):
+    def handle_test_suite_report(self, event):
+        logger.info('Got final test suite report: %s' % event.to_json())
+        if self.process_log_file:
+            contents = open(self.process_log_file).read()
+            logger.info('*' * 72)
+            logger.info('AUTOMATED_IUT LOGS %s' % self.process_log_file)
+            logger.info('*' * 72)
+            logger.info(contents)
+            logger.info('*' * 72)
+            logger.info('*' * 72)
 
-            if event.node == self.node:
-                step = event.step_id
-                self._execute_verify(step)
-                publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
-                                                                       node=self.node
-                                                                       ))
-            else:
-                logger.info('Event received and ignored: %s (node: %s - step: %s)' %
-                            (
-                                type(event),
-                                event.node,
-                                event.step_id,
-                            ))
+    def handle_testing_tool_terminate(self, event):
+        logger.info('Test terminate signal received. Quitting..')
+        time.sleep(2)
+        self._exit()
 
-        elif isinstance(event, MsgTestSuiteReport):
-            logger.info('Got final test suite report: %s' % event.to_json())
-            if self.process_log_file:
-                contents = open(self.process_log_file).read()
-                logger.info('*' * 72)
-                logger.info('AUTOMATED_IUT LOGS %s' % self.process_log_file)
-                logger.info('*' * 72)
-                logger.info(contents)
-                logger.info('*' * 72)
-                logger.info('*' * 72)
-
-        elif isinstance(event, MsgTestingToolTerminate):
-            logger.info('Test terminate signal received. Quitting..')
-            time.sleep(2)
-            self._exit()
-
-        elif isinstance(event, MsgConfigurationExecute):
-            if event.node == self.node:
-                logger.info('Configure test case %s', event.testcase_id)
-                # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
-                ipaddr = self._execute_configuration(event.testcase_id,
-                                                     event.node)  # blocking till complete config execution
-                if ipaddr != '':
-                    m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
-                    publish_message(self.connection, m)
+    def handle_configuration_execute(self, event):
+        if event.node == self.node:
+            logger.info('Configure test case %s', event.testcase_id)
+            # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
+            ipaddr = self._execute_configuration(event.testcase_id,
+                                                 event.node)  # blocking till complete config execution
+            if ipaddr != '':
+                m = MsgConfigurationExecuted(testcase_id=event.testcase_id, node=event.node, ipv6_address=ipaddr)
+                publish_message(self.connection, m)
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
@@ -239,19 +243,18 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgTestingToolReady,
-        MsgTestingToolConfigured,
-        MsgTestCaseConfiguration,
-        MsgTestCaseVerdict,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-    ]
-
     def __init__(self, iut_testcases=None):
 
         threading.Thread.__init__(self)
+
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgTestingToolReady: self.handle_testing_tool_ready,
+            MsgTestingToolConfigured: self.handle_testing_tool_configured,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestCaseVerdict: self.handle_test_case_verdict,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+        }
 
         self.shutdown = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -265,95 +268,93 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
     def on_request(self, ch, method, props, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
         event = Message.load_from_pika(method, props, body)
-
         self.message_count += 1
 
-        if event is None:
-            return
-
-        elif isinstance(event, MsgTestingToolReady):
-            # m = MsgSessionConfiguration(
-            #     configuration={
-            #         "testsuite.testcases": [
-            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-            #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-            #         ]
-            #     }
-            # )  # from TC1 to TC3
-            #
-            # publish_message(self.connection, m)
-            logger.info('Event received %s' % type(event))
-            # logger.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestingToolConfigured):
-            m = MsgTestSuiteStart()
-            publish_message(self.connection, m)
-            logger.info('Event received %s' % type(event))
-            logger.info('Event description %s' % event.description)
-            logger.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestCaseReady):
-            logger.info('Event received %s' % type(event))
-            logger.info('Event description %s' % event.description)
-
-            # m = MsgTestCaseStart()
-            # publish_message(self.connection, m)
-
-            if event.testcase_id in self.implemented_testcases_list:
-                m = MsgTestCaseStart()
-                publish_message(self.connection, m)
-
-                logger.info('Event pushed %s' % m)
-            else:
-                m = MsgTestCaseSkip(testcase_id=event.testcase_id)
-                publish_message(self.connection, m)
-                logger.info('Event pushed %s' % m)
-
-        elif isinstance(event, MsgTestCaseVerdict):
-            logger.info('Event received %s' % type(event))
-            logger.info('Event description %s' % event.description)
-            logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
-
-            #  Save verdict
-            json_file = os.path.join(
-                RESULTS_DIR,
-                event.testcase_id + '_verdict.json'
-            )
-            with open(json_file, 'w') as f:
-                f.write(event.to_json())
-
-        elif isinstance(event, MsgTestSuiteReport):
-            logger.info('Got final report: %s' % event.to_json())
-
-        elif isinstance(event, MsgTestingToolTerminate):
-            logger.info('Event received %s' % type(event))
-            logger.info('Event description %s' % event.description)
-            logger.info('Terminating execution.. ')
-            self.stop()
-
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback(event)
         else:
             if hasattr(event, 'description'):
-                logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
+                logger.info('Event received and ignored: < %s >  %s' % (type(event), event.description))
             else:
                 logger.info('Event received and ignored: %s' % type(event))
+
+    def handle_testing_tool_configured(self, event):
+        m = MsgTestSuiteStart()
+        publish_message(self.connection, m)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Event pushed: %s' % m)
+
+    def handle_testing_tool_ready(self, event):
+        # m = MsgSessionConfiguration(
+        #     configuration={
+        #         "testsuite.testcases": [
+        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
+        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
+        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+        #         ]
+        #     }
+        # )  # from TC1 to TC3
+        #
+        # publish_message(self.connection, m)
+        logger.info('Event received: %s' % type(event))
+        # logger.info('Event pushed %s' % m)
+
+    def handle_test_case_ready(self, event):
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+
+        # m = MsgTestCaseStart()
+        # publish_message(self.connection, m)
+
+        if event.testcase_id in self.implemented_testcases_list:
+            m = MsgTestCaseStart()
+            publish_message(self.connection, m)
+
+            logger.info('Event pushed: %s' % m)
+        else:
+            m = MsgTestCaseSkip(testcase_id=event.testcase_id)
+            publish_message(self.connection, m)
+            logger.info('Event pushed: %s' % m)
+
+    def handle_test_case_verdict(self, event):
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Got a verdict: %s , complete message: %s' % (event.verdict, repr(event)))
+
+        #  Save verdict
+        json_file = os.path.join(
+            RESULTS_DIR,
+            event.testcase_id + '_verdict.json'
+        )
+        with open(json_file, 'w') as f:
+            f.write(event.to_json())
+
+    def handle_test_suite_report(self, event):
+        logger.info('Got final report: %s' % event.to_json())
+
+    def handle_testing_tool_terminate(self, event):
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Terminating execution.. ')
+        self.stop()
 
     def stop(self):
         self.shutdown = True
