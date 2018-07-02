@@ -288,8 +288,8 @@ class CoordinatorAmqpInterface:
 
     def notify_testcase_ready(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase_configuration().to_dict(verbose=False))
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
+        msg_fields.update(self.testsuite.get_current_testcase_configuration().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
 
         event = MsgTestCaseReady(
             **msg_fields
