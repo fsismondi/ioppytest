@@ -313,7 +313,6 @@ _docker-build-coap-additional-resources:
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
 
 _docker-build-lwm2m-additional-resources:
-
 	@echo "Starting to build lwm2m-additional-resources.. "
 	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automated_IUTs/lwm2m_client_leshan/Dockerfile .
 	docker build --quiet -t automated_iut-lwm2m_server-leshan-v$(version) -f automated_IUTs/lwm2m_server_leshan/Dockerfile .

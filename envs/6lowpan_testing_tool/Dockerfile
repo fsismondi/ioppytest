@@ -24,12 +24,15 @@ WORKDIR /ioppytest
 RUN python3 -m pip install -r ioppytest/test_coordinator/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/test_analysis_tool/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/packet_router/requirements.txt --upgrade
-RUN python3 -m pip install -r ioppytest/sniffer/requirements.txt --upgrade
+RUN python3 -m pip install -r ioppytest/packet_sniffer/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/webserver/requirements.txt --upgrade
 RUN python3 -m pip install -r ioppytest/utils/requirements.txt
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap
+
+# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
 
 EXPOSE 5671 5672
 

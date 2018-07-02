@@ -21,16 +21,13 @@ class CaliforniumCoapServer(AutomatedIUT):
     component_id = 'automated_iut-coap_server-californium'
     node = 'coap_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
-
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
-
-    stimuli_cmd_dict = NotImplementedField
 
     iut_cmd = [
         'java',
         '-jar',
         'automated_IUTs/coap_server_californium/target/coap_plugtest_server-1.0-SNAPSHOT.jar',
-        ' ::1 ',
+        COAP_SERVER_HOST,
         COAP_SERVER_PORT,
     ]
 
@@ -38,27 +35,30 @@ class CaliforniumCoapServer(AutomatedIUT):
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
-        th = threading.Thread(target=self._launch_automated_iut)
-        th.daemon = True
-        th.start()
+        self._launch_automated_iut_process()
 
-    def _execute_verify(self, verify_step_id, ):
+    def _execute_verify(self, verify_step_id):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
-    def _launch_automated_iut(self):
-        # att this is a blocking function
+    def _launch_automated_iut_process(self):
+        logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
         with open(self.process_log_file, "w") as outfile:
-            subprocess.call(self.iut_cmd, stdout=outfile)
+            subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
     def _execute_configuration(self, testcase_id, node):
-        # shoud we restart californium process?
+        # should we restart process?
         return server_base_url
 
+
 if __name__ == '__main__':
-    iut = CaliforniumCoapServer()
-    iut.start()
-    iut.join()
+
+    try:
+        iut = CaliforniumCoapServer()
+        iut.start()
+        iut.join()
+    except Exception as e:
+        logger.error(e)

@@ -1,0 +1,77 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: LWM2M_CFG_01
+uri: http://openmobilealliance.org/iot/lightweight-m2m-lwm2m
+nodes:
+  - lwm2m_client
+  - lwm2m_server
+addressing:
+    - node: lwm2m_client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: lwm2m_server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - lwm2m_client
+      - lwm2m_server
+description:
+  - node: lwm2m_server
+    message:
+      - LwM2M servers running service at [bbbb::2]:5683
+      - LwM2M servers are requested to implement the following objects
+      - - /0
+        - Security object
+        - Mandatory Security object resources are = LwM2M Server URI (ID:0), Bootstrap-Server(ID:1), Security Mode(ID:2), Public Key or Identity (ID:3), Server Public Key (ID:4), Secret Key (ID:5)
+        - Optional Security object resource that should be implemented is  = Short Server ID (Id:10)
+      - - /1
+        - Server object 
+        - Mandatory Server object resources are = Short Server ID (ID:0), Lifetime (ID:1), Notification Storing When Disabled or Offline (ID:6), Binding (ID:7), Registration Update Trigger (ID:8)
+      - - /3
+        - Device object
+        - Mandatory Device object resources are = Reboot (ID:4), Error Code (ID:11), Supported Binding and Modes (ID:16)
+        - Optional Device object resources that should be implemented are = Manufacturer Name (ID:0), Model Name (ID:1), Serial Number (ID:2), Firmware Version (ID:3)
+  - node: lwm2m_client
+    message:
+      - LwM2M clients requests
+      - - Destination IP Address = [bbbb::2]
+        - Destination UDP Port = 5683
+      - LwM2M clients are requested to implement the following objects
+      - - /0
+        - Security object
+        - Mandatory Security object resources are = LwM2M Server URI (ID:0), Bootstrap-Server(ID:1), Security Mode(ID:2), Public Key or Identity (ID:3), Server Public Key (ID:4), Secret Key (ID:5)
+        - Optional Security object resource that should be implemented is  = Short Server ID (Id:10)
+      - - /1
+        - Server object 
+        - Mandatory Server object resources are= Short Server ID (ID:0), Lifetime (ID:1), Notification Storing When Disabled or Offline (ID:6), Binding (ID:7), Registration Update Trigger (ID:8)
+        - Optional Server object resources that should be implemented are = Default Minimum Period (Id:2), Default Maximum Period (ID:3), Disable Device (ID:4), Disable Timeout (ID:5)
+      - - /3
+        - Device object
+        - Mandatory Device object resources are =  Reboot (ID:4), Error Code (ID:11), Supported Binding and Modes (ID:16)
+        - Optional Device object resources that should be implemented are = Manufacturer Name (ID:0), Model Name (ID:1), Serial Number (ID:2), Firmware Version (ID:3)
+configuration_diagram: |+
+  +----------------------------------------------------------------+
+  |                                                                |
+  |                                                                |
+  |                      LWM2M Testing Tool                        |
+  |                                                                |
+  |                                                                |
+  |                                                                |
+  +-----+-----+-------------------+---------------------+----+-----+
+        |     ^                   ^                     |    ^
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        |     |                   |                     |    |
+        v     |                   |                     v    |
+  +-----+-----+---+ +------+      |       +------+ +----+----+-----+
+  |               | |  A   |      |       |  A   | |               |
+  |               | |  G   | +----+-----> |  G   | |               |
+  |  lwm2m_client | |  E   |              |  E   | | lwm2m_server  |
+  |               | |  N   | <----------+ |  N   | |               |
+  |               | |  T   |              |  T   | |               |
+  +---------------+ +------+              +------+ +---------------+

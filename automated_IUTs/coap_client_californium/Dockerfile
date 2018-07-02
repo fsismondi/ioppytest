@@ -24,8 +24,12 @@ WORKDIR /ioppytest
 #py2 requirements
 RUN python -m pip install -r ioppytest/agent/requirements.txt
 
-#py3 requierements
-RUN python3 -m pip install pika
+# requirements on autoamted-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
+
+# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.2.2
 
 #RUN cp automated_IUTs/coap_client_californium/supervisor.conf /etc/supervisor/supervisor.conf
 

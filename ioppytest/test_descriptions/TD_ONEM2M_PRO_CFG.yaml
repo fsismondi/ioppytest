@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: M2M_CFG_01
+uri: www.onem2m.org
+nodes:
+  - adn
+  - cse
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - adn
+      - cse
+addressing:
+    - node: adn
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: cse
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+description:
+  - node: cse
+    message:
+      - CoAP servers running service at [bbbb::2]:5683
+  - node: adn
+    message:
+      - No special configuration needed
+      - CoAP client requests
+      - - Destination IP Address = [bbbb::2]
+        - Destination UDP Port = 5683
+configuration_diagram: null

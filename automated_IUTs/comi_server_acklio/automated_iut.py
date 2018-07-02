@@ -22,21 +22,21 @@ class AcklioCoMiServer(AutomatedIUT):
     node = 'comi_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
 
-    implemented_testcases_list = None
-
-    stimuli_cmd_dict = NotImplementedField
+    stimuli_to_testcase_map = {}
+    implemented_stimuli_list = list(stimuli_to_testcase_map.keys())
+    implemented_testcases_list = list(stimuli_to_testcase_map.values())
 
     iut_cmd = [
-        './serverComi --yang-file=comi-interop@2017-12-12  --sid-file=comi-interop@2017-12-12 launch'
+        './serverComi --yang-sid-path=./plugtests/ --datastore-path=./plugtests/ --read-ds-from-file=1  launch'
     ]
 
     def __init__(self):
         super().__init__(self.node)
         logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
         logging.info('spawning process %s' % str(self.iut_cmd))
-        th = threading.Thread(target=self._launch_automated_iut)
-        th.daemon = True
-        th.start()
+        #th = threading.Thread(target=self._launch_automated_iut)
+        #th.daemon = True
+        #th.start()
 
     def _launch_automated_iut(self):
         # att this is a blocking function
@@ -48,10 +48,10 @@ class AcklioCoMiServer(AutomatedIUT):
                 os.chdir(os.path.join(os.path.abspath(sys.path[0]), 'automated_IUTs/comi_server_acklio'))
                 subprocess.call(self.iut_cmd, stdout=outfile)
 
-    def _execute_verify(self, verify_step_id, ):
+    def _execute_verify(self, verify_step_id ):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
-    def _execute_stimuli(self, stimuli_step_id, cmd, addr):
+    def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
     def _execute_configuration(self, testcase_id, node):

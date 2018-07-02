@@ -14,6 +14,40 @@ from ioppytest.finterop_ui_adaptor import (UiResponseError,
 
 # auxiliary functions
 
+
+def list_to_str(ls):
+    """
+    flattens a nested list up to two levels of depth
+
+    :param ls: the list, supports str also
+    :return: single string with all the items inside the list
+    """
+
+    ret = ''
+
+    if ls is None:
+        return 'None'
+
+    if type(ls) is str:
+        return ls
+
+    try:
+        for l in ls:
+            if l and isinstance(l, list):
+                for sub_l in l:
+                    if sub_l and not isinstance(sub_l, list):
+                        ret += str(sub_l) + ' \n '
+                    else:
+                        # I truncate in the second level
+                        pass
+            else:
+                ret += str(l) + ' \n '
+
+    except TypeError as e:
+        return str(ls)
+    return ret
+
+
 def get_field_keys_from_ui_request(ui_message):
     """
     :return: list with all field names in request
@@ -158,9 +192,12 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
     for iut_role in iut_roles:
         m = MsgUiRequestConfirmationButton(
             tags=UI_TAG_SETUP,
-            title="%s runs implementation under test (IUT) with role: %s? "
-                  % (user_lead.upper(), iut_role.upper()),
             fields=[
+                {
+                    "type": "p",
+                    "value": "%s runs implementation under test (IUT) with role: %s? "
+                             % (user_lead.upper(), iut_role.upper())
+                },
                 {
                     "name": "yes",
                     "type": "button",
@@ -171,7 +208,7 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
                     "type": "button",
                     "value": True
                 },
-            ]
+            ],
         )
         resp = amqp_publisher.synch_request(
             request=m,
