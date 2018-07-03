@@ -7,14 +7,15 @@ AutomatedIUT class provides an interface for automated IUTs implementations.
 """
 
 import os
-import sys
 import platform
 import socket
 import subprocess
+import sys
 import pika
 import signal
 import logging
 import threading
+
 
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from messages import *
@@ -53,6 +54,7 @@ def signal_int_handler(signal, frame):
     logger.info('got SIGINT. Bye bye!')
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_int_handler)
 
 
@@ -64,46 +66,38 @@ class AutomatedIUT(threading.Thread):
     node = NotImplementedField
     process_log_file = None  # child may override, it will be logged at the end of the session
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgStepVerifyExecute,
-        MsgStepStimuliExecute,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-        MsgConfigurationExecute,
-    ]
-
-    event_to_handler_map = {
-        MsgTestCaseReady: handle_test_case_ready,
-        MsgStepVerifyExecute: handle_test_case_verify_execute,
-        MsgStepStimuliExecute: handle_stimuli_execute,
-        MsgTestSuiteReport: handle_test_suite_report,
-        MsgTestingToolTerminate: handle_testing_tool_terminate,
-        MsgConfigurationExecute: handle_configuration_execute,
-    }
-
     def __init__(self, node):
 
+        threading.Thread.__init__(self)
         self.node = node
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgStepVerifyExecute: self.handle_test_case_verify_execute,
+            MsgStepStimuliExecute: self.handle_stimuli_execute,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+            MsgConfigurationExecute: self.handle_configuration_execute,
+            MsgAutomatedIutTestPing: self.handle_test_ping,
+        }
 
         # lets setup the AMQP stuff
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
-        threading.Thread.__init__(self)
+
         self.message_count = 0
 
         # queues & default exchange declaration
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
         # send hello message
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
 
@@ -168,8 +162,9 @@ class AutomatedIUT(threading.Thread):
 
         logger.info('Event received: %s' % repr(event))
 
-        if event in self.event_to_handler_map:
-            self.event_to_handler_map[event]()
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback(event)
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
@@ -190,7 +185,6 @@ class AutomatedIUT(threading.Thread):
         if event.node == self.node and event.step_id in self.implemented_stimuli_list:
             step = event.step_id
             addr = event.target_address  # may be None
-
             self._execute_stimuli(step, addr)  # blocking till stimuli execution
             publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
         else:
@@ -200,13 +194,15 @@ class AutomatedIUT(threading.Thread):
                             event.node,
                             event.step_id,
                         ))
+
     def handle_test_case_verify_execute(self, event):
         if event.node == self.node:
             step = event.step_id
             self._execute_verify(step)
-            publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
-                                                                   node=self.node
-                                                                   ))
+            publish_message(self.connection,
+                            MsgStepVerifyExecuted(verify_response=True,
+                                                  node=self.node
+                                                  ))
         else:
             logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                         (
@@ -234,7 +230,8 @@ class AutomatedIUT(threading.Thread):
     def handle_configuration_execute(self, event):
         if event.node == self.node:
             logger.info('Configure test case %s', event.testcase_id)
-            # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
+            # TODO fix me _execute_config should pass an arbitrary dict, which
+            # will be used later for building the fields of the ret message
             ipaddr = self._execute_configuration(event.testcase_id,
                                                  event.node)  # blocking till complete config execution
             if ipaddr != '':
@@ -243,42 +240,70 @@ class AutomatedIUT(threading.Thread):
         else:
             logger.info('Event received and ignored: %s' % type(event))
 
-        @classmethod
-        def test_l3_reachability(cls, ip_address):
-            """
-            Check if the peer (e.g another AutomatedIUT) designed by the given
-            ip address is reachable at network layer.
-            """
-            opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
+    def handle_test_ping(self, event):
+        if event.node == self.node:
+            logger.info('Testing L3 reachability.')
+            reachable = AutomatedIUT.test_l3_reachability(event.target_address)
 
-            sucess = subprocess.check_output("ping -{switch} 4 {ip}"
-                                             .format(switch=opt_switch,
-                                                     ip=ip_address))
-            if sucess:
-                logger.info('Ping test sucessful for {}'.format(ip_address))
+            if reachable:
+                m = MsgAutomatedIutTestPingReply(
+                        request=event.request,
+                        ok=True,
+                        description="Ping reply received, peer is reachable",
+                        node=event.node,
+                        target_address=event.target_address
+                    )
+                m = MsgAutomatedIutTestPingReply(request, ok=True)
             else:
-                logger.info('Ping failed sucessful for {}'.format(ip_address))
+                m = MsgAutomatedIutTestPingReply(request, ok=False)
 
-        @classmethod
-        def test_l4_reachability(cls, ip_address, port):
-            """
-            Check if the host designed by the given ip address listen and
-            accept connection to the given port.
-            This test must be only called from the client automated IUT to
-            check if the server is running an implementation of the desired
-            protocol
-            """
-            s = socket(AF_INET, SOCK_STREAM)
+            publish_message(self.connection, m)
+            logger.info('Event pushed: %s' % m)
 
-            try:
-                s.connect((ip_address, port))
-                logger.info('Ip address {} is listening on port {}'
-                            .format(ip_address, port))
-            except ConnectionRefusedError:
-                logger.info('Ip address {} refused connection on port {}'
-                            .format(ip_address, port))
+    @classmethod
+    def test_l3_reachability(cls, ip_address)->bool:
+        """
+        Check if the peer (e.g another AutomatedIUT) designed by the given
+        ip address is reachable at network layer.
+        """
+        opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
 
+        cmd = "ping -{switch} 4 {ip}".format(switch=opt_switch,
+                                             ip=ip_address)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        proc.wait(timeout=STIMULI_HANDLER_TOUT)
+
+        if proc.returncode:
+            logger.info('Ping test sucessful for {}'.format(ip_address))
+            return True
+        else:
+            logger.info('Ping failed sucessful for {}'.format(ip_address))
+            for line in proc.stdout:
+                print(line)
+            return False
+
+    @classmethod
+    def test_l4_reachability(cls, ip_address, port)->bool:
+        """
+        Check if the host designed by the given ip address listen and
+        accept connection to the given port.
+        This test must be only called from the client automated IUT to
+        check if the server is running an implementation of the desired
+        protocol
+        """
+        s = socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            s.connect((ip_address, port))
+            logger.info('Ip address {} is listening on port {}'
+                        .format(ip_address, port))
             s.close()
+            return True
+        except ConnectionRefusedError:
+            logger.info('Ip address {} refused connection on port {}'
+                        .format(ip_address, port))
+            s.close()
+            return False
 
 class UserMock(threading.Thread):
     """
@@ -289,27 +314,18 @@ class UserMock(threading.Thread):
     # e.g. for TD COAP CORE from 1 to 31
     DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
-    EVENTS = [
-        MsgTestCaseReady,
-        MsgTestingToolReady,
-        MsgTestingToolConfigured,
-        MsgTestCaseConfiguration,
-        MsgTestCaseVerdict,
-        MsgTestSuiteReport,
-        MsgTestingToolTerminate,
-    ]
-
-    event_to_handler_map = {
-                MsgTestCaseReady: handle_test_case_ready,
-                MsgTestingToolReady: handle_testing_tool_ready,
-                MsgTestingToolConfigured: handle_testing_tool_configured,
-                MsgTestSuiteReport: handle_test_suite_report,
-                MsgTestingToolTerminate: handle_testing_tool_terminate,
-    }
-
     def __init__(self, iut_testcases=None):
 
         threading.Thread.__init__(self)
+
+        self.event_to_handler_map = {
+            MsgTestCaseReady: self.handle_test_case_ready,
+            MsgTestingToolReady: self.handle_testing_tool_ready,
+            MsgTestingToolConfigured: self.handle_testing_tool_configured,
+            MsgTestSuiteReport: self.handle_test_suite_report,
+            MsgTestCaseVerdict: self.handle_test_case_verdict,
+            MsgTestingToolTerminate: self.handle_testing_tool_terminate,
+        }
 
         self.shutdown = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
@@ -323,40 +339,39 @@ class UserMock(threading.Thread):
         else:
             self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
 
-        services_queue_name = '%s::testsuiteEvents' % self.component_id
-        self.channel.queue_declare(queue=services_queue_name, auto_delete=True)
+        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
-        for ev in self.EVENTS:
+        for ev in self.event_to_handler_map:
             self.channel.queue_bind(exchange=AMQP_EXCHANGE,
-                                    queue=services_queue_name,
+                                    queue=queue_name,
                                     routing_key=ev.routing_key)
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=services_queue_name)
+        self.channel.basic_consume(self.on_request, queue=queue_name)
 
     def on_request(self, ch, method, props, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
-
         event = Message.load_from_pika(method, props, body)
-
         self.message_count += 1
 
-        if event in self.event_to_handler_map:
-            self.event_to_handler_map[event]()
+        if type(event) in self.event_to_handler_map:
+            callback = self.event_to_handler_map[type(event)]
+            callback(event)
         else:
             if hasattr(event, 'description'):
-                logger.info('Event received and ignored < %s >  %s' % (type(event), event.description))
+                logger.info('Event received and ignored: < %s >  %s' % (type(event), event.description))
             else:
                 logger.info('Event received and ignored: %s' % type(event))
 
     def handle_testing_tool_configured(self, event):
         m = MsgTestSuiteStart()
         publish_message(self.connection, m)
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
-        logger.info('Event pushed %s' % m)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Event pushed: %s' % m)
 
     def handle_testing_tool_ready(self, event):
         # m = MsgSessionConfiguration(
@@ -370,12 +385,12 @@ class UserMock(threading.Thread):
         # )  # from TC1 to TC3
         #
         # publish_message(self.connection, m)
-        logger.info('Event received %s' % type(event))
+        logger.info('Event received: %s' % type(event))
         # logger.info('Event pushed %s' % m)
 
     def handle_test_case_ready(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
 
         # m = MsgTestCaseStart()
         # publish_message(self.connection, m)
@@ -384,16 +399,16 @@ class UserMock(threading.Thread):
             m = MsgTestCaseStart()
             publish_message(self.connection, m)
 
-            logger.info('Event pushed %s' % m)
+            logger.info('Event pushed: %s' % m)
         else:
             m = MsgTestCaseSkip(testcase_id=event.testcase_id)
             publish_message(self.connection, m)
-            logger.info('Event pushed %s' % m)
+            logger.info('Event pushed: %s' % m)
 
     def handle_test_case_verdict(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
-        logger.info('Got a verdict: %s , complete message %s' % (event.verdict, repr(event)))
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
+        logger.info('Got a verdict: %s , complete message: %s' % (event.verdict, repr(event)))
 
         #  Save verdict
         json_file = os.path.join(
@@ -406,9 +421,9 @@ class UserMock(threading.Thread):
     def handle_test_suite_report(self, event):
         logger.info('Got final report: %s' % event.to_json())
 
-    def MsgTestingToolTerminate(self, event):
-        logger.info('Event received %s' % type(event))
-        logger.info('Event description %s' % event.description)
+    def handle_testing_tool_terminate(self, event):
+        logger.info('Event received: %s' % type(event))
+        logger.info('Event description: %s' % event.description)
         logger.info('Terminating execution.. ')
         self.stop()
 
