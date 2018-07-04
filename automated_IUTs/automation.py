@@ -277,9 +277,11 @@ class AutomatedIUT(threading.Thread):
             logger.info('Ping test sucessful for {}'.format(ip_address))
             return True
         else:
-            logger.info('Ping failed sucessful for {}'.format(ip_address))
+            logger.info('Ping failed for {}'.format(ip_address))
+            output = 'output = Process stdout:\n'
             for line in proc.stdout:
-                print(line)
+                output += line
+            logger.info(output)
             return False
 
     @classmethod
