@@ -10,7 +10,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # timeout in seconds
-STIMULI_HANDLER_TOUT = 10
+STIMULI_HANDLER_TOUT = 15
 
 server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST

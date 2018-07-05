@@ -1014,10 +1014,10 @@ class TestCase:
         d = OrderedDict()
         d['testcase_id'] = self.id
         d['testcase_ref'] = self.uri
+        d['objective'] = self.objective
         d['state'] = self.state
 
         if verbose:
-            d['objective'] = self.objective
             d['pre_conditions'] = self.pre_conditions
             d['notes'] = self.notes
 
