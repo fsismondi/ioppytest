@@ -19,7 +19,7 @@ from event_bus_utils import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
 # timeout in seconds
-STIMULI_HANDLER_TOUT = 10
+STIMULI_HANDLER_TOUT = 15
 
 COMPONENT_ID = 'automation'
 

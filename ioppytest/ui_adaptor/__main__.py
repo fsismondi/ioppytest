@@ -233,13 +233,12 @@ class AmqpMessagePublisher:
                 channel.close()
 
     def synch_request(self, request, user_id=None, timeout=30):
+        """ method for synch requests:
+        sends request, waits for response, and returns it (unless timeout, in that case it raises exception)
+        :param message: request Message (any type of Message subclass object)
+        :param timeout: Timeout in seconds, else exception is raised
+        :return: MsgReply reply (MsgReply subclass object)
         """
-        SYNCRHONOUS UI request: sends message, waits for response, and returns response (unless timeout)
-        :param message: request Message (doesnt necessarily needs to be a user request to GUI)
-        :param timeout: Timeout in seconds, else expection is raised
-        :return: Reply message
-        """
-
         if user_id:
             request = self._update_ui_message_rkeys(ui_message=request, user_id=user_id)
 
@@ -387,7 +386,7 @@ class AmqpMessagePublisher:
             else:
                 destination_user = 'all'
         else:
-            raise Exception('UI message passed?')
+            raise Exception("couldnt update the message UI destination in rkey")
 
         # lets set message rkey and reply_to fields
         if '*' in ui_message.routing_key:
