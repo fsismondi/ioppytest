@@ -37,25 +37,3 @@ COPY tests/misc/supervisor_file_for_ecosystem_test.ini /etc/supervisor/conf.d/su
 
 # launch processes
 ENTRYPOINT ["/usr/bin/supervisord", "--nodaemon"]
-
-
-# # # EXAMPLES ON HOW TO USE THIS DOCKER CONTAINER WITH SUPERVISOR FOR SETTING UP THE TEST ENVIRONMENT # # #
-
-# build docker image which launches agent + automated IUT
-# > docker build . -t tun_ecosystem_test_agent_from_debian -f tests/misc/dockerfile_for_ecosystem_test__agent_from_debian_base
-# > export AMQP_URL=amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.tun_ecosystem_test_agent_from_debian
-
-# finally run docker container with correct options:
-# > docker run -it --env AMQP_URL=$AMQP_URL --env NODE_NAME=node1 --env AGENT_NAME=agent1 --env AGENT_IPV6_PREFIX=bbbb --env AGENT_IPV6_HOST=1 --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged tun_ecosystem_test_agent_from_debian
-
-# non condensed version:
-# > docker run -it
-#               --env AMQP_URL=$AMQP_URL
-#               --env NODE_NAME=agent2
-#               --env AGENT_NAME=agent1
-#               --env AGENT_IPV6_PREFIX=bbbb
-#               --env AGENT_IPV6_HOST=1
-#               --sysctl net.ipv6.conf.all.disable_ipv6=0
-#               --privileged
-#               tun_ecosystem_test_agent_from_debian
-#               supervisord -c tests/misc/supervisor_file_for_ecosystem_test.ini

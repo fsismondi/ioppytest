@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+
+--- !configuration
+configuration_id: DUMMY_CFG_01
+uri: http://doc.f-interop.eu/tests/DUMMY_CFG_01
+nodes:
+  - agent1
+  - agent2
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - agent1
+      - agent2
+addressing:
+    - node: agent1
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: agent2
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+description:
+  - node: agent1
+    message:
+      - No special configuration needed, configuration used for testing TUN setup
+  - node: agent2
+    message:
+      - No special configuration needed, configuration used for testing TUN setup
+configuration_diagram: null
