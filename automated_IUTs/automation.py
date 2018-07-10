@@ -291,7 +291,7 @@ class AutomatedIUT(threading.Thread):
         check if the server is running an implementation of the desired
         protocol
         """
-        s = socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
             s.connect((ip_address, port))
