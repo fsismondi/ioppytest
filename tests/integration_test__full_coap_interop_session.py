@@ -30,10 +30,10 @@ Evaluates a normal test cycle with real automated IUTs.
 
 EXECUTE AS:
     
-    python3 -m pytest -p no:cacheprovider tests/complete_integration_test.py -vvv
+    python3 -m pytest -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -vvv
 
 for more verbose output:
-    python3 -m unittest tests/test_full_coap_interop_session.py -vvv
+    python3 -m unittest tests/integration_test__full_coap_interop_session.py -vvv
 
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment

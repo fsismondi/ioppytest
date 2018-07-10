@@ -16,14 +16,13 @@ import signal
 import logging
 import threading
 
-
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from messages import *
 from event_bus_utils import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
 # timeout in seconds
-STIMULI_HANDLER_TOUT = 10
+STIMULI_HANDLER_TOUT = 15
 
 COMPONENT_ID = 'automation'
 
@@ -63,7 +62,6 @@ class AutomatedIUT(threading.Thread):
     implemented_testcases_list = NotImplementedField
     implemented_stimuli_list = NotImplementedField
     component_id = NotImplementedField
-    node = NotImplementedField
     process_log_file = None  # child may override, it will be logged at the end of the session
 
     def __init__(self, node):
@@ -247,21 +245,21 @@ class AutomatedIUT(threading.Thread):
 
             if reachable:
                 m = MsgAutomatedIutTestPingReply(
-                        request=event.request,
-                        ok=True,
-                        description="Ping reply received, peer is reachable",
-                        node=event.node,
-                        target_address=event.target_address
-                    )
-                m = MsgAutomatedIutTestPingReply(request, ok=True)
+                    request=event.request,
+                    ok=True,
+                    description="Ping reply received, peer is reachable",
+                    node=event.node,
+                    target_address=event.target_address
+                )
+                m = MsgAutomatedIutTestPingReply(event, ok=True)
             else:
-                m = MsgAutomatedIutTestPingReply(request, ok=False)
+                m = MsgAutomatedIutTestPingReply(event, ok=False)
 
             publish_message(self.connection, m)
             logger.info('Event pushed: %s' % m)
 
     @classmethod
-    def test_l3_reachability(cls, ip_address)->bool:
+    def test_l3_reachability(cls, ip_address) -> bool:
         """
         Check if the peer (e.g another AutomatedIUT) designed by the given
         ip address is reachable at network layer.
@@ -285,7 +283,7 @@ class AutomatedIUT(threading.Thread):
             return False
 
     @classmethod
-    def test_l4_reachability(cls, ip_address, port)->bool:
+    def test_l4_reachability(cls, ip_address, port) -> bool:
         """
         Check if the host designed by the given ip address listen and
         accept connection to the given port.
@@ -306,6 +304,7 @@ class AutomatedIUT(threading.Thread):
                         .format(ip_address, port))
             s.close()
             return False
+
 
 class UserMock(threading.Thread):
     """
@@ -453,3 +452,20 @@ class UserMock(threading.Thread):
 
         logger.info('%s shutting down..' % self.component_id)
         self.exit()
+
+
+if __name__ == "__main__":
+    ENV_NODE_NAME = str(os.environ['NODE_NAME'])
+    dummy_auto_iut_class = type("DummyAutomatedIUT",
+                                (AutomatedIUT,),
+                                {
+                                    'implemented_testcases_list': None,
+                                    'implemented_stimuli_list': None,
+                                    'component_id': 'dummy_automated_iut',
+                                }
+                                )
+    logger.info("starting dummy automated IUT, with %s" % ENV_NODE_NAME)
+    auto_iut = dummy_auto_iut_class(ENV_NODE_NAME)
+    auto_iut.run()
+    auto_iut.join()
+    logger.info("exiting dummy automated IUT, with %s" % ENV_NODE_NAME)

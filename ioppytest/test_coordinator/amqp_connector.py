@@ -271,7 +271,7 @@ class CoordinatorAmqpInterface:
 
     def notify_testcase_finished(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseFinished(
             **msg_fields
@@ -281,7 +281,7 @@ class CoordinatorAmqpInterface:
     def notify_testcase_verdict(self, received_event):
         msg_fields = {}
         msg_fields.update(self.testsuite.get_testcase_report())
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseVerdict(**msg_fields)
         self._publish_message(event)
@@ -343,7 +343,7 @@ class CoordinatorAmqpInterface:
 
     def notify_testcase_started(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseStarted(
             **msg_fields

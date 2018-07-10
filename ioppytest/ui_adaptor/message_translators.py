@@ -316,7 +316,7 @@ class GenericBidirectonalTranslator(object):
 
         data = [['session message history message type']]
         for i in self.session_history_messages:
-            data.append([type(i)])
+            data.append([repr(i)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE]])
         logger.info("\n%s" % tabulate(tabular_data=data,
                                       tablefmt="grid",
                                       headers="firstrow"))

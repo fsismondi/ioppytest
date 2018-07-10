@@ -11,10 +11,9 @@ logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
 # timeout in seconds
-STIMULI_HANDLER_TOUT = 3600
+STIMULI_HANDLER_TOUT = 15
 
 server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
-coap_host_address = COAP_CLIENT_HOST
 
 
 class CaliforniumCoapServer(AutomatedIUT):
@@ -51,7 +50,7 @@ class CaliforniumCoapServer(AutomatedIUT):
 
     def _execute_configuration(self, testcase_id, node):
         # should we restart process?
-        return server_base_url
+        return COAP_SERVER_HOST
 
 
 if __name__ == '__main__':
