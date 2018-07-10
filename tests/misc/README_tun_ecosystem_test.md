@@ -68,6 +68,6 @@ install CLI:
 run ping from agent1 to bbbb::2
 `python3 -m ioppytest_cli _test_automated_iut_reaches_another_other_implementation --origin-node agent1 --target-host bbbb::2`
 
-run ping from agent1 to bbbb::1
+run ping from agent2 to bbbb::1
 `python3 -m ioppytest_cli _test_automated_iut_reaches_another_other_implementation --origin-node agent2 --target-host bbbb::1`
 
