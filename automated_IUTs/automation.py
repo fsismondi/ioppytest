@@ -244,16 +244,19 @@ class AutomatedIUT(threading.Thread):
             reachable = AutomatedIUT.test_l3_reachability(event.target_address)
 
             if reachable:
-                m = MsgAutomatedIutTestPingReply(
-                    request=event.request,
-                    ok=True,
-                    description="Ping reply received, peer is reachable",
-                    node=event.node,
-                    target_address=event.target_address
-                )
-                m = MsgAutomatedIutTestPingReply(event, ok=True)
+                success = True
+                msg = "Ping reply received, peer is reachable"
             else:
-                m = MsgAutomatedIutTestPingReply(event, ok=False)
+                success = False
+                msg = "Ping reply not received, peer is unreachable"
+
+            m = MsgAutomatedIutTestPingReply(
+                request=event.request,
+                ok=success,
+                description=msg,
+                node=event.node,
+                target_address=event.target_address
+            )
 
             publish_message(self.connection, m)
             logger.info('Event pushed: %s' % m)
@@ -266,10 +269,10 @@ class AutomatedIUT(threading.Thread):
         """
         opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
 
-        cmd = "ping -{switch} 4 {ip}".format(switch=opt_switch,
+        cmd = "ping -w {timeout} -{switch} 4 {ip}".format(timeout=2, switch=opt_switch,
                                              ip=ip_address)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-        proc.wait(timeout=STIMULI_HANDLER_TOUT)
+        proc.wait(timeout=5)
 
         if proc.returncode:
             logger.info('Ping test sucessful for {}'.format(ip_address))
@@ -278,7 +281,7 @@ class AutomatedIUT(threading.Thread):
             logger.info('Ping failed for {}'.format(ip_address))
             output = 'output = Process stdout:\n'
             for line in proc.stdout:
-                output += line
+                output += str(line)
             logger.info(output)
             return False
 
