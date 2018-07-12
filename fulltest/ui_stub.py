@@ -15,7 +15,14 @@ default_configuration = {
     "testsuite.testcases": [
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03"
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_04",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_05",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_06",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_07",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_08",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_09",
+        "http://doc.f-interop.eu/tests/TD_COAP_CORE_10"
     ]
 }
 class UIStub(AmqpListener):
