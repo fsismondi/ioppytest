@@ -320,11 +320,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         assert '/pcaps' in path
 
         if 'IEEE802_15_4' in path:
-            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+            file = os.path.join(PROJECT_DIR, 'tmp', 'DLT_IEEE802_15_4.pcap')
         elif 'DLT_RAW' in path:
-            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_RAW.pcap')
+            file = os.path.join(PROJECT_DIR, 'tmp', 'DLT_RAW.pcap')
         else:
-            file = os.path.join(PROJECT_DIR, 'ioppytest', 'test_analysis_tool', 'tmp', 'DLT_IEEE802_15_4.pcap')
+            file = os.path.join(PROJECT_DIR, 'tmp', 'DLT_IEEE802_15_4.pcap')
 
         with open(file, 'rb') as f:
             self.send_response(200)
