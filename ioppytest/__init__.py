@@ -131,7 +131,7 @@ TEST_DESCRIPTIONS_CONFIGS_DICT = {
     'lwm2m': [TD_LWM2M_CFG],
 }
 
-AUTO_DISSECTION_FILE = os.path.join(project_dir, 'ioppytest/test_analysis_tool/data/auto_dissection.json')
+AUTO_DISSECTION_FILE = os.path.join(project_dir, '/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
 
