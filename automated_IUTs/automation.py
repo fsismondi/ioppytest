@@ -85,7 +85,10 @@ class AutomatedIUT(threading.Thread):
         self.message_count = 0
 
         # queues & default exchange declaration
-        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        queue_name = '%s::eventbus_subscribed_messages' % "{comp}.{node}".format(
+            comp=self.component_id,
+            node=self.node
+        )
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
         for ev in self.event_to_handler_map:
@@ -93,14 +96,27 @@ class AutomatedIUT(threading.Thread):
                                     queue=queue_name,
                                     routing_key=ev.routing_key)
         # send hello message
-        publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
+        publish_message(
+            self.connection,
+            MsgTestingToolComponentReady(
+                component="{comp}.{node}".format(
+                    comp=self.component_id,
+                    node=self.node
+                )
+            )
+        )
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=queue_name)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
 
     def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=self.component_id)
+        m = MsgTestingToolComponentShutdown(
+            component="{comp}.{node}".format(
+                comp=self.component_id,
+                node=self.node
+            )
+        )
         publish_message(self.connection, m)
         time.sleep(2)
         self.connection.close()
@@ -173,10 +189,10 @@ class AutomatedIUT(threading.Thread):
 
         if event.testcase_id not in self.implemented_testcases_list:
             time.sleep(0.1)
-            logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
+            logger.info('IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
             publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
         else:
-            logger.info('IUT %s ready to execute testcase' % self.component_id)
+            logger.info('IUT %s (%s) ready to execute testcase' % self.component_id, self.node)
 
     def handle_stimuli_execute(self, event):
         logger.info('event.node %s,%s' % (event.node, self.node))
@@ -270,7 +286,7 @@ class AutomatedIUT(threading.Thread):
         opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
 
         cmd = "ping -W {timeout} -{switch} 2 {ip}".format(timeout=2, switch=opt_switch,
-                                             ip=ip_address)
+                                                          ip=ip_address)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         proc.wait(timeout=5)
 
