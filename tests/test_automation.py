@@ -9,7 +9,7 @@ class TestAutomation(unittest.TestCase):
     """
 
     def test_check_l3_reachability(self):
-        ip = "127.0.0.1" 
+        ip = "127.0.0.1"
         reachable = AutomatedIUT.test_l3_reachability(ip)
         assert reachable
 
