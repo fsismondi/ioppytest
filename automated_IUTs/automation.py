@@ -287,17 +287,18 @@ class AutomatedIUT(threading.Thread):
 
         cmd = "ping -W {timeout} -{switch} 2 {ip}".format(timeout=2, switch=opt_switch,
                                                           ip=ip_address)
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True)
         proc.wait(timeout=5)
-
         if proc.returncode == 0:
             logger.info('Ping test sucessful for {}'.format(ip_address))
             return True
         else:
             logger.info('Ping failed for {}'.format(ip_address))
-            output = 'output = Process stdout:\n'
-            for line in proc.stdout:
-                output += str(line)
+            output = 'output = Process stderr:\n'
+            while proc.poll() is None:
+                output += str(proc.stderr.readline())
+            output += str(proc.stderr.read())
             logger.info(output)
             return False
 
