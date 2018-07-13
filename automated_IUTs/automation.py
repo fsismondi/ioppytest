@@ -192,7 +192,7 @@ class AutomatedIUT(threading.Thread):
             logger.info('IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
             publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
         else:
-            logger.info('IUT %s (%s) ready to execute testcase' % self.component_id, self.node)
+            logger.info('IUT %s (%s) ready to execute testcase' % (self.component_id, self.node))
 
     def handle_stimuli_execute(self, event):
         logger.info('event.node %s,%s' % (event.node, self.node))
