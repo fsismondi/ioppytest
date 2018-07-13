@@ -1,6 +1,8 @@
 FROM debian:latest
 MAINTAINER federico.sismondi@inria.fr
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update
 RUN apt-get -y -qq install apt-utils
 RUN apt-get -y -qq install python3-dev
@@ -19,13 +21,19 @@ RUN python -m pip install --upgrade pip
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
 
+# needed for python source code of automated-iut
+COPY . /ioppytest
+WORKDIR /ioppytest
+
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
+
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
 RUN python -m pip install -Iv amqp==2.2.2
 
-# launch processes
-CMD ["/bin/echo", "No docker CMD nor ENTRYPOINT, see example in Dockerfile on how to run this"]
+# copy source code's supervisor processes configuration file into docker image file system
+COPY tests/misc/supervisor_file_for_ecosystem_test.ini /etc/supervisor/conf.d/supervisor_file_for_ecosystem_test.conf
 
-# example:
-# > docker build -t tun_ecosystem_test_agent_from_debian -f tests/misc/dockerfile_for_ecosystem_test__agent_from_debian_base .
-# > export AMQP_URL=amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.tun_ecosystem_test_agent_from_debian
-# > docker run -it --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged tun_ecosystem_test_agent_from_debian ioppytest-agent  connect --name coap_client --url $AMQP_URL
+# launch processes
+ENTRYPOINT ["/usr/bin/supervisord", "--nodaemon"]
