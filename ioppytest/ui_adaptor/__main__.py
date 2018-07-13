@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import traceback
+import sys
 import pika
 import logging
 import argparse
+import traceback
+
 from queue import Queue
 
 from ioppytest.ui_adaptor.ui_tasks import (wait_for_all_users_to_join_session,
@@ -712,4 +714,54 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    # setup amqp connection
+    try:
+        logger.info('Setting up AMQP connection..')
+        # setup AMQP connection
+        connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % traceback.format_exc())
+        sys.exit(1)
+
+    channel = connection.channel()
+
+    try:
+        logger.info('Starting UI adaptor..')
+        # start main loop
+        main()
+        logger.info('Finishing UI adaptor..')
+
+    except pika.exceptions.ConnectionClosed as cc:
+        logger.error(' AMQP connection closed: %s' % str(cc))
+        sys.exit(1)
+
+    except KeyboardInterrupt as KI:
+        # close AMQP connection
+        connection.close()
+        sys.exit(1)
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(' Critical exception found: %s, traceback: %s' % (error_msg, traceback.format_exc()))
+        logger.debug(traceback.format_exc())
+
+        # lets push the error message into the bus
+        channel.basic_publish(
+            body=json.dumps({
+                'traceback': traceback.format_exc(),
+                'message': error_msg,
+            }),
+            exchange=AMQP_EXCHANGE,
+            routing_key='error',
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
+        # close AMQP connection
+        connection.close()
+
+        sys.exit(1)
+
+

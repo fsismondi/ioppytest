@@ -1752,7 +1752,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.fields = [
             {
                 "type": "p",
-                "value": "Would you like to run again the test case?" % self._current_tc
+                "value": "Would you like to run again the test case?"
             },
             {
                 "name": "restart_testcase",
