@@ -1,17 +1,19 @@
 import json
 import time
+import tabulate
 import logging
 from messages import (MsgUiRequestSessionConfiguration,
                       MsgUiDisplay,
+                      MsgUiRequestQuestionRadio,
                       MsgSniffingGetCaptureLast,
                       MsgSniffingGetCapture,
                       MsgUiSendFileToDownload,
-                      MsgUiRequestConfirmationButton,)
+                      MsgUiRequestConfirmationButton, )
 
 from ioppytest.ui_adaptor import (UiResponseError,
                                   SessionError,
                                   WAITING_TIME_FOR_SECOND_USER,
-                                  UI_TAG_SETUP,)
+                                  UI_TAG_SETUP, )
 
 
 # auxiliary functions
@@ -209,6 +211,14 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
 
 
 def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_configuration):
+    """
+    Some strong assumptions made on this method:
+     - maximum two users connected to session
+     - for a session with [server_x, and client_x], if user answers that he runs server_x then we assumme client_x
+        is an automated implementation
+
+    :return:
+    """
     roles_to_user_mapping = {}
     users = get_current_users_online(amqp_publisher)
 
@@ -219,61 +229,89 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
     except IndexError:
         second_user = None
 
-    iut_roles = message_translator.get_iut_roles()
-    for iut_role in iut_roles:
-        m = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_SETUP,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "%s runs implementation under test (IUT) with role: %s? "
-                             % (user_lead.upper(), iut_role.upper())
-                },
-                {
-                    "name": "yes",
-                    "type": "button",
-                    "value": True
-                },
-                {
-                    "name": "no",
-                    "type": "button",
-                    "value": True
-                },
-            ],
-        )
-        resp = amqp_publisher.synch_request(
-            request=m,
-            user_id=user_lead,
-            timeout=120
+    iut_roles = message_translator.get_iut_roles().copy()
+    fields = [
+        {
+            "type": "p",
+            "value": "Which implementation under test (IUT) are you running? "
+        }
+
+    ]
+
+    # put a radio entry per iut role
+    for r in iut_roles:
+        fields.append(
+            {
+
+                "name": 'iut_role',
+                "type": "radio",
+                "label": r,
+                "value": r,
+            }
         )
 
-        if resp and resp.ok and 'yes' in str(resp.fields):
-            user_answer = True
-        elif resp and resp.ok and 'no' in str(resp.fields):
-            user_answer = False
-        else:
-            raise UiResponseError('received from the UI: %s' % repr(resp))
+    # add also a 'all roles' option
+    fields.append(
+        {
+            "name": 'iut_role',
+            "type": "radio",
+            "label": 'both',
+            "value": 'both',
+        }
+    )
 
-        # echo response back to users
-        m = MsgUiDisplay(
-            tags=UI_TAG_SETUP,
-            fields=[
-                {"type": "p",
-                 "value": "{user_name} reply: {user_name} runs IUT with role {iut_role}: {answer}".format(
-                     user_name=user_lead,
-                     iut_role=iut_role.upper(),
-                     answer=str(user_answer).upper()
-                 )}
-            ])
+    m = MsgUiRequestQuestionRadio(
+        tags=UI_TAG_SETUP,
+        fields=fields
+    )
 
-        amqp_publisher.publish_ui_display(m)
+    resp = amqp_publisher.synch_request(
+        request=m,
+        user_id=user_lead,
+        timeout=120
+    )
 
-        # ToDo fixme! I'm assuming there's only 2 users max for these method
-        if user_answer:
-            roles_to_user_mapping[iut_role] = user_lead
-        else:
-            roles_to_user_mapping[iut_role] = second_user
+    if resp and resp.ok:
+        user_lead_iut_role = resp.fields.pop()['iut_role']
+    else:
+        raise UiResponseError('received from the UI: %s' % repr(resp))
 
-        logging.info("Roles to user mapping updated: %s" % roles_to_user_mapping)
+    # echo response back to *ALL* users
+    m = MsgUiDisplay(
+        tags=UI_TAG_SETUP,
+        fields=[
+            {
+                "type": "p",
+                "value": "User session owner ({user_name}) declared running IUT: {answer}".format(
+                    user_name=user_lead,
+                    answer=user_lead_iut_role
+                )
+            }
+        ]
+    )
+
+    amqp_publisher.publish_ui_display(m)
+
+    if user_lead_iut_role == "both":
+        for r in iut_roles:
+            roles_to_user_mapping[r] = user_lead
+    else:
+        roles_to_user_mapping[user_lead_iut_role] = user_lead
+        # fill table with second entry iut2->user2
+        iut_roles.remove(user_lead_iut_role)
+        roles_to_user_mapping[iut_roles.pop()] = second_user if second_user else "automated_iut"
+
+    # build UI message with roles
+    fields = [{'type': 'p',
+               'value': '%s' % tabulate.tabulate([[i, j] for i, j in roles_to_user_mapping.items()],
+                                                    tablefmt="grid")}]
+
+    m = MsgUiDisplay(
+        title="Implementation and user's id mapping",
+        tags=UI_TAG_SETUP,
+        fields=fields
+    )
+
+    amqp_publisher.publish_ui_display(m)
 
     return roles_to_user_mapping

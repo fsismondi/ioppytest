@@ -88,15 +88,15 @@ Installation didn't work? Check the agent dependencies:
 \n\n
 """
 
-agents_run_help = """
+help_agents_run_for_raw_ip_mode = """
 
 ------------------------------------------------------------------------------
 
-### Run (choose if either SomeAgentName1 or SomeAgentName2):
+### Run (use AgentNameHost1 or AgentNameHost2 depending on the role of your implementation):
 
 \n\n
 
-`sudo -E ioppytest-agent connect --url $AMQP_URL --name SomeAgentName1`
+`sudo -E python2.7 -m agent connect --url $AMQP_URL --name AgentNameHost1 --force-bootstrap --ipv6-host 1 --ipv6-prefix bbbb`
 
 \n\n
 
@@ -104,7 +104,17 @@ or
 
 \n\n
 
-`sudo -E ioppytest-agent connect --url $AMQP_URL --name SomeAgentName2`
+`sudo -E python2.7 -m agent connect --url $AMQP_URL --name AgentNameHost2 --force-bootstrap --ipv6-host 2 --ipv6-prefix bbbb`
+
+\n\n
+\n\n
+
+If your implementation doesnt run as software hosted directly in the OS (e.g. the implementation is an IoT device in a 
+WSN network) please check out the agent help section describing these setups 
+
+\n\n
+
+`python2.7 -m agent --help` 
 
 ------------------------------------------------------------------------------
 ```
@@ -186,32 +196,100 @@ vpn_ping_tests = """
 If everything goes well you should see in your terminal sth like this:
 
 \n\n
-------------------------------------------------------------------------------
-\n\n
 
 ```
-fsismondi@carbonero250:~/dev/agent$ sudo -E ioppytest-agent connect --url $AMQP_URL --name coap_client
-Password: ********
+------------------------------------------------------------------------------
+
+➜  /tmp sudo -E python -m agent connect --url $AMQP_URL --name coap_server --force-bootstrap --ipv6-host 2 --ipv6-prefix bbbb
+Password:
 
   _                              _              _                                     _
  (_)  ___   _ __   _ __   _   _ | |_  ___  ___ | |_         __ _   __ _   ___  _ __  | |_
- | | / _ \\ | '_ \\ | '_ \\ | | | || __|/ _ \\/ __|| __|_____  / _` | / _` | / _ \\| '_ \\ | __|
- | || (_) || |_) || |_) || |_| || |_|  __/\\__ \\| |_|_____|| (_| || (_| ||  __/| | | || |_
- |_| \\___/ | .__/ | .__/  \\__, | \\__|\\___||___/ \\__|       \\__,_| \\__, | \\___||_| |_| \\__|
+ | | / _ \ | '_ \ | '_ \ | | | || __|/ _ \/ __|| __|_____  / _` | / _` | / _ \| '_ \ | __|
+ | || (_) || |_) || |_) || |_| || |_|  __/\__ \| |_|_____|| (_| || (_| ||  __/| | | || |_
+ |_| \___/ | .__/ | .__/  \__, | \__|\___||___/ \__|       \__,_| \__, | \___||_| |_| \__|
            |_|    |_|     |___/                                   |___/
 
 
-INFO:agent.agent_cli:Try to connect with {'session': <session_id>, 'user': <user_id>, 'exchange': 'amq.topic', 'password': <pass>, 'server': 'mq.f-interop.eu:443', 'name': u'coap_client'}
-INFO:kombu.mixins:Connected to amqp://<user_id>:**@mq.f-interop.eu:443/<session_id>
-INFO:kombu.mixins:Connected to amqp://<user_id>:**@mq.f-interop.eu:443/<session_id>
-INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.start bound to: toAgent.coap_client.ip.tun.start
-INFO:agent.connectors.tun:Queue: consumer: coap_client.tun?rkey=toAgent.coap_client.ip.tun.packet.raw bound to: toAgent.coap_client.ip.tun.packet.raw
-INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl messages and data packets..
-```
+INFO:agent.agent_cli:Try to connect with {'session': u'session05', 'user': u'paul', 'exchange': u'amq.topic', 'password': <XXXXXXXXX>, 'server': u'f-interop.rennes.inria.fr', 'name': u'coap_server'}
+INFO:agent.connectors.base:starting tun interface
+INFO:agent.connectors.base:Starting open tun [darwin]
+DEBUG:agent.utils.opentun:IP info:
+ {'ipv4_network': [10, 2, 0, 0], 'ipv4_netmask': [255, 255, 0, 0], 'ipv6_no_forwarding': True, 're_route_packets_if': None, 'ipv6_prefix': u'bbbb', 're_route_packets_prefix': None, 'ipv4_host': '2.2.2.2', 'ipv6_host': u'2', 're_route_packets_host': None}
+INFO:agent.utils.opentun:opening tun interface
+INFO:agent.utils.opentun:configuring IPv6 address...
+INFO:agent.utils.opentun:
+created following virtual interface:
+------------------------------------------------------------------------
+tun0: flags=8851<UP,POINTOPOINT,RUNNING,SIMPLEX,MULTICAST> mtu 1500
+    inet6 fe80::aebc:32ff:fecd:f38b%tun0 prefixlen 64 scopeid 0xc
+    inet6 bbbb::2 prefixlen 64 tentative
+    inet6 fe80::2%tun0 prefixlen 64 optimistic scopeid 0xc
+    nd6 options=201<PERFORMNUD,DAD>
+    open (pid 3749)
+------------------------------------------------------------------------
+INFO:agent.utils.opentun:
+update routing table:
+default via 2001:660:7303:250::1 dev en3
+default via fe80::%utun0 dev utun0
+2001:660:7303:250::/64 dev en3  scope link
+bbbb::/64 via fe80::aebc:32ff:fecd:f38b%tun0 dev tun0
+fe80::/64 via fe80::aebc:32ff:fecd:f38b%tun0 dev tun0
+fe80::/64 via fe80::1%lo0 dev lo0
+fe80::/64 dev awdl0  scope link
+fe80::/64 dev en3  scope link
+fe80::/64 via fe80::3b34:cd72:b27c:9c5f%utun0 dev utun0
+fe80::/64 via fe80::aebc:32ff:fecd:f38b%tun0 dev tun0
+ff01::/32 via ::1 dev lo0
+ff01::/32 dev awdl0  scope link
+ff01::/32 dev en3  scope link
+ff01::/32 via fe80::3b34:cd72:b27c:9c5f%utun0 dev utun0
+ff01::/32 via fe80::aebc:32ff:fecd:f38b%tun0 dev tun0
+ff02::/32 via ::1 dev lo0
+ff02::/32 dev awdl0  scope link
+ff02::/32 dev en3  scope link
+ff02::/32 via fe80::3b34:cd72:b27c:9c5f%utun0 dev utun0
+ff02::/32 via fe80::aebc:32ff:fecd:f38b%tun0 dev tun0
+------------------------------------------------------------------------
+DEBUG:agent.utils.opentun:packet captured on tun interface: (64B) 60-00-00-00-00-18-3a-ff-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-ff-02-00-00-00-00-00-00-00-00-00-01-ff-00-00-02-87-00-7c-23-00-00-00-00-fe-80-00-00-00-00-00-00-00-00-00-00-00-00-00-02
+DEBUG:agent.utils.opentun:Pushing message to topic: fromAgent.coap_server.ip.tun.packet.raw
+INFO:agent.utils.opentun:Messaged captured in tun. Pushing message to testing tool. Message count (uplink): 1
 
-\n\n
+      _
+     / \\
+    /   \\
+   /     \\
+  /       \\
+ /__     __\\
+    |   |              _ _       _
+    |   |             | (_)     | |
+    |   |  _   _ _ __ | |_ _ __ | | __
+    |   | | | | | '_ \\| | | '_ \\| |/ /
+    |   | | |_| | |_) | | | | | |   <
+    |   |  \\__,_| .__/|_|_|_| |_|_|\\_\\
+    |   |       | |
+    |   |       |_|
+    !___!
+   \\  O  /
+    \\/|\\/
+      |
+     / \\
+   _/   \\ _
+
+INFO:root:Publishing MsgAgentTunStarted(_api_version = 1.0.15, ipv4_host = 2.2.2.2, ipv4_netmask = [255, 255, 0, 0], ipv4_network = [10, 2, 0, 0], ipv6_host = 2, ipv6_no_forwarding = True, ipv6_prefix = bbbb, name = coap_server, re_route_packets_host = None, re_route_packets_if = None, re_route_packets_prefix = None, )
+
+INFO:agent.utils.opentun:
+ # # # # # # # # # # # # OPEN TUN # # # # # # # # # # # #
+ data packet TUN interface -> EventBus
+{"_api_version": "1.0.15", "data": [96, 0, 0, 0, 0, 24, 58, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255, 0, 0, 2, 135, 0, 124, 35, 0, 0, 0, 0, 254, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2], "interface_name": "tun0", "timestamp": 1531387551}
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 ------------------------------------------------------------------------------
+
+```
+\n\n
+
 ## How can I test that is actually working?
 
 (now the agent should be boostrapped, and the network interfaces ready to go..)
@@ -249,21 +327,16 @@ INFO:agent.connectors.core:Agent READY, listening on the event bus for ctrl mess
 
 \n\n
 ----------------------------------------------------------------------------
-\n\n
 
-(!) Note: this may not work under these circumstances:
-    - this is a user to user session, and the other user hasn't yet started his agent component 
-    - if some user is using agent in --serial-mode (network configs may be slightly different)   
-
-\n\n
-----------------------------------------------------------------------------
 \n\n
 
 Now you could try ping6 the other implementation in the VPN:
 
 \n\n
 
-`fsismondi@carbonero250:~$ ping6 bbbb::2`  should show:
+(the destination IPv6 is either bbbb::1 or bbbb::2)
+
+`fsismondi@carbonero250:~$ ping6 bbbb::2` 
 
 \n\n
 
@@ -280,6 +353,13 @@ Now you could try ping6 the other implementation in the VPN:
 ```
 
 \n\n
+
+(!) Note: this may not work under these circumstances:
+    - this is a user to user session, and the other user hasn't yet started his agent component 
+    - if some user is using agent in --serial-mode (network configs may be slightly different)   
+
+\n\n
+----------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------
 
