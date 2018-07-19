@@ -7,6 +7,9 @@ AutomatedIUT class provides an interface for automated IUTs implementations.
 """
 
 import os
+import platform
+import socket
+import subprocess
 import sys
 import pika
 import signal
@@ -59,7 +62,6 @@ class AutomatedIUT(threading.Thread):
     implemented_testcases_list = NotImplementedField
     implemented_stimuli_list = NotImplementedField
     component_id = NotImplementedField
-    node = NotImplementedField
     process_log_file = None  # child may override, it will be logged at the end of the session
 
     def __init__(self, node):
@@ -73,6 +75,7 @@ class AutomatedIUT(threading.Thread):
             MsgTestSuiteReport: self.handle_test_suite_report,
             MsgTestingToolTerminate: self.handle_testing_tool_terminate,
             MsgConfigurationExecute: self.handle_configuration_execute,
+            MsgAutomatedIutTestPing: self.handle_test_ping,
         }
 
         # lets setup the AMQP stuff
@@ -82,7 +85,10 @@ class AutomatedIUT(threading.Thread):
         self.message_count = 0
 
         # queues & default exchange declaration
-        queue_name = '%s::eventbus_subscribed_messages' % self.component_id
+        queue_name = '%s::eventbus_subscribed_messages' % "{comp}.{node}".format(
+            comp=self.component_id,
+            node=self.node
+        )
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
         for ev in self.event_to_handler_map:
@@ -90,14 +96,27 @@ class AutomatedIUT(threading.Thread):
                                     queue=queue_name,
                                     routing_key=ev.routing_key)
         # send hello message
-        publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
+        publish_message(
+            self.connection,
+            MsgTestingToolComponentReady(
+                component="{comp}.{node}".format(
+                    comp=self.component_id,
+                    node=self.node
+                )
+            )
+        )
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=queue_name)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
 
     def _exit(self):
-        m = MsgTestingToolComponentShutdown(component=self.component_id)
+        m = MsgTestingToolComponentShutdown(
+            component="{comp}.{node}".format(
+                comp=self.component_id,
+                node=self.node
+            )
+        )
         publish_message(self.connection, m)
         time.sleep(2)
         self.connection.close()
@@ -170,10 +189,10 @@ class AutomatedIUT(threading.Thread):
 
         if event.testcase_id not in self.implemented_testcases_list:
             time.sleep(0.1)
-            logger.info('IUT %s pushing test case skip message for %s' % (self.component_id, event.testcase_id))
+            logger.info('IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
             publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
         else:
-            logger.info('IUT %s ready to execute testcase' % self.component_id)
+            logger.info('IUT %s (%s) ready to execute testcase' % (self.component_id, self.node))
 
     def handle_stimuli_execute(self, event):
         logger.info('event.node %s,%s' % (event.node, self.node))
@@ -194,9 +213,10 @@ class AutomatedIUT(threading.Thread):
         if event.node == self.node:
             step = event.step_id
             self._execute_verify(step)
-            publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
-                                                                   node=self.node
-                                                                   ))
+            publish_message(self.connection,
+                            MsgStepVerifyExecuted(verify_response=True,
+                                                  node=self.node
+                                                  ))
         else:
             logger.info('Event received and ignored: %s (node: %s - step: %s)' %
                         (
@@ -224,7 +244,8 @@ class AutomatedIUT(threading.Thread):
     def handle_configuration_execute(self, event):
         if event.node == self.node:
             logger.info('Configure test case %s', event.testcase_id)
-            # TODO fix me _execute_config should pass an arbitrary dict, which will be used later for building the fields of the ret message
+            # TODO fix me _execute_config should pass an arbitrary dict, which
+            # will be used later for building the fields of the ret message
             ipaddr = self._execute_configuration(event.testcase_id,
                                                  event.node)  # blocking till complete config execution
             if ipaddr != '':
@@ -232,6 +253,77 @@ class AutomatedIUT(threading.Thread):
                 publish_message(self.connection, m)
         else:
             logger.info('Event received and ignored: %s' % type(event))
+
+    def handle_test_ping(self, event):
+        if event.node == self.node:
+            logger.info('Testing L3 reachability.')
+            reachable = AutomatedIUT.test_l3_reachability(event.target_address)
+
+            if reachable:
+                success = True
+                msg = "Ping reply received, peer is reachable"
+            else:
+                success = False
+                msg = "Ping reply not received, peer is unreachable"
+
+            m = MsgAutomatedIutTestPingReply(
+                # request=event.request,
+                ok=success,
+                description=msg,
+                node=event.node,
+                target_address=event.target_address
+            )
+
+            publish_message(self.connection, m)
+            logger.info('Event pushed: %s' % m)
+
+    @classmethod
+    def test_l3_reachability(cls, ip_address) -> bool:
+        """
+        Check if the peer (e.g another AutomatedIUT) designed by the given
+        ip address is reachable at network layer.
+        """
+        opt_switch = 'n' if platform.system().lower() == "windows" else 'c'
+
+        cmd = "ping -W {timeout} -{switch} 2 {ip}".format(timeout=2, switch=opt_switch,
+                                                          ip=ip_address)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True)
+        proc.wait(timeout=5)
+        if proc.returncode == 0:
+            logger.info('Ping test sucessful for {}'.format(ip_address))
+            return True
+        else:
+            logger.info('Ping failed for {}'.format(ip_address))
+            output = 'output = Process stderr:\n'
+            while proc.poll() is None:
+                output += str(proc.stderr.readline())
+            output += str(proc.stderr.read())
+            logger.info(output)
+            return False
+
+    @classmethod
+    def test_l4_reachability(cls, ip_address, port) -> bool:
+        """
+        Check if the host designed by the given ip address listen and
+        accept connection to the given port.
+        This test must be only called from the client automated IUT to
+        check if the server is running an implementation of the desired
+        protocol
+        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            s.connect((ip_address, port))
+            logger.info('Ip address {} is listening on port {}'
+                        .format(ip_address, port))
+            s.close()
+            return True
+        except ConnectionRefusedError:
+            logger.info('Ip address {} refused connection on port {}'
+                        .format(ip_address, port))
+            s.close()
+            return False
 
 
 class UserMock(threading.Thread):
@@ -380,3 +472,20 @@ class UserMock(threading.Thread):
 
         logger.info('%s shutting down..' % self.component_id)
         self.exit()
+
+
+if __name__ == "__main__":
+    ENV_NODE_NAME = str(os.environ['NODE_NAME'])
+    dummy_auto_iut_class = type("DummyAutomatedIUT",
+                                (AutomatedIUT,),
+                                {
+                                    'implemented_testcases_list': None,
+                                    'implemented_stimuli_list': None,
+                                    'component_id': 'dummy_automated_iut',
+                                }
+                                )
+    logger.info("starting dummy automated IUT, with %s" % ENV_NODE_NAME)
+    auto_iut = dummy_auto_iut_class(ENV_NODE_NAME)
+    auto_iut.run()
+    auto_iut.join()
+    logger.info("exiting dummy automated IUT, with %s" % ENV_NODE_NAME)

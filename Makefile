@@ -175,19 +175,6 @@ validate-test-description-syntax: ## validate (yaml) test description file synta
 run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m pytest -p no:cacheprovider tests/ -vvv
-	$(MAKE) _test_submodules
-
-_test_ttproto:
-	cd ioppytest/test_analysis_tool ;python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
-	
-_test_utils:
-	cd ioppytest/utils ;python3 -m pytest -p no:cacheprovider tests
-	
-_test_submodules:
-	@echo "TODO: run ttproto tests as well once they are ok"
-	# $(MAKE) _test_ttproto
-	$(MAKE) _test_utils
-	
 
 get-logs: ## Get logs from the running containers
 	@echo ">>>>> start logs testing_tool-interoperability-coap"
@@ -214,13 +201,12 @@ get-logs: ## Get logs from the running containers
 	docker logs reference_iut-coap_client ; exit 0
 	@echo "<<<<< end logs reference_iut-coap_client \n"
 
-install-python-dependencies: ## installs all python pip dependencies
+install-python-dependencies: ## installs all py2 and py3 pip dependencies
 	@echo "installing py2 submodule's dependencies..."
 	@python -m pip -qq install ioppytest-agent
 
 	@echo "installing py3 submodule's dependencies..."
 	@python3 -m pip -qq install pytest
-	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
 	@python3 -m pip -qq install ioppytest-utils
 
 	@echo "installing py3 ioppytest's dependencies..."

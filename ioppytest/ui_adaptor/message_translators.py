@@ -204,6 +204,7 @@ class GenericBidirectonalTranslator(object):
             # info
             MsgTestSuiteGetTestCasesReply: self._get_ui_testcases_list,
             MsgTestingToolConfigured: self._get_ui_testing_tool_configured,
+            MsgSessionConfiguration: self._get_ui_session_configuration,
 
             # verdicts and results
             MsgTestCaseVerdict: self._get_ui_testcase_verdict,
@@ -218,7 +219,6 @@ class GenericBidirectonalTranslator(object):
             MsgDissectionAutoDissect: self._get_ui_packet_dissected,
 
             # tagged as debugging
-            MsgSessionConfiguration: self._get_ui_as_debug_messages,
             MsgSessionLog: self._get_ui_as_debug_messages,
             MsgTestingToolComponentReady: self._get_ui_as_debug_messages,
             MsgAgentTunStarted: self._get_ui_agent_messages,
@@ -1249,15 +1249,20 @@ class GenericBidirectonalTranslator(object):
         for frame_dict in message.frames:
             frame_header = []
             try:
-
+                # display frame timestamp
                 attribute_name = 'timestamp'
                 attribute_value = datetime.datetime.fromtimestamp(int(frame_dict[attribute_name])).strftime(
                     '%Y-%m-%d %H:%M:%S')
-                frame_header.append([attribute_name, attribute_value])
+                frame_header.append(["frame timestamp", attribute_value])
 
-                for attribute_name in ['id', 'error']:
-                    frame_header.append([attribute_name, frame_dict[attribute_name]])
+                # display frame errors
+                attribute_name = 'error'
+                attribute_value = frame_dict[attribute_name]
+                if not attribute_value:
+                    attribute_value = "None"
+                frame_header.append(["frame error", attribute_value])
 
+                # display dissections
                 frame_header.append(['Dissection', '\n%s\n' % frames_as_list_of_strings.pop(0)])
 
             except KeyError as ae:
@@ -1344,8 +1349,9 @@ class GenericBidirectonalTranslator(object):
             logger.warning("No testsuite.additional_session_resource in %s " % repr(message))
 
         return MsgUiDisplayMarkdownText(
-            title='This is the session configuration',
+            title='Current session configuration',
             level='info',
+            tags={"testsuite": ""},
             fields=fields)
 
     def _get_ui_as_debug_messages(self, message):
@@ -1394,8 +1400,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # AGENT INFO
         agents_kickstart_help = vpn_setup
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
             tags=UI_TAG_AGENT_INFO,
@@ -1470,8 +1476,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
 
         # AGENT INSTALL
         agents_kickstart_help = agent_install_help
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
             tags=UI_TAG_AGENT_CONNECT,
@@ -1510,9 +1516,9 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             pass
 
         # AGENT RUN
-        agents_kickstart_help = agents_run_help
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+        agents_kickstart_help = help_agents_run_for_raw_ip_mode
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
             tags=UI_TAG_AGENT_CONNECT,
@@ -1573,8 +1579,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         # TEST AGENT
 
         agents_kickstart_help = vpn_ping_tests
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName1', self.IUT_ROLES[0])
-        agents_kickstart_help = agents_kickstart_help.replace('SomeAgentName2', self.IUT_ROLES[1])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
             tags=UI_TAG_AGENT_TEST,
@@ -1746,7 +1752,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         message_ui_request.fields = [
             {
                 "type": "p",
-                "value": "Restart testcase %s ?" % self._current_tc
+                "value": "Would you like to run again the test case?"
             },
             {
                 "name": "restart_testcase",
