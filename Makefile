@@ -50,6 +50,10 @@ help: ## Help dialog.
 	done
 
 # # # # Testing Tool & other resources BUILD commands # # # #
+build-all-coap-images: ## Build all testing tool in docker images, and other docker image resources too
+	@echo "Starting to build CoAP docker images.. "
+	$(MAKE) _docker-build-coap
+	$(MAKE) _docker-build-coap-additional-resources
 
 build-tools: ## builds all testing tool docker images (only testing tool)
 	@echo $(info_message)
@@ -337,6 +341,12 @@ _setup-coap-mini-interop-californium-cli-vs-californium-server:
 	@echo "running $@"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-californium automated_iut-coap_client-californium
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
+
+_run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-coapthon automated_iut-coap_server-coapthon
 
 _setup-coap-mini-interop-aiocoap-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
