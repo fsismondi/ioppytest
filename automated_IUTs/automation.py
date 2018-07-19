@@ -11,13 +11,14 @@ import platform
 import socket
 import subprocess
 import sys
+import json
 import pika
 import signal
 import logging
 import threading
 
-from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from messages import *
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from event_bus_utils import publish_message
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, INTERACTIVE_SESSION, RESULTS_DIR, LOG_LEVEL
 
@@ -59,12 +60,18 @@ signal.signal(signal.SIGINT, signal_int_handler)
 
 class AutomatedIUT(threading.Thread):
     # attributes to be provided by subclass
-    implemented_testcases_list = NotImplementedField
-    implemented_stimuli_list = NotImplementedField
-    component_id = NotImplementedField
-    process_log_file = None  # child may override, it will be logged at the end of the session
+    implemented_testcases_list = NotImplementedField  # child must override
+    component_id = NotImplementedField  # child must override
+    implemented_stimuli_list = None  # child may override
+    process_log_file = None  # child may override, log file will be dumped into python logger at the end of session
 
     def __init__(self, node):
+
+        configuration = {}
+        for i in ['implemented_testcases_list', 'component_id', 'node', 'process_log_file']:
+            configuration[i] = getattr(self, i, "not defined")
+
+        logger.info("Initializing automated IUT: \n%s " % json.dumps(configuration, indent=4, sort_keys=True))
 
         threading.Thread.__init__(self)
         self.node = node
@@ -189,21 +196,22 @@ class AutomatedIUT(threading.Thread):
 
         if event.testcase_id not in self.implemented_testcases_list:
             time.sleep(0.1)
-            logger.info('IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
+            logger.info(
+                'IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
             publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
         else:
             logger.info('IUT %s (%s) ready to execute testcase' % (self.component_id, self.node))
 
     def handle_stimuli_execute(self, event):
-        logger.info('event.node %s,%s' % (event.node, self.node))
         if event.node == self.node and event.step_id in self.implemented_stimuli_list:
             step = event.step_id
             addr = event.target_address  # may be None
             self._execute_stimuli(step, addr)  # blocking till stimuli execution
             publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
         else:
-            logger.info('Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
+            logger.info('[%s] Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
                         (
+                            self.node if self.node else "misc.",
                             type(event),
                             event.node,
                             event.step_id,
