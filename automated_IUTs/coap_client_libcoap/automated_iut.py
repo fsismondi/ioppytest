@@ -39,20 +39,20 @@ class LibcoapClient(AutomatedIUT):
     for observing a resource /obs, we have to use the -s option followed by
     the ammount of second we want to observe the specified resource,
     e.g for 15 secondes :
-        - coap-client -s 15 coap://[bbbb::2]:5683/obs -T ABCD1234
+        - coap-client -s 15 "coap://[bbbb::2]:5683/obs" -T ABCD1234
 
     At the end of this specified timeout, the IUT will deregister properly
     using a GET request with observe option set to one.
 
     for sending data to the server:
         - coap-client -m POST -e 'some payload'
-                    coap://[[bbbb::2]]:5683/large-create
+                    "coap://[bbbb::2]:5683/large-create"
                     -t text/plain -T ABCD1234
         - coap-client -m PUT -e '<xml>some payload</xml>'
-                    coap://[bbbb::2]:5683/create-1
+                    "coap://[bbbb::2]:5683/create-1"
                     -t application/xml -T ABCD1234
         - coap-client -m PUT -f /path/to/file
-                    coap://[bbbb::2]:5683/create-1
+                    "coap://[bbbb::2]:5683/create-1"
                     -t application/xml -T ABCD1234
 
         In CoAP protocol, the content-format option is mandatory with POST/PUT.
@@ -445,7 +445,7 @@ class LibcoapClient(AutomatedIUT):
 
     implemented_stimuli_list = list(stimuli_to_function_map.keys())
     for aux_st in aux_stimuli_to_function_map:
-        implemented_stimuli_list.add(aux_st)
+        implemented_stimuli_list.append(aux_st)
 
     def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s.\

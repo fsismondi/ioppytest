@@ -8,6 +8,7 @@ RUN	apt-get -y install python-pip
 RUN	apt-get -y install supervisor
 RUN apt-get -y install iputils-ping
 RUN apt-get -y install net-tools
+RUN apt-get -y install wget
 
 # Install libcoap API
 RUN apt-get -y install libcoap-1-0
@@ -24,10 +25,13 @@ ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
 RUN mkdir automated_IUTs/coap_client_libcoap/file
-# RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
-ADD automated_IUTs/coap_client_libcoap/etsi_iot_01_largedata.txt
+RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
+
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
+
 #py2 requirements
-RUN python -m pip install -r agent/requirements.txt
+RUN python -m pip install -r ioppytest/agent/requirements.txt
 
 EXPOSE 5671 5672
 
