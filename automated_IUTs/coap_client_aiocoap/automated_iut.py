@@ -3,15 +3,11 @@
 
 import subprocess
 import logging
-from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
+from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
-default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 
-logger = logging.getLogger()
-logger.setLevel(LOG_LEVEL)
 
 class AioCoapClient(AutomatedIUT):
     """
@@ -38,20 +34,20 @@ class AioCoapClient(AutomatedIUT):
         default content--format, omiting this option will always create a
         4.00 Bad Request from the server.
 
-    Some tests have several stimulis, those are specified with the attribute
+    Some tests have several stimuli, those are specified with the attribute
     aux_stimuli_to_function_map.
     """
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
     component_id = 'automated_iut-coap_client-aiocoap'
     node = 'coap_client'
+    default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 
     def __init__(self, mode_aux=None):
-        logger.info('pre starting')
         super().__init__(self.node)
-        logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
+        self.log('starting %s  [ %s ]' % (self.node, self.component_id))
         self.mode_aux = mode_aux
-        self.iut_base_cmd_schema = 'aiocoap-client "{url}"' \
-                                       .format(url=default_coap_server_base_url) + '{resource_path}'
+        self.base_url = self.default_coap_server_base_url
+        self.base_cmd = ["aiocoap-client"]
 
         # mapping message's stimuli id -> function to execute this stimuli
         self.stimuli_to_function_map = {
@@ -114,55 +110,55 @@ class AioCoapClient(AutomatedIUT):
             content_format="text/plain",
             confirmable=True,
             payload="'My payload'"):
-        put_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        put_cmd += ' {option} {value}'.format(option='-m', value='PUT')
-        put_cmd += ' {option} {value}'.format(option='--content-format',
-                                              value=content_format)
-        put_cmd += ' {option} {value}'.format(option='--payload', value=payload)
+        cmd = self.base_cmd.copy()
+        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['{option} {value}'.format(option='-m', value='PUT')]
+        cmd += ['{option} {value}'.format(option='--content-format',value=content_format)]
+        cmd += ['{option} {value}'.format(option='--payload', value=payload)]
         if not confirmable:
-            put_cmd += ' --non'
-        self.run_stimulis(cmd=put_cmd)
+            cmd += ['--non']
+        self.run_stimuli(cmd=cmd)
 
     def post(self,
              resource,
              content_format="text/plain",
              confirmable=True,
              payload="'My payload'"):
-        post_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        post_cmd += ' {option} {value}'.format(option='-m', value='POST')
-        post_cmd += ' {option} {value}'.format(option='--content-format',
-                                               value=content_format)
-        post_cmd += ' {option} {value}'.format(option='--payload', value=payload)
+        cmd = self.base_cmd.copy()
+        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['{option} {value}'.format(option='-m', value='POST')]
+        cmd += ['{option} {value}'.format(option='--content-format', value=content_format)]
+        cmd += ['{option} {value}'.format(option='--payload', value=payload)]
         if not confirmable:
-            post_cmd += ' --non'
-        self.run_stimulis(cmd=post_cmd)
+            cmd += ['--non']
+        self.run_stimuli(cmd=cmd)
 
     def delete(self, resource, confirmable=True):
-        del_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        del_cmd += ' {option} {value}'.format(option='-m', value='DELETE')
+        cmd = self.base_cmd.copy()
+        cmd += ['{option} {value}'.format(option='-m', value='DELETE')]
         if not confirmable:
-            del_cmd += ' --non'
-        self.run_stimulis(cmd=del_cmd)
+            cmd += ['--non']
+        self.run_stimuli(cmd=cmd)
 
     def get(self, resource, confirmable=True, accepte_option=None):
-        get_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        get_cmd += ' {option} {value}'.format(option='-m', value='GET')
+        cmd = self.base_cmd.copy()
+        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['{option} {value}'.format(option='-m', value='GET')]
         if accepte_option is not None:
-            get_cmd += ' {option} {value}'.format(option='--accept',
-                                                  value=accepte_option)
+            cmd += ['{option} {value}'.format(option='--accept',value=accepte_option)]
         if not confirmable:
-            get_cmd += ' --non'
-        self.run_stimulis(cmd=get_cmd)
+            cmd += ['--non']
+        self.run_stimuli(cmd=cmd)
 
     def observe(self, resource, confirmable=True, duration=15):
-        obs_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        obs_cmd += ' --observe'
+        cmd = self.base_cmd.copy()
+        cmd += ['--observe']
         if not confirmable:
-            obs_cmd += ' --non'
+            cmd += ['--non']
 
         # Let our client enough time receive some
         # observations.
-        self.run_stimulis(cmd=obs_cmd, timeout=duration)
+        self.run_stimuli(cmd=cmd, timeout=duration)
 
     # Coap Core stimulus
 
@@ -248,7 +244,7 @@ class AioCoapClient(AutomatedIUT):
     def __stimuli_coap_obs_10_step7(self):
         self.get(resource="/obs", confirmable=True)
 
-    # CoAP BLOCK stimulis
+    # CoAP BLOCK stimuli
     # TODO BLOCK_01/BLOCK_06 are not yet implemented because the CLI do not
     # allow to do early negociation. We will have to use the API to implement
     # those.
@@ -300,7 +296,7 @@ class AioCoapClient(AutomatedIUT):
     def __stimuli_coap_block_05(self):
         self.put(resource="/large-post", payload=self.large_payload)
 
-    # CoAP LINK stimulis.
+    # CoAP LINK stimuli.
 
     def __stimuli_coap_link_01(self):
         self.get(resource="/.well-known/core")
@@ -330,51 +326,49 @@ class AioCoapClient(AutomatedIUT):
         self.get(resource="/.well-known/core?ct=40")
 
     def _execute_stimuli(self, stimuli_step_id, addr=None):
-        logger.info('got stimuli execute request: \n\tSTIMULI_ID=%s,\
-                    \n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
+        self.log('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
 
+        # redefines default
         if addr:
-            self.iut_base_cmd_schema = 'aiocoap-client "{url}"' \
-                                           .format(url=addr) + '{resource_path}'
+            self.base_url = addr  # it's actually a URL not an address #fixMe!
 
         if self.mode_aux:
             if stimuli_step_id not in self.aux_stimuli_to_function_map:
-                logger.warning("Received request to execute unimplemented\
-                               auxiliary stimulis %s", stimuli_step_id
-                               )
+                self.log("Received request to execute unimplemented auxiliary stimuli %s", stimuli_step_id)
             else:
                 self.aux_stimuli_to_function_map[stimuli_step_id]()
         else:
             if stimuli_step_id not in self.stimuli_to_function_map:
-                logger.warning("Received request to execute unimplemented\
-                               stimulis %s", stimuli_step_id
-                               )
+                self.log("Received request to execute unimplemented stimuli %s", stimuli_step_id)
             else:
                 self.stimuli_to_function_map[stimuli_step_id]()
 
     def _execute_verify(self, verify_step_id):
-        logger.warning('Ignoring: %s.\
-                       No auto-iut mechanism for verify step implemented.'
-                       % verify_step_id)
+        self.log('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
         return coap_host_address
 
-    def run_stimulis(self, cmd: str, timeout=STIMULI_HANDLER_TOUT):
+    def run_stimuli(self, cmd: str, timeout=STIMULI_HANDLER_TOUT):
+        assert type(cmd) is list
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-        proc.wait(timeout=timeout)
+        try:
+            o = subprocess.check_output(cmd,
+                                        stderr=subprocess.STDOUT,
+                                        shell=False,
+                                        timeout=timeout,
+                                        universal_newlines = True
+                                        )
+        except subprocess.CalledProcessError as p_err:
+            self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
+            self.log('Error: {}'.format(p_err))
+            return
+        except Exception as err:
+            self.log('Error found {}, trying to run{}'.format(err, cmd))
+            return
 
-        if proc.returncode:
-            logger.info('Stimulis ran sucessfully. Executed cmd is : {}'
-                        .format(cmd))
-        else:
-            logger.info('Stimulis failed to run. Executed cmd is : {}'
-                        .format(cmd))
-            logger.info('Cmd output is')
-            for line in proc.stdout:
-                logger.info(line)
+        self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
 
 
 if __name__ == '__main__':
@@ -384,5 +378,5 @@ if __name__ == '__main__':
         iut.start()
         iut.join()
     except Exception as e:
-        logger.error(e)
+        logging.error(e)
         exit(1)
