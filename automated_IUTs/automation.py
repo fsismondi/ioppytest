@@ -54,7 +54,7 @@ class AutomatedIUT(threading.Thread):
     process_log_file = None  # child may override, log file will be dumped into python logger at the end of session
 
     def __init__(self, node):
-        self.init_logger()
+        self._init_logger()
 
         configuration = {}
         for i in ['implemented_testcases_list', 'component_id', 'node', 'process_log_file']:
@@ -104,7 +104,7 @@ class AutomatedIUT(threading.Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=queue_name)
 
-    def init_logger(self):
+    def _init_logger(self):
         logger_id = self.component_id
         # init logging to stnd output and log files
         self._logger = logging.getLogger(logger_id)
@@ -354,7 +354,7 @@ class UserMock(threading.Thread):
 
     def __init__(self, iut_testcases=None):
 
-        self.init_logger()
+        self._init_logger()
 
         threading.Thread.__init__(self)
 
@@ -391,11 +391,16 @@ class UserMock(threading.Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(self.on_request, queue=queue_name)
 
-    def init_logger(self):
-        logger_id = "%s|%s" % (self.component_id)
+    def _init_logger(self):
+        logger_id = self.component_id
         # init logging to stnd output and log files
         self._logger = logging.getLogger(logger_id)
         self._logger.setLevel(LOG_LEVEL)
+
+        # add stream handler for echoing back into console
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        self._logger.addHandler(ch)
 
         # AMQP log handler with f-interop's json formatter
         rabbitmq_handler = RabbitMQHandler(AMQP_URL, logger_id)
