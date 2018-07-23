@@ -15,6 +15,7 @@ from event_bus_utils import publish_message
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from tabulate import tabulate
 from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
+                                           get_current_users_online,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
 from ioppytest.ui_adaptor.user_help_text import *
@@ -1396,6 +1397,14 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
         """
 
+        # # # Get users connected to session # # #
+        users = get_current_users_online(amqp_connector)
+
+        if len(users) > 2:  # ignore if the rest of users (I assume they are "observer" users)
+            users = users[:2]
+
+        logger.info("Bootstrapping GUI adaptor for %s" % users)
+
         # # # Set Up the VPN between users' IUTs # # #
 
         # AGENT INFO
@@ -1415,28 +1424,31 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
 
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_AGENT_INFO,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm to continue",
-                },
+        for u in users:
+            req = MsgUiRequestConfirmationButton(
+                tags=UI_TAG_AGENT_INFO,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "Confirm to continue",
+                    },
 
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                }, ]
-        )
-
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
+                    {
+                        "name": "confirm",
+                        "type": "button",
+                        "value": True
+                    }, ]
             )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
+
+            req.routing_key = req.routing_key.replace('all', u)
+            req.reply_to = req.reply_to.replace('all', u)
+            try:
+                resp = amqp_connector.synch_request(
+                    request=req,
+                    timeout=300,
+                )
+            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+                pass
 
         # ENV VAR export
 
@@ -1451,28 +1463,33 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             message=disp,
             user_id='all'
         )
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_AGENT_CONNECT,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm that variables have been exported",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                },
-            ]
-        )
 
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
+        for u in users:
+            req = MsgUiRequestConfirmationButton(
+                tags=UI_TAG_AGENT_CONNECT,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "Confirm that variables have been exported",
+                    },
+                    {
+                        "name": "confirm",
+                        "type": "button",
+                        "value": True
+                    },
+                ]
             )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
+
+            req.routing_key = req.routing_key.replace('all', u)
+            req.reply_to = req.reply_to.replace('all', u)
+
+            try:
+                resp = amqp_connector.synch_request(
+                    request=req,
+                    timeout=300,
+                )
+            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+                pass
 
         # AGENT INSTALL
         agents_kickstart_help = agent_install_help
@@ -1491,29 +1508,32 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
 
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_AGENT_CONNECT,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm installation finished",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                },
-            ]
-        )
-
-        resp_confirm_agent_up = None
-        try:
-            resp_confirm_agent_up = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
+        for u in users:
+            req = MsgUiRequestConfirmationButton(
+                tags=UI_TAG_AGENT_CONNECT,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "Confirm installation finished",
+                    },
+                    {
+                        "name": "confirm",
+                        "type": "button",
+                        "value": True
+                    },
+                ]
             )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
+            req.routing_key = req.routing_key.replace('all', u)
+            req.reply_to = req.reply_to.replace('all', u)
+
+            resp_confirm_agent_up = None
+            try:
+                resp_confirm_agent_up = amqp_connector.synch_request(
+                    request=req,
+                    timeout=300,
+                )
+            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+                pass
 
         # AGENT RUN
         agents_kickstart_help = help_agents_run_for_raw_ip_mode
@@ -1532,29 +1552,33 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
 
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_AGENT_CONNECT,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm that agent component is running",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                },
-            ]
-        )
-
-        resp_confirm_agent_up = None
-        try:
-            resp_confirm_agent_up = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
+        for u in users:
+            req = MsgUiRequestConfirmationButton(
+                tags=UI_TAG_AGENT_CONNECT,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "Confirm that agent component is running",
+                    },
+                    {
+                        "name": "confirm",
+                        "type": "button",
+                        "value": True
+                    },
+                ]
             )
-        except Exception:
-            pass
+
+            req.routing_key = req.routing_key.replace('all', u)
+            req.reply_to = req.reply_to.replace('all', u)
+
+            resp_confirm_agent_up = None
+            try:
+                resp_confirm_agent_up = amqp_connector.synch_request(
+                    request=req,
+                    timeout=300,
+                )
+            except Exception:
+                pass
 
         # BOOTSTRAP INTERFACES
         if resp_confirm_agent_up:
@@ -1564,7 +1588,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 tags=UI_TAG_AGENT_CONNECT,
                 fields=[{
                     "type": "p",
-                    "value": "bootstrapping agent interface.."
+                    "value": "bootstrapping agent(s) interface.."
                 }, ]
             )
 
@@ -1594,27 +1618,31 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
             user_id='all'
         )
 
-        req = MsgUiRequestConfirmationButton(
-            tags=UI_TAG_AGENT_TEST,
-            fields=[
-                {
-                    "type": "p",
-                    "value": "Confirm to continue",
-                },
-                {
-                    "name": "confirm",
-                    "type": "button",
-                    "value": True
-                }, ]
-        )
-
-        try:
-            resp = amqp_connector.synch_request(
-                request=req,
-                timeout=300,
+        for u in users:
+            req = MsgUiRequestConfirmationButton(
+                tags=UI_TAG_AGENT_TEST,
+                fields=[
+                    {
+                        "type": "p",
+                        "value": "Confirm to continue",
+                    },
+                    {
+                        "name": "confirm",
+                        "type": "button",
+                        "value": True
+                    }, ]
             )
-        except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-            pass
+
+            req.routing_key = req.routing_key.replace('all', u)
+            req.reply_to = req.reply_to.replace('all', u)
+
+            try:
+                resp = amqp_connector.synch_request(
+                    request=req,
+                    timeout=300,
+                )
+            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+                pass
 
         return True
 

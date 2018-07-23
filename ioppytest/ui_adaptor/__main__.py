@@ -96,20 +96,25 @@ class AmqpMessagePublisher:
 
         self.COMPONENT_ID = 'UI_publisher%s' % str(uuid.uuid4())[:8]
 
-        if iut_role_to_user_id_mapping:
-            self.iut_role_to_user_id_mapping = iut_role_to_user_id_mapping
-        else:
-            self.iut_role_to_user_id_mapping = dict()
-
+        # init AMQP comms
         self.amqp_url = amqp_url
         self.exchange = amqp_exchange
         self.connection = None
         self.channel = None
         self.amqp_connect()
 
+        # init role->user_ID map
+        self.iut_role_to_user_id_mapping = dict()
+        if iut_role_to_user_id_mapping:
+            self.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
+
     def update_iut_role_to_user_id_mapping(self, iut_role_to_user_id_mapping):
+
         if iut_role_to_user_id_mapping and type(iut_role_to_user_id_mapping) is dict:
             self.iut_role_to_user_id_mapping.update(iut_role_to_user_id_mapping)
+
+        logger.info(
+            "Updated role->user id map:\n%s" % json.dumps(self.iut_role_to_user_id_mapping, indent=4))
 
     def get_user_id_from_node(self, node):
         """
@@ -393,12 +398,14 @@ class AmqpMessagePublisher:
         # lets set message rkey and reply_to fields
         if '*' in ui_message.routing_key:
             ui_message.routing_key = ui_message.routing_key.replace('*', destination_user)
+            logger.info("Routing to: %s" % destination_user)
 
             if hasattr(ui_message, 'reply_to'):
                 ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 
         elif '.all.' in ui_message.routing_key:
             ui_message.routing_key = ui_message.routing_key.replace('.all.', '.{id}.'.format(id=destination_user))
+            logger.info("Routing to: %s" % destination_user)
             if hasattr(ui_message, 'reply_to'):
                 ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 
@@ -763,5 +770,3 @@ if __name__ == '__main__':
         connection.close()
 
         sys.exit(1)
-
-
