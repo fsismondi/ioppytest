@@ -353,7 +353,7 @@ class AioCoapClient(AutomatedIUT):
             self.log('Error: {}'.format(p_err))
             return
         except Exception as err:
-            self.log('Error found {}, trying to run{}'.format(err, cmd))
+            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
             return
 
         self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))

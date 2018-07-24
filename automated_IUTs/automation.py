@@ -260,7 +260,7 @@ class AutomatedIUT(threading.Thread):
 
     def handle_configuration_execute(self, event):
         if event.node == self.node:
-            self.log('Configure test case %s', event.testcase_id)
+            self.log('Configure test case %s' % event.testcase_id)
             # TODO fix me _execute_config should pass an arbitrary dict, which
             # will be used later for building the fields of the ret message
             ipaddr = self._execute_configuration(event.testcase_id,
