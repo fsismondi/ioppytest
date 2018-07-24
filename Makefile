@@ -180,7 +180,27 @@ run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m pytest -p no:cacheprovider tests/ -vvv
 
+LIST = automated_iut-coap_client-coapthon \
+	   automated_iut-coap_client-aiocoap \
+	   automated_iut-coap_client-libcoap \
+	   automated_iut-coap_client-californium \
+	   automated_iut-coap_server-coapthon \
+	   automated_iut-coap_server-californium \
+
+
 get-logs: ## Get logs from the running containers
+	@echo ">>>>> start logs automated_iut-coap_client-aiocoap"
+	docker logs automated_iut-coap_client-aiocoap ; exit 0
+	@echo "<<<<< end logs automated_iut-coap_client-aiocoap \n"
+
+	@echo ">>>>> start logs automated_iut-coap_server-californium"
+	docker logs automated_iut-coap_server-californium ; exit 0
+	@echo "<<<<< end logs automated_iut-coap_server-californium \n"
+
+	@echo ">>>>> start logs automated_iut-coap_server-coapthon"
+	docker logs automated_iut-coap_server-coapthon ; exit 0
+	@echo "<<<<< end logs automated_iut-coap_server-coapthon \n"
+
 	@echo ">>>>> start logs testing_tool-interoperability-coap"
 	docker logs testing_tool-interoperability-coap ; exit 0
 	@echo "<<<<< end logs testing_tool-interoperability-coap \n"
