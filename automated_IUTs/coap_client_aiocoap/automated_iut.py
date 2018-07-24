@@ -105,47 +105,36 @@ class AioCoapClient(AutomatedIUT):
 
         self.implemented_stimuli_list = list(self.stimuli_to_function_map.keys())
 
-    def put(self,
-            resource,
-            content_format="text/plain",
-            confirmable=True,
-            payload="'My payload'"):
+    def get(self, resource, confirmable=True, accepte_option=None):
         cmd = self.base_cmd.copy()
-        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['{option} {value}'.format(option='-m', value='PUT')]
-        cmd += ['{option} {value}'.format(option='--content-format',value=content_format)]
-        cmd += ['{option} {value}'.format(option='--payload', value=payload)]
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'GET']
+        if accepte_option is not None:
+            cmd += ['{option} {value}'.format(option='--accept', value=accepte_option)]
         if not confirmable:
             cmd += ['--non']
         self.run_stimuli(cmd=cmd)
 
-    def post(self,
-             resource,
-             content_format="text/plain",
-             confirmable=True,
-             payload="'My payload'"):
+    def put(self, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
         cmd = self.base_cmd.copy()
-        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['{option} {value}'.format(option='-m', value='POST')]
-        cmd += ['{option} {value}'.format(option='--content-format', value=content_format)]
-        cmd += ['{option} {value}'.format(option='--payload', value=payload)]
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'PUT', '--content-format', str(content_format), '--payload', str(payload)]
+        if not confirmable:
+            cmd += ['--non']
+        self.run_stimuli(cmd=cmd)
+
+    def post(self, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'POST', '--content-format', str(content_format), '--payload', str(payload)]
         if not confirmable:
             cmd += ['--non']
         self.run_stimuli(cmd=cmd)
 
     def delete(self, resource, confirmable=True):
         cmd = self.base_cmd.copy()
-        cmd += ['{option} {value}'.format(option='-m', value='DELETE')]
-        if not confirmable:
-            cmd += ['--non']
-        self.run_stimuli(cmd=cmd)
-
-    def get(self, resource, confirmable=True, accepte_option=None):
-        cmd = self.base_cmd.copy()
-        cmd += ['"{url}{resource_path}"'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['{option} {value}'.format(option='-m', value='GET')]
-        if accepte_option is not None:
-            cmd += ['{option} {value}'.format(option='--accept',value=accepte_option)]
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'DELETE']
         if not confirmable:
             cmd += ['--non']
         self.run_stimuli(cmd=cmd)
@@ -156,8 +145,7 @@ class AioCoapClient(AutomatedIUT):
         if not confirmable:
             cmd += ['--non']
 
-        # Let our client enough time receive some
-        # observations.
+        # Let our client enough time receive some observation messages.
         self.run_stimuli(cmd=cmd, timeout=duration)
 
     # Coap Core stimulus
@@ -350,7 +338,7 @@ class AioCoapClient(AutomatedIUT):
         # no config / reset needed for implementation
         return coap_host_address
 
-    def run_stimuli(self, cmd: str, timeout=STIMULI_HANDLER_TOUT):
+    def run_stimuli(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
 
         try:
@@ -358,7 +346,7 @@ class AioCoapClient(AutomatedIUT):
                                         stderr=subprocess.STDOUT,
                                         shell=False,
                                         timeout=timeout,
-                                        universal_newlines = True
+                                        universal_newlines=True
                                         )
         except subprocess.CalledProcessError as p_err:
             self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
