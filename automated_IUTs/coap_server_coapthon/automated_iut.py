@@ -43,6 +43,10 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
     def _execute_stimuli(self, stimuli_step_id, addr):
         pass
 
+    def _execute_configuration(self, testcase_id, node):
+        # should we restart process?
+        return COAP_SERVER_HOST
+
     def _launch_automated_iut_process(self):
         logging.info("Launching IUT with: %s" % self.iut_cmd)
         logging.info('IUT-automated process logging into %s' % self.process_log_file)
