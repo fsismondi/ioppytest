@@ -318,7 +318,7 @@ class AioCoapClient(AutomatedIUT):
 
         # redefines default
         if addr:
-            self.base_url = addr  # it's actually a URL not an address #fixMe!
+            self.base_url = 'coap://[%s]:%s' % (addr, COAP_SERVER_PORT)  # rewrites default
 
         if self.mode_aux:
             if stimuli_step_id not in self.aux_stimuli_to_function_map:
