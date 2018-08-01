@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import subprocess
 import logging
+import subprocess
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
@@ -105,6 +105,21 @@ class AioCoapClient(AutomatedIUT):
 
         self.implemented_stimuli_list = list(self.stimuli_to_function_map.keys())
 
+    def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
+        assert type(cmd) is list
+
+        try:
+            o = subprocess.check_output(cmd,stderr=subprocess.STDOUT,shell=False,timeout=timeout,universal_newlines=True)
+        except subprocess.CalledProcessError as p_err:
+            self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
+            self.log('Error: {}'.format(p_err))
+            return
+        except Exception as err:
+            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
+            return
+
+        self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
+
     def get(self, resource, confirmable=True, accepte_option=None):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
@@ -113,7 +128,7 @@ class AioCoapClient(AutomatedIUT):
             cmd += ['{option} {value}'.format(option='--accept', value=accepte_option)]
         if not confirmable:
             cmd += ['--non']
-        self.run_stimuli(cmd=cmd)
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def put(self, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
         cmd = self.base_cmd.copy()
@@ -121,7 +136,7 @@ class AioCoapClient(AutomatedIUT):
         cmd += ['-m', 'PUT', '--content-format', str(content_format), '--payload', str(payload)]
         if not confirmable:
             cmd += ['--non']
-        self.run_stimuli(cmd=cmd)
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def post(self, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
         cmd = self.base_cmd.copy()
@@ -129,7 +144,7 @@ class AioCoapClient(AutomatedIUT):
         cmd += ['-m', 'POST', '--content-format', str(content_format), '--payload', str(payload)]
         if not confirmable:
             cmd += ['--non']
-        self.run_stimuli(cmd=cmd)
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def delete(self, resource, confirmable=True):
         cmd = self.base_cmd.copy()
@@ -137,18 +152,19 @@ class AioCoapClient(AutomatedIUT):
         cmd += ['-m', 'DELETE']
         if not confirmable:
             cmd += ['--non']
-        self.run_stimuli(cmd=cmd)
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def observe(self, resource, confirmable=True, duration=15):
         cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
         cmd += ['--observe']
         if not confirmable:
             cmd += ['--non']
 
         # Let our client enough time receive some observation messages.
-        self.run_stimuli(cmd=cmd, timeout=duration)
+        self._run_cmd_as_subprocess(cmd=cmd, timeout=duration)
 
-    # Coap Core stimulus
+    # CoAP CORE test spec STIMULI
 
     def __stimuli_coap_core_01_10_15(self):
         self.get(resource="/test")
@@ -195,7 +211,7 @@ class AioCoapClient(AutomatedIUT):
     def __stimuli_coap_core_21_22_step1_22_step8(self):
         self.get(resource="/validate")
 
-    # Coap Observe stimulus
+    # CoAP OBS stimuli
 
     def __stimuli_coap_obs_01_04_05(self):
         self.observe(resource="/obs")
@@ -206,7 +222,7 @@ class AioCoapClient(AutomatedIUT):
     def __stimuli_coap_obs_07_08_09_10_step1(self):
         self.observe(resource="/obs", duration=20)
 
-    # Coap OBS auxiliary stimulus
+    # CoAP OBS auxiliary stimuli
 
     def __stimuli_coap_obs_07_step7(self):
         self.delete(resource="/obs")
@@ -313,6 +329,8 @@ class AioCoapClient(AutomatedIUT):
     def __stimuli_coap_link_09(self):
         self.get(resource="/.well-known/core?ct=40")
 
+    # overridden methods
+
     def _execute_stimuli(self, stimuli_step_id, addr=None):
         self.log('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
 
@@ -338,25 +356,7 @@ class AioCoapClient(AutomatedIUT):
         # no config / reset needed for implementation
         return coap_host_address
 
-    def run_stimuli(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
-        assert type(cmd) is list
 
-        try:
-            o = subprocess.check_output(cmd,
-                                        stderr=subprocess.STDOUT,
-                                        shell=False,
-                                        timeout=timeout,
-                                        universal_newlines=True
-                                        )
-        except subprocess.CalledProcessError as p_err:
-            self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
-            self.log('Error: {}'.format(p_err))
-            return
-        except Exception as err:
-            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
-            return
-
-        self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
 
 
 if __name__ == '__main__':
