@@ -7,13 +7,22 @@ from ioppytest import TMPDIR
 from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
 from automated_IUTs.automation import *
 
-logger = logging.getLogger()
-logger.setLevel(LOG_LEVEL)
-
 # timeout in seconds
 STIMULI_HANDLER_TOUT = 15
 
 server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+
+LOGGER_ID = 'automation|coap_server'
+
+# init logging to stnd output and log files
+logger = logging.getLogger(LOGGER_ID)
+logger.setLevel(LOG_LEVEL)
+
+# AMQP log handler with f-interop's json formatter
+rabbitmq_handler = RabbitMQHandler(AMQP_URL, LOGGER_ID)
+json_formatter = JsonFormatter()
+rabbitmq_handler.setFormatter(json_formatter)
+logger.addHandler(rabbitmq_handler)
 
 
 class CaliforniumCoapServer(AutomatedIUT):
@@ -36,6 +45,10 @@ class CaliforniumCoapServer(AutomatedIUT):
         logging.info('spawning process %s' % str(self.iut_cmd))
         self._launch_automated_iut_process()
 
+    def _execute_configuration(self, testcase_id, node):
+        # should we restart process?
+        return COAP_SERVER_HOST
+
     def _execute_verify(self, verify_step_id):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
@@ -48,9 +61,7 @@ class CaliforniumCoapServer(AutomatedIUT):
         with open(self.process_log_file, "w") as outfile:
             subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
 
-    def _execute_configuration(self, testcase_id, node):
-        # should we restart process?
-        return COAP_SERVER_HOST
+
 
 
 if __name__ == '__main__':

@@ -156,13 +156,118 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         stage("BUILD CoAP docker images (testing tools and automated-iuts)"){
             gitlabCommitStatus("BUILD CoAP docker images (testing tools and automated-iuts)") {
                 sh '''
-                    sudo -E make _docker-build-coap
-                    sudo -E make _docker-build-coap-additional-resources
+                    sudo -E make build-all-coap-images
                     sudo -E docker images
                 '''
             }
         }
 
+
+        stage("RUN mini-plugtest: aiocoap_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: aiocoap_clie VS californium_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-aiocoap-cli-vs-californium-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+            gitlabCommitStatus("EXECUTE mini-plugtest: aiocoap_clie VS californium_serv") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+        }
+
+
+
+       stage("RUN mini-plugtest: aiocoap_clie VS coaphton_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: aiocoap_clie VS coaphton_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-aiocoap-cli-vs-coapthon-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+            gitlabCommitStatus("EXECUTE mini-plugtest: aiocoap_clie VS coapthon_server") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+        }
 
         stage("RUN mini-plugtest: coapthon_clie VS californium_serv"){
             gitlabCommitStatus("START resources for mini-plugtest: coapthon_clie VS californium_serv") {
@@ -189,7 +294,6 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-
             gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS californium_serv") {
                 long timeoutInSeconds = 600
                 try {
@@ -242,7 +346,6 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-
             gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS californium_serv") {
                 long timeoutInSeconds = 600
                 try {
@@ -296,7 +399,6 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-
             gitlabCommitStatus("EXECUTE mini-plugtest: californium_clie VS coapthon_serv") {
                 long timeoutInSeconds = 600
                 try {
@@ -350,7 +452,6 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                     }
                 }
             }
-
             gitlabCommitStatus("EXECUTE mini-plugtest: coapthon_clie VS coapthon_serv") {
                 long timeoutInSeconds = 600
                 try {
