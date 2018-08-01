@@ -158,6 +158,9 @@ stop-coap-client-coapthon:
 stop-coap-server-coapthon:
 	docker stop automated_iut-coap_server-coapthon
 
+stop-coap-client-aiocoap:
+	docker stop automated_iut-coap_client-aiocoap
+
 stop-all: ## Stop testing tools running as docker containers
 	@echo "running $@"
 	# (exit 0) -> so the script continues on errors
@@ -169,7 +172,7 @@ stop-all: ## Stop testing tools running as docker containers
 	$(MAKE) stop-coap-server-californium --keep-going ; exit 0
 	$(MAKE) stop-coap-client-coapthon --keep-going ; exit 0
 	$(MAKE) stop-coap-server-coapthon --keep-going ; exit 0
-	$(MAKE) docker stop automated_iut-coap_client-aiocoap ; exit 0
+	$(MAKE) stop-coap-client-aiocoap ; exit 0
 
 # # # # UNITTEST commands # # # #
 
