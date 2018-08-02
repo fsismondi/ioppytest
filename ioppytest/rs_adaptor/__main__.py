@@ -59,11 +59,11 @@ def save_result_into_RS_db(message: Message):
         )
 
     except AmqpSynchCallTimeoutError as tout:
-        logger.error("Request for %s timed out. Is RS up?" % type(m))
+        logger.warning("Request for %s timed out. Is RS up?" % type(m))
         return
 
     if not reply or not reply.ok:
-        logger.error("Couldn't save results, got response: %s " % repr(reply))
+        logger.warning("Couldn't save results, got response: %s " % repr(reply))
         return
 
     logger.info("Successful %s results save into RS" % m_type)
