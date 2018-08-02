@@ -38,10 +38,10 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 def save_result_into_RS_db(message: Message):
     if isinstance(message, MsgTestSuiteReport):
         m_data = message.tc_results  # this is a list
-        m_type = "final_report"
+        m_type = "final"
     elif isinstance(message, MsgTestCaseVerdict):
         m_data = message.to_dict()
-        m_type = "testcase_verdict"
+        m_type = "intermediate"
     else:
         raise TypeError("Expecting Report or TC verdict message")
 
