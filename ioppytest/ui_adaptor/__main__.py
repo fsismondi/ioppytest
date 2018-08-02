@@ -557,24 +557,25 @@ def main():
         else:
             logger.debug("session is NOT SHARED (single-user vs automated-iut type)")
 
-        # this call is going to block until all users are present "in the room"
+        # this call BLOCKS until all users are present "in the room"
         wait_for_all_users_to_join_session(message_translator,
                                            amqp_message_publisher,
                                            session_configuration)
 
+        # get list of all users which are online
         online_users = get_current_users_online(amqp_message_publisher)
         logger.info("Connected users: %s" % repr(online_users))
 
-        # define user->iut_role mappings
+        # create user_id -> iut_role mapping
         iut_role_to_user_id_mapping = get_user_ids_and_roles_from_ui(message_translator,
                                                                      amqp_message_publisher,
                                                                      session_configuration)
 
         logger.info("IUT_roles->users_id mapping: %s" % repr(iut_role_to_user_id_mapping))
 
-        # in case of user_to_user session AmqpMessagePublisher publishes to UI1 or UI2 or both, depending on what the
-        # message that has been passed to publish() looks like, this is why amqp_message_publisher needs to be fed with
-        # this mapping info
+        # In case of user_to_user session AmqpMessagePublisher publishes to UI1 or UI2 or both depending on what the
+        # message that has been passed to publish() looks like.
+        # Hence, amqp_message_publisher needs to be fed with the user->role mapping info
         amqp_message_publisher.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
 
     except AmqpSynchCallTimeoutError as tout:
@@ -677,13 +678,10 @@ def main():
                 amqp_message_publisher.publish_ui_display(msg_ui_to_display)
 
             # get and publish next request for UI (just one at a time)
-            # TODO implement a mechanism for not publish messages until previous one has been replied,
-            # how to handle the ui.user.request cancel command tho?
-
             if not queue_messages_request_to_ui.empty():
                 # get next request
                 request = queue_messages_request_to_ui.get()
-                # publish it
+                # send message to UI
                 amqp_message_publisher.publish_ui_request(request)
 
             # get next message reply from UI
@@ -697,6 +695,7 @@ def main():
                 msg_to_tt = queue_messages_to_tt.get()
                 amqp_message_publisher.publish_tt_chained_message(msg_to_tt)
 
+            # this is for monitoring the consumed messages' queues
             if loop_count == 1000:
                 for q in queues:
                     logger.debug("queue %s size: %s" % (repr(q), q.qsize()))
@@ -711,7 +710,6 @@ def main():
         logger.info('user interruption captured, exiting..')
 
     finally:
-
         logger.info('UI adaptor stopping..')
         amqp_message_publisher.stop()  # not a thread
         tt_amqp_listener_thread.stop()  # thread
