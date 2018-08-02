@@ -376,8 +376,7 @@ class AmqpMessagePublisher:
         Updates UI messages routing key and reply to key.
         Either node_name or user_id need to be passed as argument
         """
-        assert not (ui_message is None and node_name is None and user_id is None), \
-            "Either node name or user id needs to be passed as arg"
+        assert not (node_name is None and user_id is None), "Either node name or user id needs to be passed as arg"
 
         # FixMe: use data Messages typing instead of hasattribute(,) and " <.*.> in rkey" assertions
         destination_user = None
