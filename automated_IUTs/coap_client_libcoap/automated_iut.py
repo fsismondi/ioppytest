@@ -8,12 +8,8 @@ import logging
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
-logger = logging.getLogger()
-logger.setLevel(LOG_LEVEL)
-
 default_coap_server_base_url = 'coap://[%s]:%s' %(COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
-
 
 class LibcoapClient(AutomatedIUT):
     """
@@ -81,19 +77,118 @@ class LibcoapClient(AutomatedIUT):
 
     Some tests have several stimulis, those are specified with the attribute
     aux_stimuli_to_function_map.
-
     """
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
     component_id = 'automated_iut-coap_client-libcoap'
     node = 'coap_client'
     large_payload_test_file = 'automated_IUTs/coap_client_libcoap/\
                               file/etsi_iot_01_largedata.txt'
+    default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 
     def __init__(self, mode_aux=None):
         super().__init__(self.node)
-        logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
+        self.log('starting %s  [ %s ]' % (self.node, self.component_id))
         self.mode_aux = mode_aux
-        self.iut_base_cmd_schema = 'coap-client "{url}"'\
-            .format(url=self.default_coap_server_base_url)+'{resource_path}'
+        self.base_url = self.default_coap_server_base_url
+        self.base_cmd = ["coap-client"]
+
+    # mapping message's stimuli id -> function to execute this stimuli
+    self.stimuli_to_function_map = {
+        'TD_COAP_CORE_01_step_01': __stimuli_coap_core_01_10_15,
+        'TD_COAP_CORE_02_step_01': __stimuli_coap_core_02,
+        'TD_COAP_CORE_03_step_01': __stimuli_coap_core_03,
+        'TD_COAP_CORE_04_step_01': __stimuli_coap_core_04_18,
+        'TD_COAP_CORE_05_step_01': __stimuli_coap_core_05,
+        'TD_COAP_CORE_06_step_01': __stimuli_coap_core_06,
+        'TD_COAP_CORE_07_step_01': __stimuli_coap_core_07,
+        'TD_COAP_CORE_08_step_01': __stimuli_coap_core_08,
+        'TD_COAP_CORE_09_step_01': __stimuli_coap_core_09_11_16,
+        'TD_COAP_CORE_10_step_01': __stimuli_coap_core_01_10_15,
+        'TD_COAP_CORE_11_step_01': __stimuli_coap_core_09_11_16,
+        'TD_COAP_CORE_12_step_01': __stimuli_coap_core_12,
+        'TD_COAP_CORE_13_step_01': __stimuli_coap_core_13,
+        'TD_COAP_CORE_14_step_01': __stimuli_coap_core_14,
+        'TD_COAP_CORE_15_step_01': __stimuli_coap_core_01_10_15,
+        'TD_COAP_CORE_16_step_01': __stimuli_coap_core_09_11_16,
+        'TD_COAP_CORE_18_step_01': __stimuli_coap_core_04_18,
+        'TD_COAP_CORE_17_step_01': __stimuli_coap_core_17,
+        'TD_COAP_CORE_19_step_01': __stimuli_coap_core_19,
+        'TD_COAP_CORE_20_step_01': __stimuli_coap_core_20_step1,
+        'TD_COAP_CORE_20_step_05': __stimuli_coap_core_20_step5,
+        'TD_COAP_CORE_21_step_01': __stimuli_coap_core_21_22_step1_22_step8,
+        'TD_COAP_CORE_22_step_01': __stimuli_coap_core_21_22_step1_22_step8,
+        # 'TD_COAP_CORE_22_step_04': 'TD_COAP_CORE_22',
+        'TD_COAP_CORE_22_step_08': __stimuli_coap_core_21_22_step1_22_step8,
+        'TD_COAP_CORE_23_step_01': __stimuli_coap_core_23,
+        'TD_COAP_CORE_23_step_05': __stimuli_coap_core_23,
+        'TD_COAP_OBS_01_step_01': __stimuli_coap_obs_01_04_05,
+        'TD_COAP_OBS_02_step_01': __stimuli_coap_obs_02,
+        'TD_COAP_OBS_04_step_01': __stimuli_coap_obs_01_04_05,
+        'TD_COAP_OBS_05_step_01': __stimuli_coap_obs_01_04_05,
+        'TD_COAP_OBS_07_step_01': __stimuli_coap_obs_07_08_09_10_step1,
+        'TD_COAP_OBS_08_step_01': __stimuli_coap_obs_07_08_09_10_step1,
+        'TD_COAP_OBS_09_step_01': __stimuli_coap_obs_07_08_09_10_step1,
+        'TD_COAP_OBS_10_step_01': __stimuli_coap_obs_07_08_09_10_step1,
+        'TD_COAP_BLOCK_01_step_01': __stimuli_coap_block_01,
+        'TD_COAP_BLOCK_02_step_01': __stimuli_coap_block_02,
+        'TD_COAP_BLOCK_03_step_01': __stimuli_coap_block_03,
+        'TD_COAP_BLOCK_04_step_01': __stimuli_coap_block_04,
+        'TD_COAP_BLOCK_05_step_01': __stimuli_coap_block_05,
+        'TD_COAP_BLOCK_06_step_01': __stimuli_coap_block_06,
+        'TD_COAP_LINK_01_step_01': __stimuli_coap_link_01,
+        'TD_COAP_LINK_02_step_01': __stimuli_coap_link_02,
+        'TD_COAP_LINK_03_step_01': __stimuli_coap_link_03,
+        'TD_COAP_LINK_04_step_01': __stimuli_coap_link_04,
+        'TD_COAP_LINK_05_step_01': __stimuli_coap_link_05,
+        'TD_COAP_LINK_06_step_01': __stimuli_coap_link_06,
+        'TD_COAP_LINK_07_step_01': __stimuli_coap_link_07,
+        'TD_COAP_LINK_08_step_01': __stimuli_coap_link_08,
+        'TD_COAP_LINK_09_step_01': __stimuli_coap_link_09,
+    }
+
+    self.aux_stimuli_to_function_map = {
+        'TD_COAP_OBS_07_step_07': __stimuli_coap_obs_07_step7,
+        'TD_COAP_OBS_08_step_07': __stimuli_coap_obs_08_step7,
+        'TD_COAP_OBS_09_step_07': __stimuli_coap_obs_09_step7,
+        'TD_COAP_OBS_10_step_07': __stimuli_coap_obs_10_step7,
+    }
+
+    self.implemented_stimuli_list = list(stimuli_to_function_map.keys())
+
+    def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
+        assert type(cmd) is list
+
+        try:
+            o = subprocess.check_output(cmd,stderr=subprocess.STDOUT,shell=False,timeout=timeout,universal_newlines=True)
+        except subprocess.CalledProcessError as p_err:
+            self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
+            self.log('Error: {}'.format(p_err))
+            return
+        except Exception as err:
+            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
+            return
+
+        self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
+
+    def get(self,
+            resource,
+            confirmable=True,
+            use_token=True,
+            accepte_option=None,
+            use_block_option=False):
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'GET']
+        if accepte_option is not None:
+            cmd += ['{option} {value}'.format(option='-A', value=accepte_option)]
+        if not confirmable:
+            cmd += ['-N']
+        if use_token:
+            tkn = self.__get_random_token()
+            cmd += ['{option} {value}'.format(option='-T', value=tkn)]
+        if use_block_option:
+            cmd += ['{option} {value}'.format(option='-b', value="0,64")]
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def put(self,
             resource,
@@ -103,34 +198,32 @@ class LibcoapClient(AutomatedIUT):
             use_if_none_match=False,
             use_block_option=False,
             desired_block_size=64,
-            payload="'My payload'",
+            payload="'my interop test payload'",
             filepath_payload=None):
         """
         Note: if a file to send is specified with filepath_payload argument,
         the payload argument is ignored.
         """
-        put_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        put_cmd += ' {option} {value}'.format(option='-m', value='PUT')
-        put_cmd += ' {option} {value}'.format(option='-t',
-                                              value=content_format)
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'PUT', '-t', str(content_format)]
         if filepath_payload:
-            put_cmd += ' {option} {value}'.format(option='-f', value=filepath_payload)
+            cmd += ['-f', str(filepath_payload)]
         else:
-            put_cmd += ' {option} {value}'.format(option='-e', value=payload)
+            cmd += ['-e', str(payload)]
         if not confirmable:
-            put_cmd += ' -N'
+            cmd += ['-N']
         if use_token:
-                tkn = self.__get_random_token()
-                put_cmd += ' {option} {value}'.format(option='-T', value=tkn)
+            tkn = self.__get_random_token()
+            cmd += ['-T', str(tkn)]
         if use_if_none_match:
-                put_cmd += ' {option} {value}'.format(option='-O', value=5)
+            cmd += ['-O', str(5)]
         if use_block_option:
             block_option_val = '{start_number} {desired_block_size}'\
                                .format(start_number=0,
                                        desired_block_size=desired_block_size)
-            put_cmd += ' {option} {value}'.format(option='-b',
-                                                  value=block_option_val)
-        self.run_stimulis(cli_cmd=put_cmd)
+            cmd =['-b', str(block_option_val)]
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def post(self,
              resource,
@@ -139,68 +232,52 @@ class LibcoapClient(AutomatedIUT):
              use_token=True,
              use_block_option=False,
              desired_block_size=64,
-             payload="'My payload'",
+             payload="'my interop test payload'",
              filepath_payload=None):
-        post_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        post_cmd += ' {option} {value}'.format(option='-m', value='POST')
-        post_cmd += ' {option} {value}'.format(option='-t',
-                                               value=content_format)
+            cmd = self.base_cmd.copy()
+            cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+            cmd += ['-m', 'POST', '-t', str(content_format)]
         if filepath_payload:
-            post_cmd += ' {option} {value}'.format(option='-f', value=filepath_payload)
+            cmd += ' {option} {value}'.format(option='-f', value=filepath_payload)
         else:
-            post_cmd += ' {option} {value}'.format(option='-e', value=payload)
+            cmd += ' {option} {value}'.format(option='-e', value=payload)
         if not confirmable:
-            post_cmd += ' -N'
+            cmd += ['-N']
         if use_token:
-                tkn = self.__get_random_token()
-                post_cmd += ' {option} {value}'.format(option='-T', value=tkn)
+            tkn = self.__get_random_token()
+            cmd += ['-T', str(tkn)]
         if use_block_option:
-                block_option_val = '{start_number} {desired_block_size}'\
-                                   .format(start_number=0,
-                                           desired_block_size=desired_block_size)
-                post_cmd += ' {option} {value}'.format(option='-b',
-                                                       value=block_option_val)
-        self.run_stimulis(cli_cmd=post_cmd)
+            block_option_val = '{start_number} {desired_block_size}'\
+                               .format(start_number=0,
+                                       desired_block_size=desired_block_size)
+            cmd =['-b', str(block_option_val)]
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def delete(self, resource, confirmable=True, use_token=True):
-        del_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        del_cmd += ' {option} {value}'.format(option='-m', value='DELETE')
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'DELETE', '-t', str(content_format)]
         if not confirmable:
-            del_cmd += ' -N'
-        if use_token:
-                tkn = self.__get_random_token()
-                del_cmd += ' {option} {value}'.format(option='-T', value=tkn)
-        self.run_stimulis(cli_cmd=del_cmd)
-
-    def get(self,
-            resource,
-            confirmable=True,
-            use_token=True,
-            accepte_option=None,
-            use_block_option=False):
-        get_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        get_cmd += ' {option} {value}'.format(option='-m', value='GET')
-        if accepte_option is not None:
-            get_cmd += ' {option} {value}'.format(option='-A',
-                                                  value=accepte_option)
-        if not confirmable:
-            get_cmd += ' -N'
+            cmd += ['-N']
         if use_token:
             tkn = self.__get_random_token()
-            get_cmd += ' {option} {value}'.format(option='-T', value=tkn)
-        if use_block_option:
-            get_cmd += ' {option} {value}'.format(option='-b', value="0,64")
-        self.run_stimulis(cli_cmd=get_cmd)
+            cmd += ['-T', str(tkn)]
+        self._run_cmd_as_subprocess(cmd=cmd)
 
     def observe(self, resource, confirmable=True, use_token=True, duration=15):
-        obs_cmd = self.iut_base_cmd_schema.format(resource_path=resource)
-        obs_cmd += ' {option} {value}'.format(option='-s', value=duration)
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+
+        cmd += ['-s', str(duration)]
         if not confirmable:
-            obs_cmd += ' -N'
+            cmd += ['-N']
         if use_token:
             tkn = self.__get_random_token()
-            obs_cmd += ' {option} {value}'.format(option='-T', value=tkn)
-        self.run_stimulis(cli_cmd=obs_cmd, timeout=duration)
+            cmd += ['-T', str(tkn)]
+        self._run_cmd_as_subprocess(cmd=cmd, timeout=duration)
+
+    def __get_random_token(self):
+        return binascii.hexlify(os.urandom(8))
 
     # Coap Core stimulus
 
@@ -328,7 +405,6 @@ class LibcoapClient(AutomatedIUT):
                  use_block_option=True,
                  desired_block_size=16)
 
-
     # CoAP LINK stimulis.
 
     def __stimuli_coap_link_01(self):
@@ -358,93 +434,25 @@ class LibcoapClient(AutomatedIUT):
     def __stimuli_coap_link_09(self):
         self.get(resource="/.well-known/core?ct=40")
 
-    def _execute_stimuli(self, stimuli_step_id, addr=None):
-        logger.info('got stimuli execute request: \n\tSTIMULI_ID=%s,\
-                    \n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
+    # overridden methods
 
+    def _execute_stimuli(self, stimuli_step_id, addr=None):
+        self.log('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
+
+        # redefines default
         if addr:
-            self.iut_base_cmd_schema = 'aiocoap-client "{url}"'\
-                                       .format(url=addr)+'{resource_path}'
+            self.base_url = 'coap://[%s]:%s' % (addr, COAP_SERVER_PORT)  # rewrites default
 
         if self.mode_aux:
             if stimuli_step_id not in self.aux_stimuli_to_function_map:
-                logger.warning("Received request to execute unimplemented\
-                               auxiliary stimulis %s", stimuli_step_id
-                               )
+                self.log("Received request to execute unimplemented auxiliary stimuli %s", stimuli_step_id)
             else:
                 self.aux_stimuli_to_function_map[stimuli_step_id]()
         else:
             if stimuli_step_id not in self.stimuli_to_function_map:
-                logger.warning("Received request to execute unimplemented\
-                               stimulis %s", stimuli_step_id
-                               )
+                self.log("Received request to execute unimplemented stimuli %s", stimuli_step_id)
             else:
                 self.stimuli_to_function_map[stimuli_step_id]()
-
-    # mapping message's stimuli id -> function to execute this stimuli
-    stimuli_to_function_map = {
-        'TD_COAP_CORE_01_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_02_step_01': __stimuli_coap_core_02,
-        'TD_COAP_CORE_03_step_01': __stimuli_coap_core_03,
-        'TD_COAP_CORE_04_step_01': __stimuli_coap_core_04_18,
-        'TD_COAP_CORE_05_step_01': __stimuli_coap_core_05,
-        'TD_COAP_CORE_06_step_01': __stimuli_coap_core_06,
-        'TD_COAP_CORE_07_step_01': __stimuli_coap_core_07,
-        'TD_COAP_CORE_08_step_01': __stimuli_coap_core_08,
-        'TD_COAP_CORE_09_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_10_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_11_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_12_step_01': __stimuli_coap_core_12,
-        'TD_COAP_CORE_13_step_01': __stimuli_coap_core_13,
-        'TD_COAP_CORE_14_step_01': __stimuli_coap_core_14,
-        'TD_COAP_CORE_15_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_16_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_18_step_01': __stimuli_coap_core_04_18,
-        'TD_COAP_CORE_17_step_01': __stimuli_coap_core_17,
-        'TD_COAP_CORE_19_step_01': __stimuli_coap_core_19,
-        'TD_COAP_CORE_20_step_01': __stimuli_coap_core_20_step1,
-        'TD_COAP_CORE_20_step_05': __stimuli_coap_core_20_step5,
-        'TD_COAP_CORE_21_step_01': __stimuli_coap_core_21_22_step1_22_step8,
-        'TD_COAP_CORE_22_step_01': __stimuli_coap_core_21_22_step1_22_step8,
-        # 'TD_COAP_CORE_22_step_04': 'TD_COAP_CORE_22',
-        'TD_COAP_CORE_22_step_08': __stimuli_coap_core_21_22_step1_22_step8,
-        'TD_COAP_CORE_23_step_01': __stimuli_coap_core_23,
-        'TD_COAP_CORE_23_step_05': __stimuli_coap_core_23,
-        'TD_COAP_OBS_01_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_02_step_01': __stimuli_coap_obs_02,
-        'TD_COAP_OBS_04_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_05_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_07_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_08_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_09_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_10_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_BLOCK_01_step_01': __stimuli_coap_block_01,
-        'TD_COAP_BLOCK_02_step_01': __stimuli_coap_block_02,
-        'TD_COAP_BLOCK_03_step_01': __stimuli_coap_block_03,
-        'TD_COAP_BLOCK_04_step_01': __stimuli_coap_block_04,
-        'TD_COAP_BLOCK_05_step_01': __stimuli_coap_block_05,
-        'TD_COAP_BLOCK_06_step_01': __stimuli_coap_block_06,
-        'TD_COAP_LINK_01_step_01': __stimuli_coap_link_01,
-        'TD_COAP_LINK_02_step_01': __stimuli_coap_link_02,
-        'TD_COAP_LINK_03_step_01': __stimuli_coap_link_03,
-        'TD_COAP_LINK_04_step_01': __stimuli_coap_link_04,
-        'TD_COAP_LINK_05_step_01': __stimuli_coap_link_05,
-        'TD_COAP_LINK_06_step_01': __stimuli_coap_link_06,
-        'TD_COAP_LINK_07_step_01': __stimuli_coap_link_07,
-        'TD_COAP_LINK_08_step_01': __stimuli_coap_link_08,
-        'TD_COAP_LINK_09_step_01': __stimuli_coap_link_09,
-    }
-
-    aux_stimuli_to_function_map = {
-        'TD_COAP_OBS_07_step_07': __stimuli_coap_obs_07_step7,
-        'TD_COAP_OBS_08_step_07': __stimuli_coap_obs_08_step7,
-        'TD_COAP_OBS_09_step_07': __stimuli_coap_obs_09_step7,
-        'TD_COAP_OBS_10_step_07': __stimuli_coap_obs_10_step7,
-    }
-
-    implemented_stimuli_list = list(stimuli_to_function_map.keys())
-    for aux_st in aux_stimuli_to_function_map:
-        implemented_stimuli_list.append(aux_st)
 
     def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s.\
@@ -454,24 +462,6 @@ class LibcoapClient(AutomatedIUT):
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
         return coap_host_address
-
-    def run_stimulis(self, cli_cmd: str, timeout=STIMULI_HANDLER_TOUT):
-
-        proc = subprocess.Popen(cli_cmd, stdout=subprocess.PIPE, shell=True)
-        proc.wait(timeout=timeout)
-
-        if proc.returncode:
-            logger.info('Stimulis ran sucessfully. Executed cmd is : {}'
-                        .format(cli_cmd))
-        else:
-            logger.info('Stimulis failed to run. Executed cmd is : {}'
-                        .format(cli_cmd))
-            logger.info('Cmd output is')
-            for line in proc.stdout:
-                logger.info(line)
-
-    def __get_random_token(self):
-        return binascii.hexlify(os.urandom(8))
 
 
 if __name__ == '__main__':
