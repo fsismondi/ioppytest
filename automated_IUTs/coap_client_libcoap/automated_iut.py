@@ -11,8 +11,7 @@ from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
-default_coap_server_base_url = 'coap://[%s]:%s' %\
-    (COAP_SERVER_HOST, COAP_SERVER_PORT)
+default_coap_server_base_url = 'coap://[%s]:%s' %(COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 
 
