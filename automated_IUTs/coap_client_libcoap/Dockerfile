@@ -16,22 +16,30 @@ RUN apt-get -y -qq install iputils-ping
 RUN apt-get -y -qq install make
 RUN apt-get -y -qq install wget
 
-# Install libcoap API
-RUN apt-get -y install libcoap-1-0
-
-# Install libcoap CLI
-RUN apt-get -y install libcoap-1-0-bin
+# needed for ubuntu 17 or + for running <ip> commands
+RUN apt-get -y -qq install iproute2
 
 # upgrade pip
 RUN python -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade pip
 
+# install aux ioppytest packages
+RUN python -m pip install ioppytest-agent
+RUN python3 -m pip install ioppytest-utils
+
 ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
+# Install libcoap API & CLI
+RUN apt-get -y install libcoap-1-0
+RUN apt-get -y install libcoap-1-0-bin
 RUN mkdir automated_IUTs/coap_client_libcoap/file
 RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
+
+# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+RUN python3 -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.2.2
 
 # requirements on automated-iut python code
 RUN python3 -m pip install -r automated_IUTs/requirements.txt
