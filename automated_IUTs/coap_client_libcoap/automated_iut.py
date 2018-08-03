@@ -8,8 +8,9 @@ import logging
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
-default_coap_server_base_url = 'coap://[%s]:%s' %(COAP_SERVER_HOST, COAP_SERVER_PORT)
+default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
+
 
 class LibcoapClient(AutomatedIUT):
     """
@@ -157,9 +158,13 @@ class LibcoapClient(AutomatedIUT):
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
-
+        o = None
         try:
-            o = subprocess.check_output(cmd,stderr=subprocess.STDOUT,shell=False,timeout=timeout,universal_newlines=True)
+            o = subprocess.check_output(cmd,
+                                        stderr=subprocess.STDOUT,
+                                        shell=False,
+                                        timeout=timeout,
+                                        universal_newlines=True)
         except subprocess.CalledProcessError as p_err:
             self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
             self.log('Error: {}'.format(p_err))
@@ -219,10 +224,10 @@ class LibcoapClient(AutomatedIUT):
         if use_if_none_match:
             cmd += ['-O', str(5)]
         if use_block_option:
-            block_option_val = '{start_number} {desired_block_size}'\
-                               .format(start_number=0,
-                                       desired_block_size=desired_block_size)
-            cmd =['-b', str(block_option_val)]
+            block_option_val = '{start_number} {desired_block_size}' \
+                .format(start_number=0,
+                        desired_block_size=desired_block_size)
+            cmd = ['-b', str(block_option_val)]
         self._run_cmd_as_subprocess(cmd=cmd)
 
     def post(self,
@@ -247,10 +252,10 @@ class LibcoapClient(AutomatedIUT):
             tkn = self.__get_random_token()
             cmd += ['-T', str(tkn)]
         if use_block_option:
-            block_option_val = '{start_number} {desired_block_size}'\
-                               .format(start_number=0,
-                                       desired_block_size=desired_block_size)
-            cmd =['-b', str(block_option_val)]
+            block_option_val = '{start_number} {desired_block_size}' \
+                .format(start_number=0,
+                        desired_block_size=desired_block_size)
+            cmd = ['-b', str(block_option_val)]
         self._run_cmd_as_subprocess(cmd=cmd)
 
     def delete(self, resource, confirmable=True, use_token=True):

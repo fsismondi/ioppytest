@@ -107,9 +107,13 @@ class AioCoapClient(AutomatedIUT):
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
-
+        o = None
         try:
-            o = subprocess.check_output(cmd,stderr=subprocess.STDOUT,shell=False,timeout=timeout,universal_newlines=True)
+            o = subprocess.check_output(cmd,
+                                        stderr=subprocess.STDOUT,
+                                        shell=False,
+                                        timeout=timeout,
+                                        universal_newlines=True)
         except subprocess.CalledProcessError as p_err:
             self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
             self.log('Error: {}'.format(p_err))
@@ -355,8 +359,6 @@ class AioCoapClient(AutomatedIUT):
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
         return coap_host_address
-
-
 
 
 if __name__ == '__main__':
