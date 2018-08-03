@@ -92,68 +92,68 @@ class LibcoapClient(AutomatedIUT):
         self.base_url = self.default_coap_server_base_url
         self.base_cmd = ["coap-client"]
 
-    # mapping message's stimuli id -> function to execute this stimuli
-    self.stimuli_to_function_map = {
-        'TD_COAP_CORE_01_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_02_step_01': __stimuli_coap_core_02,
-        'TD_COAP_CORE_03_step_01': __stimuli_coap_core_03,
-        'TD_COAP_CORE_04_step_01': __stimuli_coap_core_04_18,
-        'TD_COAP_CORE_05_step_01': __stimuli_coap_core_05,
-        'TD_COAP_CORE_06_step_01': __stimuli_coap_core_06,
-        'TD_COAP_CORE_07_step_01': __stimuli_coap_core_07,
-        'TD_COAP_CORE_08_step_01': __stimuli_coap_core_08,
-        'TD_COAP_CORE_09_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_10_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_11_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_12_step_01': __stimuli_coap_core_12,
-        'TD_COAP_CORE_13_step_01': __stimuli_coap_core_13,
-        'TD_COAP_CORE_14_step_01': __stimuli_coap_core_14,
-        'TD_COAP_CORE_15_step_01': __stimuli_coap_core_01_10_15,
-        'TD_COAP_CORE_16_step_01': __stimuli_coap_core_09_11_16,
-        'TD_COAP_CORE_18_step_01': __stimuli_coap_core_04_18,
-        'TD_COAP_CORE_17_step_01': __stimuli_coap_core_17,
-        'TD_COAP_CORE_19_step_01': __stimuli_coap_core_19,
-        'TD_COAP_CORE_20_step_01': __stimuli_coap_core_20_step1,
-        'TD_COAP_CORE_20_step_05': __stimuli_coap_core_20_step5,
-        'TD_COAP_CORE_21_step_01': __stimuli_coap_core_21_22_step1_22_step8,
-        'TD_COAP_CORE_22_step_01': __stimuli_coap_core_21_22_step1_22_step8,
-        # 'TD_COAP_CORE_22_step_04': 'TD_COAP_CORE_22',
-        'TD_COAP_CORE_22_step_08': __stimuli_coap_core_21_22_step1_22_step8,
-        'TD_COAP_CORE_23_step_01': __stimuli_coap_core_23,
-        'TD_COAP_CORE_23_step_05': __stimuli_coap_core_23,
-        'TD_COAP_OBS_01_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_02_step_01': __stimuli_coap_obs_02,
-        'TD_COAP_OBS_04_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_05_step_01': __stimuli_coap_obs_01_04_05,
-        'TD_COAP_OBS_07_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_08_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_09_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_OBS_10_step_01': __stimuli_coap_obs_07_08_09_10_step1,
-        'TD_COAP_BLOCK_01_step_01': __stimuli_coap_block_01,
-        'TD_COAP_BLOCK_02_step_01': __stimuli_coap_block_02,
-        'TD_COAP_BLOCK_03_step_01': __stimuli_coap_block_03,
-        'TD_COAP_BLOCK_04_step_01': __stimuli_coap_block_04,
-        'TD_COAP_BLOCK_05_step_01': __stimuli_coap_block_05,
-        'TD_COAP_BLOCK_06_step_01': __stimuli_coap_block_06,
-        'TD_COAP_LINK_01_step_01': __stimuli_coap_link_01,
-        'TD_COAP_LINK_02_step_01': __stimuli_coap_link_02,
-        'TD_COAP_LINK_03_step_01': __stimuli_coap_link_03,
-        'TD_COAP_LINK_04_step_01': __stimuli_coap_link_04,
-        'TD_COAP_LINK_05_step_01': __stimuli_coap_link_05,
-        'TD_COAP_LINK_06_step_01': __stimuli_coap_link_06,
-        'TD_COAP_LINK_07_step_01': __stimuli_coap_link_07,
-        'TD_COAP_LINK_08_step_01': __stimuli_coap_link_08,
-        'TD_COAP_LINK_09_step_01': __stimuli_coap_link_09,
-    }
+        # mapping message's stimuli id -> function to execute this stimuli
+        self.stimuli_to_function_map = {
+            'TD_COAP_CORE_01_step_01': self.__stimuli_coap_core_01_10_15,
+            'TD_COAP_CORE_02_step_01': self.__stimuli_coap_core_02,
+            'TD_COAP_CORE_03_step_01': self.__stimuli_coap_core_03,
+            'TD_COAP_CORE_05_step_01': self.__stimuli_coap_core_05,
+            'TD_COAP_CORE_04_step_01': self.__stimuli_coap_core_04_18,
+            'TD_COAP_CORE_06_step_01': self.__stimuli_coap_core_06,
+            'TD_COAP_CORE_07_step_01': self.__stimuli_coap_core_07,
+            'TD_COAP_CORE_08_step_01': self.__stimuli_coap_core_08,
+            'TD_COAP_CORE_09_step_01': self.__stimuli_coap_core_09_11_16,
+            'TD_COAP_CORE_10_step_01': self.__stimuli_coap_core_01_10_15,
+            'TD_COAP_CORE_11_step_01': self.__stimuli_coap_core_09_11_16,
+            'TD_COAP_CORE_12_step_01': self.__stimuli_coap_core_12,
+            'TD_COAP_CORE_13_step_01': self.__stimuli_coap_core_13,
+            'TD_COAP_CORE_14_step_01': self.__stimuli_coap_core_14,
+            'TD_COAP_CORE_15_step_01': self.__stimuli_coap_core_01_10_15,
+            'TD_COAP_CORE_16_step_01': self.__stimuli_coap_core_09_11_16,
+            'TD_COAP_CORE_18_step_01': self.__stimuli_coap_core_04_18,
+            'TD_COAP_CORE_17_step_01': self.__stimuli_coap_core_17,
+            'TD_COAP_CORE_19_step_01': self.__stimuli_coap_core_19,
+            'TD_COAP_CORE_20_step_01': self.__stimuli_coap_core_20_step1,
+            'TD_COAP_CORE_20_step_05': self.__stimuli_coap_core_20_step5,
+            'TD_COAP_CORE_21_step_01': self.__stimuli_coap_core_21_22_step1_22_step8,
+            'TD_COAP_CORE_22_step_01': self.__stimuli_coap_core_21_22_step1_22_step8,
+            # 'TD_COAP_CORE_22_step_04': 'TD_COAP_CORE_22',
+            'TD_COAP_CORE_22_step_08': self.__stimuli_coap_core_21_22_step1_22_step8,
+            'TD_COAP_CORE_23_step_01': self.__stimuli_coap_core_23,
+            'TD_COAP_CORE_23_step_05': self.__stimuli_coap_core_23,
+            'TD_COAP_OBS_01_step_01': self.__stimuli_coap_obs_01_04_05,
+            'TD_COAP_OBS_02_step_01': self.__stimuli_coap_obs_02,
+            'TD_COAP_OBS_04_step_01': self.__stimuli_coap_obs_01_04_05,
+            'TD_COAP_OBS_05_step_01': self.__stimuli_coap_obs_01_04_05,
+            'TD_COAP_OBS_07_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
+            'TD_COAP_OBS_08_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
+            'TD_COAP_OBS_09_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
+            'TD_COAP_OBS_10_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
+            'TD_COAP_BLOCK_01_step_01': self.__stimuli_coap_block_01,
+            'TD_COAP_BLOCK_02_step_01': self.__stimuli_coap_block_02,
+            'TD_COAP_BLOCK_03_step_01': self.__stimuli_coap_block_03,
+            'TD_COAP_BLOCK_04_step_01': self.__stimuli_coap_block_04,
+            'TD_COAP_BLOCK_05_step_01': self.__stimuli_coap_block_05,
+            'TD_COAP_BLOCK_06_step_01': self.__stimuli_coap_block_06,
+            'TD_COAP_LINK_01_step_01': self.__stimuli_coap_link_01,
+            'TD_COAP_LINK_02_step_01': self.__stimuli_coap_link_02,
+            'TD_COAP_LINK_03_step_01': self.__stimuli_coap_link_03,
+            'TD_COAP_LINK_04_step_01': self.__stimuli_coap_link_04,
+            'TD_COAP_LINK_05_step_01': self.__stimuli_coap_link_05,
+            'TD_COAP_LINK_06_step_01': self.__stimuli_coap_link_06,
+            'TD_COAP_LINK_07_step_01': self.__stimuli_coap_link_07,
+            'TD_COAP_LINK_08_step_01': self.__stimuli_coap_link_08,
+            'TD_COAP_LINK_09_step_01': self.__stimuli_coap_link_09,
+        }
 
-    self.aux_stimuli_to_function_map = {
-        'TD_COAP_OBS_07_step_07': __stimuli_coap_obs_07_step7,
-        'TD_COAP_OBS_08_step_07': __stimuli_coap_obs_08_step7,
-        'TD_COAP_OBS_09_step_07': __stimuli_coap_obs_09_step7,
-        'TD_COAP_OBS_10_step_07': __stimuli_coap_obs_10_step7,
-    }
+        self.aux_stimuli_to_function_map = {
+            'TD_COAP_OBS_07_step_07': self.__stimuli_coap_obs_07_step7,
+            'TD_COAP_OBS_08_step_07': self.__stimuli_coap_obs_08_step7,
+            'TD_COAP_OBS_09_step_07': self.__stimuli_coap_obs_09_step7,
+            'TD_COAP_OBS_10_step_07': self.__stimuli_coap_obs_10_step7,
+        }
 
-    self.implemented_stimuli_list = list(stimuli_to_function_map.keys())
+        self.implemented_stimuli_list = list(self.stimuli_to_function_map.keys())
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
@@ -234,9 +234,9 @@ class LibcoapClient(AutomatedIUT):
              desired_block_size=64,
              payload="'my interop test payload'",
              filepath_payload=None):
-            cmd = self.base_cmd.copy()
-            cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-            cmd += ['-m', 'POST', '-t', str(content_format)]
+        cmd = self.base_cmd.copy()
+        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+        cmd += ['-m', 'POST', '-t', str(content_format)]
         if filepath_payload:
             cmd += ' {option} {value}'.format(option='-f', value=filepath_payload)
         else:
@@ -256,7 +256,7 @@ class LibcoapClient(AutomatedIUT):
     def delete(self, resource, confirmable=True, use_token=True):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'DELETE', '-t', str(content_format)]
+        cmd += ['-m', 'DELETE', '-t']
         if not confirmable:
             cmd += ['-N']
         if use_token:
@@ -455,9 +455,7 @@ class LibcoapClient(AutomatedIUT):
                 self.stimuli_to_function_map[stimuli_step_id]()
 
     def _execute_verify(self, verify_step_id):
-        logger.warning('Ignoring: %s.\
-                       No auto-iut mechanism for verify step implemented.'
-                       % verify_step_id)
+        self.log('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
