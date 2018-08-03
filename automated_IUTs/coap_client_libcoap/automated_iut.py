@@ -471,4 +471,5 @@ if __name__ == '__main__':
         iut.start()
         iut.join()
     except Exception as e:
-        logger.error(e)
+        logging.error(e)
+        exit(1)
