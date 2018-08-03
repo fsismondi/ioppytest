@@ -158,7 +158,6 @@ class LibcoapClient(AutomatedIUT):
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
-        o = None
         try:
             o = subprocess.check_output(cmd,
                                         stderr=subprocess.STDOUT,
@@ -169,9 +168,6 @@ class LibcoapClient(AutomatedIUT):
             self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
             self.log('Error: {}'.format(p_err))
             return
-        except Exception as err:
-            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
-            return
 
         self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
 
@@ -179,20 +175,20 @@ class LibcoapClient(AutomatedIUT):
             resource,
             confirmable=True,
             use_token=True,
-            accepte_option=None,
+            accept_option=None,
             use_block_option=False):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
         cmd += ['-m', 'GET']
-        if accepte_option is not None:
-            cmd += ['{option} {value}'.format(option='-A', value=accepte_option)]
+        if accept_option:
+            cmd += ['-A', accept_option]
         if not confirmable:
             cmd += ['-N']
         if use_token:
             tkn = self.__get_random_token()
-            cmd += ['{option} {value}'.format(option='-T', value=tkn)]
+            cmd += ['-T', tkn]
         if use_block_option:
-            cmd += ['{option} {value}'.format(option='-b', value="0,64")]
+            cmd += ['-b', "0,64"]
         self._run_cmd_as_subprocess(cmd=cmd)
 
     def put(self,
@@ -202,7 +198,7 @@ class LibcoapClient(AutomatedIUT):
             use_token=True,
             use_if_none_match=False,
             use_block_option=False,
-            desired_block_size=64,
+            block_size=64,
             payload="'my interop test payload'",
             filepath_payload=None):
         """
@@ -224,9 +220,7 @@ class LibcoapClient(AutomatedIUT):
         if use_if_none_match:
             cmd += ['-O', str(5)]
         if use_block_option:
-            block_option_val = '{start_number} {desired_block_size}' \
-                .format(start_number=0,
-                        desired_block_size=desired_block_size)
+            block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
             cmd = ['-b', str(block_option_val)]
         self._run_cmd_as_subprocess(cmd=cmd)
 
@@ -236,25 +230,23 @@ class LibcoapClient(AutomatedIUT):
              confirmable=True,
              use_token=True,
              use_block_option=False,
-             desired_block_size=64,
+             block_size=64,
              payload="'my interop test payload'",
              filepath_payload=None):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
         cmd += ['-m', 'POST', '-t', str(content_format)]
         if filepath_payload:
-            cmd += ' {option} {value}'.format(option='-f', value=filepath_payload)
+            cmd += ['-f', filepath_payload]
         else:
-            cmd += ' {option} {value}'.format(option='-e', value=payload)
+            cmd += ['-e', payload]
         if not confirmable:
             cmd += ['-N']
         if use_token:
             tkn = self.__get_random_token()
             cmd += ['-T', str(tkn)]
         if use_block_option:
-            block_option_val = '{start_number} {desired_block_size}' \
-                .format(start_number=0,
-                        desired_block_size=desired_block_size)
+            block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
             cmd = ['-b', str(block_option_val)]
         self._run_cmd_as_subprocess(cmd=cmd)
 
@@ -329,10 +321,10 @@ class LibcoapClient(AutomatedIUT):
         self.post(resource="/location-query?first=1&second=2&third=3")
 
     def __stimuli_coap_core_20_step1(self):
-        self.get(resource="/multi-format", accepte_option="text/plain")
+        self.get(resource="/multi-format", accept_option="text/plain")
 
     def __stimuli_coap_core_20_step5(self):
-        self.get(resource="/multi-format", accepte_option="application/xml")
+        self.get(resource="/multi-format", accept_option="application/xml")
 
     def __stimuli_coap_core_21_22_step1_22_step8(self):
         self.get(resource="/validate")
@@ -408,7 +400,7 @@ class LibcoapClient(AutomatedIUT):
     def __stimuli_coap_block_06(self):
         self.get(resource="/large",
                  use_block_option=True,
-                 desired_block_size=16)
+                 block_size=16)
 
     # CoAP LINK stimulis.
 

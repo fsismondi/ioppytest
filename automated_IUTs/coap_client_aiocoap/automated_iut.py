@@ -107,7 +107,6 @@ class AioCoapClient(AutomatedIUT):
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
-        o = None
         try:
             o = subprocess.check_output(cmd,
                                         stderr=subprocess.STDOUT,
@@ -117,9 +116,6 @@ class AioCoapClient(AutomatedIUT):
         except subprocess.CalledProcessError as p_err:
             self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
             self.log('Error: {}'.format(p_err))
-            return
-        except Exception as err:
-            self.log('Error found: {}, trying to run: {}, got as output {}'.format(err, cmd, o))
             return
 
         self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
