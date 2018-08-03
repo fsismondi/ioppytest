@@ -744,14 +744,13 @@ class GenericBidirectonalTranslator(object):
         return tc_report['testcase_id'], display_color, fields
 
     def _generate_ui_fields_for_pcap_download(self, testcase_id):
-        pcap_download_fields = []
 
-        pcap_download_fields = pcap_download_fields + [{
+        pcap_download_fields = [{
             'type': 'p',
             'value': 'Testcase captures:\n'
         }]
 
-        # TODO change API for MsgSniffingGetCaptureReply! (this is ugly: `testcase_id in i.filename`)
+        # FixMe! we know that filename includes the testcase_id! but this is ugly!
         for m in [i for i in self.session_history_messages if
                   isinstance(i, MsgSniffingGetCaptureReply) and testcase_id in i.filename]:
 
