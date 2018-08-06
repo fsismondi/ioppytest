@@ -206,7 +206,7 @@ class LibcoapClient(AutomatedIUT):
             use_if_none_match=False,
             use_block_option=False,
             block_size=64,
-            payload="'my interop test payload'",
+            payload="my interop test payload",
             filepath_payload=None):
         """
         Note: if a file to send is specified with filepath_payload argument,
@@ -238,7 +238,7 @@ class LibcoapClient(AutomatedIUT):
              use_token=True,
              use_block_option=False,
              block_size=64,
-             payload="'my interop test payload'",
+             payload="my interop test payload",
              filepath_payload=None):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
