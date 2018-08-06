@@ -169,6 +169,11 @@ class LibcoapClient(AutomatedIUT):
             self.log('Error: {}'.format(p_err))
             return
 
+        except subprocess.TimeoutExpired as tout_err:
+            self.log('Stimuli process executed but timed-out, probably no response from the server')
+            self.log('Error: {}'.format(tout_err))
+            return
+
         self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
 
     def get(self,
