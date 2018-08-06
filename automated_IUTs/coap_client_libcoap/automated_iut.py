@@ -260,7 +260,7 @@ class LibcoapClient(AutomatedIUT):
     def delete(self, resource, confirmable=True, use_token=True):
         cmd = self.base_cmd.copy()
         cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'DELETE', '-t']
+        cmd += ['-m', 'DELETE']
         if not confirmable:
             cmd += ['-N']
         if use_token:
