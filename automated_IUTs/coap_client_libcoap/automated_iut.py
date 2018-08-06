@@ -158,6 +158,8 @@ class LibcoapClient(AutomatedIUT):
 
     def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
         assert type(cmd) is list
+
+        self.log('Stimuli cmd: {}'.format(cmd))
         try:
             o = subprocess.check_output(cmd,
                                         stderr=subprocess.STDOUT,
@@ -165,16 +167,16 @@ class LibcoapClient(AutomatedIUT):
                                         timeout=timeout,
                                         universal_newlines=True)
         except subprocess.CalledProcessError as p_err:
-            self.log('Stimuli failed (ret code: {}). Executed cmd is : {}'.format(p_err.returncode, cmd))
+            self.log('Stimuli failed (ret code: {})'.format(p_err.returncode))
             self.log('Error: {}'.format(p_err))
             return
 
         except subprocess.TimeoutExpired as tout_err:
-            self.log('Stimuli process executed but timed-out, probably no response from the server')
+            self.log('Stimuli process executed but timed-out, probably no response from the server.')
             self.log('Error: {}'.format(tout_err))
             return
 
-        self.log('Stimuli ran successfully (ret code: {}). Executed cmd is : {}'.format(str(o), cmd))
+        self.log('Stimuli ran successfully (ret code: {})'.format(str(o)))
 
     def get(self,
             resource,
