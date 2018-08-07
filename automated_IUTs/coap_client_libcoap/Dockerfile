@@ -15,6 +15,7 @@ RUN apt-get -y -qq install net-tools
 RUN apt-get -y -qq install iputils-ping
 RUN apt-get -y -qq install make
 RUN apt-get -y -qq install wget
+RUN apt-get -y -qq install git
 
 # needed for ubuntu 17 or + for running <ip> commands
 RUN apt-get -y -qq install iproute2
@@ -31,9 +32,27 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
+# Install autogen dependencies
+RUN apt-get -y install autoconf
+RUN apt-get -y install pkg-config
+RUN apt-get -y install libtool
+RUN apt-get -y install autotools-dev
+RUN apt-get -y install automake
+
 # Install libcoap API & CLI
-RUN apt-get -y install libcoap-1-0
-RUN apt-get -y install libcoap-1-0-bin
+RUN mkdir automated_IUTs/coap_client_libcoap/libcoap
+WORKDIR /ioppytest/automated_IUTs/coap_client_libcoap/libcoap
+RUN git init
+RUN git clone https://github.com/obgm/libcoap.git
+WORKDIR /ioppytest/automated_IUTs/coap_client_libcoap/libcoap/libcoap
+
+RUN ./autogen.sh
+RUN ./configure --enable-examples --disable-doxygen --disable-manpages
+RUN make
+RUN make install
+ENV PATH="/ioppytest/automated_IUTs/coap_client_libcoap/libcoap/libcoap/examples:$PATH"
+
+WORKDIR /ioppytest
 RUN mkdir automated_IUTs/coap_client_libcoap/file
 RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
 
