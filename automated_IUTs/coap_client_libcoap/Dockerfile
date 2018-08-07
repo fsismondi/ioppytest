@@ -39,7 +39,7 @@ RUN apt-get -y install libtool
 RUN apt-get -y install autotools-dev
 RUN apt-get -y install automake
 
-# Install libcoap API & CLI
+# Install libcoap API & CLI from sources
 RUN mkdir automated_IUTs/coap_client_libcoap/libcoap
 WORKDIR /ioppytest/automated_IUTs/coap_client_libcoap/libcoap
 RUN git init

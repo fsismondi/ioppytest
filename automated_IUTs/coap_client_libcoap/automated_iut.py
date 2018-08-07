@@ -10,6 +10,149 @@ from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 
 default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
+BASE_CMD = ["coap-client"]
+
+logger = logging.getLogger(__name__)
+
+
+def get_random_token():
+    return binascii.hexlify(os.urandom(8))
+
+
+def launch_automated_iut_process(cmd: list, timeout=STIMULI_HANDLER_TOUT):
+    assert type(cmd) is list
+
+    logger.info('IUT process cmd: {}'.format(cmd))
+    try:
+        o = subprocess.check_output(cmd,
+                                    stderr=subprocess.STDOUT,
+                                    shell=False,
+                                    timeout=timeout,
+                                    universal_newlines=True)
+    except subprocess.CalledProcessError as p_err:
+        logger.info('Stimuli failed (ret code: {})'.format(p_err.returncode))
+        logger.info('Error: {}'.format(p_err))
+        return
+
+    except subprocess.TimeoutExpired as tout_err:
+        logger.info('Stimuli process executed but timed-out, probably no response from the server.')
+        logger.info('Error: {}'.format(tout_err))
+        return
+
+    logger.info('Stimuli ran successfully (ret code: {})'.format(str(o)))
+
+
+def get(base_url,
+        resource,
+        confirmable=True,
+        use_token=True,
+        accept_option=None,
+        use_block_option=False):
+    cmd = BASE_CMD
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
+    cmd += ['-m', 'GET']
+    if accept_option:
+        cmd += ['-A', accept_option]
+    if not confirmable:
+        cmd += ['-N']
+    if use_token:
+        tkn = get_random_token()
+        cmd += ['-T', tkn]
+    if use_block_option:
+        cmd += ['-b', "0,64"]
+    launch_automated_iut_process(cmd=cmd)
+
+
+def put(base_url,
+        resource,
+        content_format="text/plain",
+        confirmable=True,
+        use_token=True,
+        use_if_none_match=False,
+        use_block_option=False,
+        block_size=64,
+        payload="my interop test payload",
+        filepath_payload=None):
+    """
+    Note: if a file to send is specified with filepath_payload argument,
+    the payload argument is ignored.
+    """
+    cmd = BASE_CMD
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
+    cmd += ['-m', 'PUT', '-t', str(content_format)]
+    if filepath_payload:
+        cmd += ['-f', str(filepath_payload)]
+    else:
+        cmd += ['-e', str(payload)]
+    if not confirmable:
+        cmd += ['-N']
+    if use_token:
+        tkn = get_random_token()
+        cmd += ['-T', str(tkn)]
+    if use_if_none_match:
+        cmd += ['-O', str(5)]
+    if use_block_option:
+        block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
+        cmd = ['-b', str(block_option_val)]
+    launch_automated_iut_process(cmd=cmd)
+
+
+def post(base_url,
+         resource,
+         content_format="text/plain",
+         confirmable=True,
+         use_token=True,
+         use_block_option=False,
+         block_size=64,
+         payload="my interop test payload",
+         filepath_payload=None):
+    cmd = BASE_CMD
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
+    cmd += ['-m', 'POST', '-t', str(content_format)]
+    if filepath_payload:
+        cmd += ['-f', filepath_payload]
+    else:
+        cmd += ['-e', payload]
+    if not confirmable:
+        cmd += ['-N']
+    if use_token:
+        tkn = get_random_token()
+        cmd += ['-T', str(tkn)]
+    if use_block_option:
+        block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
+        cmd = ['-b', str(block_option_val)]
+    launch_automated_iut_process(cmd=cmd)
+
+
+def delete(base_url,
+           resource,
+           confirmable=True,
+           use_token=True):
+    cmd = BASE_CMD
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
+    cmd += ['-m', 'DELETE']
+    if not confirmable:
+        cmd += ['-N']
+    if use_token:
+        tkn = get_random_token()
+        cmd += ['-T', str(tkn)]
+    launch_automated_iut_process(cmd=cmd)
+
+
+def observe(base_url,
+            resource,
+            confirmable=True,
+            use_token=True,
+            duration=15):
+    cmd = BASE_CMD
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
+    cmd += ['-s', str(duration)]
+    if not confirmable:
+        cmd += ['-N']
+    if use_token:
+        tkn = get_random_token()
+        cmd += ['-T', str(tkn)]
+    launch_automated_iut_process(cmd=cmd, timeout=duration)
 
 
 class LibcoapClient(AutomatedIUT):
@@ -18,7 +161,7 @@ class LibcoapClient(AutomatedIUT):
 
     It is important to use the -T option to specify the token, because without
     it, the CLI will use empty token, this will pose issues for conversation
-    preprocessing. This IUT use __get_random_token() method to obtains a new
+    preprocessing. This IUT use get_random_token() method to obtains a new
     token for every new request.
 
     For simple GET with or without confirmable message:
@@ -82,16 +225,18 @@ class LibcoapClient(AutomatedIUT):
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
     component_id = 'automated_iut-coap_client-libcoap'
     node = 'coap_client'
-    large_payload_test_file = 'automated_IUTs/coap_client_libcoap/\
-                              file/etsi_iot_01_largedata.txt'
     default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
+    large_payload_test_file = 'automated_IUTs/coap_client_libcoap/file/etsi_iot_01_largedata.txt'
 
-    def __init__(self, mode_aux=None):
+    def __init__(self, mode_aux=None, target_base_url=None):
         super().__init__(self.node)
-        self.log('starting %s  [ %s ]' % (self.node, self.component_id))
+        logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
         self.mode_aux = mode_aux
-        self.base_url = self.default_coap_server_base_url
-        self.base_cmd = ["coap-client"]
+
+        if target_base_url:
+            self.base_url = target_base_url
+        else:
+            self.base_url = self.default_coap_server_base_url
 
         # mapping message's stimuli id -> function to execute this stimuli
         self.stimuli_to_function_map = {
@@ -156,310 +301,202 @@ class LibcoapClient(AutomatedIUT):
 
         self.implemented_stimuli_list = list(self.stimuli_to_function_map.keys())
 
-    def _run_cmd_as_subprocess(self, cmd: list, timeout=STIMULI_HANDLER_TOUT):
-        assert type(cmd) is list
-
-        self.log('Stimuli cmd: {}'.format(cmd))
-        try:
-            o = subprocess.check_output(cmd,
-                                        stderr=subprocess.STDOUT,
-                                        shell=False,
-                                        timeout=timeout,
-                                        universal_newlines=True)
-        except subprocess.CalledProcessError as p_err:
-            self.log('Stimuli failed (ret code: {})'.format(p_err.returncode))
-            self.log('Error: {}'.format(p_err))
-            return
-
-        except subprocess.TimeoutExpired as tout_err:
-            self.log('Stimuli process executed but timed-out, probably no response from the server.')
-            self.log('Error: {}'.format(tout_err))
-            return
-
-        self.log('Stimuli ran successfully (ret code: {})'.format(str(o)))
-
-    def get(self,
-            resource,
-            confirmable=True,
-            use_token=True,
-            accept_option=None,
-            use_block_option=False):
-        cmd = self.base_cmd.copy()
-        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'GET']
-        if accept_option:
-            cmd += ['-A', accept_option]
-        if not confirmable:
-            cmd += ['-N']
-        if use_token:
-            tkn = self.__get_random_token()
-            cmd += ['-T', tkn]
-        if use_block_option:
-            cmd += ['-b', "0,64"]
-        self._run_cmd_as_subprocess(cmd=cmd)
-
-    def put(self,
-            resource,
-            content_format="text/plain",
-            confirmable=True,
-            use_token=True,
-            use_if_none_match=False,
-            use_block_option=False,
-            block_size=64,
-            payload="my interop test payload",
-            filepath_payload=None):
-        """
-        Note: if a file to send is specified with filepath_payload argument,
-        the payload argument is ignored.
-        """
-        cmd = self.base_cmd.copy()
-        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'PUT', '-t', str(content_format)]
-        if filepath_payload:
-            cmd += ['-f', str(filepath_payload)]
-        else:
-            cmd += ['-e', str(payload)]
-        if not confirmable:
-            cmd += ['-N']
-        if use_token:
-            tkn = self.__get_random_token()
-            cmd += ['-T', str(tkn)]
-        if use_if_none_match:
-            cmd += ['-O', str(5)]
-        if use_block_option:
-            block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
-            cmd = ['-b', str(block_option_val)]
-        self._run_cmd_as_subprocess(cmd=cmd)
-
-    def post(self,
-             resource,
-             content_format="text/plain",
-             confirmable=True,
-             use_token=True,
-             use_block_option=False,
-             block_size=64,
-             payload="my interop test payload",
-             filepath_payload=None):
-        cmd = self.base_cmd.copy()
-        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'POST', '-t', str(content_format)]
-        if filepath_payload:
-            cmd += ['-f', filepath_payload]
-        else:
-            cmd += ['-e', payload]
-        if not confirmable:
-            cmd += ['-N']
-        if use_token:
-            tkn = self.__get_random_token()
-            cmd += ['-T', str(tkn)]
-        if use_block_option:
-            block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
-            cmd = ['-b', str(block_option_val)]
-        self._run_cmd_as_subprocess(cmd=cmd)
-
-    def delete(self, resource, confirmable=True, use_token=True):
-        cmd = self.base_cmd.copy()
-        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-        cmd += ['-m', 'DELETE']
-        if not confirmable:
-            cmd += ['-N']
-        if use_token:
-            tkn = self.__get_random_token()
-            cmd += ['-T', str(tkn)]
-        self._run_cmd_as_subprocess(cmd=cmd)
-
-    def observe(self, resource, confirmable=True, use_token=True, duration=15):
-        cmd = self.base_cmd.copy()
-        cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
-
-        cmd += ['-s', str(duration)]
-        if not confirmable:
-            cmd += ['-N']
-        if use_token:
-            tkn = self.__get_random_token()
-            cmd += ['-T', str(tkn)]
-        self._run_cmd_as_subprocess(cmd=cmd, timeout=duration)
-
-    def __get_random_token(self):
-        return binascii.hexlify(os.urandom(8))
-
-    # Coap Core stimulus
+    # CoAP Core stimulus
 
     def __stimuli_coap_core_01_10_15(self):
-        self.get(resource="/test")
+        get(base_url=self.base_url, resource="/test")
 
     def __stimuli_coap_core_02(self):
-        self.delete(resource="/test")
+        delete(base_url=self.base_url, resource="/test")
 
     def __stimuli_coap_core_03(self):
-        self.put(resource="/test", content_format="text/plain")
+        put(base_url=self.base_url, resource="/test", content_format="text/plain")
 
     def __stimuli_coap_core_04_18(self):
-        self.post(resource="/test", content_format="text/plain")
+        post(base_url=self.base_url, resource="/test", content_format="text/plain")
 
     def __stimuli_coap_core_05(self):
-        self.get(resource="/test", confirmable=False)
+        get(base_url=self.base_url, resource="/test", confirmable=False)
 
     def __stimuli_coap_core_06(self):
-        self.delete(resource="/test", confirmable=False)
+        delete(base_url=self.base_url, resource="/test", confirmable=False)
 
     def __stimuli_coap_core_07(self):
-        self.put(resource="/test", content_format="text/plain", confirmable=False)
+        put(base_url=self.base_url, resource="/test", content_format="text/plain", confirmable=False)
 
     def __stimuli_coap_core_08(self):
-        self.post(resource="/test", content_format="text/plain", confirmable=False)
+        post(base_url=self.base_url, resource="/test", content_format="text/plain", confirmable=False)
 
     def __stimuli_coap_core_09_11_16(self):
-        self.get(resource="/separate")
+        get(base_url=self.base_url, resource="/separate")
 
     def __stimuli_coap_core_12(self):
-        self.get(resource="/test", use_token=False)
+        get(base_url=self.base_url, resource="/test", use_token=False)
 
     def __stimuli_coap_core_13(self):
-        self.get(resource="/seg1/seg2/seg3")
+        get(base_url=self.base_url, resource="/seg1/seg2/seg3")
 
     def __stimuli_coap_core_14(self):
-        self.get(resource="/query?first=1&second=2&third=3")
+        get(base_url=self.base_url, resource="/query?first=1&second=2&third=3")
 
     def __stimuli_coap_core_17(self):
-        self.get(resource="/separate", confirmable=False)
+        get(base_url=self.base_url, resource="/separate", confirmable=False)
 
     def __stimuli_coap_core_19(self):
-        self.post(resource="/location-query?first=1&second=2&third=3")
+        post(base_url=self.base_url, resource="/location-query?first=1&second=2&third=3")
 
     def __stimuli_coap_core_20_step1(self):
-        self.get(resource="/multi-format", accept_option="text/plain")
+        get(base_url=self.base_url, resource="/multi-format", accept_option="text/plain")
 
     def __stimuli_coap_core_20_step5(self):
-        self.get(resource="/multi-format", accept_option="application/xml")
+        get(base_url=self.base_url, resource="/multi-format", accept_option="application/xml")
 
     def __stimuli_coap_core_21_22_step1_22_step8(self):
-        self.get(resource="/validate")
+        get(base_url=self.base_url, resource="/validate")
 
     def __stimuli_coap_core_23(self):
-        self.put(resource="/create1",
-                 content_format="text/plain",
-                 use_if_none_match=True)
+        put(base_url=self.base_url,
+            resource="/create1",
+            content_format="text/plain",
+            use_if_none_match=True)
 
-    # Coap Observe stimulus
+    # CoAP Observe stimulus
 
     def __stimuli_coap_obs_01_04_05(self):
-        self.observe(resource="/obs")
+        observe(base_url=self.base_url, resource="/obs")
 
     def __stimuli_coap_obs_02(self):
-        self.observe(resource="/obs-non", confirmable=False)
+        observe(base_url=self.base_url, resource="/obs-non", confirmable=False)
 
     def __stimuli_coap_obs_07_08_09_10_step1(self):
-        self.observe(resource="/obs", duration=20)
+        observe(base_url=self.base_url, resource="/obs", duration=20)
 
-    # Coap OBS auxiliary stimulus
+    # CoAP OBS auxiliary stimulus
 
     def __stimuli_coap_obs_07_step7(self):
-        self.delete(resource="/obs")
+        delete(base_url=self.base_url, resource="/obs")
 
     # Update the /obs resource of with new payload having a different Content-format
     # Warning : We do assume that the former content format was NOT already application/xml
     # If not the test result will be inconclusive.
     def __stimuli_coap_obs_08_step7(self):
-        self.put(resource="/obs",
-                 content_format="application/xml",
-                 confirmable=True,
-                 payload="'My new payload with a new content-format.'")
+        put(base_url=self.base_url,
+            resource="/obs",
+            content_format="application/xml",
+            confirmable=True,
+            payload="'My new payload with a new content-format.'")
 
     # Update the /obs resource of with new payload having the same Content-format
     # Warning : We do assume that the current content format was already text/plain
     # If not the test result will be inconclusive.
     def __stimuli_coap_obs_09_step7(self):
-        self.put(resource="/obs",
-                 content_format="text/plain",
-                 confirmable=True,
-                 payload="'My new payload with the same content-format.'")
+        put(base_url=self.base_url,
+            resource="/obs",
+            content_format="text/plain",
+            confirmable=True,
+            payload="'My new payload with the same content-format.'")
 
     def __stimuli_coap_obs_10_step7(self):
-        self.get(resource="/obs", confirmable=True)
+        get(base_url=self.base_url, resource="/obs", confirmable=True)
 
     # CoAP BLOCK stimulis.
 
     def __stimuli_coap_block_01(self):
-        self.get(resource="/large", use_block_option=True)
+        get(base_url=self.base_url, resource="/large", use_block_option=True)
 
     def __stimuli_coap_block_02(self):
-        self.get(resource="/large", use_block_option=False)
+        get(base_url=self.base_url, resource="/large", use_block_option=False)
 
     def __stimuli_coap_block_03(self):
-        self.put(resource="/large-update",
-                 use_block_option=True,
-                 content_format="text/plain",
-                 filepath_payload=self.large_payload_test_file)
+        put(base_url=self.base_url,
+            resource="/large-update",
+            use_block_option=True,
+            content_format="text/plain",
+            filepath_payload=self.large_payload_test_file)
 
     def __stimuli_coap_block_04(self):
-        self.post(resource="/large-create",
-                  use_block_option=True,
-                  content_format="text/plain",
-                  filepath_payload=self.large_payload_test_file)
+        post(base_url=self.base_url,
+             resource="/large-create",
+             use_block_option=True,
+             content_format="text/plain",
+             filepath_payload=self.large_payload_test_file)
 
     def __stimuli_coap_block_05(self):
-        self.post(resource="/large-post",
-                  use_block_option=True,
-                  content_format="text/plain",
-                  filepath_payload=self.large_payload_test_file)
+        post(base_url=self.base_url,
+             resource="/large-post",
+             use_block_option=True,
+             content_format="text/plain",
+             filepath_payload=self.large_payload_test_file)
 
     def __stimuli_coap_block_06(self):
-        self.get(resource="/large",
-                 use_block_option=True,
-                 block_size=16)
+        get(base_url=self.base_url,
+            resource="/large",
+            use_block_option=True,
+            block_size=16)
 
     # CoAP LINK stimulis.
 
     def __stimuli_coap_link_01(self):
-        self.get(resource="/.well-known/core")
+        get(base_url=self.base_url, resource="/.well-known/core")
 
     def __stimuli_coap_link_02(self):
-        self.get(resource="/.well-known/core?rt=Type1")
+        get(base_url=self.base_url, resource="/.well-known/core?rt=Type1")
 
     def __stimuli_coap_link_03(self):
-        self.get(resource="/.well-known/core?rt=*")
+        get(base_url=self.base_url, resource="/.well-known/core?rt=*")
 
     def __stimuli_coap_link_04(self):
-        self.get(resource="/.well-known/core?rt=Type2")
+        get(base_url=self.base_url, resource="/.well-known/core?rt=Type2")
 
     def __stimuli_coap_link_05(self):
-        self.get(resource="/.well-known/core?if=If*")
+        get(base_url=self.base_url, resource="/.well-known/core?if=If*")
 
     def __stimuli_coap_link_06(self):
-        self.get(resource="/.well-known/core?sz=*")
+        get(base_url=self.base_url, resource="/.well-known/core?sz=*")
 
     def __stimuli_coap_link_07(self):
-        self.get(resource="/.well-known/core?href=/link1")
+        get(base_url=self.base_url, resource="/.well-known/core?href=/link1")
 
     def __stimuli_coap_link_08(self):
-        self.get(resource="/.well-known/core?href=/link*")
+        get(base_url=self.base_url, resource="/.well-known/core?href=/link*")
 
     def __stimuli_coap_link_09(self):
-        self.get(resource="/.well-known/core?ct=40")
+        get(base_url=self.base_url, resource="/.well-known/core?ct=40")
 
     # overridden methods
 
-    def _execute_stimuli(self, stimuli_step_id, addr=None):
-        self.log('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
+    def _execute_stimuli(self, stimuli_step_id, addr=None, url=None):
+        """ Run stimuli using the specific CLI calls.
+        You can pass addr or url, or else uses ioppytest defaults
+        If you pass both addr and url, then url will be prioritized.
+
+        - url expects formats like: url = coap://[ipv6_address]:port
+        - addr will be used as: 'coap://[<addr>]:defautl_port
+
+        """
+
+        logger.info('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
 
         # redefines default
-        if addr:
-            self.base_url = 'coap://[%s]:%s' % (addr, COAP_SERVER_PORT)  # rewrites default
+
+        if url:
+            self.base_url = url
+        elif addr:
+            self.base_url = 'coap://[%s]:%s' % (addr, COAP_SERVER_PORT)  # fixMe I'm assuming it's IPv6!
 
         if self.mode_aux:
             if stimuli_step_id not in self.aux_stimuli_to_function_map:
-                self.log("Received request to execute unimplemented auxiliary stimuli %s", stimuli_step_id)
+                logger.info("Received request to execute unimplemented auxiliary stimuli %s", stimuli_step_id)
             else:
                 self.aux_stimuli_to_function_map[stimuli_step_id]()
         else:
             if stimuli_step_id not in self.stimuli_to_function_map:
-                self.log("Received request to execute unimplemented stimuli %s", stimuli_step_id)
+                logger.info("Received request to execute unimplemented stimuli %s", stimuli_step_id)
             else:
                 self.stimuli_to_function_map[stimuli_step_id]()
 
     def _execute_verify(self, verify_step_id):
-        self.log('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
+        logger.info('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
