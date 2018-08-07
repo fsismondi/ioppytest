@@ -1,7 +1,7 @@
 properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
 if(env.JOB_NAME =~ 'ioppytest/'){
-    node('sudo'){
+    node('docker'){
         env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
 
