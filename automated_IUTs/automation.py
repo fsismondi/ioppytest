@@ -501,16 +501,11 @@ class UserMock(threading.Thread):
 
         self.connection.close()
 
-    def exit(self):
-        self.log('%s exiting..' % self.component_id)
-
     def run(self):
         while self.shutdown is False:
             self.connection.process_data_events()
             time.sleep(0.3)
-
         self.log('%s shutting down..' % self.component_id)
-        self.exit()
 
 
 if __name__ == "__main__":

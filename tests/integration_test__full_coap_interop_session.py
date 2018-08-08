@@ -150,17 +150,19 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     MsgTestingToolTerminate(description="Triggering TERMINATION.")
                 )
 
-                time.sleep(10)  # so threads process TERMINATE signal
-
+            time.sleep(10)  # so threads process TERMINATE signal
             connection.close()
-            # try:
-            #     for th in threads:
-            #         if th.is_alive():
-            #             logging.warning("Thread %s didn't stop with the TERMINATE signal" % th.name)
-            #             th.stop()
-            # except Exception as e:  # I dont want this to make my tests fail
-            #     pass
+            logging.info("Checking all threads have stopped..")
+            try:
+                for th in threads:
+                    if th.is_alive():
+                        logging.warning("Thread %s didn't stop with the TERMINATE signal" % th.name)
+                        th.stop()
+            except Exception as e:  # I dont want this to make my tests fail
+                pass
 
+            logging.info("All threads have stopped..")
+            
         except Exception as e:
             self.fail("Exception encountered:\n%s" % e)
 
