@@ -49,7 +49,7 @@ def get(base_url,
         use_token=True,
         accept_option=None,
         use_block_option=False):
-    cmd = BASE_CMD
+    cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'GET']
     if accept_option:
@@ -78,7 +78,7 @@ def put(base_url,
     Note: if a file to send is specified with filepath_payload argument,
     the payload argument is ignored.
     """
-    cmd = BASE_CMD
+    cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'PUT', '-t', str(content_format)]
     if filepath_payload:
@@ -107,7 +107,7 @@ def post(base_url,
          block_size=64,
          payload="my interop test payload",
          filepath_payload=None):
-    cmd = BASE_CMD
+    cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'POST', '-t', str(content_format)]
     if filepath_payload:
@@ -129,7 +129,7 @@ def delete(base_url,
            resource,
            confirmable=True,
            use_token=True):
-    cmd = BASE_CMD
+    cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'DELETE']
     if not confirmable:
@@ -145,7 +145,7 @@ def observe(base_url,
             confirmable=True,
             use_token=True,
             duration=15):
-    cmd = BASE_CMD
+    cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-s', str(duration)]
     if not confirmable:
@@ -301,6 +301,8 @@ class LibcoapClient(AutomatedIUT):
     node = 'coap_client'
     default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
     large_payload_test_file = 'automated_IUTs/coap_client_libcoap/file/etsi_iot_01_largedata.txt'
+    implemented_stimuli_list = list(stimuli_to_libcoap_cli_call.keys())
+    implemented_aux_stimuli_list = list(aux_stimuli_to_libcoap_cli_call.keys())
 
     def __init__(self, mode_aux=False, target_base_url=None):
         super().__init__(self.node)
@@ -312,11 +314,7 @@ class LibcoapClient(AutomatedIUT):
         else:
             self.base_url = self.default_coap_server_base_url
 
-        self.implemented_stimuli_list = list(stimuli_to_libcoap_cli_call.keys())
-        self.implemented_aux_stimuli_list = list(aux_stimuli_to_libcoap_cli_call.keys())
-
     # overridden methods
-
     def _execute_stimuli(self, stimuli_step_id, addr=None, url=None):
         """ Run stimuli using the specific CLI calls.
         You can pass addr or url, or else uses ioppytest defaults
@@ -344,7 +342,7 @@ class LibcoapClient(AutomatedIUT):
             raise Exception("Received request to execute unimplemented stimuli %s", stimuli_step_id)
 
         args['base_url'] = self.base_url  # update with target url received from event
-        func(**args)  # spawn stimuli process (this is non-blocking)
+        func(**args)  # spawn stimuli process
 
     def _execute_verify(self, verify_step_id):
         logger.info('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
