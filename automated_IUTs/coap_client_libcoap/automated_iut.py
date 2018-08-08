@@ -11,6 +11,7 @@ from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
 default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 BASE_CMD = ["coap-client"]
+large_payload_test_file = 'automated_IUTs/coap_client_libcoap/file/etsi_iot_01_largedata.txt'
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,79 @@ def observe(base_url,
         cmd += ['-T', str(tkn)]
     launch_automated_iut_process(cmd=cmd, timeout=duration)
 
+stimuli_to_libcoap_cli_call = {
+    # CoAP CORE test cases stimuli
+    "TD_COAP_CORE_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
+    "TD_COAP_CORE_02_step_01": (delete, {"base_url": default_coap_server_base_url, "resource": "/test"}),
+    "TD_COAP_CORE_03_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
+    "TD_COAP_CORE_04_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
+    "TD_COAP_CORE_05_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test", "confirmable":False}),
+    "TD_COAP_CORE_06_step_01": (delete, {"base_url": default_coap_server_base_url,"resource": "/test", "confirmable":False}),
+    "TD_COAP_CORE_07_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain","confirmable":False}),
+    "TD_COAP_CORE_08_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
+    "TD_COAP_CORE_09_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
+    "TD_COAP_CORE_10_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
+    "TD_COAP_CORE_11_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
+    "TD_COAP_CORE_12_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test", "use_token":False}),
+    "TD_COAP_CORE_13_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/seg1/seg2/seg3"}),
+    "TD_COAP_CORE_14_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/query?first=1&second=2&third=3"}),
+    "TD_COAP_CORE_15_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
+    "TD_COAP_CORE_16_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
+    "TD_COAP_CORE_17_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate","confirmable":False}),
+    "TD_COAP_CORE_18_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
+    "TD_COAP_CORE_19_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/location-query?first=1&second=2&third=3"}),
+    "TD_COAP_CORE_20_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"text/plain"}),
+    "TD_COAP_CORE_20_step_05": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"application/xml"}),
+    "TD_COAP_CORE_21_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
+    "TD_COAP_CORE_22_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
+    # "TD_COAP_CORE_22_step_04": "TD_COAP_CORE_22",
+    "TD_COAP_CORE_22_step_08": (put, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
+    "TD_COAP_CORE_23_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/create1","content_format":"text/plain","use_if_none_match":True}),
+    "TD_COAP_CORE_23_step_05": (put, {"base_url": default_coap_server_base_url, "resource": "/create1","content_format":"text/plain","use_if_none_match":True}),
+    "TD_COAP_OBS_01_step_01":  (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+    "TD_COAP_OBS_02_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs-non","confirmable":False}),
+    "TD_COAP_OBS_04_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+    "TD_COAP_OBS_05_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+    "TD_COAP_OBS_07_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
+    "TD_COAP_OBS_08_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
+    "TD_COAP_OBS_09_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
+    "TD_COAP_OBS_10_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
+    # CoAP BLOCK test cases stimuli
+    "TD_COAP_BLOCK_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":True}),
+    "TD_COAP_BLOCK_02_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":False}),
+    "TD_COAP_BLOCK_03_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/large-update","use_block_option":True, "content_format":"text/plain","filepath_payload": large_payload_test_file}),
+    "TD_COAP_BLOCK_04_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-create","use_block_option":True, "content_format":"text/plain","filepath_payload": large_payload_test_file}),
+    "TD_COAP_BLOCK_05_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-post","use_block_option":True, "content_format":"text/plain","filepath_payload": large_payload_test_file}),
+    "TD_COAP_BLOCK_06_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":True,"block_size":16}),
+    # CoAP LINK test cases stimuli
+    "TD_COAP_LINK_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core"}),
+    "TD_COAP_LINK_02_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type1"}),
+    "TD_COAP_LINK_03_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=*"}),
+    "TD_COAP_LINK_04_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type2"}),
+    "TD_COAP_LINK_05_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?if=If*"}),
+    "TD_COAP_LINK_06_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?sz=*"}),
+    "TD_COAP_LINK_07_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link1"}),
+    "TD_COAP_LINK_08_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link*"}),
+    "TD_COAP_LINK_09_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?ct=40"}),
+}
+
+aux_stimuli_to_libcoap_cli_call = {
+    "TD_COAP_OBS_07_step_07": (delete, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+
+    # Update the /obs resource of with new payload having a different Content-format
+    # Warning : We do assume that the former content format was NOT already application/xml
+    # If not the test result will be inconclusive.
+    "TD_COAP_OBS_08_step_07": (put, {"base_url": default_coap_server_base_url, "resource": "/obs", "content_format":"application/xml","payload":"My new payload with a new content-format."}),
+
+    # Update the /obs resource of with new payload having the same Content-format
+    # Warning : We do assume that the current content format was already text/plain
+    # If not the test result will be inconclusive.
+    "TD_COAP_OBS_09_step_07": (put, {"base_url": default_coap_server_base_url, "resource": "/obs", "content_format":"text/plain","payload":"My new payload with the same content-format."}),
+
+    # unrelated GET
+    "TD_COAP_OBS_10_step_07": (get, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+}
+
 
 class LibcoapClient(AutomatedIUT):
     """
@@ -228,7 +302,7 @@ class LibcoapClient(AutomatedIUT):
     default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
     large_payload_test_file = 'automated_IUTs/coap_client_libcoap/file/etsi_iot_01_largedata.txt'
 
-    def __init__(self, mode_aux=None, target_base_url=None):
+    def __init__(self, mode_aux=False, target_base_url=None):
         super().__init__(self.node)
         logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
         self.mode_aux = mode_aux
@@ -238,230 +312,8 @@ class LibcoapClient(AutomatedIUT):
         else:
             self.base_url = self.default_coap_server_base_url
 
-        # mapping message's stimuli id -> function to execute this stimuli
-        self.stimuli_to_function_map = {
-            'TD_COAP_CORE_01_step_01': self.__stimuli_coap_core_01_10_15,
-            'TD_COAP_CORE_02_step_01': self.__stimuli_coap_core_02,
-            'TD_COAP_CORE_03_step_01': self.__stimuli_coap_core_03,
-            'TD_COAP_CORE_05_step_01': self.__stimuli_coap_core_05,
-            'TD_COAP_CORE_04_step_01': self.__stimuli_coap_core_04_18,
-            'TD_COAP_CORE_06_step_01': self.__stimuli_coap_core_06,
-            'TD_COAP_CORE_07_step_01': self.__stimuli_coap_core_07,
-            'TD_COAP_CORE_08_step_01': self.__stimuli_coap_core_08,
-            'TD_COAP_CORE_09_step_01': self.__stimuli_coap_core_09_11_16,
-            'TD_COAP_CORE_10_step_01': self.__stimuli_coap_core_01_10_15,
-            'TD_COAP_CORE_11_step_01': self.__stimuli_coap_core_09_11_16,
-            'TD_COAP_CORE_12_step_01': self.__stimuli_coap_core_12,
-            'TD_COAP_CORE_13_step_01': self.__stimuli_coap_core_13,
-            'TD_COAP_CORE_14_step_01': self.__stimuli_coap_core_14,
-            'TD_COAP_CORE_15_step_01': self.__stimuli_coap_core_01_10_15,
-            'TD_COAP_CORE_16_step_01': self.__stimuli_coap_core_09_11_16,
-            'TD_COAP_CORE_18_step_01': self.__stimuli_coap_core_04_18,
-            'TD_COAP_CORE_17_step_01': self.__stimuli_coap_core_17,
-            'TD_COAP_CORE_19_step_01': self.__stimuli_coap_core_19,
-            'TD_COAP_CORE_20_step_01': self.__stimuli_coap_core_20_step1,
-            'TD_COAP_CORE_20_step_05': self.__stimuli_coap_core_20_step5,
-            'TD_COAP_CORE_21_step_01': self.__stimuli_coap_core_21_22_step1_22_step8,
-            'TD_COAP_CORE_22_step_01': self.__stimuli_coap_core_21_22_step1_22_step8,
-            # 'TD_COAP_CORE_22_step_04': 'TD_COAP_CORE_22',
-            'TD_COAP_CORE_22_step_08': self.__stimuli_coap_core_21_22_step1_22_step8,
-            'TD_COAP_CORE_23_step_01': self.__stimuli_coap_core_23,
-            'TD_COAP_CORE_23_step_05': self.__stimuli_coap_core_23,
-            'TD_COAP_OBS_01_step_01': self.__stimuli_coap_obs_01_04_05,
-            'TD_COAP_OBS_02_step_01': self.__stimuli_coap_obs_02,
-            'TD_COAP_OBS_04_step_01': self.__stimuli_coap_obs_01_04_05,
-            'TD_COAP_OBS_05_step_01': self.__stimuli_coap_obs_01_04_05,
-            'TD_COAP_OBS_07_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
-            'TD_COAP_OBS_08_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
-            'TD_COAP_OBS_09_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
-            'TD_COAP_OBS_10_step_01': self.__stimuli_coap_obs_07_08_09_10_step1,
-            'TD_COAP_BLOCK_01_step_01': self.__stimuli_coap_block_01,
-            'TD_COAP_BLOCK_02_step_01': self.__stimuli_coap_block_02,
-            'TD_COAP_BLOCK_03_step_01': self.__stimuli_coap_block_03,
-            'TD_COAP_BLOCK_04_step_01': self.__stimuli_coap_block_04,
-            'TD_COAP_BLOCK_05_step_01': self.__stimuli_coap_block_05,
-            'TD_COAP_BLOCK_06_step_01': self.__stimuli_coap_block_06,
-            'TD_COAP_LINK_01_step_01': self.__stimuli_coap_link_01,
-            'TD_COAP_LINK_02_step_01': self.__stimuli_coap_link_02,
-            'TD_COAP_LINK_03_step_01': self.__stimuli_coap_link_03,
-            'TD_COAP_LINK_04_step_01': self.__stimuli_coap_link_04,
-            'TD_COAP_LINK_05_step_01': self.__stimuli_coap_link_05,
-            'TD_COAP_LINK_06_step_01': self.__stimuli_coap_link_06,
-            'TD_COAP_LINK_07_step_01': self.__stimuli_coap_link_07,
-            'TD_COAP_LINK_08_step_01': self.__stimuli_coap_link_08,
-            'TD_COAP_LINK_09_step_01': self.__stimuli_coap_link_09,
-        }
-
-        self.aux_stimuli_to_function_map = {
-            'TD_COAP_OBS_07_step_07': self.__stimuli_coap_obs_07_step7,
-            'TD_COAP_OBS_08_step_07': self.__stimuli_coap_obs_08_step7,
-            'TD_COAP_OBS_09_step_07': self.__stimuli_coap_obs_09_step7,
-            'TD_COAP_OBS_10_step_07': self.__stimuli_coap_obs_10_step7,
-        }
-
-        self.implemented_stimuli_list = list(self.stimuli_to_function_map.keys())
-
-    # CoAP Core stimulus
-
-    def __stimuli_coap_core_01_10_15(self):
-        get(base_url=self.base_url, resource="/test")
-
-    def __stimuli_coap_core_02(self):
-        delete(base_url=self.base_url, resource="/test")
-
-    def __stimuli_coap_core_03(self):
-        put(base_url=self.base_url, resource="/test", content_format="text/plain")
-
-    def __stimuli_coap_core_04_18(self):
-        post(base_url=self.base_url, resource="/test", content_format="text/plain")
-
-    def __stimuli_coap_core_05(self):
-        get(base_url=self.base_url, resource="/test", confirmable=False)
-
-    def __stimuli_coap_core_06(self):
-        delete(base_url=self.base_url, resource="/test", confirmable=False)
-
-    def __stimuli_coap_core_07(self):
-        put(base_url=self.base_url, resource="/test", content_format="text/plain", confirmable=False)
-
-    def __stimuli_coap_core_08(self):
-        post(base_url=self.base_url, resource="/test", content_format="text/plain", confirmable=False)
-
-    def __stimuli_coap_core_09_11_16(self):
-        get(base_url=self.base_url, resource="/separate")
-
-    def __stimuli_coap_core_12(self):
-        get(base_url=self.base_url, resource="/test", use_token=False)
-
-    def __stimuli_coap_core_13(self):
-        get(base_url=self.base_url, resource="/seg1/seg2/seg3")
-
-    def __stimuli_coap_core_14(self):
-        get(base_url=self.base_url, resource="/query?first=1&second=2&third=3")
-
-    def __stimuli_coap_core_17(self):
-        get(base_url=self.base_url, resource="/separate", confirmable=False)
-
-    def __stimuli_coap_core_19(self):
-        post(base_url=self.base_url, resource="/location-query?first=1&second=2&third=3")
-
-    def __stimuli_coap_core_20_step1(self):
-        get(base_url=self.base_url, resource="/multi-format", accept_option="text/plain")
-
-    def __stimuli_coap_core_20_step5(self):
-        get(base_url=self.base_url, resource="/multi-format", accept_option="application/xml")
-
-    def __stimuli_coap_core_21_22_step1_22_step8(self):
-        get(base_url=self.base_url, resource="/validate")
-
-    def __stimuli_coap_core_23(self):
-        put(base_url=self.base_url,
-            resource="/create1",
-            content_format="text/plain",
-            use_if_none_match=True)
-
-    # CoAP Observe stimulus
-
-    def __stimuli_coap_obs_01_04_05(self):
-        observe(base_url=self.base_url, resource="/obs")
-
-    def __stimuli_coap_obs_02(self):
-        observe(base_url=self.base_url, resource="/obs-non", confirmable=False)
-
-    def __stimuli_coap_obs_07_08_09_10_step1(self):
-        observe(base_url=self.base_url, resource="/obs", duration=20)
-
-    # CoAP OBS auxiliary stimulus
-
-    def __stimuli_coap_obs_07_step7(self):
-        delete(base_url=self.base_url, resource="/obs")
-
-    # Update the /obs resource of with new payload having a different Content-format
-    # Warning : We do assume that the former content format was NOT already application/xml
-    # If not the test result will be inconclusive.
-    def __stimuli_coap_obs_08_step7(self):
-        put(base_url=self.base_url,
-            resource="/obs",
-            content_format="application/xml",
-            confirmable=True,
-            payload="'My new payload with a new content-format.'")
-
-    # Update the /obs resource of with new payload having the same Content-format
-    # Warning : We do assume that the current content format was already text/plain
-    # If not the test result will be inconclusive.
-    def __stimuli_coap_obs_09_step7(self):
-        put(base_url=self.base_url,
-            resource="/obs",
-            content_format="text/plain",
-            confirmable=True,
-            payload="'My new payload with the same content-format.'")
-
-    def __stimuli_coap_obs_10_step7(self):
-        get(base_url=self.base_url, resource="/obs", confirmable=True)
-
-    # CoAP BLOCK stimulis.
-
-    def __stimuli_coap_block_01(self):
-        get(base_url=self.base_url, resource="/large", use_block_option=True)
-
-    def __stimuli_coap_block_02(self):
-        get(base_url=self.base_url, resource="/large", use_block_option=False)
-
-    def __stimuli_coap_block_03(self):
-        put(base_url=self.base_url,
-            resource="/large-update",
-            use_block_option=True,
-            content_format="text/plain",
-            filepath_payload=self.large_payload_test_file)
-
-    def __stimuli_coap_block_04(self):
-        post(base_url=self.base_url,
-             resource="/large-create",
-             use_block_option=True,
-             content_format="text/plain",
-             filepath_payload=self.large_payload_test_file)
-
-    def __stimuli_coap_block_05(self):
-        post(base_url=self.base_url,
-             resource="/large-post",
-             use_block_option=True,
-             content_format="text/plain",
-             filepath_payload=self.large_payload_test_file)
-
-    def __stimuli_coap_block_06(self):
-        get(base_url=self.base_url,
-            resource="/large",
-            use_block_option=True,
-            block_size=16)
-
-    # CoAP LINK stimulis.
-
-    def __stimuli_coap_link_01(self):
-        get(base_url=self.base_url, resource="/.well-known/core")
-
-    def __stimuli_coap_link_02(self):
-        get(base_url=self.base_url, resource="/.well-known/core?rt=Type1")
-
-    def __stimuli_coap_link_03(self):
-        get(base_url=self.base_url, resource="/.well-known/core?rt=*")
-
-    def __stimuli_coap_link_04(self):
-        get(base_url=self.base_url, resource="/.well-known/core?rt=Type2")
-
-    def __stimuli_coap_link_05(self):
-        get(base_url=self.base_url, resource="/.well-known/core?if=If*")
-
-    def __stimuli_coap_link_06(self):
-        get(base_url=self.base_url, resource="/.well-known/core?sz=*")
-
-    def __stimuli_coap_link_07(self):
-        get(base_url=self.base_url, resource="/.well-known/core?href=/link1")
-
-    def __stimuli_coap_link_08(self):
-        get(base_url=self.base_url, resource="/.well-known/core?href=/link*")
-
-    def __stimuli_coap_link_09(self):
-        get(base_url=self.base_url, resource="/.well-known/core?ct=40")
+        self.implemented_stimuli_list = list(stimuli_to_libcoap_cli_call.keys())
+        self.implemented_aux_stimuli_list = list(aux_stimuli_to_libcoap_cli_call.keys())
 
     # overridden methods
 
@@ -470,30 +322,29 @@ class LibcoapClient(AutomatedIUT):
         You can pass addr or url, or else uses ioppytest defaults
         If you pass both addr and url, then url will be prioritized.
 
-        - url expects formats like: url = coap://[ipv6_address]:port
-        - addr will be used as: 'coap://[<addr>]:defautl_port
+        - url expects formats like: url = coap://[some_ipv6_address]:port
+        - addr will be used as: coap://[<addr>]:defautl_port
 
         """
 
         logger.info('Got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
 
         # redefines default
-
         if url:
             self.base_url = url
         elif addr:
             self.base_url = 'coap://[%s]:%s' % (addr, COAP_SERVER_PORT)  # fixMe I'm assuming it's IPv6!
 
-        if self.mode_aux:
-            if stimuli_step_id not in self.aux_stimuli_to_function_map:
-                logger.info("Received request to execute unimplemented auxiliary stimuli %s", stimuli_step_id)
+        try:
+            if self.mode_aux:
+                func, args = aux_stimuli_to_libcoap_cli_call[stimuli_step_id]
             else:
-                self.aux_stimuli_to_function_map[stimuli_step_id]()
-        else:
-            if stimuli_step_id not in self.stimuli_to_function_map:
-                logger.info("Received request to execute unimplemented stimuli %s", stimuli_step_id)
-            else:
-                self.stimuli_to_function_map[stimuli_step_id]()
+                func, args = stimuli_to_libcoap_cli_call[stimuli_step_id]
+        except KeyError:
+            raise Exception("Received request to execute unimplemented stimuli %s", stimuli_step_id)
+
+        args['base_url'] = self.base_url  # update with target url received from event
+        func(**args)  # spawn stimuli process (this is non-blocking)
 
     def _execute_verify(self, verify_step_id):
         logger.info('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
