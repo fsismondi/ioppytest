@@ -162,7 +162,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 pass
 
             logging.info("All threads have stopped..")
-            
+
         except Exception as e:
             self.fail("Exception encountered:\n%s" % e)
 
