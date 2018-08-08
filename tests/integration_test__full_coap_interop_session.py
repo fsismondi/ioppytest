@@ -132,6 +132,9 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             # wait until we get MsgTestSuiteReport
             while t < SESSION_TIMEOUT and MsgTestSuiteReport not in events_sniffed_on_bus_dict:
                 time.sleep(WAIT_PERIOD)
+                if t == SESSION_TIMEOUT/2:
+                    logging.info("reached half of the expected time for the test execution, is everything alright?")
+                    log_all_received_messages(event_list=event_messages_sniffed_on_bus_list)
                 t += WAIT_PERIOD
 
             connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
