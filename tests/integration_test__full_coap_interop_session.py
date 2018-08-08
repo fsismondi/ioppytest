@@ -112,7 +112,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
 
         threads = [
             user_stub,
-            msg_validator,
+            #msg_validator,
             ui_stub,
         ]
 
