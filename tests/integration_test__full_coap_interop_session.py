@@ -153,13 +153,13 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 time.sleep(10)  # so threads process TERMINATE signal
 
             connection.close()
-            try:
-                for th in threads:
-                    if th.is_alive():
-                        logging.warning("Thread %s didn't stop with the TERMINATE signal" % th.name)
-                        th.stop()
-            except Exception as e:  # I dont want this to make my tests fail
-                logging.warning('Exception thrown while stopping threads:\n%s' % e)
+            # try:
+            #     for th in threads:
+            #         if th.is_alive():
+            #             logging.warning("Thread %s didn't stop with the TERMINATE signal" % th.name)
+            #             th.stop()
+            # except Exception as e:  # I dont want this to make my tests fail
+            #     pass
 
         except Exception as e:
             self.fail("Exception encountered:\n%s" % e)
@@ -181,9 +181,9 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     self.got_at_least_one_passed_tc = True
 
             if self.got_at_least_one_passed_tc:
-                logging.info('Got at least one PASS verdict')
+                logging.info('Got at least one PASS verdict :)')
             else:
-                logging.warning('(!) No PASS verdict found in the session results report')
+                logging.warning('No PASS verdict found in the session results report :(')
 
 
 def run_checks_on_message_received(message: Message):
