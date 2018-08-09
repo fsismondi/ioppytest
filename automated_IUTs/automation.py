@@ -31,6 +31,48 @@ def NotImplementedField(self):
     raise NotImplementedError
 
 
+def launch_long_automated_iut_process(cmd, process_logfile):
+    """
+    Launches IUT process and logs all output into file.
+    This is NON BLOCKING.
+    Doesnt return any value nor exception if process failed.
+    """
+    logging.info("Launching process with: %s" % cmd)
+    logging.info('Process logging into %s' % process_logfile)
+    with open(process_logfile, "w") as outfile:
+        subprocess.Popen(cmd, stdout=outfile)  # subprocess.Popen does not block
+
+
+def launch_short_automated_iut_process(cmd: list, timeout=STIMULI_HANDLER_TOUT):
+    """
+    Launches IUT process and logs all output using logger.
+    Execution BLOCKS until process finished or exec time > STIMULI_HANDLER_TOUT
+
+    Returns bool based of exec code, True if exec code is 0, else False
+    """
+    assert type(cmd) is list
+
+    logging.info('IUT process cmd: {}'.format(cmd))
+    try:
+        o = subprocess.check_output(cmd,
+                                    stderr=subprocess.STDOUT,
+                                    shell=False,
+                                    timeout=timeout,
+                                    universal_newlines=True)
+    except subprocess.CalledProcessError as p_err:
+        logging.error('Stimuli failed (ret code: {})'.format(p_err.returncode))
+        logging.error('Error: {}'.format(p_err))
+        return False
+
+    except subprocess.TimeoutExpired as tout_err:
+        logging.error('Stimuli process executed but timed-out, probably no response from the server.')
+        logging.error('Error: {}'.format(tout_err))
+        return False
+
+    logging.info('Stimuli ran successfully (ret code: {})'.format(str(o)))
+    return True
+
+
 def signal_int_handler(signal, frame):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import subprocess
+import os
+import logging
 from ioppytest import TMPDIR
-from automated_IUTs.automation import *
+from automated_IUTs.automation import AutomatedIUT, launch_long_automated_iut_process
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 
 logger = logging.getLogger()
@@ -17,7 +18,7 @@ coap_host_address = COAP_CLIENT_HOST
 
 
 class CoapthonCoapServerIPv6(AutomatedIUT):
-    component_id = 'automated_iut-coap_server-coapthon'
+    component_id = 'automated_iut-coap_server-coapthon-v6'
     node = 'coap_server'
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
 
@@ -33,9 +34,10 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
     def __init__(self):
         self.process_log_file = os.path.join(TMPDIR, self.component_id + self.__class__.__name__ + '.log')
         super().__init__(self.node)
-        logging.info('starting %s  [ %s ]' % (self.node, self.component_id))
-        logging.info('spawning process %s' % str(self.iut_cmd))
-        self._launch_automated_iut_process()
+        logging.info('Starting %s  [ %s ]' % (self.node, self.component_id))
+        logging.info('Spawning process %s' % str(self.iut_cmd))
+        launch_long_automated_iut_process(self.iut_cmd, self.process_log_file)
+        logging.info('Start OK %s  [ %s ]' % (self.node, self.component_id))
 
     def _execute_verify(self, verify_step_id):
         logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
@@ -47,15 +49,12 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
         # should we restart process?
         return COAP_SERVER_HOST
 
-    def _launch_automated_iut_process(self):
-        logging.info("Launching IUT with: %s" % self.iut_cmd)
-        logging.info('IUT-automated process logging into %s' % self.process_log_file)
-        with open(self.process_log_file, "w") as outfile:
-            subprocess.Popen(self.iut_cmd, stdout=outfile)  # subprocess.Popen does not block
-
 
 class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
-    component_id = 'automated_iut-coap_server-coapthon'
+    """
+    basically only redefines ip where to serve, the rest is the same..
+    """
+    component_id = 'automated_iut-coap_server-coapthon-v4'
     node = 'coap_server'
 
     iut_cmd = [

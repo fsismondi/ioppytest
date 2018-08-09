@@ -2,11 +2,10 @@
 # !/usr/bin/env python3
 
 import os
-import subprocess
-import binascii
 import logging
+import binascii
 from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
-from automated_IUTs.automation import STIMULI_HANDLER_TOUT, AutomatedIUT
+from automated_IUTs.automation import AutomatedIUT, launch_short_automated_iut_process
 
 default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
@@ -18,29 +17,6 @@ logger = logging.getLogger(__name__)
 
 def get_random_token():
     return binascii.hexlify(os.urandom(8))
-
-
-def launch_automated_iut_process(cmd: list, timeout=STIMULI_HANDLER_TOUT):
-    assert type(cmd) is list
-
-    logger.info('IUT process cmd: {}'.format(cmd))
-    try:
-        o = subprocess.check_output(cmd,
-                                    stderr=subprocess.STDOUT,
-                                    shell=False,
-                                    timeout=timeout,
-                                    universal_newlines=True)
-    except subprocess.CalledProcessError as p_err:
-        logger.info('Stimuli failed (ret code: {})'.format(p_err.returncode))
-        logger.info('Error: {}'.format(p_err))
-        return
-
-    except subprocess.TimeoutExpired as tout_err:
-        logger.info('Stimuli process executed but timed-out, probably no response from the server.')
-        logger.info('Error: {}'.format(tout_err))
-        return
-
-    logger.info('Stimuli ran successfully (ret code: {})'.format(str(o)))
 
 
 def get(base_url,
@@ -61,7 +37,7 @@ def get(base_url,
         cmd += ['-T', tkn]
     if use_block_option:
         cmd += ['-b', "0,64"]
-    launch_automated_iut_process(cmd=cmd)
+    launch_short_automated_iut_process(cmd=cmd)
 
 
 def put(base_url,
@@ -95,7 +71,7 @@ def put(base_url,
     if use_block_option:
         block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
         cmd = ['-b', str(block_option_val)]
-    launch_automated_iut_process(cmd=cmd)
+    launch_short_automated_iut_process(cmd=cmd)
 
 
 def post(base_url,
@@ -122,7 +98,7 @@ def post(base_url,
     if use_block_option:
         block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
         cmd = ['-b', str(block_option_val)]
-    launch_automated_iut_process(cmd=cmd)
+    launch_short_automated_iut_process(cmd=cmd)
 
 
 def delete(base_url,
@@ -137,7 +113,7 @@ def delete(base_url,
     if use_token:
         tkn = get_random_token()
         cmd += ['-T', str(tkn)]
-    launch_automated_iut_process(cmd=cmd)
+    launch_short_automated_iut_process(cmd=cmd)
 
 
 def observe(base_url,
@@ -153,7 +129,7 @@ def observe(base_url,
     if use_token:
         tkn = get_random_token()
         cmd += ['-T', str(tkn)]
-    launch_automated_iut_process(cmd=cmd, timeout=duration)
+    launch_short_automated_iut_process(cmd=cmd, timeout=duration)
 
 stimuli_to_libcoap_cli_call = {
     # CoAP CORE test cases stimuli
