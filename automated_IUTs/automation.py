@@ -164,6 +164,9 @@ class AutomatedIUT(threading.Thread):
         self._logger.addHandler(rabbitmq_handler)
 
     def log(self, message):
+        """
+        Class logger to be used by AutomatedIUT and children classes too.
+        """
         self._logger.info(message)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
