@@ -83,7 +83,7 @@ logger = logging.getLogger()
 def get_random_token():
     return binascii.hexlify(os.urandom(8))
 
-
+# translates stimuli calls into IUT CLI calls
 def get(base_url,
         resource,
         confirmable=True,
@@ -385,5 +385,5 @@ if __name__ == '__main__':
         iut.start()
         iut.join()
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         exit(1)

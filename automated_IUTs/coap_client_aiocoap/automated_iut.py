@@ -44,11 +44,12 @@ default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER
 coap_host_address = COAP_CLIENT_HOST
 BASE_CMD = ["aiocoap-client"]
 
-# translates stimuli calls into aiocoap CLI calls
+logger = logging.getLogger()
 
-def get(resource, confirmable=True, accepte_option=None):
-    cmd = self.base_cmd.copy()
-    cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+# translates stimuli calls into IUT CLI calls
+def get(base_url, resource, confirmable=True, accepte_option=None):
+    cmd = BASE_CMD.copy()
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'GET']
     if accepte_option is not None:
         cmd += ['{option} {value}'.format(option='--accept', value=accepte_option)]
@@ -57,36 +58,36 @@ def get(resource, confirmable=True, accepte_option=None):
     launch_short_automated_iut_process(cmd)
 
 
-def put(resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
+def put(base_url, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
     cmd = BASE_CMD.copy()
-    cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'PUT', '--content-format', str(content_format), '--payload', str(payload)]
     if not confirmable:
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
 
-def post(resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
+def post(base_url, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
     cmd = BASE_CMD.copy()
-    cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'POST', '--content-format', str(content_format), '--payload', str(payload)]
     if not confirmable:
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
 
-def delete(resource, confirmable=True):
+def delete(base_url, resource, confirmable=True):
     cmd = BASE_CMD.copy()
-    cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'DELETE']
     if not confirmable:
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
 
-def observe(resource, confirmable=True, duration=15):
+def observe(base_url, resource, confirmable=True, duration=15):
     cmd = BASE_CMD.copy()
-    cmd += ['{url}{resource_path}'.format(url=self.base_url, resource_path=resource)]
+    cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['--observe']
     if not confirmable:
         cmd += ['--non']
@@ -252,5 +253,5 @@ if __name__ == '__main__':
         iut.start()
         iut.join()
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         exit(1)
