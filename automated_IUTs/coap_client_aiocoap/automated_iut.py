@@ -3,6 +3,7 @@
 
 """
 Some example of usage of Aiocoap Client CLI:
+
 for simple GET with or without confirmable message:
     - aiocoap-client -m GET coap://[bbbb::2]:5683/test
     - aiocoap-client -m GET coap://[bbbb::2]:5683/test --non
@@ -22,11 +23,8 @@ for sending data to the server:
                 --content-format application/xml
 
     The content-format option is mandatory. As Aiocoap-client do not use a
-    default content--format, omiting this option will always create a
+    default content--format, ommiting this option will always create a
     4.00 Bad Request from the server.
-
-Some tests have several stimuli, those are specified with the attribute
-aux_stimuli_to_function_map.
 
 ******************************
 NOTE about CoAP BLOCK stimuli
@@ -46,19 +44,37 @@ BASE_CMD = ["aiocoap-client"]
 
 logger = logging.getLogger()
 
+
 # translates stimuli calls into IUT CLI calls
-def get(base_url, resource, confirmable=True, accepte_option=None):
+def get(base_url,
+        resource,
+        confirmable=True,
+        accept_option=None,
+        **kwargs):
+
+    for k, v in kwargs.items():
+        logger.warning("ignoring {}:{}".format(k, v))
+
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'GET']
-    if accepte_option is not None:
-        cmd += ['{option} {value}'.format(option='--accept', value=accepte_option)]
+    if accept_option is not None:
+        cmd += ['{option} {value}'.format(option='--accept', value=accept_option)]
     if not confirmable:
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
 
-def put(base_url, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
+def put(base_url,
+        resource,
+        content_format="text/plain",
+        confirmable=True,
+        payload="'my interop test payload'",
+        **kwargs):
+
+    for k, v in kwargs.items():
+        logger.warning("ignoring {}:{}".format(k, v))
+
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'PUT', '--content-format', str(content_format), '--payload', str(payload)]
@@ -67,7 +83,16 @@ def put(base_url, resource, content_format="text/plain", confirmable=True, paylo
     launch_short_automated_iut_process(cmd)
 
 
-def post(base_url, resource, content_format="text/plain", confirmable=True, payload="'my interop test payload'"):
+def post(base_url,
+         resource,
+         content_format="text/plain",
+         confirmable=True,
+         payload="'my interop test payload'",
+         **kwargs):
+
+    for k, v in kwargs.items():
+        logger.warning("ignoring {}:{}".format(k, v))
+
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'POST', '--content-format', str(content_format), '--payload', str(payload)]
@@ -76,7 +101,14 @@ def post(base_url, resource, content_format="text/plain", confirmable=True, payl
     launch_short_automated_iut_process(cmd)
 
 
-def delete(base_url, resource, confirmable=True):
+def delete(base_url,
+           resource,
+           confirmable=True,
+           **kwargs):
+
+    for k, v in kwargs.items():
+        logger.warning("ignoring {}:{}".format(k, v))
+
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'DELETE']
@@ -85,7 +117,15 @@ def delete(base_url, resource, confirmable=True):
     launch_short_automated_iut_process(cmd)
 
 
-def observe(base_url, resource, confirmable=True, duration=15):
+def observe(base_url,
+            resource,
+            confirmable=True,
+            duration=15,
+            **kwargs):
+
+    for k, v in kwargs.items():
+        logger.warning("ignoring {}:{}".format(k, v))
+
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['--observe']
@@ -93,6 +133,7 @@ def observe(base_url, resource, confirmable=True, duration=15):
         cmd += ['--non']
     # Let our client enough time receive some observation messages.
     launch_short_automated_iut_process(cmd, timeout=duration)
+
 
 large_payload = "<large>Lorem ipsum dolor sit amet, consectetur adipiscing\
 elit. Donec sit amet sapien ac leo bibendum suscipit at sed ipsum. Aliquam\
@@ -133,55 +174,85 @@ stimuli_to_aiocoap_cli_call = {
     # CoAP CORE test cases stimuli
     "TD_COAP_CORE_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
     "TD_COAP_CORE_02_step_01": (delete, {"base_url": default_coap_server_base_url, "resource": "/test"}),
-    "TD_COAP_CORE_03_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
-    "TD_COAP_CORE_04_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
-    "TD_COAP_CORE_05_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test", "confirmable":False}),
-    "TD_COAP_CORE_06_step_01": (delete, {"base_url": default_coap_server_base_url,"resource": "/test", "confirmable":False}),
-    "TD_COAP_CORE_07_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain","confirmable":False}),
-    "TD_COAP_CORE_08_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
+    "TD_COAP_CORE_03_step_01": (
+    put, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format": "text/plain"}),
+    "TD_COAP_CORE_04_step_01": (
+    post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format": "text/plain"}),
+    "TD_COAP_CORE_05_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/test", "confirmable": False}),
+    "TD_COAP_CORE_06_step_01": (
+    delete, {"base_url": default_coap_server_base_url, "resource": "/test", "confirmable": False}),
+    "TD_COAP_CORE_07_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/test",
+                                      "content_format": "text/plain", "confirmable": False}),
+    "TD_COAP_CORE_08_step_01": (
+    post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format": "text/plain"}),
     "TD_COAP_CORE_09_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
     "TD_COAP_CORE_10_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
     "TD_COAP_CORE_11_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
-    "TD_COAP_CORE_12_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test", "use_token":False}),
+    "TD_COAP_CORE_12_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/test", "use_token": False}),
     "TD_COAP_CORE_13_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/seg1/seg2/seg3"}),
-    "TD_COAP_CORE_14_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/query?first=1&second=2&third=3"}),
+    "TD_COAP_CORE_14_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/query?first=1&second=2&third=3"}),
     "TD_COAP_CORE_15_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/test"}),
     "TD_COAP_CORE_16_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate"}),
-    "TD_COAP_CORE_17_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/separate","confirmable":False}),
-    "TD_COAP_CORE_18_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format":"text/plain"}),
-    "TD_COAP_CORE_19_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/location-query?first=1&second=2&third=3"}),
-    "TD_COAP_CORE_20_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"text/plain"}),
-    "TD_COAP_CORE_20_step_05": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"application/xml"}),
+    "TD_COAP_CORE_17_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/separate", "confirmable": False}),
+    "TD_COAP_CORE_18_step_01": (
+    post, {"base_url": default_coap_server_base_url, "resource": "/test", "content_format": "text/plain"}),
+    "TD_COAP_CORE_19_step_01": (
+    post, {"base_url": default_coap_server_base_url, "resource": "/location-query?first=1&second=2&third=3"}),
+    "TD_COAP_CORE_20_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option": "text/plain"}),
+    "TD_COAP_CORE_20_step_05": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option": "application/xml"}),
     "TD_COAP_CORE_21_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
     "TD_COAP_CORE_22_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
     # "TD_COAP_CORE_22_step_04": "TD_COAP_CORE_22",
     "TD_COAP_CORE_22_step_08": (put, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
-    "TD_COAP_CORE_23_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/create1","content_format":"text/plain","use_if_none_match":True}),
-    "TD_COAP_CORE_23_step_05": (put, {"base_url": default_coap_server_base_url, "resource": "/create1","content_format":"text/plain","use_if_none_match":True}),
-    "TD_COAP_OBS_01_step_01":  (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
-    "TD_COAP_OBS_02_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs-non","confirmable":False}),
+    "TD_COAP_CORE_23_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/create1",
+                                      "content_format": "text/plain", "use_if_none_match": True}),
+    "TD_COAP_CORE_23_step_05": (put, {"base_url": default_coap_server_base_url, "resource": "/create1",
+                                      "content_format": "text/plain", "use_if_none_match": True}),
+    "TD_COAP_OBS_01_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
+    "TD_COAP_OBS_02_step_01": (
+    observe, {"base_url": default_coap_server_base_url, "resource": "/obs-non", "confirmable": False}),
     "TD_COAP_OBS_04_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
     "TD_COAP_OBS_05_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs"}),
-    "TD_COAP_OBS_07_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
-    "TD_COAP_OBS_08_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
-    "TD_COAP_OBS_09_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
-    "TD_COAP_OBS_10_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration":20}),
+    "TD_COAP_OBS_07_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration": 20}),
+    "TD_COAP_OBS_08_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration": 20}),
+    "TD_COAP_OBS_09_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration": 20}),
+    "TD_COAP_OBS_10_step_01": (observe, {"base_url": default_coap_server_base_url, "resource": "/obs", "duration": 20}),
     # CoAP BLOCK test cases stimuli
-    "TD_COAP_BLOCK_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":True}),
-    "TD_COAP_BLOCK_02_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":False}),
-    "TD_COAP_BLOCK_03_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/large-update","use_block_option":True, "content_format":"text/plain","payload": large_payload}),
-    "TD_COAP_BLOCK_04_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-create","use_block_option":True, "content_format":"text/plain","payload": large_payload}),
-    "TD_COAP_BLOCK_05_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-post","use_block_option":True, "content_format":"text/plain","payload": large_payload}),
-    "TD_COAP_BLOCK_06_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/large","use_block_option":True,"block_size":16}),
+    "TD_COAP_BLOCK_01_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/large", "use_block_option": True}),
+    "TD_COAP_BLOCK_02_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/large", "use_block_option": False}),
+    "TD_COAP_BLOCK_03_step_01": (put, {"base_url": default_coap_server_base_url, "resource": "/large-update",
+                                       "use_block_option": True, "content_format": "text/plain",
+                                       "payload": large_payload}),
+    "TD_COAP_BLOCK_04_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-create",
+                                        "use_block_option": True, "content_format": "text/plain",
+                                        "payload": large_payload}),
+    "TD_COAP_BLOCK_05_step_01": (post, {"base_url": default_coap_server_base_url, "resource": "/large-post",
+                                        "use_block_option": True, "content_format": "text/plain",
+                                        "payload": large_payload}),
+    "TD_COAP_BLOCK_06_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/large", "use_block_option": True, "block_size": 16}),
     # CoAP LINK test cases stimuli
     "TD_COAP_LINK_01_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core"}),
-    "TD_COAP_LINK_02_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type1"}),
+    "TD_COAP_LINK_02_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type1"}),
     "TD_COAP_LINK_03_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=*"}),
-    "TD_COAP_LINK_04_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type2"}),
-    "TD_COAP_LINK_05_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?if=If*"}),
+    "TD_COAP_LINK_04_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?rt=Type2"}),
+    "TD_COAP_LINK_05_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?if=If*"}),
     "TD_COAP_LINK_06_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?sz=*"}),
-    "TD_COAP_LINK_07_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link1"}),
-    "TD_COAP_LINK_08_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link*"}),
+    "TD_COAP_LINK_07_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link1"}),
+    "TD_COAP_LINK_08_step_01": (
+    get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?href=/link*"}),
     "TD_COAP_LINK_09_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/.well-known/core?ct=40"}),
 }
 

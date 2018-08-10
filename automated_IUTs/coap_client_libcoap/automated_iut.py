@@ -89,7 +89,8 @@ def get(base_url,
         confirmable=True,
         use_token=True,
         accept_option=None,
-        use_block_option=False):
+        use_block_option=False,
+        block_size=64,):
     cmd = BASE_CMD.copy()
     cmd += ['{url}{resource_path}'.format(url=base_url, resource_path=resource)]
     cmd += ['-m', 'GET']
@@ -101,7 +102,9 @@ def get(base_url,
         tkn = get_random_token()
         cmd += ['-T', tkn]
     if use_block_option:
-        cmd += ['-b', "0,64"]
+        block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
+        cmd += ['-b', str(block_option_val)]
+
     launch_short_automated_iut_process(cmd=cmd)
 
 
@@ -135,7 +138,8 @@ def put(base_url,
         cmd += ['-O', str(5)]
     if use_block_option:
         block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
-        cmd = ['-b', str(block_option_val)]
+        cmd += ['-b', str(block_option_val)]
+
     launch_short_automated_iut_process(cmd=cmd)
 
 
@@ -162,7 +166,8 @@ def post(base_url,
         cmd += ['-T', str(tkn)]
     if use_block_option:
         block_option_val = '{start_number} {block_size}'.format(start_number=0, block_size=block_size)
-        cmd = ['-b', str(block_option_val)]
+        cmd += ['-b', str(block_option_val)]
+
     launch_short_automated_iut_process(cmd=cmd)
 
 
@@ -178,6 +183,7 @@ def delete(base_url,
     if use_token:
         tkn = get_random_token()
         cmd += ['-T', str(tkn)]
+
     launch_short_automated_iut_process(cmd=cmd)
 
 
@@ -194,6 +200,7 @@ def observe(base_url,
     if use_token:
         tkn = get_random_token()
         cmd += ['-T', str(tkn)]
+
     launch_short_automated_iut_process(cmd=cmd, timeout=duration)
 
 

@@ -17,7 +17,7 @@ server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 
 
-class CoapthonCoapServerIPv6(AutomatedIUT):
+class AutomatedCoapthonCoapServerIPv6(AutomatedIUT):
     component_id = 'automated_iut-coap_server-coapthon-v6'
     node = 'coap_server'
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
@@ -34,13 +34,13 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
     def __init__(self):
         self.process_log_file = os.path.join(TMPDIR, self.component_id + self.__class__.__name__ + '.log')
         super().__init__(self.node)
-        logging.info('Starting %s  [ %s ]' % (self.node, self.component_id))
-        logging.info('Spawning process %s' % str(self.iut_cmd))
+        self.log('Starting %s  [ %s ]' % (self.node, self.component_id))
+        self.log('Spawning process %s' % str(self.iut_cmd))
         launch_long_automated_iut_process(self.iut_cmd, self.process_log_file)
-        logging.info('Start OK %s  [ %s ]' % (self.node, self.component_id))
+        self.log('Start OK %s  [ %s ]' % (self.node, self.component_id))
 
     def _execute_verify(self, verify_step_id):
-        logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
+        self.log('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_stimuli(self, stimuli_step_id, addr):
         pass
@@ -50,7 +50,7 @@ class CoapthonCoapServerIPv6(AutomatedIUT):
         return COAP_SERVER_HOST
 
 
-class CoapthonCoapServerIPv4(CoapthonCoapServerIPv6):
+class AutomatedCoapthonCoapServerIPv4(AutomatedCoapthonCoapServerIPv6):
     """
     basically only redefines ip where to serve, the rest is the same..
     """
@@ -71,8 +71,8 @@ if __name__ == '__main__':
     try:
         logger.info('Starting IUT process')
         logger.info('IUT process init')
-        iut_v4 = CoapthonCoapServerIPv4()
-        iut_v6 = CoapthonCoapServerIPv6()
+        iut_v4 = AutomatedCoapthonCoapServerIPv4()
+        iut_v6 = AutomatedCoapthonCoapServerIPv6()
 
         logger.info('IUT process starting..')
         iut_v4.start()

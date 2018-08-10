@@ -14,7 +14,7 @@ default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER
 coap_host_address = COAP_CLIENT_HOST
 
 
-class CoapthonCoapClient(AutomatedIUT):
+class AutomatedCoapthonCoapClient(AutomatedIUT):
     """
     CoAPthon CLI expects:
     python finterop_interop_tests.py --ip bbbb::2 --port 5683 --testcase test_td_coap_core_01
@@ -99,7 +99,7 @@ class CoapthonCoapClient(AutomatedIUT):
 if __name__ == '__main__':
 
     try:
-        iut = CoapthonCoapClient()
+        iut = AutomatedCoapthonCoapClient()
         iut.start()
         iut.join()
     except Exception as e:

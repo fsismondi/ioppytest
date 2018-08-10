@@ -57,8 +57,7 @@ def launch_short_automated_iut_process(cmd: list, timeout=STIMULI_HANDLER_TOUT):
         o = subprocess.check_output(cmd,
                                     stderr=subprocess.STDOUT,
                                     shell=False,
-                                    timeout=timeout,
-                                    universal_newlines=True)
+                                    timeout=timeout)
     except subprocess.CalledProcessError as p_err:
         logging.error('Stimuli failed (ret code: {})'.format(p_err.returncode))
         logging.error('Error: {}'.format(p_err))
@@ -90,10 +89,10 @@ signal.signal(signal.SIGINT, signal_int_handler)
 
 class AutomatedIUT(threading.Thread):
     # attributes to be provided by subclass
-    implemented_testcases_list = NotImplementedField  # child must override
-    component_id = NotImplementedField  # child must override
-    implemented_stimuli_list = None  # child may override
-    process_log_file = None  # child may override, log file will be dumped into python logger at the end of session
+    implemented_testcases_list = NotImplementedField  # child MUST override
+    component_id = NotImplementedField  # child MUST override
+    implemented_stimuli_list = None  # child MAY override
+    process_log_file = None  # child MAY override, log file will be dumped into python logger at the end of session
 
     def __init__(self, node):
         self._init_logger()
@@ -245,7 +244,7 @@ class AutomatedIUT(threading.Thread):
 
     def handle_test_case_ready(self, event):
         if self.implemented_testcases_list == []:
-            self.log('IUT didnt declare testcases capabilities, we asume that any can be run')
+            self.log('IUT didnt declare testcases capabilities, we assume that any can be run')
             return
 
         if event.testcase_id not in self.implemented_testcases_list:

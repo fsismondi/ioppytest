@@ -53,8 +53,8 @@ RUN make install
 ENV PATH="/ioppytest/automated_IUTs/coap_client_libcoap/libcoap/libcoap/examples:$PATH"
 
 WORKDIR /ioppytest
-RUN mkdir automated_IUTs/coap_client_libcoap/file
-RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
+#RUN mkdir automated_IUTs/coap_client_libcoap/file
+#RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automated_IUTs/coap_client_libcoap/file
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2
