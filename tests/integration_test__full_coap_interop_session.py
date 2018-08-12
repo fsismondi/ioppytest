@@ -81,7 +81,7 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             ]  # the rest of the testcases are going to be skipped
 
         # thread
-        msg_validator = AmqpListener(
+        msg_consumer = AmqpListener(
             amqp_url=AMQP_URL,
             amqp_exchange=AMQP_EXCHANGE,
             callback=run_checks_on_message_received,
@@ -106,13 +106,13 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             iut_testcases=tc_list
         )
 
-        msg_validator.setName('msg_validator')
+        msg_consumer.setName('msg_consumer')
         user_stub.setName('user_stub')
         ui_stub.setName('ui_stub')
 
         threads = [
             user_stub,
-            msg_validator,
+            msg_consumer,
             ui_stub,
         ]
 
@@ -128,10 +128,14 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             self.connection.close()
 
             t = 0
+            WAIT_PERIOD = 1  # seconds
             # wait until we get MsgTestSuiteReport
             while t < SESSION_TIMEOUT and MsgTestSuiteReport not in events_sniffed_on_bus_dict:
-                time.sleep(5)
-                t += 5
+                time.sleep(WAIT_PERIOD)
+                if t == SESSION_TIMEOUT/2:
+                    logging.info("reached half of the expected time for the test execution, is everything alright?")
+                    log_all_received_messages(event_list=event_messages_sniffed_on_bus_list)
+                t += WAIT_PERIOD
 
             connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
@@ -143,19 +147,21 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                 logging.warning('Never received TERMINATE signal')
                 publish_message(
                     connection,
-                    MsgTestingToolTerminate(description="Integration test of CoAP interop test: sth went wrong :/")
+                    MsgTestingToolTerminate(description="Triggering TERMINATION.")
                 )
-            connection.close()
 
             time.sleep(10)  # so threads process TERMINATE signal
-
+            connection.close()
+            logging.info("Checking all threads have stopped..")
             try:
                 for th in threads:
                     if th.is_alive():
-                        logging.warning("Thread %s didn't stop" % th.name)
+                        logging.warning("Thread %s didn't stop with the TERMINATE signal" % th.name)
                         th.stop()
-            except Exception as e:  # i dont want this to make my tests fail
-                logging.warning('Exception thrown while stopping threads:\n%s' % e)
+            except Exception as e:  # I dont want this to make my tests fail
+                pass
+
+            logging.info("All threads have stopped..")
 
         except Exception as e:
             self.fail("Exception encountered:\n%s" % e)
@@ -177,9 +183,9 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
                     self.got_at_least_one_passed_tc = True
 
             if self.got_at_least_one_passed_tc:
-                logging.info('Got at least one PASS verdict')
+                logging.info('Got at least one PASS verdict :)')
             else:
-                logging.warning('(!) No PASS verdict found in the session results report')
+                logging.warning('No PASS verdict found in the session results report :(')
 
 
 def run_checks_on_message_received(message: Message):
@@ -189,8 +195,8 @@ def run_checks_on_message_received(message: Message):
 
     logging.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
     update_events_seen_on_bus_list(message)
-    check_if_message_is_an_error_message(message)
     publish_terminate_signal_on_report_received(message)
+    #check_if_message_is_an_error_message(message)
     check_api_version(message)
 
 

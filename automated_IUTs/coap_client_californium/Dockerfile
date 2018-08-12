@@ -1,7 +1,9 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-RUN apt-get update
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get -y -qq update
 RUN apt-get -y -qq install apt-utils
 RUN apt-get -y -qq install python3-dev
 RUN apt-get -y -qq install build-essential
@@ -10,7 +12,7 @@ RUN	apt-get -y -qq install python3-pip
 RUN	apt-get -y -qq install python-pip
 RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
-RUN apt-get -y install iputils-ping
+RUN apt-get -y -qq install iputils-ping
 RUN apt-get -y -qq install make
 
 # upgrade pip

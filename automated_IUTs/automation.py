@@ -31,6 +31,47 @@ def NotImplementedField(self):
     raise NotImplementedError
 
 
+def launch_long_automated_iut_process(cmd, process_logfile):
+    """
+    Launches IUT process and logs all output into file.
+    This is NON BLOCKING.
+    Doesnt return any value nor exception if process failed.
+    """
+    logging.info("Launching process with: %s" % cmd)
+    logging.info('Process logging into %s' % process_logfile)
+    with open(process_logfile, "w") as outfile:
+        subprocess.Popen(cmd, stdout=outfile)  # subprocess.Popen does not block
+
+
+def launch_short_automated_iut_process(cmd: list, timeout=STIMULI_HANDLER_TOUT):
+    """
+    Launches IUT process and logs all output using logger.
+    Execution BLOCKS until process finished or exec time > STIMULI_HANDLER_TOUT
+
+    Returns bool based of exec code, True if exec code is 0, else False
+    """
+    assert type(cmd) is list
+
+    logging.info('IUT process cmd: {}'.format(cmd))
+    try:
+        o = subprocess.check_output(cmd,
+                                    stderr=subprocess.STDOUT,
+                                    shell=False,
+                                    timeout=timeout)
+    except subprocess.CalledProcessError as p_err:
+        logging.error('Stimuli failed (ret code: {})'.format(p_err.returncode))
+        logging.error('Error: {}'.format(p_err))
+        return False
+
+    except subprocess.TimeoutExpired as tout_err:
+        logging.error('Stimuli process executed but timed-out, probably no response from the server.')
+        logging.error('Error: {}'.format(tout_err))
+        return False
+
+    logging.info('Stimuli ran successfully (ret code: {})'.format(str(o)))
+    return True
+
+
 def signal_int_handler(signal, frame):
     connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
@@ -48,10 +89,10 @@ signal.signal(signal.SIGINT, signal_int_handler)
 
 class AutomatedIUT(threading.Thread):
     # attributes to be provided by subclass
-    implemented_testcases_list = NotImplementedField  # child must override
-    component_id = NotImplementedField  # child must override
-    implemented_stimuli_list = None  # child may override
-    process_log_file = None  # child may override, log file will be dumped into python logger at the end of session
+    implemented_testcases_list = NotImplementedField  # child MUST override
+    component_id = NotImplementedField  # child MUST override
+    implemented_stimuli_list = None  # child MAY override
+    process_log_file = None  # child MAY override, log file will be dumped into python logger at the end of session
 
     def __init__(self, node):
         self._init_logger()
@@ -122,6 +163,9 @@ class AutomatedIUT(threading.Thread):
         self._logger.addHandler(rabbitmq_handler)
 
     def log(self, message):
+        """
+        Class logger to be used by AutomatedIUT and children classes too.
+        """
         self._logger.info(message)
 
         # # # #  INTERFACE to be overridden by child class # # # # # # # # # # # # # # # # # #
@@ -200,7 +244,7 @@ class AutomatedIUT(threading.Thread):
 
     def handle_test_case_ready(self, event):
         if self.implemented_testcases_list == []:
-            self.log('IUT didnt declare testcases capabilities, we asume that any can be run')
+            self.log('IUT didnt declare testcases capabilities, we assume that any can be run')
             return
 
         if event.testcase_id not in self.implemented_testcases_list:
@@ -501,16 +545,11 @@ class UserMock(threading.Thread):
 
         self.connection.close()
 
-    def exit(self):
-        self.log('%s exiting..' % self.component_id)
-
     def run(self):
         while self.shutdown is False:
             self.connection.process_data_events()
             time.sleep(0.3)
-
         self.log('%s shutting down..' % self.component_id)
-        self.exit()
 
 
 if __name__ == "__main__":

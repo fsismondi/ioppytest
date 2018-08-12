@@ -1,7 +1,9 @@
 FROM mono:latest
 MAINTAINER federico.sismondi@inria.fr
 
-RUN apt-get update
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get -y -qq update
 RUN apt-get -y -qq install apt-utils
 RUN apt-get -y -qq install python3-dev
 RUN apt-get -y -qq install build-essential

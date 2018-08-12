@@ -1,7 +1,7 @@
 properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
 if(env.JOB_NAME =~ 'ioppytest/'){
-    node('sudo'){
+    node('docker'){
         env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
 
@@ -49,6 +49,35 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             }
         }
       }
+
+      stage("install-development-environment-dependencies"){
+        withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+            sh '''
+                # TODO make a install-devopment-environment-dependencies in Makefile
+                #sudo -H make install-devopment-environment-dependencies
+
+                echo installing other dependencies needed for running tests
+
+                # Install autogen dependencies
+                sudo -H apt-get -y install autoconf
+                sudo -H apt-get -y install pkg-config
+                sudo -H apt-get -y install libtool
+                sudo -H apt-get -y install autotools-dev
+                sudo -H apt-get -y install automake
+
+                # Install libcoap API & CLI from sources
+	            git clone https://github.com/obgm/libcoap.git /tmp/libcoap_git
+	            cd /tmp/libcoap_git
+	            ./autogen.sh
+	            ./configure --enable-examples --disable-doxygen --disable-manpages
+	            sudo make
+	            sudo make install
+	            export PATH="/tmp/libcoap_gitgit/examples:$PATH"
+	            export LD_LIBRARY_PATH=/usr/local/lib
+            '''
+        }
+      }
+
 
       stage("test description (yaml files) validation"){
         gitlabCommitStatus("test description (yaml files) validation"){
@@ -163,6 +192,58 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
         }
 
 
+        stage("RUN mini-plugtest: libcoap_clie VS californium_serv"){
+            gitlabCommitStatus("START resources for mini-plugtest: libcoap_clie VS californium_serv") {
+                gitlabCommitStatus("Docker run") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-libcoap-cli-vs-californium-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+            gitlabCommitStatus("EXECUTE mini-plugtest: libcoap_clie VS californium_serv") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m pytest -s -p no:cacheprovider tests/integration_test__full_coap_interop_session.py -v
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+                    sh '''
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                }
+            }
+        }
+        
         stage("RUN mini-plugtest: aiocoap_clie VS californium_serv"){
             gitlabCommitStatus("START resources for mini-plugtest: aiocoap_clie VS californium_serv") {
                 gitlabCommitStatus("Docker run") {
@@ -214,6 +295,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                 }
             }
         }
+
 
 
 
