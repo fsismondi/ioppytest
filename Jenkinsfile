@@ -50,7 +50,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
         }
       }
 
-      stage("install-devopment-environment-dependencies"){
+      stage("install-development-environment-dependencies"){
         withEnv(["DEBIAN_FRONTEND=noninteractive"]){
             sh '''
                 # TODO make a install-devopment-environment-dependencies in Makefile
@@ -70,8 +70,8 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 	            cd /tmp/libcoap_git
 	            ./autogen.sh
 	            ./configure --enable-examples --disable-doxygen --disable-manpages
-	            make
-	            make install
+	            sudo make
+	            sudo make install
 	            export PATH="/tmp/libcoap_gitgit/examples:$PATH"
 	            export LD_LIBRARY_PATH=/usr/local/lib
             '''
