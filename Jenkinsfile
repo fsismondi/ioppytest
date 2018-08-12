@@ -45,9 +45,26 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             sh '''
                 echo installing python dependencies...
                 sudo -H make install-python-dependencies
+            '''
+            }
+        }
+      }
+
+      stage("install-devopment-environment-dependencies"){
+        withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+            sh '''
+                # TODO make a install-devopment-environment-dependencies in Makefile
+                #sudo -H make install-devopment-environment-dependencies
 
                 echo installing other dependencies needed for running tests
-                #sudo -H make install-devopment-environment-dependencies
+
+                # Install autogen dependencies
+                sudo -H apt-get -y install autoconf
+                sudo -H apt-get -y install pkg-config
+                sudo -H apt-get -y install libtool
+                sudo -H apt-get -y install autotools-dev
+                sudo -H apt-get -y install automake
+
                 # Install libcoap API & CLI from sources
 	            git clone https://github.com/obgm/libcoap.git /tmp/libcoap_git
 	            cd /tmp/libcoap_git
@@ -58,9 +75,9 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 	            export PATH="/tmp/libcoap_gitgit/examples:$PATH"
 	            export LD_LIBRARY_PATH=/usr/local/lib
             '''
-            }
         }
       }
+
 
       stage("test description (yaml files) validation"){
         gitlabCommitStatus("test description (yaml files) validation"){
