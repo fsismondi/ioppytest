@@ -45,6 +45,18 @@ if(env.JOB_NAME =~ 'ioppytest/'){
             sh '''
                 echo installing python dependencies...
                 sudo -H make install-python-dependencies
+
+                echo installing other dependencies needed for running tests
+                #sudo -H make install-devopment-environment-dependencies
+                # Install libcoap API & CLI from sources
+	            git clone https://github.com/obgm/libcoap.git /tmp/libcoap_git
+	            cd /tmp/libcoap_git
+	            ./autogen.sh
+	            ./configure --enable-examples --disable-doxygen --disable-manpages
+	            make
+	            make install
+	            export PATH="/tmp/libcoap_gitgit/examples:$PATH"
+	            export LD_LIBRARY_PATH=/usr/local/lib
             '''
             }
         }
