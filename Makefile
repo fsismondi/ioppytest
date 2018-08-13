@@ -28,6 +28,21 @@ info_message = """ \\n\
 	******************************************************************************************\n\\n\
 	"""
 
+LIST = automated_iut-coap_client-coapthon \
+	   automated_iut-coap_client-aiocoap \
+	   automated_iut-coap_client-libcoap \
+	   automated_iut-coap_client-californium \
+	   automated_iut-coap_server-coapthon \
+	   automated_iut-coap_server-august_cellars \
+	   automated_iut-coap_server-californium \
+	   testing_tool-interoperability-coap \
+	   testing_tool-interoperability-comi \
+	   testing_tool-interoperability-6lowpan \
+	   testing_tool-interoperability-onem2m \
+	   testing_tool-interoperability-lwm2m \
+	   reference_iut-coap_server \
+	   reference_iut-coap_client \
+
 info:
 	@echo $(info_message)
 
@@ -164,19 +179,14 @@ stop-coap-client-aiocoap:
 stop-coap-client-libcoap:
 	docker stop automated_iut-coap_client-libcoap
 
-stop-all: ## Stop testing tools running as docker containers
-	@echo "running $@"
-	# (exit 0) -> so the script continues on errors
-	$(MAKE) stop-coap-testing-tool --keep-going ; exit 0
-	$(MAKE) stop-6lowpan-testing-tool --keep-going ; exit 0
-	$(MAKE) stop-coap-server --keep-going ; exit 0
-	$(MAKE) stop-coap-client --keep-going ; exit 0
-	$(MAKE) stop-coap-client-californium --keep-going ; exit 0
-	$(MAKE) stop-coap-server-californium --keep-going ; exit 0
-	$(MAKE) stop-coap-client-coapthon --keep-going ; exit 0
-	$(MAKE) stop-coap-server-coapthon --keep-going ; exit 0
-	$(MAKE) stop-coap-client-aiocoap ; exit 0
-	$(MAKE) stop-coap-client-libcoap ; exit 0
+stop-coap-server-august_cellars:
+	docker stop automated_iut-coap_server-august_cellars
+
+stop-all: ## stops testing tools and IUTs running as docker containers
+	@echo "Stoppping all running containers spawned by ioppytest..."
+	@- $(foreach LIST,$(LIST), \
+		docker stop "$(word 1,$(subst :, ,$(LIST)))" ; \
+    ) exit 0
 
 # # # # UNITTEST commands # # # #
 
@@ -187,54 +197,12 @@ run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@python3 -m pytest -p no:cacheprovider tests/ -vvv
 
-LIST = automated_iut-coap_client-coapthon \
-	   automated_iut-coap_client-aiocoap \
-	   automated_iut-coap_client-libcoap \
-	   automated_iut-coap_client-californium \
-	   automated_iut-coap_server-coapthon \
-	   automated_iut-coap_server-californium \
-
-
-get-logs: ## Get logs from the running containers
-	@echo ">>>>> start logs automated_iut-coap_client-aiocoap"
-	docker logs automated_iut-coap_client-aiocoap ; exit 0
-	@echo "<<<<< end logs automated_iut-coap_client-aiocoap \n"
-
-	@echo ">>>>> start logs automated_iut-coap_client-libcoap"
-	docker logs automated_iut-coap_client-libcoap ; exit 0
-	@echo "<<<<< end logs automated_iut-coap_client-libcoap \n"
-
-	@echo ">>>>> start logs automated_iut-coap_server-californium"
-	docker logs automated_iut-coap_server-californium ; exit 0
-	@echo "<<<<< end logs automated_iut-coap_server-californium \n"
-
-	@echo ">>>>> start logs automated_iut-coap_server-coapthon"
-	docker logs automated_iut-coap_server-coapthon ; exit 0
-	@echo "<<<<< end logs automated_iut-coap_server-coapthon \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-coap"
-	docker logs testing_tool-interoperability-coap ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-coap \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-6lowpan"
-	docker logs testing_tool-interoperability-6lowpan ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-6lowpan \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-onem2m"
-	docker logs testing_tool-interoperability-onem2m ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-onem2m \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-lwm2m"
-	docker logs testing_tool-interoperability-lwm2m ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-lwm2m \n"
-
-	@echo ">>>>> start logs reference_iut-coap_server"
-	docker logs reference_iut-coap_server ; exit 0
-	@echo "<<<<< end logs reference_iut-coap_server \n"
-
-	@echo ">>>>> start logs reference_iut-coap_client"
-	docker logs reference_iut-coap_client ; exit 0
-	@echo "<<<<< end logs reference_iut-coap_client \n"
+get-logs: ## echoes logs from the running containers
+	@- $(foreach LIST,$(LIST), \
+		echo "LOGS BEGIN >>>> $(word 1,$(subst :, ,$(LIST))) " ; \
+		docker logs "$(word 1,$(subst :, ,$(LIST)))" ; \
+		echo "LOGS END <<<<< $(word 1,$(subst :, ,$(LIST))) " \
+    ); exit 0
 
 install-python-dependencies: ## installs all py2 and py3 pip dependencies
 	@echo "installing py2 submodule's dependencies..."
@@ -396,6 +364,14 @@ _setup-coap-mini-interop-libcoap-cli-vs-californium-server:
 	@echo "running $@"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
+
+
+_run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
 
 _run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
