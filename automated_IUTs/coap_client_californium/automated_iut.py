@@ -12,7 +12,7 @@ default_coap_server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER
 coap_host_address = COAP_CLIENT_HOST
 
 
-class CaliforniumCoapClient(AutomatedIUT):
+class AutomatedCaliforniumCoapClient(AutomatedIUT):
     """
     californium client CLI expects:
     java -jar (..)/coap_plugtest_client-1.1.0-SNAPSHOT.jar -s -u coap://[<IPv6>]:port -t TD_COAP_CORE_01
@@ -102,7 +102,7 @@ class CaliforniumCoapClient(AutomatedIUT):
 if __name__ == '__main__':
 
     try:
-        iut = CaliforniumCoapClient()
+        iut = AutomatedCaliforniumCoapClient()
         iut.start()
         iut.join()
     except Exception as e:

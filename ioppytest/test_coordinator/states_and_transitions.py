@@ -1,7 +1,6 @@
 STEP_TIMEOUT = 6000  # seconds   # TODO test suite or test coordinator param?
 IUT_CONFIGURATION_TIMEOUT = 5  # seconds # TODO test suite or test coordinator param?
 
-
 states = [
     {
         'name': 'null',
@@ -202,6 +201,24 @@ transitions = [
             'handle_current_step_timeout'
         ]
     },
+
+    # NOTE: if the FSM already advanced to next test case, then restart_testcase cannot be used,
+    # select_test_case should be used instead
+
+    {
+        'trigger': 'restart_testcase',
+        'source': [
+            'waiting_for_iut_configuration_executed',
+            'waiting_for_testcase_start',
+            'waiting_for_step_executed',
+            'testcase_finished',
+        ],
+        'dest': 'preparing_next_testcase',
+        'before': [
+            '_set_received_event',
+            'handle_testcase_restart'
+        ]
+    },
     {
         'trigger': 'select_testcase',
         'source': [
@@ -216,7 +233,7 @@ transitions = [
             'handle_testcase_select'
         ]
     },
-    # SKIP test case, case 1 : is_skipping_current_testcase
+    # SKIP test case, opt1 : is_skipping_current_testcase
     {
         'trigger': 'skip_testcase',
         'source': [
@@ -232,7 +249,7 @@ transitions = [
             'handle_testcase_skip'
         ]
     },
-    # SKIP test case, case 2 : not is_skipping_current_testcase
+    # SKIP test case, opt2 : not is_skipping_current_testcase
     {
         'trigger': 'skip_testcase',
         'source': [

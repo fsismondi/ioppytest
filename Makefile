@@ -28,6 +28,21 @@ info_message = """ \\n\
 	******************************************************************************************\n\\n\
 	"""
 
+LIST = automated_iut-coap_client-coapthon \
+	   automated_iut-coap_client-aiocoap \
+	   automated_iut-coap_client-libcoap \
+	   automated_iut-coap_client-californium \
+	   automated_iut-coap_server-coapthon \
+	   automated_iut-coap_server-august_cellars \
+	   automated_iut-coap_server-californium \
+	   testing_tool-interoperability-coap \
+	   testing_tool-interoperability-comi \
+	   testing_tool-interoperability-6lowpan \
+	   testing_tool-interoperability-onem2m \
+	   testing_tool-interoperability-lwm2m \
+	   reference_iut-coap_server \
+	   reference_iut-coap_client \
+
 info:
 	@echo $(info_message)
 
@@ -50,6 +65,10 @@ help: ## Help dialog.
 	done
 
 # # # # Testing Tool & other resources BUILD commands # # # #
+build-all-coap-images: ## Build all testing tool in docker images, and other docker image resources too
+	@echo "Starting to build CoAP docker images.. "
+	$(MAKE) _docker-build-coap
+	$(MAKE) _docker-build-coap-additional-resources
 
 build-tools: ## builds all testing tool docker images (only testing tool)
 	@echo $(info_message)
@@ -79,11 +98,11 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 
 sniff-bus: ## Listen and echo all messages in the event bus
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m ioppytest.utils.interop_cli connect -ll
+	@python3 -m ioppytest_cli connect -ll
 
 run-cli: ## Run interactive shell
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m ioppytest.utils.interop_cli repl
+	@python3 -m ioppytest_cli repl
 
 run-6lowpan-testing-tool: ## Run 6LoWPAN testing tool in docker container
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -107,11 +126,11 @@ run-comi-testing-tool: ## Run CoMI testing tool in docker container
 
 run-agent-coap-client: # TODO make a more generic command for any agent, then config phase happens later..
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
+	ioppytest-agent connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_client
 
 run-agent-coap-server:
 	$(MAKE) _check-sudo
-	cd ioppytest/agent && python agent.py connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
+	ioppytest-agent connect --url $(AMQP_URL) --exchange $(AMQP_EXCHANGE)  --name coap_server
 
 run-coap-client:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -154,80 +173,48 @@ stop-coap-client-coapthon:
 stop-coap-server-coapthon:
 	docker stop automated_iut-coap_server-coapthon
 
-stop-all: ## Stop testing tools running as docker containers
-	@echo "running $@"
-	# (exit 0) -> so the script continues on errors
-	$(MAKE) stop-coap-testing-tool --keep-going ; exit 0
-	$(MAKE) stop-6lowpan-testing-tool --keep-going ; exit 0
-	$(MAKE) stop-coap-server --keep-going ; exit 0
-	$(MAKE) stop-coap-client --keep-going ; exit 0
-	$(MAKE) stop-coap-client-californium --keep-going ; exit 0
-	$(MAKE) stop-coap-server-californium --keep-going ; exit 0
-	$(MAKE) stop-coap-client-coapthon --keep-going ; exit 0
-	$(MAKE) stop-coap-server-coapthon --keep-going ; exit 0
+stop-coap-client-aiocoap:
+	docker stop automated_iut-coap_client-aiocoap
+
+stop-coap-client-libcoap:
+	docker stop automated_iut-coap_client-libcoap
+
+stop-coap-server-august_cellars:
+	docker stop automated_iut-coap_server-august_cellars
+
+stop-all: ## stops testing tools and IUTs running as docker containers
+	@echo "Stoppping all running containers spawned by ioppytest..."
+	@- $(foreach LIST,$(LIST), \
+		docker stop "$(word 1,$(subst :, ,$(LIST)))" ; \
+    ) exit 0
 
 # # # # UNITTEST commands # # # #
 
 validate-test-description-syntax: ## validate (yaml) test description file syntax
-	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py -vvv
+	@python3 -m pytest -p no:cacheprovider tests/test_test_descriptions.py -vvv
 
 run-tests: ## runs all unittests
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
-	@python3 -m pytest -p no:cacheprovider ioppytest/extended_test_descriptions/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/test_coordinator/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/packet_router/tests/tests.py -vvv
-	@python3 -m pytest -p no:cacheprovider ioppytest/sniffer/tests/__init__.py -vvv
-	$(MAKE) _test_submodules
+	@python3 -m pytest -p no:cacheprovider tests/ -vvv
 
+get-logs: ## echoes logs from the running containers
+	@- $(foreach LIST,$(LIST), \
+		echo "LOGS BEGIN >>>> $(word 1,$(subst :, ,$(LIST))) " ; \
+		docker logs "$(word 1,$(subst :, ,$(LIST)))" ; \
+		echo "LOGS END <<<<< $(word 1,$(subst :, ,$(LIST))) " \
+    ); exit 0
 
-_test_ttproto:
-	cd ioppytest/test_analysis_tool ;python3 -m pytest -p no:cacheprovider tests/test_core --ignore=tests/test_core/test_dissector/test_dissector_6lowpan.py
-	
-_test_utils:
-	cd ioppytest/utils ;python3 -m pytest -p no:cacheprovider tests
-	
-_test_submodules:
-	@echo "TODO: run ttproto tests as well once they are ok"
-	# $(MAKE) _test_ttproto
-	$(MAKE) _test_utils
-	
+install-python-dependencies: ## installs all py2 and py3 pip dependencies
+	@echo "installing py2 submodule's dependencies..."
+	@python -m pip -qq install ioppytest-agent
 
-get-logs: ## Get logs from the running containers
-	@echo ">>>>> start logs testing_tool-interoperability-coap"
-	docker logs testing_tool-interoperability-coap ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-coap \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-6lowpan"
-	docker logs testing_tool-interoperability-6lowpan ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-6lowpan \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-onem2m"
-	docker logs testing_tool-interoperability-onem2m ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-onem2m \n"
-
-	@echo ">>>>> start logs testing_tool-interoperability-lwm2m"
-	docker logs testing_tool-interoperability-lwm2m ; exit 0
-	@echo "<<<<< end logs testing_tool-interoperability-lwm2m \n"
-
-	@echo ">>>>> start logs reference_iut-coap_server"
-	docker logs reference_iut-coap_server ; exit 0
-	@echo "<<<<< end logs reference_iut-coap_server \n"
-
-	@echo ">>>>> start logs reference_iut-coap_client"
-	docker logs reference_iut-coap_client ; exit 0
-	@echo "<<<<< end logs reference_iut-coap_client \n"
-
-install-python-dependencies: ## installs all python pip dependencies
-	@echo 'installing py2 dependencies...'
-	@python -m pip -qq install -r ioppytest/agent/requirements.txt
-	@echo 'installing py3 dependencies...'
+	@echo "installing py3 submodule's dependencies..."
 	@python3 -m pip -qq install pytest
-	@python3 -m pip -qq install -r ioppytest/test_coordinator/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/test_analysis_tool/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/packet_router/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/sniffer/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/webserver/requirements.txt
-	@python3 -m pip -qq install -r ioppytest/utils/requirements.txt
+	@python3 -m pip -qq install ioppytest-utils
+
+	@echo "installing py3 ioppytest's dependencies..."
+	@python3 -m pip -qq install -r ioppytest/requirements.txt
+	@python3 -m pip -qq install -r automated_IUTs/requirements.txt
 
 # # # # other AUXILIARY commands  # # # #
 _check-sudo:
@@ -297,24 +284,44 @@ _docker-build-coap-additional-resources:
 
 	# let's build the automated/reference IUT images used by F-Interop platform
 
+	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	# build without using caché packages (slower builds)
 	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
 	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
 
+	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile .
 
+	# automated_iut-coap_server-coapthon & automated_iut-coap_client-coapthon
 	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
 
+	# automated_iut-coap_client-aiocoap
+	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automated_IUTs/coap_client_aiocoap/Dockerfile .
+
+	# automated_iut-coap_client-libcoap
+	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automated_IUTs/coap_client_libcoap/Dockerfile .
+
+	# automated_iut-coap_server-august_cellars
+	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automated_IUTs/coap_server_august_cellars/Dockerfile .
+
+	# re-tagging version-less docker container name
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
 	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
 
 	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
 
+	docker tag automated_iut-coap_client-aiocoap-v$(version):latest automated_iut-coap_client-aiocoap
+
+	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
+
+	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
+
 	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
+
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
@@ -338,17 +345,58 @@ _docker-build-6lowpan-additional-resources:
 	@echo "TBD"
 
 
+# # # # running fully-automated interop tests commands  # # # #
+
 _setup-coap-mini-interop-californium-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-californium automated_iut-coap_client-californium
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
 
+_setup-coap-mini-interop-aiocoap-cli-vs-californium-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
+
+_setup-coap-mini-interop-libcoap-cli-vs-californium-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
+
+
+_run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
+
+_run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-coapthon automated_iut-coap_server-coapthon
+
 _run-coap-mini-interop-californium-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-californium-cli-vs-californium-server
+
+_run-coap-mini-interop-aiocoap-cli-vs-californium-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	$(MAKE) _setup-coap-mini-interop-aiocoap-cli-vs-californium-server
+
+_run-coap-mini-interop-libcoap-cli-vs-californium-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-californium-server
 
 _setup-coap-mini-interop-californium-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"

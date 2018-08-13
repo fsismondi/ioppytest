@@ -1,13 +1,19 @@
 FROM ubuntu:16.04
 MAINTAINER federico.sismondi@inria.fr
 
-RUN apt-get update -y -qq && apt-get -y -qq install python3-dev
-RUN apt-get -y install python3-setuptools
-RUN	apt-get -y install python3-pip
-RUN	apt-get -y install python-pip
-RUN	apt-get -y install supervisor
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get -y -qq update
+RUN apt-get -y -qq install apt-utils
+RUN apt-get -y -qq install python3-dev
+RUN apt-get -y -qq install build-essential
+RUN apt-get -y -qq install python3-setuptools
+RUN	apt-get -y -qq install python3-pip
+RUN	apt-get -y -qq install python-pip
+RUN	apt-get -y -qq install supervisor
+RUN apt-get -y -qq install net-tools
 RUN apt-get -y install iputils-ping
-RUN apt-get -y install net-tools
+RUN apt-get -y -qq install make
 
 # upgrade pip
 RUN python -m pip install --upgrade pip
@@ -17,16 +23,15 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
-#py2 requirements
-RUN python -m pip install -r ioppytest/agent/requirements.txt
+# install aux ioppytest packages
+RUN python -m pip install ioppytest-agent
+RUN python3 -m pip install ioppytest-utils
+
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automated_IUTs/requirements.txt
 
 #py3 requirements
 RUN python3 -m pip install -r automated_IUTs/coap_client_coapthon/CoAPthon/requirements.txt
-
-# requirements on autoamted-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
-
-#RUN cp automated_IUTs/coap_client_coapthon/supervisor.conf supervisor.conf
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2

@@ -9,10 +9,10 @@ import datetime
 from transitions.core import MachineError
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
-from ioppytest.utils.event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
-from ioppytest.utils.exceptions import CoordinatorError
-from ioppytest.utils.messages import *
+from event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
+from ioppytest.exceptions import CoordinatorError
+from messages import *
 
 # TODO these VARs need to come from the session orchestrator + test configuratio files
 # TODO get filter from config of the TEDs
@@ -49,10 +49,11 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 TOUT_waiting_for_iut_configuration_executed = 5
 
 
-class CoordinatorAmqpInterface(object):
+class CoordinatorAmqpInterface:
     """
-    This class listens to the event bus for test coordination services (like get testcases list etc..)
-    and to test coordination events (like testcase start event etc..).
+    This class listens to the following event bus messages:
+        - Coordinator SERVICES (request/reply messages) like get testcases list etc..
+        - Coordination EVENTS (like testcase start event, skip, etc..), these are dispatched to the FSM
     """
 
     def __init__(self, amqp_url, amqp_exchange):
@@ -80,6 +81,7 @@ class CoordinatorAmqpInterface(object):
             MsgStepCheckExecuted: 'step_executed',
             MsgTestCaseSelect: 'select_testcase',
             MsgTestSuiteStart: 'start_testsuite',
+            MsgTestCaseRestart: 'restart_testcase',
             MsgTestCaseSkip: 'skip_testcase',
 
         }
@@ -269,7 +271,7 @@ class CoordinatorAmqpInterface(object):
 
     def notify_testcase_finished(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseFinished(
             **msg_fields
@@ -279,7 +281,7 @@ class CoordinatorAmqpInterface(object):
     def notify_testcase_verdict(self, received_event):
         msg_fields = {}
         msg_fields.update(self.testsuite.get_testcase_report())
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseVerdict(**msg_fields)
         self._publish_message(event)
@@ -341,7 +343,7 @@ class CoordinatorAmqpInterface(object):
 
     def notify_testcase_started(self, received_event):
         msg_fields = {}
-        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=True))
+        msg_fields.update(self.testsuite.get_current_testcase().to_dict(verbose=False))
 
         event = MsgTestCaseStarted(
             **msg_fields

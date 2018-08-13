@@ -14,7 +14,7 @@ server_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 
 # timeout in seconds
-STIMULI_HANDLER_TOUT = 3600
+STIMULI_HANDLER_TOUT = 15
 
 
 class AcklioCoMiServer(AutomatedIUT):
@@ -58,7 +58,7 @@ class AcklioCoMiServer(AutomatedIUT):
         # shoud we restart process?
         return server_base_url
 
-if __name__ == '__main__'`:
+if __name__ == '__main__':
     iut = AcklioCoMiServer()
     iut.start()
     iut.join()
