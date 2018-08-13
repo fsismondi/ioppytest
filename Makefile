@@ -316,25 +316,29 @@ _docker-build-coap-additional-resources:
 
 	# let's build the automated/reference IUT images used by F-Interop platform
 
+	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	# build without using caché packages (slower builds)
 	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
 	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
 
-	# californium
+	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile .
 
-	# coapthon
+	# automated_iut-coap_server-coapthon & automated_iut-coap_client-coapthon
 	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
 
-	# aiocoap
+	# automated_iut-coap_client-aiocoap
 	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automated_IUTs/coap_client_aiocoap/Dockerfile .
 
-	# libcoap
+	# automated_iut-coap_client-libcoap
 	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automated_IUTs/coap_client_libcoap/Dockerfile .
 
-	# re-tagging
+	# automated_iut-coap_server-august_cellars
+	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automated_IUTs/coap_server_august_cellars/Dockerfile .
+
+	# re-tagging version-less docker container name
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
 	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
 
@@ -344,6 +348,8 @@ _docker-build-coap-additional-resources:
 	docker tag automated_iut-coap_client-aiocoap-v$(version):latest automated_iut-coap_client-aiocoap
 
 	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
+
+	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
