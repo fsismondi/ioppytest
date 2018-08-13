@@ -243,17 +243,16 @@ class AutomatedIUT(threading.Thread):
             self.log('Event received and ignored: %s' % type(event))
 
     def handle_test_case_ready(self, event):
-        if self.implemented_testcases_list == []:
+        if not self.implemented_testcases_list:  # either is None or []
             self.log('IUT didnt declare testcases capabilities, we assume that any can be run')
             return
 
         if event.testcase_id not in self.implemented_testcases_list:
             time.sleep(0.1)
-            self.log(
-                'IUT %s (%s) pushing test case skip message for %s' % (self.component_id, self.node, event.testcase_id))
+            self.log('IUT %s (%s) CANNOT handle test case: %s' % (self.component_id, self.node, event.testcase_id))
             publish_message(self.connection, MsgTestCaseSkip(testcase_id=event.testcase_id))
         else:
-            self.log('IUT %s (%s) ready to execute testcase' % (self.component_id, self.node))
+            self.log('IUT %s (%s) READY to handle test case: %s' % (self.component_id, self.node, event.testcase_id))
 
     def handle_stimuli_execute(self, event):
         if event.node == self.node and event.step_id in self.implemented_stimuli_list:
@@ -410,8 +409,8 @@ class UserMock(threading.Thread):
             MsgTestSuiteReport: self.handle_test_suite_report,
             MsgTestCaseVerdict: self.handle_test_case_verdict,
             MsgTestingToolTerminate: self.handle_testing_tool_terminate,
-            MsgStepVerifyExecute:self.handle_verif_step_execute,
-            MsgTestCaseConfiguration: self.handle_test_case_configurate,
+            MsgStepVerifyExecute: self.handle_verif_step_execute,
+            # MsgTestCaseConfiguration: self.handle_test_case_configurate,
         }
 
         self.shutdown = False
@@ -473,26 +472,26 @@ class UserMock(threading.Thread):
             else:
                 self.log('Event received and ignored: %s' % type(event))
 
-    def handle_verif_step_execute(self,event):
+    def handle_verif_step_execute(self, event):
 
         if event.node in self.iut_to_mock_verifications_for:
             publish_message(self.connection, MsgStepVerifyExecuted(verify_response=True,
                                                                    node=event.node
                                                                    ))
             self.log('Mocked verify response for m: %s (node: %s - step: %s)' %
-                        (
-                            type(event),
-                            event.node,
-                            event.step_id,
-                        ))
+                     (
+                         type(event),
+                         event.node,
+                         event.step_id,
+                     ))
 
         else:
             self.log('Event received and ignored: %s (node: %s - step: %s)' %
-                        (
-                            type(event),
-                            event.node,
-                            event.step_id,
-                        ))
+                     (
+                         type(event),
+                         event.node,
+                         event.step_id,
+                     ))
 
     def handle_testing_tool_configured(self, event):
         """
