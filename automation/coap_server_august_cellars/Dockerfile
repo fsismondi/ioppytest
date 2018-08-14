@@ -32,7 +32,7 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 # requirements on automated-iut python code
-RUN python3 -m pip install -r /ioppytest/automation/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
 # download and build august cellars coap server
 RUN git clone https://github.com/Com-AugustCellars/TestServer /AugustCellarsTestServer
