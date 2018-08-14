@@ -28,11 +28,11 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 #py3 requirements
-RUN python3 -m pip install -r automated_IUTs/coap_client_aiocoap/requirements.txt
+RUN python3 -m pip install -r automation/coap_client_aiocoap/requirements.txt
 
-#RUN cp automated_IUTs/coap_client_aiocoap/supervisor.conf supervisor.conf
+#RUN cp automation/coap_client_aiocoap/supervisor.conf supervisor.conf
 
 EXPOSE 5671 5672
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_client_aiocoap/supervisor.conf"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_client_aiocoap/supervisor.conf"]

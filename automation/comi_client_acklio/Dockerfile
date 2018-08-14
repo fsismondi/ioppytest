@@ -28,10 +28,10 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 # requirements on automated-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
 # requirements on autoamted-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
 # CoMI binary and examples
 #ADD automation/comi_server_acklio/serverComi /CoMI/
@@ -45,6 +45,6 @@ RUN python -m pip install -Iv amqp==2.2.2
 EXPOSE 5683
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/comi_client_acklio/supervisor.conf.ini"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/comi_client_acklio/supervisor.conf.ini"]
 
 

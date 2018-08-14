@@ -32,7 +32,7 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 # requirements on automated-iut python code
-RUN python3 -m pip install -r /ioppytest/automated_IUTs/requirements.txt
+RUN python3 -m pip install -r /ioppytest/automation/requirements.txt
 
 # download and build august cellars coap server
 RUN git clone https://github.com/Com-AugustCellars/TestServer /AugustCellarsTestServer
@@ -50,4 +50,4 @@ RUN msbuild /p:Configuration=Debug TestServer.Net462.sln
 RUN python -m pip install -Iv amqp==2.2.2
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "/ioppytest/automated_IUTs/coap_server_august_cellars/supervisor.docker.ini"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "/ioppytest/automation/coap_server_august_cellars/supervisor.docker.ini"]

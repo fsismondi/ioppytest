@@ -28,15 +28,15 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 # requirements on automated-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
 #py3 requirements
-RUN python3 -m pip install -r automated_IUTs/coap_server_coapthon/CoAPthon/requirements.txt
+RUN python3 -m pip install -r automation/coap_server_coapthon/CoAPthon/requirements.txt
 
 # requirements on autoamted-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
-RUN cp automated_IUTs/coap_server_coapthon/supervisor.conf supervisor.conf
+RUN cp automation/coap_server_coapthon/supervisor.conf supervisor.conf
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2

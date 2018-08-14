@@ -31,7 +31,7 @@ RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
 # requirements on automated-iut python code
-RUN python3 -m pip install -r automated_IUTs/requirements.txt
+RUN python3 -m pip install -r automation/requirements.txt
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2
@@ -40,4 +40,4 @@ RUN python -m pip install -Iv amqp==2.2.2
 EXPOSE 5671 5672
 
 # launch processes
-CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automated_IUTs/coap_server_californium/supervisor.conf"]
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_server_californium/supervisor.conf"]
