@@ -23,6 +23,9 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
+# clone git repo with CoAthon and CLI used for the interop tests
+RUN git clone https://github.com/fsismondi/CoAPthon.git automation/coap_server_coapthon/CoAPthon/
+
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils

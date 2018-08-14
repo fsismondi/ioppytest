@@ -1,6 +1,0 @@
-[submodule "automation/coap_client_coapthon/CoAPthon"]
-	path = automation/coap_client_coapthon/CoAPthon
-	url = https://github.com/fsismondi/CoAPthon.git
-[submodule "automation/coap_server_coapthon/CoAPthon"]
-	path = automation/coap_server_coapthon/CoAPthon
-	url = https://github.com/fsismondi/CoAPthon.git

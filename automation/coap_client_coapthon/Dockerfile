@@ -14,6 +14,7 @@ RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y install iputils-ping
 RUN apt-get -y -qq install make
+RUN apt-get -y -qq install git
 
 # upgrade pip
 RUN python -m pip install --upgrade pip
@@ -22,6 +23,9 @@ RUN python3 -m pip install --upgrade pip
 ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
+
+# clone git repo with CoAthon and CLI used for the interop tests
+RUN git clone https://github.com/fsismondi/CoAPthon.git automation/coap_client_coapthon/CoAPthon/
 
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
