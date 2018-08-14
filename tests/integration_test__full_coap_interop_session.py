@@ -11,7 +11,7 @@ import os
 from messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from event_bus_utils import publish_message, AmqpListener, amqp_request
-from automated_IUTs.automation import UserMock
+from automation import UserMock
 
 from tests import (
     check_if_message_is_an_error_message,

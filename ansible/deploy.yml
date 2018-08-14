@@ -35,6 +35,6 @@
   become: True
   command: mvn package
   args:
-    chdir: "{{ testing_tool_dir }}/automated_IUTs/coap_server_californium"
-    creates: "{{ testing_tool_dir }}/automated_IUTs/coap_server_californium/target"
+    chdir: "{{ testing_tool_dir }}/automation/coap_server_californium"
+    creates: "{{ testing_tool_dir }}/automation/coap_server_californium/target"
 
