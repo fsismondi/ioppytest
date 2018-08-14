@@ -83,6 +83,7 @@ logger = logging.getLogger()
 def get_random_token():
     return binascii.hexlify(os.urandom(8))
 
+
 # translates stimuli calls into IUT CLI calls
 def get(base_url,
         resource,
