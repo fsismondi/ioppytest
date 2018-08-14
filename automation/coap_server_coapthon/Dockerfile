@@ -14,6 +14,7 @@ RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y install iputils-ping
 RUN apt-get -y -qq install make
+RUN apt-get -y -qq install git
 
 # upgrade pip
 RUN python -m pip install --upgrade pip
