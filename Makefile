@@ -317,7 +317,8 @@ _docker-build-coap-additional-resources:
 
 	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
 
-	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
+	# comments cause it takes too long
+	#docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
@@ -421,7 +422,6 @@ _run-coap-mini-interop-coapthon-cli-vs-coapthon-server:
 	@echo "running $@"
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-coapthon-cli-vs-coapthon-server
-
 
 _setup-coap-mini-interop-coapthon-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
