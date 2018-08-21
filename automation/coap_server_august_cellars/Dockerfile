@@ -20,19 +20,18 @@ RUN apt-get -y install git
 RUN python -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade pip
 
-# copying ioppytest code for automating the IUT
-# `RUN git clone` instead of `ADD`, so this Dockerfile can be used "standalone"
-# TODO put ioppytest in pypi and install as python package
-RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
-
-ENV PATH="/ioppytest:$PATH"
-
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
+# copying ioppytest code for automating the IUT `RUN git clone` instead of `ADD` for having a standalone dockerfile
+# TODO put ioppytest in pypi and install as python package
+RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git /ioppytest
+
 # requirements on automated-iut python code
 RUN python3 -m pip install -r automation/requirements.txt
+
+ENV PATH="/ioppytest:$PATH"
 
 # download and build august cellars coap server
 RUN git clone https://github.com/Com-AugustCellars/TestServer /AugustCellarsTestServer

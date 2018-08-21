@@ -22,13 +22,13 @@ RUN python3 -m pip install --upgrade pip
 # requirement for californium
 RUN apt-get -y install default-jre
 
-ADD . /ioppytest
-ENV PATH="/ioppytest:$PATH"
-WORKDIR /ioppytest
-
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
+
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
 
 # requirements on automated-iut python code
 RUN python3 -m pip install -r automation/requirements.txt

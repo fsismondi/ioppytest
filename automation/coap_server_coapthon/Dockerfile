@@ -20,33 +20,26 @@ RUN apt-get -y -qq install git
 RUN python -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade pip
 
-ADD . /ioppytest
-ENV PATH="/ioppytest:$PATH"
-WORKDIR /ioppytest
-
-# clone git repo with CoAthon and CLI used for the interop tests
-RUN git clone https://github.com/fsismondi/CoAPthon.git automation/coap_server_coapthon/CoAPthon/
-
 # install aux ioppytest packages
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+WORKDIR /ioppytest
+
 # requirements on automated-iut python code
 RUN python3 -m pip install -r automation/requirements.txt
 
-#py3 requirements
+# clone git repo with CoAthon and CLI used for the interop tests
+RUN git clone https://github.com/fsismondi/CoAPthon.git automation/coap_server_coapthon/CoAPthon/
+
+#py3 IUT requirements
 RUN python3 -m pip install -r automation/coap_server_coapthon/CoAPthon/requirements.txt
-
-# requirements on autoamted-iut python code
-RUN python3 -m pip install -r automation/requirements.txt
-
-RUN cp automation/coap_server_coapthon/supervisor.conf supervisor.conf
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2
 RUN python -m pip install -Iv amqp==2.2.2
 
-EXPOSE 5671 5672
-
 # launch processes
-CMD supervisord --nodaemon --configuration supervisor.conf
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_server_coapthon/supervisor.conf"]

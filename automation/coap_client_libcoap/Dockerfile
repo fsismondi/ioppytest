@@ -32,6 +32,9 @@ ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
 WORKDIR /ioppytest
 
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automation/requirements.txt
+
 # Install autogen dependencies
 RUN apt-get -y install autoconf
 RUN apt-get -y install pkg-config
@@ -52,16 +55,11 @@ RUN make
 RUN make install
 ENV PATH="/ioppytest/automation/coap_client_libcoap/libcoap/libcoap/examples:$PATH"
 
-WORKDIR /ioppytest
-#RUN mkdir automation/coap_client_libcoap/file
-#RUN wget https://raw.githubusercontent.com/obgm/libcoap/develop/examples/etsi_iot_01_largedata.txt -P automation/coap_client_libcoap/file
-
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
 RUN python3 -m pip install -Iv amqp==2.2.2
 RUN python -m pip install -Iv amqp==2.2.2
 
-# requirements on automated-iut python code
-RUN python3 -m pip install -r automation/requirements.txt
+WORKDIR /ioppytest
 
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_client_libcoap/supervisor.conf"]
