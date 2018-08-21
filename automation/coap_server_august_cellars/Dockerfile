@@ -26,7 +26,8 @@ RUN python3 -m pip install ioppytest-utils
 
 # get ioppytest code for automating the IUT: `RUN git clone` instead of `ADD` for having a standalone dockerfile
 # TODO put ioppytest in pypi and install as python package
-RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git /ioppytest
+RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git -b develop --single-branch /ioppytest
+
 
 # requirements on automated-iut python code
 RUN python3 -m pip install -r /ioppytest/automation/requirements.txt
