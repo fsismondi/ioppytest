@@ -20,7 +20,7 @@ class AutomatedCaliforniumCoapServer(AutomatedIUT):
     component_id = 'automated_iut-coap_server-californium'
     node = 'coap_server'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
-    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 
     iut_cmd = [
         'java',

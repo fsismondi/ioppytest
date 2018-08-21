@@ -292,37 +292,28 @@ _docker-build-coap-additional-resources:
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile .
+	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
+	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
+	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
+	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
 
 	# automated_iut-coap_server-coapthon & automated_iut-coap_client-coapthon
 	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automation/coap_server_coapthon/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automation/coap_client_coapthon/Dockerfile .
-
-	# automated_iut-coap_client-aiocoap
-	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automation/coap_client_aiocoap/Dockerfile .
-
-	# automated_iut-coap_client-libcoap
-	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automation/coap_client_libcoap/Dockerfile .
-
-	# automated_iut-coap_server-august_cellars
-	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
-
-	# re-tagging version-less docker container name
 	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
 	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
 
-	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
-	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
-
+	# automated_iut-coap_client-aiocoap
+	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automation/coap_client_aiocoap/Dockerfile .
 	docker tag automated_iut-coap_client-aiocoap-v$(version):latest automated_iut-coap_client-aiocoap
 
+	# automated_iut-coap_client-libcoap
+	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automation/coap_client_libcoap/Dockerfile .
 	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
 
-	# comments cause it takes too long
-	#docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
-
-	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
-	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
-
+	# automated_iut-coap_server-august_cellars (WIP)
+	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
+	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "

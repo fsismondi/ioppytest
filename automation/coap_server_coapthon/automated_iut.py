@@ -20,7 +20,7 @@ coap_host_address = COAP_CLIENT_HOST
 class AutomatedCoapthonCoapServerIPv6(AutomatedIUT):
     component_id = 'automated_iut-coap_server-coapthon-v6'
     node = 'coap_server'
-    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 31)]
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 
     iut_cmd = [
         'python',
