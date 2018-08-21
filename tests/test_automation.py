@@ -8,23 +8,23 @@ import subprocess
 import traceback
 
 from shutil import which
-from automated_IUTs.automation import AutomatedIUT
+from automation.automated_iut import AutomatedIUT
 
 # automated clients
-from automated_IUTs.coap_client_libcoap.automated_iut import AutomatedLibcoapClient
-from automated_IUTs.coap_client_aiocoap.automated_iut import AutomatedAiocoapClient
-from automated_IUTs.coap_client_californium.automated_iut import AutomatedCaliforniumCoapClient
-from automated_IUTs.coap_client_coapthon.automated_iut import AutomatedCoapthonCoapClient
+from automation.coap_client_libcoap.automated_iut import AutomatedLibcoapClient
+from automation.coap_client_aiocoap.automated_iut import AutomatedAiocoapClient
+from automation.coap_client_californium.automated_iut import AutomatedCaliforniumCoapClient
+from automation.coap_client_coapthon.automated_iut import AutomatedCoapthonCoapClient
 
 # for testing CLI of clients
-from automated_IUTs.coap_client_libcoap.automated_iut import (stimuli_to_libcoap_cli_call,
-                                                              aux_stimuli_to_libcoap_cli_call)
+from automation.coap_client_libcoap.automated_iut import (stimuli_to_libcoap_cli_call,
+                                                          aux_stimuli_to_libcoap_cli_call)
 
 # automated servers
-from automated_IUTs.coap_server_californium.automated_iut import AutomatedCaliforniumCoapServer
-from automated_IUTs.coap_server_coapthon.automated_iut import (AutomatedCoapthonCoapServerIPv6,
-                                                               AutomatedCoapthonCoapServerIPv4)
-from automated_IUTs.coap_server_august_cellars.automated_iut import AutomatedAugustCellarsCoapServer
+from automation.coap_server_californium.automated_iut import AutomatedCaliforniumCoapServer
+from automation.coap_server_coapthon.automated_iut import (AutomatedCoapthonCoapServerIPv6,
+                                                           AutomatedCoapthonCoapServerIPv4)
+from automation.coap_server_august_cellars.automated_iut import AutomatedAugustCellarsCoapServer
 """
 python3 -m pytest tests/test_automation.py -vvv
 """
@@ -127,7 +127,7 @@ class TestAPICoapClientLibcoapCliAgainstServer(unittest.TestCase):
         # dummy server used so we dont get errors due to non-replied CoAP requests
         server_cmd = [
             'python',
-            'automated_IUTs/coap_server_coapthon/CoAPthon/plugtest_coapserver.py',
+            'automation/coap_server_coapthon/CoAPthon/plugtest_coapserver.py',
             '-i',
             LOCALHOST_server_ipv6_address,
             '-p',

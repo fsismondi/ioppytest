@@ -11,7 +11,7 @@ import os
 from messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 from event_bus_utils import publish_message, AmqpListener, amqp_request
-from automated_IUTs.automation import UserMock
+from automation import UserMock
 
 from tests import (
     check_if_message_is_an_error_message,
@@ -44,6 +44,8 @@ PRE-CONDITIONS:
 COMPONENT_ID = 'fake_session'
 SESSION_TIMEOUT = 300
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
+COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
+COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -102,8 +104,14 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
         )
 
         # thread
+        non_automated_iuts = []
+        if not COAP_CLIENT_IS_AUTOMATED:
+            non_automated_iuts.append('coap_client')
+        if not COAP_SERVER_IS_AUTOMATED:
+            non_automated_iuts.append('coap_server')
         user_stub = UserMock(
-            iut_testcases=tc_list
+            iut_testcases=tc_list,
+            iut_to_mock_verifications_for=non_automated_iuts
         )
 
         msg_consumer.setName('msg_consumer')

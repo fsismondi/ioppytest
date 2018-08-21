@@ -214,7 +214,7 @@ install-python-dependencies: ## installs all py2 and py3 pip dependencies
 
 	@echo "installing py3 ioppytest's dependencies..."
 	@python3 -m pip -qq install -r ioppytest/requirements.txt
-	@python3 -m pip -qq install -r automated_IUTs/requirements.txt
+	@python3 -m pip -qq install -r automation/requirements.txt
 
 # # # # other AUXILIARY commands  # # # #
 _check-sudo:
@@ -286,46 +286,38 @@ _docker-build-coap-additional-resources:
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	# build without using caché packages (slower builds)
-	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile . --no-cache
-	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile . --no-cache
+	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile . --no-cache
+	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile . --no-cache
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
-	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automated_IUTs/coap_server_californium/Dockerfile .
-	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automated_IUTs/coap_client_californium/Dockerfile .
-
-	# automated_iut-coap_server-coapthon & automated_iut-coap_client-coapthon
-	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automated_IUTs/coap_server_coapthon/Dockerfile .
-	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automated_IUTs/coap_client_coapthon/Dockerfile .
-
-	# automated_iut-coap_client-aiocoap
-	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automated_IUTs/coap_client_aiocoap/Dockerfile .
-
-	# automated_iut-coap_client-libcoap
-	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automated_IUTs/coap_client_libcoap/Dockerfile .
-
-	# automated_iut-coap_server-august_cellars
-	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automated_IUTs/coap_server_august_cellars/Dockerfile .
-
-	# re-tagging version-less docker container name
-	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
-	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
-
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
+	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile .
 	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
-
-	docker tag automated_iut-coap_client-aiocoap-v$(version):latest automated_iut-coap_client-aiocoap
-
-	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
-
-	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
-
 	docker tag automated_iut-coap_client-californium-v$(version):latest reference_iut-coap_client
 	docker tag automated_iut-coap_server-californium-v$(version):latest reference_iut-coap_server
 
+	# automated_iut-coap_server-coapthon & automated_iut-coap_client-coapthon
+	docker build --quiet -t automated_iut-coap_server-coapthon-v$(version) -f automation/coap_server_coapthon/Dockerfile .
+	docker build --quiet -t automated_iut-coap_client-coapthon-v$(version) -f automation/coap_client_coapthon/Dockerfile .
+	docker tag automated_iut-coap_client-coapthon-v$(version):latest automated_iut-coap_client-coapthon
+	docker tag automated_iut-coap_server-coapthon-v$(version):latest automated_iut-coap_server-coapthon
+
+	# automated_iut-coap_client-aiocoap
+	docker build --quiet -t automated_iut-coap_client-aiocoap-v$(version) -f automation/coap_client_aiocoap/Dockerfile .
+	docker tag automated_iut-coap_client-aiocoap-v$(version):latest automated_iut-coap_client-aiocoap
+
+	# automated_iut-coap_client-libcoap
+	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automation/coap_client_libcoap/Dockerfile .
+	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
+
+	# automated_iut-coap_server-august_cellars (WIP)
+	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
+	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
-	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automated_IUTs/lwm2m_client_leshan/Dockerfile .
+	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automation/lwm2m_client_leshan/Dockerfile .
 	docker tag automated_iut-lwm2m_client-leshan-v$(version):latest automated_iut-lwm2m_client-leshan
 
 _docker-build-onem2m-additional-resources:
@@ -334,10 +326,10 @@ _docker-build-onem2m-additional-resources:
 
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
-	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automated_IUTs/comi_server_acklio/Dockerfile .
+	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automation/comi_server_acklio/Dockerfile .
 	docker tag automated_iut-comi_server-acklio-v$(version):latest automated_iut-comi_server-acklio
 
-	docker build --quiet -t automated_iut-comi_client-acklio-v$(version) -f automated_IUTs/comi_client_acklio/Dockerfile .
+	docker build --quiet -t automated_iut-comi_client-acklio-v$(version) -f automation/comi_client_acklio/Dockerfile .
 	docker tag automated_iut-comi_client-acklio-v$(version):latest automated_iut-comi_client-acklio
 
 _docker-build-6lowpan-additional-resources:
@@ -421,7 +413,6 @@ _run-coap-mini-interop-coapthon-cli-vs-coapthon-server:
 	@echo "running $@"
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-coapthon-cli-vs-coapthon-server
-
 
 _setup-coap-mini-interop-coapthon-cli-vs-californium-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"

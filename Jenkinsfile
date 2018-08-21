@@ -191,6 +191,7 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
             }
         }
 
+        /* commented august cellars stage cause the build takes too long, put it back once the tooling is stable
         stage("RUN mini-plugtest: libcoap_clie VS august_cellars_serv"){
                     gitlabCommitStatus("START resources for mini-plugtest: libcoap_clie VS august_cellars_serv") {
                         gitlabCommitStatus("Docker run") {
@@ -241,7 +242,8 @@ if(env.JOB_NAME =~ 'CoAP testing tool/'){
                             '''
                         }
                     }
-                }
+        }
+        */
 
         stage("RUN mini-plugtest: libcoap_clie VS californium_serv"){
             gitlabCommitStatus("START resources for mini-plugtest: libcoap_clie VS californium_serv") {
