@@ -36,8 +36,8 @@ RUN chmod +x /CoMI/serverComi
 ADD automation/comi_server_acklio/interop /CoMI/interop/
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-RUN python3 -m pip install -Iv amqp==2.2.2
-RUN python -m pip install -Iv amqp==2.2.2
+RUN python3 -m pip install -Iv amqp==2.3.1
+RUN python -m pip install -Iv amqp==2.3.1
 
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/comi_server_acklio/supervisor.conf.ini"]

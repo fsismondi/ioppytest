@@ -47,7 +47,7 @@ RUN msbuild /p:Configuration=Debug TestServer.Net462.sln
 #ENTRYPOINT mono /AugustCellarsTestServer/TestServer/bin/Debug/TestServer.exe --ipaddress=127.0.0.1 --interop-test=CoapCore
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-RUN python -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.3.1
 
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "/ioppytest/automation/coap_server_august_cellars/supervisor.docker.ini"]

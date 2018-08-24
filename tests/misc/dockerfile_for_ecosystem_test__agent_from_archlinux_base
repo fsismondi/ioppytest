@@ -22,7 +22,7 @@ RUN python -m pip install --upgrade pip
 RUN python -m pip install ioppytest-agent
 
 # temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-RUN python -m pip install -Iv amqp==2.2.2
+RUN python -m pip install -Iv amqp==2.3.1
 
 # launch processes
 CMD ["/bin/echo", "No docker CMD nor ENTRYPOINT, see example in Dockerfile on how to run this"]
