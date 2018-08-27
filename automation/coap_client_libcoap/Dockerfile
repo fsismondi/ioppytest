@@ -55,9 +55,9 @@ RUN make
 RUN make install
 ENV PATH="/ioppytest/automation/coap_client_libcoap/libcoap/libcoap/examples:$PATH"
 
-# temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-RUN python3 -m pip install -Iv amqp==2.2.2
-RUN python -m pip install -Iv amqp==2.2.2
+## temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
+#RUN python3 -m pip install -Iv amqp==2.3.1
+#RUN python -m pip install -Iv amqp==2.3.1
 
 WORKDIR /ioppytest
 

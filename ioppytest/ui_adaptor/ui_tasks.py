@@ -210,26 +210,88 @@ def wait_for_all_users_to_join_session(message_translator, amqp_publisher, sessi
         amqp_publisher.publish_ui_display(m)
 
 
-def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_configuration):
-    """
-    Some strong assumptions made on this method:
-     - maximum two users connected to session
-     - for a session with [server_x, and client_x], if user answers that he runs server_x then we assumme client_x
-        is an automated implementation
+def display_in_ui_user_ids_and_roles(amqp_publisher, roles_to_user_mapping):
+    # build UI message with roles
+    fields = [{'type': 'p',
+               'value': '%s' % tabulate.tabulate([[i, j] for i, j in roles_to_user_mapping.items()],
+                                                 tablefmt="grid")}]
 
-    :return:
+    m = MsgUiDisplay(
+        title="Implementation and user's id mapping",
+        tags=UI_TAG_SETUP,
+        fields=fields
+    )
+
+    amqp_publisher.publish_ui_display(m)
+
+
+def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_configuration):
+    """ Returns dictionary roles_to_user_mapping
+
+    Some assumptions:
+     - maximum two users connected to session
+     - users in the session are already connected
+     - for a none SHARED_SESSION (single-user), method will try to create the dict mapping using session_configuration
+     - for a SHARED_SESSION, were roles are [server_x,client_x], if user answers that he runs server_x then
+     we assume client_x is an automated implementation
+
+    for shared sessions, session_configuration should include "testsuite.additional_session_resource" field, e.g.:
+    {
+        'testsuite.additional_session_resource': 'automated_iut-coap_client-libcoap',
+        'testsuite.testcases': [
+            'http://doc.f-interop.eu/tests/TD_COAP_CORE_01',
+            'http://doc.f-interop.eu/tests/TD_COAP_CORE_02'
+        ]
+    }
+
+    :return: roles_to_user_mapping
     """
+
+    # dict to return
     roles_to_user_mapping = {}
+
+    # get connected/online users
     users = get_current_users_online(amqp_publisher)
 
-    # let's just ask to the user number 1 which are the user IUTs roles
+    # get declared IUT roles from test suite message_translator object (e.g. [coap_client, coap_server])
+    iut_roles = message_translator.get_iut_roles().copy()
+
     user_lead = users[0]
     try:
         second_user = users[1]
-    except IndexError:
+    except IndexError:  # not a shared session (shared session = user-to-user session)
         second_user = None
 
-    iut_roles = message_translator.get_iut_roles().copy()
+    if second_user is None:  # let's try to build mapping using "testsuite.additional_session_resource"
+        if len(users) == 1:
+            try:
+                # auto_iut_resource_id will be our second_user name (as there's no second user connected)
+                auto_iut_resource_id = session_configuration['configuration']["testsuite.additional_session_resource"]
+
+                # let's assume that the info of the role is a substring of the additional_session_resource name
+                if iut_roles[0] in auto_iut_resource_id:
+                    roles_to_user_mapping[iut_roles[0]] = auto_iut_resource_id
+                    roles_to_user_mapping[iut_roles[1]] = user_lead
+                elif iut_roles[1] in auto_iut_resource_id:
+                    roles_to_user_mapping[iut_roles[1]] = auto_iut_resource_id
+                    roles_to_user_mapping[iut_roles[0]] = user_lead
+                else:
+                    logging.error("Cannot deduce IUT_role->user_id mapping from session_configuration information")
+
+            except KeyError:
+                logging.error(
+                    "Single user connected but not additional_session_resource in "
+                    "session_configuration: %s" % json.dumps(session_configuration, indent=4)
+                )
+
+        if roles_to_user_mapping:
+            display_in_ui_user_ids_and_roles(amqp_publisher, roles_to_user_mapping)
+            logging.info("IUT Role-> User ID map:\n%s" % json.dumps(roles_to_user_mapping, indent=4))
+            return roles_to_user_mapping
+        else:
+            logging.info("Entering fallback mechanism for building roles_to_user_mapping ")
+
+    # let's ask the user about the roles_to_user_mapping info
     fields = [
         {
             "type": "p",
@@ -250,7 +312,7 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
             }
         )
 
-    # add also a 'all roles' option
+    # add also a 'BOTH' roles option
     fields.append(
         {
             "name": 'iut_role',
@@ -297,21 +359,10 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
             roles_to_user_mapping[r] = user_lead
     else:
         roles_to_user_mapping[user_lead_iut_role] = user_lead
-        # fill table with second entry iut2->user2
+        # fill table with second entry iut_role_2->user_2
         iut_roles.remove(user_lead_iut_role)
         roles_to_user_mapping[iut_roles.pop()] = second_user if second_user else "automated_iut"
 
-    # build UI message with roles
-    fields = [{'type': 'p',
-               'value': '%s' % tabulate.tabulate([[i, j] for i, j in roles_to_user_mapping.items()],
-                                                    tablefmt="grid")}]
-
-    m = MsgUiDisplay(
-        title="Implementation and user's id mapping",
-        tags=UI_TAG_SETUP,
-        fields=fields
-    )
-
-    amqp_publisher.publish_ui_display(m)
+    display_in_ui_user_ids_and_roles(amqp_publisher, roles_to_user_mapping)
 
     return roles_to_user_mapping

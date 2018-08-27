@@ -46,7 +46,9 @@ from ioppytest.ui_adaptor.message_translators import (
     LwM2MSessionMessageTranslator
 )
 
-# init logging to stnd output and log files
+
+# init logging with stnd output and amqp handlers
+logging.basicConfig(format=LOGGER_FORMAT)
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
 logger.setLevel(LOG_LEVEL)
 
@@ -191,7 +193,7 @@ class AmqpMessagePublisher:
         if level:
             message.level = level
 
-        logger.info("publishing message DISPLAY for UI: %s" % message.routing_key)
+        logger.debug("Publishing message DISPLAY for UI: %s" % message.routing_key)
         self.publish_message(message)
 
     def publish_message(self, message):
@@ -204,7 +206,7 @@ class AmqpMessagePublisher:
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
 
-        logger.info("PUBLISHING to routing_key: %s, msg: %s"
+        logger.debug("Publishing to routing_key: %s, msg: %s"
                     % (message.routing_key,
                        repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
@@ -258,7 +260,7 @@ class AmqpMessagePublisher:
 
             assert waiting_for_user
 
-            logger.info("publishing message REQUEST (synch call to {user}): {rk}".format(
+            logger.debug("Publishing message REQUEST (synch call to {user}): {rk}".format(
                 rk=request.routing_key,
                 user=waiting_for_user
             ))
@@ -269,7 +271,6 @@ class AmqpMessagePublisher:
             )
 
             if not users:
-                logger.warning("Got empty list of online users: %s " % users)
                 m = MsgUiDisplay(
                     fields=[{"type": "p", "value": "Waiting for {user} reply..".format(
                         user=waiting_for_user
@@ -295,7 +296,7 @@ class AmqpMessagePublisher:
                     )
 
         else:
-            logger.info("publishing message REQUEST (synch call): {rk}".format(
+            logger.debug("Publishing message REQUEST (synch call): {rk}".format(
                 rk=request.routing_key,
             ))
 
@@ -321,7 +322,7 @@ class AmqpMessagePublisher:
 
             assert waiting_for_user
 
-            logger.info("publishing message REQUEST (synch call to {user}): {rk}".format(
+            logger.debug("Publishing message REQUEST (synch call to {user}): {rk}".format(
                 rk=request.routing_key,
                 user=waiting_for_user
             ))
@@ -358,7 +359,7 @@ class AmqpMessagePublisher:
                     )
 
         else:
-            logger.info("publishing message REQUEST (synch call): {rk}".format(
+            logger.debug("Publishing message REQUEST (synch call): {rk}".format(
                 rk=request.routing_key,
             ))
 
@@ -368,7 +369,7 @@ class AmqpMessagePublisher:
         """
         This is a dummy publisher, all the required treatment has already been done by translation functions
         """
-        logger.info("publishing message for TT: %s" % message.routing_key)
+        logger.debug("Publishing message for TT: %s" % message.routing_key)
         self.publish_message(message)
 
     def _update_ui_message_rkeys(self, ui_message, tt_message=None, node_name=None, user_id=None):
@@ -376,7 +377,14 @@ class AmqpMessagePublisher:
         Updates UI messages routing key and reply to key.
         Either node_name or user_id need to be passed as argument
         """
-        assert not (node_name is None and user_id is None), "Either node name or user id needs to be passed as arg"
+        if not (node_name or user_id):
+            logger.error(
+                "Either node name or user id needs to be passed as arg, got as args: %s " % str((ui_message,
+                                                                                                 tt_message,
+                                                                                                 node_name,
+                                                                                                 user_id))
+            )
+            return ui_message
 
         # FixMe: use data Messages typing instead of hasattribute(,) and " <.*.> in rkey" assertions
         destination_user = None
@@ -397,14 +405,14 @@ class AmqpMessagePublisher:
         # lets set message rkey and reply_to fields
         if '*' in ui_message.routing_key:
             ui_message.routing_key = ui_message.routing_key.replace('*', destination_user)
-            logger.info("Routing to: %s" % destination_user)
+            logger.debug("Routing to: %s" % destination_user)
 
             if hasattr(ui_message, 'reply_to'):
                 ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 
         elif '.all.' in ui_message.routing_key:
             ui_message.routing_key = ui_message.routing_key.replace('.all.', '.{id}.'.format(id=destination_user))
-            logger.info("Routing to: %s" % destination_user)
+            logger.debug("Routing to: %s" % destination_user)
             if hasattr(ui_message, 'reply_to'):
                 ui_message.reply_to = ui_message.routing_key.replace('.request', '.reply')
 

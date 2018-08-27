@@ -46,7 +46,8 @@ def get_from_environment(variable, default):
     return v
 
 
-LOGGER_FORMAT = '%(levelname)s %(asctime)s [%(name)s] %(message)s'
+#LOGGER_FORMAT = '%(levelname)s %(asctime)s [%(name)s] %(message)s'
+LOGGER_FORMAT = '%(levelname)s [%(name)s] %(message)s'
 
 # # # # # # hard variables # # # # # # # # # #
 
