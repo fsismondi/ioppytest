@@ -13,6 +13,12 @@ RUN	apt-get -y -qq install python-pip
 RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y -qq install make
+RUN apt-get -y -qq install locales && locale-gen en_US.UTF-8
+
+# Set the locale
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 # upgrade pip
 RUN python3 -m pip install --upgrade pip
@@ -26,8 +32,5 @@ RUN make install-python-dependencies
 
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap
-
-## temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-#RUN python3 -m pip install -Iv amqp==2.3.1
 
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "envs/6lowpan_testing_tool/supervisor.docker.conf.ini"]

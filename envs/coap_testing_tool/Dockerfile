@@ -38,11 +38,5 @@ RUN make install-python-dependencies
 #RUN  groupadd -g 500 coap && useradd -u 500 -g 500 coap
 #USER coap
 
-## temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-#RUN python3 -m pip install -Iv amqp==2.3.1
-#RUN python -m pip install -Iv amqp==2.3.1
-
-EXPOSE 5671 5672
-
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "envs/coap_testing_tool/supervisor.docker.conf.ini"]
