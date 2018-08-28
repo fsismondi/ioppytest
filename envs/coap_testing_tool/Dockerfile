@@ -13,9 +13,9 @@ RUN	apt-get -y -qq install python-pip
 RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y -qq install make
+RUN apt-get -y -qq install locales && locale-gen en_US.UTF-8
 
 # Set the locale
-RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
