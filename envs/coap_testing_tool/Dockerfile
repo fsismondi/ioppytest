@@ -14,10 +14,15 @@ RUN	apt-get -y -qq install supervisor
 RUN apt-get -y -qq install net-tools
 RUN apt-get -y -qq install make
 
+# Set the locale
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
 #RUN	apt-get -y -qq install tcpdump
 ## HACK to avoid "cannot open shared object file: Permission denied" , see https://github.com/dotcloud/docker/issues/5490
 #RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
-
 
 # upgrade pip
 RUN python -m pip install --upgrade pip
