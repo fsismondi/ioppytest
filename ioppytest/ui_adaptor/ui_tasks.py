@@ -217,7 +217,7 @@ def display_in_ui_user_ids_and_roles(amqp_publisher, roles_to_user_mapping):
                                                  tablefmt="grid")}]
 
     m = MsgUiDisplay(
-        title="Implementation and user's id mapping",
+        title="Implementation under test (IUT) to User ID mapping:",
         tags=UI_TAG_SETUP,
         fields=fields
     )
