@@ -31,8 +31,8 @@ def configure_testing_tool(amqp_publisher):
     amqp_publisher.publish_message(msg)
 
 
-def wait_for_testing_tool_ready(amqp_publisher):
-    retries_left = 3
+def wait_for_testing_tool_ready(amqp_publisher, max_retries=5):
+    retries_left = max_retries
     while retries_left != 0:
         try:
             amqp_publisher.synch_request(request=MsgTestSuiteGetTestCases(),
@@ -42,7 +42,7 @@ def wait_for_testing_tool_ready(amqp_publisher):
             logging.debug("testing tool not up yet, retries left: %s" % retries_left)
 
         retries_left -= 1
-        time.sleep(0.5)
+        time.sleep(1)
 
     if retries_left == 0:
         raise SessionError("Couldn't detect Testing Tool up")

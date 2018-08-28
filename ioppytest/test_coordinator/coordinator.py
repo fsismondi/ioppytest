@@ -109,7 +109,7 @@ class Coordinator(CoordinatorAmqpInterface):
         session_users = None
         session_config = None
 
-        logging.info(" Interop session configuration received : %s" % received_event)
+        logging.info("Interop session configuration received : %s" % received_event)
 
         try:
             event_tc_list = received_event.configuration['testsuite.testcases']

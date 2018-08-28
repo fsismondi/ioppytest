@@ -69,11 +69,11 @@ class CoordinatorAmqpInterface:
 
         # callbacks to state_machine transitions (see transitions table)
         self.control_events_triggers = {
+            # (!) coordinator expects to receive MsgSessionConfiguration() message, but it doesnt request it directly
             MsgSessionConfiguration: 'configure_testsuite',
 
-            # same handler
-            MsgConfigurationExecuted: 'iut_configuration_executed',
-            MsgAgentTunStarted: 'iut_configuration_executed',
+            MsgConfigurationExecuted: 'iut_configuration_executed',  # same handler
+            MsgAgentTunStarted: 'iut_configuration_executed',  # same handler
 
             MsgTestCaseStart: 'start_testcase',
             MsgStepStimuliExecuted: 'step_executed',
@@ -83,7 +83,6 @@ class CoordinatorAmqpInterface:
             MsgTestSuiteStart: 'start_testsuite',
             MsgTestCaseRestart: 'restart_testcase',
             MsgTestCaseSkip: 'skip_testcase',
-
         }
 
         # amqp connect to bus & subscribe to events
