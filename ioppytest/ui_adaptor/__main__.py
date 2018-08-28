@@ -373,21 +373,19 @@ class AmqpMessagePublisher:
         self.publish_message(message)
 
     def _update_ui_message_rkeys(self, ui_message, tt_message=None, node_name=None, user_id=None):
+        """ Updates UI messages routing key and reply to key.
+
+        Behaviour:
+        1. user_id (if passed as arg) is used for updating the destination UI
+        2. node_name (if passed as arg) is used, combined with the roles_to_user mapping for updating the destination UI
+        3. message destination is set to 'all' UI
+
+        :return: ui_message with updated routing key and reply_to (when message is a request)
         """
-        Updates UI messages routing key and reply to key.
-        Either node_name or user_id need to be passed as argument
-        """
-        if not (node_name or user_id):
-            logger.error(
-                "Either node name or user id needs to be passed as arg, got as args: %s " % str((ui_message,
-                                                                                                 tt_message,
-                                                                                                 node_name,
-                                                                                                 user_id))
-            )
-            return ui_message
 
         # FixMe: use data Messages typing instead of hasattribute(,) and " <.*.> in rkey" assertions
         destination_user = None
+
         if '.*.' in ui_message.routing_key or '.all.' in ui_message.routing_key:  # it's a user request/display
             if user_id:  # priority 1
                 destination_user = user_id
