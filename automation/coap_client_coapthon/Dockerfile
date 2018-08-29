@@ -36,9 +36,5 @@ RUN git clone https://github.com/fsismondi/CoAPthon.git automation/coap_client_c
 #py3 IUT requirements
 RUN python3 -m pip install -r automation/coap_client_coapthon/CoAPthon/requirements.txt
 
-## temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-#RUN python3 -m pip install -Iv amqp==2.3.1
-#RUN python -m pip install -Iv amqp==2.3.1
-
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_client_coapthon/supervisor.conf"]

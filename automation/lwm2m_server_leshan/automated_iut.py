@@ -2,8 +2,8 @@
 # !/usr/bin/env python3
 
 import subprocess
-from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST
-from automated_IUTs.automation import *
+from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
+from automation.automated_iut import *
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
@@ -18,13 +18,12 @@ class LeshanServerTrigger(AutomatedIUT):
 
     component_id = 'automated_iut-lwm2m_server-leshan'
     node = 'lwm2m_server'
-    iut_base_cmd = 'nodejs automated_IUTs/lwm2m_server_leshan/trigger.js'
+    iut_base_cmd = 'nodejs automation/lwm2m_server_leshan/trigger.js'
 
 
     def __init__(self):
         super().__init__(self.node)
         logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
-        
 
     def _execute_verify(self, verify_step_id):
         logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
@@ -59,8 +58,6 @@ class LeshanServerTrigger(AutomatedIUT):
         except Exception as e:
             logging.error('Error found on automated-iut while tryning to execute stimuli %s' % stimuli_step_id)
             logging.error(e)
-    
-
 
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
