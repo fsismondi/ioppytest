@@ -454,7 +454,7 @@ sequence:
 --- !testcase
 
 testcase_id : TD_COAP_CORE_10
-uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_09
+uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_10
 objective: Perform GET transaction containing non-empty Token (CON mode)
 configuration: COAP_CFG_01
 references: "[COAP] 2.2, 5.8.1, 5.10.1"
@@ -1314,7 +1314,9 @@ sequence:
     type : stimuli
     node : coap_client
     description:
-      - "server's resource so as to atomically create the resource"
+      - "Single creation"
+      - "Client is requested to send a confirmable PUT request to server’s resource
+      so as to atomically create the resource"
 
   - step_id : TD_COAP_CORE_23_step_02
     type : check
@@ -1342,12 +1344,11 @@ sequence:
     description:
       - 'Client displays the response and the server created a new resource'
 
-#concurrent creation
-
   - step_id : TD_COAP_CORE_23_step_05
     type : stimuli
     node : coap_client
     description:
+      - "Concurrent creations"
       - "Client is requested to send a confirmable PUT request to server's resource so as to atomically create the resource"
 
   - step_id : TD_COAP_CORE_23_step_06

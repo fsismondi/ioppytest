@@ -4,16 +4,20 @@ import os
 import json
 import yaml
 import logging
-from itertools import cycle
-from collections import OrderedDict
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TD_DIR
-from ioppytest.utils.exceptions import TestSuiteError
-from ioppytest.utils.rmq_handler import RabbitMQHandler, JsonFormatter
+
 from ioppytest import (
     TEST_DESCRIPTIONS_CONFIGS_DICT,
     TEST_DESCRIPTIONS_DICT,
     TD_DIR,
+    AMQP_URL,
+    AMQP_EXCHANGE,
+    LOG_LEVEL,
 )
+
+from itertools import cycle
+from collections import OrderedDict
+from ioppytest.exceptions import TestSuiteError
+from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 """
 Module used for importing form yaml files Test Descriptions.
@@ -202,8 +206,6 @@ class TestSuite:
         for key, val in self.test_descriptions_dict.items():
             logger.info('test case imported from YAML: %s' % key)
 
-        # test cases iterator (over the TC objects, not the keys)
-        self._TD_it = cycle(self.test_descriptions_dict.values())
         self.current_tc = None
 
         # session info (published in bus after testing tool is spawned):
@@ -231,7 +233,7 @@ class TestSuite:
                 }
             )
             if self.current_tc.current_step:
-                summary.update(self.current_tc.current_step.to_dict(verbose=True))
+                summary.update(self.current_tc.current_step.to_dict(verbose=False))
         else:
             summary.update({'testcase_id': None,
                             'testcase_state': None, })
@@ -244,7 +246,10 @@ class TestSuite:
         :return: current test case (Tescase object) or None if nothing else left to execute
         """
 
-        # _TD_it is a circular iterator (testcase can eventually be executed out of order due tu user selection)
+        # _TD_it is a circular iterator over TC objects
+        # (testcase can eventually be executed out of order due tu user selection)
+        self._TD_it = cycle(self.test_descriptions_dict.values())
+
         self.current_tc = next(self._TD_it)
 
         # get next not executed nor skipped testcase:
@@ -461,7 +466,7 @@ class TestSuite:
         resp.update({'session_id': self.session_id})
         resp.update({'users': self.session_users})
         resp.update({'configuration': self.session_configuration})
-        resp.update({'tc_list': self.get_testcases_basic(verbose=True)})
+        resp.update({'tc_list': self.get_testcases_basic(verbose=False)})
         return resp
 
     def skip_testcase(self, testcase_id=None):
@@ -999,19 +1004,20 @@ class TestCase:
             s.reinit()
 
     def __repr__(self):
-        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s, notes=%s, test_sequence=%s)" % (
+        return "%s(testcase_id=%s, uri=%s, objective=%s, configuration=%s)" % (
             self.__class__.__name__, self.id,
-            self.uri, self.objective, self.configuration_id, self.notes, self.sequence)
+            self.uri, self.objective, self.configuration_id
+        )
 
     def to_dict(self, verbose=None):
 
         d = OrderedDict()
         d['testcase_id'] = self.id
         d['testcase_ref'] = self.uri
+        d['objective'] = self.objective
         d['state'] = self.state
 
         if verbose:
-            d['objective'] = self.objective
             d['pre_conditions'] = self.pre_conditions
             d['notes'] = self.notes
 

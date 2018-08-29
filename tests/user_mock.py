@@ -2,7 +2,7 @@ import os
 import logging
 import webbrowser
 
-from automated_IUTs.automation import UserMock
+from automation import UserMock
 from ioppytest.webserver.webserver import create_html_test_results, FILENAME_HTML_REPORT
 
 

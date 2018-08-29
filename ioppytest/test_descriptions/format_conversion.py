@@ -7,7 +7,7 @@ from ioppytest import (
 )
 from ioppytest.test_suite import (get_dict_of_all_test_cases,
                                   get_dict_of_all_test_cases_configurations)
-from ioppytest.utils import tabulate
+import tabulate
 
 tabulate.PRESERVE_WHITESPACE = True
 
