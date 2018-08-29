@@ -317,8 +317,11 @@ _docker-build-coap-additional-resources:
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
-	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automation/lwm2m_client_leshan/Dockerfile .
+	docker build --quiet -t automated_iut-lwm2m_client-leshan-v$(version) -f automated_IUTs/lwm2m_client_leshan/Dockerfile .
+	docker build --quiet -t automated_iut-lwm2m_server-leshan-v$(version) -f automated_IUTs/lwm2m_server_leshan/Dockerfile .
+
 	docker tag automated_iut-lwm2m_client-leshan-v$(version):latest automated_iut-lwm2m_client-leshan
+	docker tag automated_iut-lwm2m_server-leshan-v$(version):latest automated_iut-lwm2m_server-leshan
 
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
