@@ -21,11 +21,11 @@ class AutomatedAugustCellarsCoapServer(AutomatedIUT):
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
     implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 
-    # mono TestServer/bin/Debug/TestServer.exe --daemon --ipaddress=[bbbb::2] --interop-test=CoapCore
+    # mono TestServer/bin/Debug/TestServer.exe --demon --ipaddress=[bbbb::2] --interop-test=CoapCore
     iut_cmd = [
         'mono',
         'TestServer/bin/Debug/TestServer.exe',
-        '--daemon',
+        '--demon',
         '--ipaddress=[{}]'.format(COAP_SERVER_HOST),
         '--interop-test=CoapCore'
     ]
