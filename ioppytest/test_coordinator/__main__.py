@@ -12,14 +12,12 @@ import logging
 import argparse
 from threading import Timer
 
-from ioppytest import AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_DICT, TEST_DESCRIPTIONS_CONFIGS_DICT, LOGGER_FORMAT, \
-    LOG_LEVEL
-from ioppytest import TD_COAP, TD_COAP_CFG, TD_6LOWPAN, TD_6LOWPAN_CFG, TD_ONEM2M, TD_ONEM2M_CFG, TD_COMI_CFG, TD_COMI
-from ioppytest import DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR
+from ioppytest import (AMQP_URL, AMQP_EXCHANGE, TEST_DESCRIPTIONS_DICT, TEST_DESCRIPTIONS_CONFIGS_DICT, LOGGER_FORMAT,
+                       LOG_LEVEL,DATADIR, TMPDIR, LOGDIR, TD_DIR, RESULTS_DIR, PCAP_DIR)
+from ioppytest.test_coordinator.coordinator import Coordinator
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from event_bus_utils import publish_message
 from messages import MsgTestingToolReady, MsgTestingToolComponentReady, Message
-from ioppytest.test_coordinator.coordinator import Coordinator
 
 COMPONENT_ID = 'test_coordinator|main'
 logging.basicConfig(format=LOGGER_FORMAT)
@@ -110,7 +108,7 @@ if __name__ == '__main__':
     publish_message(connection, msg)
 
     if no_component_checks:
-        logger.info('Skipping component readiness checks')
+        logger.info('Skipping testing tool component readiness checks')
     else:
         def on_ready_signal(ch, method, props, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -129,6 +127,7 @@ if __name__ == '__main__':
             else:
                 pass
 
+
         # bind on_ready_signal callback to signals queue
         channel.basic_consume(on_ready_signal,
                               no_ack=False,
@@ -137,15 +136,17 @@ if __name__ == '__main__':
         # wait for all testing tool component's signal
         timeout = False
 
+
         def timeout_f():
             global timeout
             timeout = True
+
 
         t = Timer(READY_SIGNAL_TOUT, timeout_f)
         t.start()
 
         while len(TT_check_list) != 0 and not timeout:  # blocking until timeout!
-            time.sleep(0.3)
+            time.sleep(0.1)
             connection.process_data_events()
 
         if timeout:
@@ -160,7 +161,8 @@ if __name__ == '__main__':
 
     # lets start the test coordination
     try:
-        logger.info('Starting test-coordinator for test suite: \n\t%s\n\t%s\n\t%s' %(ted_tc_file, ted_config_file, testsuite))
+        logger.info(
+            'Starting test-coordinator for test suite: \n\t%s\n\t%s\n\t%s' % (ted_tc_file, ted_config_file, testsuite))
         coordinator = Coordinator(AMQP_URL, AMQP_EXCHANGE, ted_tc_file, ted_config_file, testsuite)
         coordinator.bootstrap()
         publish_message(connection, MsgTestingToolReady())

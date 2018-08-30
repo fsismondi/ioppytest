@@ -52,9 +52,8 @@ class CustomStateMachine(Machine):
 
 class Coordinator(CoordinatorAmqpInterface):
     """
-    Coordinator object glues together the AMQP interface to the Test Suite FSM.
-    Basically translates AMQP event bus messages
-
+    Coordinator class handles event messages received from event bus, and calls the FSM triggers (state transitions).
+    FSM triggers are documented in states_and_transitions.py
     """
     component_id = 'test_coordinator'
 
