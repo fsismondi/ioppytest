@@ -725,7 +725,7 @@ sequence:
           - Non-Empty Payload (representation of deleted <latest> resource of a <container>
 
 
-  - step_id: TD_M2M_NH_49_step_04
+  - step_id: TD_M2M_NH_50_step_04
     type: verify
     node: adn
     description:
