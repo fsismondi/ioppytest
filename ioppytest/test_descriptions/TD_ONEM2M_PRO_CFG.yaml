@@ -30,3 +30,33 @@ description:
       - - Destination IP Address = [bbbb::2]
         - Destination UDP Port = 5683
 configuration_diagram: null
+
+--- !configuration
+configuration_id: M2M_CFG_02
+uri: www.onem2m.org
+nodes:
+  - in_cse
+  - mn_cse
+topology:
+  - link_id : link_01
+    capture_filter: udp
+    nodes:
+      - in_cse
+      - mn_cse
+addressing:
+    - node: mn_cse
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+    - node: in_cse
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+description:
+  - node: mn_cse
+    message:
+      - CSE which resides in the Middle Node.
+      - oneM2M server running service at [bbbb::1]:5683
+  - node: adn
+    message:
+      - CSE which resides in the Infrastructure Node
+      - oneM2M server running service at [bbbb::2]:5683
+configuration_diagram: null
