@@ -58,8 +58,6 @@ sequence:
       - 'AE is requested to send a AE Create request to register to the Registrar CSE'
       - - Type = 0 (CON)
         - Code = 2 (POST)
-        - Content-format option
-        - Non-empty Payload
 
   - step_id: TD_M2M_NH_06_step_02
     type: check
