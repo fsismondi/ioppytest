@@ -138,7 +138,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 
 
 
-if(env.JOB_NAME =~ 'AUTOMATED INTEROP - libcoap_clie VS californium_serv/'){
+if(env.JOB_NAME =~ 'ioppytest - automated and continuous interops/'){
     node('docker'){
 
         /* attention, here we use external RMQ server*/
@@ -248,7 +248,7 @@ if(env.JOB_NAME =~ 'AUTOMATED INTEROP - libcoap_clie VS californium_serv/'){
     }
 }
 
-if(env.JOB_NAME =~ 'CoAP testing tool/'){
+if(env.JOB_NAME =~ 'ioppytest - CoAP testing tool/'){
     node('docker'){
 
         /* attention, here we use external RMQ server*/
