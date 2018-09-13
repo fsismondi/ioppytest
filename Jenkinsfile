@@ -1,6 +1,6 @@
 properties([[$class: 'GitLabConnectionProperty', gitLabConnection: 'figitlab']])
 
-if(env.JOB_NAME =~ 'ioppytest/'){
+if(env.JOB_NAME =~ 'ioppytest-unitests-and-integration-tests/'){
     node('docker'){
         env.AMQP_URL="amqp://guest:guest@localhost/"
         env.AMQP_EXCHANGE="amq.topic"
@@ -136,9 +136,7 @@ if(env.JOB_NAME =~ 'ioppytest/'){
 }
 
 
-
-
-if(env.JOB_NAME =~ 'ioppytest - automated and continuous interops/'){
+if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
     node('docker'){
 
         /* attention, here we use external RMQ server*/
@@ -248,7 +246,7 @@ if(env.JOB_NAME =~ 'ioppytest - automated and continuous interops/'){
     }
 }
 
-if(env.JOB_NAME =~ 'ioppytest - CoAP testing tool/'){
+if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
     node('docker'){
 
         /* attention, here we use external RMQ server*/
@@ -730,7 +728,7 @@ if(env.JOB_NAME =~ 'ioppytest - CoAP testing tool/'){
 
 
 
-if(env.JOB_NAME =~ 'ioppytest - build all tools/'){
+if(env.JOB_NAME =~ 'ioppytest-build-and-run-all-testing-tools/'){
     node('docker'){
         /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
         /* TODO use a deficated VHOST for these tests */
