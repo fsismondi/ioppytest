@@ -1,11 +1,17 @@
+import os
 import json
 import logging
-import os
 from collections.__init__ import OrderedDict
 
+from tabulate import tabulate
 from event_bus_utils import AmqpListener, publish_message
-from messages import MsgUiRequestSessionConfiguration, MsgTestingToolTerminate, MsgTestSuiteReport, \
-    MsgUiSessionConfigurationReply
+from messages import (MsgUiRequestSessionConfiguration,
+                      MsgTestingToolTerminate,
+                      MsgTestSuiteReport,
+                      MsgUiSessionConfigurationReply
+                      )
+
+from ioppytest.ui_adaptor.message_translators import list_to_str
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +31,36 @@ default_configuration = {
         "http://doc.f-interop.eu/tests/TD_COAP_CORE_10"
     ]
 }
+
+
+def testsuite_results_to_ascii_table(testcases_results: list):
+    """
+    :param tc_resutls: list of test cases results
+    :return: string-based (ascii chars) table of all results
+    """
+
+    # add header
+    summary_table = [["Testcase ID", "Verdict", "Description"]]
+
+    for tc_report in testcases_results:
+        assert type(tc_report) is dict
+
+        # add report basic info as a raw into the summary_table
+        try:
+            summary_table.append(
+                [
+                    tc_report['testcase_id'],
+                    tc_report['verdict'],
+                    list_to_str(tc_report['description'])
+                ]
+            )
+        except KeyError:
+            logger.warning("Couldnt parse: %s" % str(tc_report))
+            summary_table.append([tc_report['testcase_id'], "None", "None"])
+
+    return tabulate(summary_table, tablefmt="grid", headers="firstrow")
+
+
 class UIStub(AmqpListener):
     def __init__(self, amqp_url, amqp_exchange):
         AmqpListener.__init__(self, amqp_url, amqp_exchange,
@@ -55,7 +91,9 @@ class UIStub(AmqpListener):
             verdict_content['testname'] = TESTSUITE_NAME
             verdict_content.update(message.to_odict())
 
-            logger.info("%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4) ,TESTSUITE_REPORT_DELIM)
+            logger.info("%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4),
+                        TESTSUITE_REPORT_DELIM)
+            logger.info("%s: \n%s ", "Test Suite Table Report", testsuite_results_to_ascii_table(message.tc_results))
 
 
         elif isinstance(message, MsgTestingToolTerminate):
