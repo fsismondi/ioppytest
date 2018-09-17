@@ -215,8 +215,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                             currentBuild.result = 'FAILURE'
                         }
                     }
-                }
             }
+
             gitlabCommitStatus("Starting tests..") {
                 long timeoutInSeconds = 600
                 try {
