@@ -18,7 +18,9 @@ from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
                                            get_current_users_online,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
+
 from ioppytest.ui_adaptor.user_help_text import *
+from ioppytest.ui_adaptor.message_rendering import list_to_str
 from ioppytest.ui_adaptor import (COMPONENT_ID,
                                   STDOUT_MAX_TEXT_LENGTH,
                                   STDOUT_MAX_TEXT_LENGTH_PER_LINE,
@@ -46,42 +48,6 @@ TESTING_TOOL_AGENT_NAME = 'agent_TT'
 @property
 def NotImplementedField(self):
     raise NotImplementedError
-
-
-def list_to_str(ls, max_width=79):
-    """
-    flattens a nested list up to two levels of depth
-
-    :param ls: the list, supports str also
-    :param max_width: max width of each text line (inserts \n if line is longer)
-    :return: single string with all the items inside the list
-    """
-
-    ret = ''
-
-    if ls is None:
-        return 'None'
-
-    if type(ls) is str:
-        return textwrap.fill(ls, width=max_width)
-
-    try:
-        for l in ls:
-            if l and isinstance(l, list):  # there's a list inside the list
-                for sub_l in l:
-                    if sub_l and not isinstance(sub_l, list):
-                        ret += "    - " + textwrap.fill(str(sub_l), width=max_width) + '\n'
-                    else:
-                        # I truncate in the second level
-                        pass
-            else:
-                ret += "- " + textwrap.fill(str(l), width=max_width) + '\n'
-
-    except TypeError as e:
-        logger.error(e)
-        return str(ls)
-
-    return ret
 
 
 def send_start_test_suite_event():

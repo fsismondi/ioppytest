@@ -92,8 +92,8 @@ class PerformFullTest(object):
         self.channel = self.connection.channel()
 
         if EXECUTE_ALL_TESTS:
-            self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 10)]
-            logger.info("Detected CI environment. Executing all tests supported by both Californium and CoAPthon")
+            self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            logger.info("Detected CI environment. Executing all tests supported by test suite")
         else:
             self.tc_list = [
                 'TD_COAP_CORE_01',

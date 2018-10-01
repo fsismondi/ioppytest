@@ -3,15 +3,14 @@ import json
 import logging
 from collections.__init__ import OrderedDict
 
-from tabulate import tabulate
+from ioppytest.ui_adaptor.message_rendering import testsuite_results_to_ascii_table, testcase_verdict_to_ascii_table
 from event_bus_utils import AmqpListener, publish_message
 from messages import (MsgUiRequestSessionConfiguration,
                       MsgTestingToolTerminate,
                       MsgTestSuiteReport,
+                      MsgTestCaseVerdict,
                       MsgUiSessionConfigurationReply
                       )
-
-from ioppytest.ui_adaptor.message_translators import list_to_str
 
 logger = logging.getLogger(__name__)
 
@@ -33,34 +32,6 @@ default_configuration = {
 }
 
 
-def testsuite_results_to_ascii_table(testcases_results: list):
-    """
-    :param tc_resutls: list of test cases results
-    :return: string-based (ascii chars) table of all results
-    """
-
-    # add header
-    summary_table = [["Testcase ID", "Verdict", "Description"]]
-
-    for tc_report in testcases_results:
-        assert type(tc_report) is dict
-
-        # add report basic info as a raw into the summary_table
-        try:
-            summary_table.append(
-                [
-                    tc_report['testcase_id'],
-                    tc_report['verdict'],
-                    list_to_str(tc_report['description'])
-                ]
-            )
-        except KeyError:
-            logger.warning("Couldnt parse: %s" % str(tc_report))
-            summary_table.append([tc_report['testcase_id'], "None", "None"])
-
-    return tabulate(summary_table, tablefmt="grid", headers="firstrow")
-
-
 class UIStub(AmqpListener):
     def __init__(self, amqp_url, amqp_exchange):
         AmqpListener.__init__(self, amqp_url, amqp_exchange,
@@ -68,7 +39,8 @@ class UIStub(AmqpListener):
                               topics=[
                                   MsgUiRequestSessionConfiguration.routing_key,
                                   MsgTestingToolTerminate.routing_key,
-                                  MsgTestSuiteReport.routing_key
+                                  MsgTestCaseVerdict.routing_key,
+                                  MsgTestSuiteReport.routing_key,
                               ],
                               use_message_typing=True)
 
@@ -85,16 +57,25 @@ class UIStub(AmqpListener):
                 **resp
             )
             publish_message(self.connection, m)
-        elif isinstance(message, MsgTestSuiteReport):
 
+        elif isinstance(message, MsgTestSuiteReport):
             verdict_content = OrderedDict()
             verdict_content['testname'] = TESTSUITE_NAME
             verdict_content.update(message.to_odict())
 
-            logger.info("%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4),
-                        TESTSUITE_REPORT_DELIM)
-            logger.info("%s: \n%s ", "Test Suite Table Report", testsuite_results_to_ascii_table(message.tc_results))
+            # note TESTSUITE_REPORT_DELIM is parsed by continuous interop testing automation components.
+            logger.info(
+                "%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4),TESTSUITE_REPORT_DELIM)
 
+            logger.info(
+                "%s: \n%s ", "Test Suite Table Report", testsuite_results_to_ascii_table(message.tc_results))
+
+        elif isinstance(message, MsgTestCaseVerdict):
+            verdict_content = OrderedDict()
+            verdict_content['testname'] = TESTSUITE_NAME
+            verdict_content.update(message.to_odict())
+
+            logger.info("%s: \n%s ", "Test Case verdict issued", testcase_verdict_to_ascii_table(message.to_dict()))
 
         elif isinstance(message, MsgTestingToolTerminate):
             logger.info("Received termination message. Stopping UIStub")
