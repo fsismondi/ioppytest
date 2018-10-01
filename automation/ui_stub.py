@@ -65,7 +65,7 @@ class UIStub(AmqpListener):
 
             # note TESTSUITE_REPORT_DELIM is parsed by continuous interop testing automation components.
             logger.info(
-                "%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4),TESTSUITE_REPORT_DELIM)
+                "%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4), TESTSUITE_REPORT_DELIM)
 
             logger.info(
                 "%s: \n%s ", "Test Suite Table Report", testsuite_results_to_ascii_table(message.tc_results))
@@ -74,8 +74,9 @@ class UIStub(AmqpListener):
             verdict_content = OrderedDict()
             verdict_content['testname'] = TESTSUITE_NAME
             verdict_content.update(message.to_odict())
+            ascii_table, _ = testcase_verdict_to_ascii_table(message.to_dict())
 
-            logger.info("%s: \n%s ", "Test Case verdict issued", testcase_verdict_to_ascii_table(message.to_dict()))
+            logger.info("%s: \n%s ", "Test Case verdict issued", ascii_table)
 
         elif isinstance(message, MsgTestingToolTerminate):
             logger.info("Received termination message. Stopping UIStub")
