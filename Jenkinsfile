@@ -240,6 +240,15 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                         sudo -E make stop-all
                         sudo -E docker ps
                     '''
+                    archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
+
+                    try {
+                        archiveArtifacts artifacts: 'data/dumps/*.pcap', fingerprint: true
+                        }
+                    catch (e){
+                        archiveArtifacts artifacts: 'tmp/*.pcap', fingerprint: true
+                    }
+
                 }
             }
         }
