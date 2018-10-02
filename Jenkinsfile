@@ -240,7 +240,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     sh '''
                         export LC_ALL=C.UTF-8
                         export LANG=C.UTF-8
-                        mkdir -r data/pcaps
+                        mkdir data/pcaps
                         python3 -m ioppytest_cli download_network_traces --destination data/pcaps
                         sudo -E make stop-all
                         sudo -E docker ps
