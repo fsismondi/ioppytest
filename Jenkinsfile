@@ -253,6 +253,77 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
+
+        stage("BUILD CoAP docker images. Interop test 2"){
+            gitlabCommitStatus("BUILD CoAP docker images") {
+                sh '''
+                    sudo -E docker build --quiet -t automated_iut-coap_server-august_cellars -f automation/coap_server_august_cellars/Dockerfile .
+                    sudo -E docker build --quiet -t automated_iut-coap_client-libcoap -f automation/coap_client_libcoap/Dockerfile .
+                    sudo -E docker build --quiet -t testing_tool-interoperability-coap -f envs/coap_testing_tool/Dockerfile .
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("CI INTEROP TESTS: libcoap_clie VS august_cellars_serv"){
+            gitlabCommitStatus("Starting resources..") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                rm -r data/results
+                                rm -r data/pcaps
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-coap-mini-interop-libcoap-cli-vs-august_cellars-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+            }
+
+            gitlabCommitStatus("Starting tests..") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m automation.automated_interop
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+
+                    sh '''
+                        export LC_ALL=C.UTF-8
+                        export LANG=C.UTF-8
+                        mkdir data/pcaps
+                        python3 -m ioppytest_cli download_network_traces --destination data/pcaps
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                    archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
+                    archiveArtifacts artifacts: 'data/pcaps/*.pcap', fingerprint: true
+                }
+            }
+        }
     }
 }
 
