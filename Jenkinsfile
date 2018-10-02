@@ -196,7 +196,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("RUN full automated plugtest: libcoap_clie VS californium_serv"){
+        stage("CI INTEROP TESTS: libcoap_clie VS californium_serv"){
             gitlabCommitStatus("Starting resources..") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
