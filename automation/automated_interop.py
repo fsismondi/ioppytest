@@ -76,9 +76,9 @@ EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
 COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
 
-logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
 logging.getLogger('pika').setLevel(logging.WARNING)
-logging.getLogger('ioppytest.utils.event_bus_utils').setLevel(logging.WARNING)
+logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class PerformFullTest(object):
 
         if EXECUTE_ALL_TESTS:
             self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
-            logger.info("Detected CI environment. Executing all tests supported by test suite")
+            logger.info("Detected CI environment. Executing all test cases.")
         else:
             self.tc_list = [
                 'TD_COAP_CORE_01',
