@@ -318,7 +318,8 @@ aux_stimuli_to_libcoap_cli_call = {
 class AutomatedLibcoapClient(AutomatedIUT):
 
     # CoAP CoRE
-    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 24)]
+    #implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 24)]
+    implemented_testcases_list = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)] # let those not implemented crash
     # OBS
     implemented_testcases_list += ['TD_COAP_OBS_%02d' % tc for tc in range(1, 11)]
     # Link

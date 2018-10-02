@@ -393,6 +393,12 @@ _run-coap-mini-interop-libcoap-cli-vs-californium-server:
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-californium-server
 
+_run-coap-mini-interop-libcoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-august_cellars-server
+
 _setup-coap-mini-interop-californium-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
