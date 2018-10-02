@@ -236,19 +236,17 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     throw e
                 }
                 finally {
+
                     sh '''
+                        export LC_ALL=C.UTF-8
+                        export LANG=C.UTF-8
+                        mkdir -r data/pcaps
+                        python3 -m ioppytest_cli download_network_traces --destination data/pcaps
                         sudo -E make stop-all
                         sudo -E docker ps
                     '''
                     archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
-
-                    try {
-                        archiveArtifacts artifacts: 'data/dumps/*.pcap', fingerprint: true
-                        }
-                    catch (e){
-                        archiveArtifacts artifacts: 'tmp/*.pcap', fingerprint: true
-                    }
-
+                    archiveArtifacts artifacts: 'data/pcaps/*.pcap', fingerprint: true
                 }
             }
         }
