@@ -147,6 +147,9 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
+        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        env.CI = "True"
+
         stage("Check if DOCKER is installed on node"){
             sh '''
                 docker version
