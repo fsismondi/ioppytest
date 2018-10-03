@@ -286,11 +286,11 @@ _docker-build-coap-additional-resources:
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	# build without using caché packages (slower builds)
-	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile . --no-cache
-	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile . --no-cache
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile . --no-cache
+	#docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile . --no-cache
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
-	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
+	#docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile .
 	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
@@ -360,6 +360,11 @@ _setup-coap-mini-interop-libcoap-cli-vs-californium-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
 
+_setup-coap-mini-interop-libcoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
 
 _run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"

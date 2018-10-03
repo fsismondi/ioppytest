@@ -185,6 +185,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
+        /* temporariliy disable this CINTEROP test
         stage("BUILD CoAP docker images"){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
@@ -226,6 +227,10 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            rm data/pcaps/*.pcap
+                            rm data/results/*.json
+                            mkdir data/pcaps
+                            mkdir data/results/
                             python3 -m automation.automated_interop
                         '''
                     }
@@ -243,7 +248,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     sh '''
                         export LC_ALL=C.UTF-8
                         export LANG=C.UTF-8
-                        mkdir data/pcaps
                         python3 -m ioppytest_cli download_network_traces --destination data/pcaps
                         sudo -E make stop-all
                         sudo -E docker ps
@@ -253,6 +257,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
+        */
 
         stage("BUILD CoAP docker images. Interop test 2"){
             gitlabCommitStatus("BUILD CoAP docker images") {
@@ -273,8 +278,11 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
-                                rm -r data/results
-                                rm -r data/pcaps
+                                rm data/pcaps/*.pcap
+                                rm data/results/*.json
+                                mkdir data/pcaps
+                                mkdir data/results/
+
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                                 sudo -E make _run-coap-mini-interop-libcoap-cli-vs-august_cellars-server
                             '''
@@ -314,7 +322,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     sh '''
                         export LC_ALL=C.UTF-8
                         export LANG=C.UTF-8
-                        mkdir data/pcaps
                         python3 -m ioppytest_cli download_network_traces --destination data/pcaps
                         sudo -E make stop-all
                         sudo -E docker ps
