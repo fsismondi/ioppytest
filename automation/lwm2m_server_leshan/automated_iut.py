@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import subprocess
-from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 from automation.automated_iut import *
+from ioppytest import TMPDIR, TD_LWM2M, TD_LWM2M_CFG
+from ioppytest.test_suite.testsuite import TestSuite
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
-coap_host_address = COAP_SERVER_HOST
+lwm2m_client_ip_prefix, lwm2m_client_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_client')
+lwm2m_server_ip_prefix, lwm2m_server_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_server')
 
 class LeshanServerTrigger(AutomatedIUT):
     """
@@ -19,7 +20,6 @@ class LeshanServerTrigger(AutomatedIUT):
     component_id = 'automated_iut-lwm2m_server-leshan'
     node = 'lwm2m_server'
     iut_base_cmd = 'nodejs automation/lwm2m_server_leshan/trigger.js'
-
 
     def __init__(self):
         super().__init__(self.node)
@@ -61,7 +61,7 @@ class LeshanServerTrigger(AutomatedIUT):
 
     def _execute_configuration(self, testcase_id, node):
         # no config / reset needed for implementation
-        return coap_host_address
+        return "{}::{}".format(lwm2m_server_ip_prefix, lwm2m_server_ip_host)
 
 
 if __name__ == '__main__':

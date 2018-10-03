@@ -254,7 +254,15 @@ class AutomatedIUT(threading.Thread):
             self.log('IUT %s (%s) READY to handle test case: %s' % (self.component_id, self.node, event.testcase_id))
 
     def handle_stimuli_execute(self, event):
-        if event.node == self.node and event.step_id in self.implemented_stimuli_list:
+        # TODO should we check if stimuli is implemented or not?
+        if event.node == self.node and self.implemented_stimuli_list and event.step_id not in self.implemented_stimuli_list:
+            self.log('[%s] STIMULI (%s) doesnt seem to be implemented by automated IUT:' %
+                     (
+                         self.node if self.node else "misc.",
+                         event.step_id,
+                     ))
+
+        if event.node == self.node:
             step = event.step_id
             addr = event.target_address  # may be None
             self._execute_stimuli(step, addr)  # blocking till stimuli execution
