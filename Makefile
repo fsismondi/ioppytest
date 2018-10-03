@@ -97,10 +97,8 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 
 clean: ## clean data directory
 	@echo "running $@"
-	rm data/pcaps/*.pcap 2> /dev/nul
-	rm data/results/*.json 2> /dev/nul
-	mkdir data/pcaps 2> /dev/nul
-	mkdir data/results/ 2> /dev/nul
+	rm data/pcaps/*.pcap
+	rm data/results/*.json
 
 # # # # Testing Tool & other resources RUN commands # # # #
 
