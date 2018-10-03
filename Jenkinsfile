@@ -227,8 +227,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            rm data/pcaps/*.pcap
-                            rm data/results/*.json
+                            rm data/pcaps/*.pcap 2> /dev/nul
+                            rm data/results/*.json 2> /dev/nul
                             mkdir data/pcaps
                             mkdir data/results/
                             python3 -m automation.automated_interop
@@ -278,8 +278,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
-                                rm data/pcaps/*.pcap
-                                rm data/results/*.json
+                                rm data/pcaps/*.pcap 2> /dev/nul
+                                rm data/results/*.json 2> /dev/nul
                                 mkdir data/pcaps
                                 mkdir data/results/
 
