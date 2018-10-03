@@ -185,7 +185,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("BUILD CoAP docker images"){
+        stage("CONT_INTEROP_TESTS_1: Build docker images."){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
                     sudo -E docker build --quiet -t automated_iut-coap_server-californium -f automation/coap_server_californium/Dockerfile . --no-cache
@@ -196,10 +196,13 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("CI INTEROP TESTS: libcoap_clie VS californium_serv"){
+        stage("CONT_INTEROP_TESTS_1: libcoap_clie VS californium_serv"){
             gitlabCommitStatus("Starting resources..") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
+
+                    try { sh 'sudo -E make clean 2>/dev/null'}
+                    catch (err) {echo "something failed trying to clean repo"}
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -225,7 +228,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
-                            sudo make clean
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                             python3 -m automation.automated_interop
                         '''
@@ -254,7 +256,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("BUILD CoAP docker images. Interop test 2"){
+        stage("CONT_INTEROP_TESTS_2: Build docker images."){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
                     sudo -E docker build --quiet -t automated_iut-coap_server-august_cellars -f automation/coap_server_august_cellars/Dockerfile .
@@ -265,15 +267,17 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("CI INTEROP TESTS: libcoap_clie VS august_cellars_serv"){
+        stage("CONT_INTEROP_TESTS_2: libcoap_clie VS august_cellars_serv"){
             gitlabCommitStatus("Starting resources..") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
 
+                    try { sh 'sudo -E make clean 2>/dev/null'}
+                    catch (err) {echo "something failed trying to clean repo"}
+
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
-                                sudo make clean
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                                 sudo -E make _run-coap-mini-interop-libcoap-cli-vs-august_cellars-server
                             '''
