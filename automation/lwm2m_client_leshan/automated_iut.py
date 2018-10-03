@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-import subprocess
 
 from automation.automated_iut import *
 from ioppytest import TMPDIR, TD_LWM2M, TD_LWM2M_CFG
@@ -52,7 +51,7 @@ class LwM2MClient(AutomatedIUT):
 
     def _execute_configuration(self, testcase_id, node):
         # shoud we restart the process?
-        return None
+        return "{}::{}".format(lwm2m_client_ip_prefix,lwm2m_client_ip_host)
 
 
 if __name__ == '__main__':

@@ -42,6 +42,8 @@ LIST = automated_iut-coap_client-coapthon \
 	   testing_tool-interoperability-lwm2m \
 	   reference_iut-coap_server \
 	   reference_iut-coap_client \
+	   automated_iut-lwm2m_server-leshan \
+	   automated_iut-lwm2m_client-leshan \
 
 info:
 	@echo $(info_message)
@@ -392,6 +394,18 @@ _run-coap-mini-interop-libcoap-cli-vs-californium-server:
 	@echo "running $@"
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-californium-server
+
+_run-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-lwm2m-testing-tool
+	$(MAKE) _setup-coap-mini-interop-leshan-cli-vs-leshan-server
+
+_setup-coap-mini-interop-leshan-cli-vs-leshan-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_client-leshan automated_iut-lwm2m_client-leshan
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_server-leshan automated_iut-lwm2m_server-leshan
 
 _setup-coap-mini-interop-californium-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
