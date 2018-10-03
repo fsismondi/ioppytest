@@ -24,10 +24,14 @@ RUN python3 -m pip install --upgrade pip
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
-# get ioppytest code for automating the IUT: `RUN git clone` instead of `ADD` for having a standalone dockerfile
-# TODO put ioppytest in pypi and install as python package
-RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git -b develop --single-branch /ioppytest
+## get ioppytest code for automating the IUT: either from local source code (option1), or from git (option2)
 
+# option1) This is for the case Dockerfile is used from within ioppytest project
+ADD . /ioppytest
+ENV PATH="/ioppytest:$PATH"
+
+# option2)This is for the case Dockerfile is used standalone ()
+#RUN git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git -b develop --single-branch /ioppytest
 
 # requirements on automated-iut python code
 RUN python3 -m pip install -r /ioppytest/automation/requirements.txt

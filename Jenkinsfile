@@ -185,7 +185,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        /* temporariliy disable this CINTEROP test
         stage("BUILD CoAP docker images"){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
@@ -226,11 +225,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 try {
                     timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                         sh '''
+                            sudo make clean
                             echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
-                            rm data/pcaps/*.pcap 2> /dev/nul
-                            rm data/results/*.json 2> /dev/nul
-                            mkdir data/pcaps
-                            mkdir data/results/
                             python3 -m automation.automated_interop
                         '''
                     }
@@ -257,7 +253,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
-        */
 
         stage("BUILD CoAP docker images. Interop test 2"){
             gitlabCommitStatus("BUILD CoAP docker images") {
@@ -278,11 +273,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
                             sh '''
-                                rm data/pcaps/*.pcap 2> /dev/nul
-                                rm data/results/*.json 2> /dev/nul
-                                mkdir data/pcaps
-                                mkdir data/results/
-
+                                sudo make clean
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                                 sudo -E make _run-coap-mini-interop-libcoap-cli-vs-august_cellars-server
                             '''
@@ -389,7 +380,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
             }
         }
 
-        /* commented august cellars stage cause the build takes too long, put it back once the tooling is stable
         stage("RUN mini-plugtest: libcoap_clie VS august_cellars_serv"){
                     gitlabCommitStatus("START resources for mini-plugtest: libcoap_clie VS august_cellars_serv") {
                         gitlabCommitStatus("Docker run") {
@@ -441,7 +431,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
                         }
                     }
         }
-        */
 
         stage("RUN mini-plugtest: libcoap_clie VS californium_serv"){
             gitlabCommitStatus("START resources for mini-plugtest: libcoap_clie VS californium_serv") {

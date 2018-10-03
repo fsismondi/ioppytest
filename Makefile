@@ -93,6 +93,12 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 	$(MAKE) build-tools
 	$(MAKE) build-automated-iuts
 
+clean: ## clean data directory
+	@echo "running $@"
+	rm data/pcaps/*.pcap 2> /dev/nul
+	rm data/results/*.json 2> /dev/nul
+	mkdir data/pcaps 2> /dev/nul
+	mkdir data/results/ 2> /dev/nul
 
 # # # # Testing Tool & other resources RUN commands # # # #
 
