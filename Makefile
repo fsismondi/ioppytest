@@ -97,7 +97,7 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 
 clean: ## clean data directory
 	@echo "running $@"
-	rm data/pcaps/*.pcap
+	rm *.pcap
 	rm data/results/*.json
 
 # # # # Testing Tool & other resources RUN commands # # # #

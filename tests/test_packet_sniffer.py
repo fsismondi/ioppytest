@@ -61,7 +61,8 @@ class SnifferTestCase(unittest.TestCase):
                 capture_id=self.capture_id
             ),
             component_id=self.__class__.__name__,
-            retries=10
+            retries=10,
+            use_message_typing=True,
         )
         assert response.ok, 'Returned %s' % repr(response)
 
@@ -81,7 +82,8 @@ class SnifferTestCase(unittest.TestCase):
                 capture_id=self.capture_id
             ),
             component_id=self.__class__.__name__,
-            retries=10
+            retries=10,
+            use_message_typing=True,
         )
 
         assert response.ok, 'Returned %s' % repr(response)
@@ -102,7 +104,8 @@ class SnifferTestCase(unittest.TestCase):
             connection=self.connection,
             request_message=MsgSniffingGetCaptureLast(),
             component_id=self.__class__.__name__,
-            retries=10
+            retries=10,
+            use_message_typing=True,
         )
 
         assert response.ok, 'Returned %s' % repr(response)
@@ -114,7 +117,8 @@ class SnifferTestCase(unittest.TestCase):
             connection=self.connection,
             request_message=MsgSniffingStop(),
             component_id=self.__class__.__name__,
-            retries=10
+            retries=10,
+            use_message_typing=True,
         )
 
         assert response.ok, 'Returned %s' % repr(response)
