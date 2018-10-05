@@ -441,7 +441,10 @@ class CoordinatorAmqpInterface:
     def call_service_sniffer_start(self, **kwargs):
 
         try:
-            response = amqp_request(self.connection, MsgSniffingStart(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.connection,
+                                    MsgSniffingStart(**kwargs),
+                                    COMPONENT_ID,
+                                    use_message_typing=True)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
@@ -450,7 +453,10 @@ class CoordinatorAmqpInterface:
     def call_service_sniffer_stop(self):
 
         try:
-            response = amqp_request(self.connection, MsgSniffingStop(), COMPONENT_ID)
+            response = amqp_request(self.connection,
+                                    MsgSniffingStop(),
+                                    COMPONENT_ID,
+                                    use_message_typing=True)
             logger.info("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
@@ -459,7 +465,10 @@ class CoordinatorAmqpInterface:
     def call_service_sniffer_get_capture(self, **kwargs):
 
         try:
-            response = amqp_request(self.connection, MsgSniffingGetCapture(**kwargs), COMPONENT_ID)
+            response = amqp_request(self.connection,
+                                    MsgSniffingGetCapture(**kwargs),
+                                    COMPONENT_ID,
+                                    use_message_typing=True)
             logger.debug("Received answer from sniffer: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:
@@ -468,7 +477,11 @@ class CoordinatorAmqpInterface:
     def call_service_testcase_analysis(self, **kwargs):
 
         try:
-            response = amqp_request(self.connection, MsgInteropTestCaseAnalyze(**kwargs), COMPONENT_ID, 30)
+            response = amqp_request(self.connection,
+                                    MsgInteropTestCaseAnalyze(**kwargs),
+                                    COMPONENT_ID,
+                                    30,
+                                    use_message_typing=True)
             logger.info("Received answer from TAT: %s, answer: %s" % (response.routing_key, repr(response)))
             return response
         except AmqpSynchCallTimeoutError as e:

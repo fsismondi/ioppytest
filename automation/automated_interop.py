@@ -71,7 +71,7 @@ TEST SETUP:
 """
 
 COMPONENT_ID = 'perform_testsuite'
-SESSION_TIMEOUT = 300
+SESSION_TIMEOUT = 900
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
 COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
@@ -79,6 +79,8 @@ COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') ==
 logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
 logging.getLogger('pika').setLevel(logging.WARNING)
 logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
+logging.getLogger('messages').setLevel(logging.WARNING)
+
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +162,9 @@ class PerformFullTest(object):
                     self.get_status()
 
             if t >= SESSION_TIMEOUT:
-                r = amqp_request(self.connection, MsgTestSuiteGetStatus(), COMPONENT_ID)
+                r = amqp_request(self.connection,
+                                 MsgTestSuiteGetStatus(),
+                                 COMPONENT_ID)
                 logger.warning('Test TIMED-OUT! Test suite status:\n%s' % pprint.pformat(r.to_dict()))
             else:
                 assert MsgTestSuiteReport in self.msglogger.messages_by_type_dict

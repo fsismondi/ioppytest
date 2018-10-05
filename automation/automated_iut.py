@@ -265,8 +265,12 @@ class AutomatedIUT(threading.Thread):
         if event.node == self.node:
             step = event.step_id
             addr = event.target_address  # may be None
-            self._execute_stimuli(step, addr)  # blocking till stimuli execution
-            publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
+            try:
+                self._execute_stimuli(step, addr)  # blocking till stimuli execution
+                publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
+            except NotImplementedError as e:  # either method not overriden, or stimuli step not implemented :/
+                publish_message(self.connection, MsgStepStimuliExecuted(description=str(e), node=self.node))
+
         else:
             self.log('[%s] Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
                      (

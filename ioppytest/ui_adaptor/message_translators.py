@@ -1962,7 +1962,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                    retries=30)  # fixme change retries by timeout
+                                    retries=5,
+                                    time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "button"})
@@ -2004,7 +2005,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                    retries=30)  # fixme change retries by timeout
+                                    retries=5,
+                                    time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "radio"})
@@ -2045,7 +2047,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                    retries=30)  # fixme change retries by timeout
+                                    retries=5,
+                                    time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "checkbox"})
@@ -2086,7 +2089,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                    retries=30)  # fixme change retries by timeout
+                                    retries=5,
+                                    time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "select"})
@@ -2127,7 +2131,8 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
             ui_reply = amqp_request(connection,
                                     ui_request,
                                     'dummy_component',
-                                    retries=30)  # fixme change retries by timeout
+                                    retries=5,
+                                    time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "file_upload"})

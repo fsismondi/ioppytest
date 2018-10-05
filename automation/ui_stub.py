@@ -17,18 +17,7 @@ logger = logging.getLogger(__name__)
 TESTSUITE_NAME = os.environ.get('TESTNAME', 'noname')
 TESTSUITE_REPORT_DELIM = os.environ.get('DELIM', '===TESTRESULT===')
 default_configuration = {
-    "testsuite.testcases": [
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_04",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_05",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_06",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_07",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_08",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_09",
-        "http://doc.f-interop.eu/tests/TD_COAP_CORE_10"
-    ]
+    "testsuite.testcases": ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 }
 
 

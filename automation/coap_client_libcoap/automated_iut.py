@@ -265,6 +265,7 @@ stimuli_to_libcoap_cli_call = {
     "TD_COAP_CORE_20_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"text/plain"}),
     "TD_COAP_CORE_20_step_05": (get, {"base_url": default_coap_server_base_url, "resource": "/multi-format", "accept_option":"application/xml"}),
     "TD_COAP_CORE_21_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
+    "TD_COAP_CORE_21_step_05": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
     "TD_COAP_CORE_22_step_01": (get, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
     # "TD_COAP_CORE_22_step_04": "TD_COAP_CORE_22",
     "TD_COAP_CORE_22_step_08": (put, {"base_url": default_coap_server_base_url, "resource": "/validate"}),
@@ -374,7 +375,7 @@ class AutomatedLibcoapClient(AutomatedIUT):
             else:
                 func, args = stimuli_to_libcoap_cli_call[stimuli_step_id]
         except KeyError:
-            raise Exception("Received request to execute unimplemented stimuli %s", stimuli_step_id)
+            raise NotImplementedError("Received request to execute unimplemented stimuli %s", stimuli_step_id)
 
         args['base_url'] = self.base_url  # update with target url received from event
         func(**args)  # spawn stimuli process

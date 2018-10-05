@@ -240,7 +240,7 @@ class Sniffer:
                     self.pcap_dumper_subprocess.start()
                     self.logger.info("Sniffer process started %s, pid %s" % (
                         self.pcap_dumper_subprocess, self.pcap_dumper_subprocess.pid))
-                    response = MsgReply(request, ok=True)
+                    response = MsgSniffingStartReply(request, ok=True)
 
             except Exception as e:
                 m = 'Didnt succeed starting the sniffer process, the exception captured is %s' % str(e)
@@ -256,16 +256,16 @@ class Sniffer:
 
             if self.pcap_dumper_subprocess is None:
                 self.logger.info("Sniffer process not running")
-                response = MsgReply(request, ok=True)
+                response = MsgSniffingStopReply(request, ok=True)
             else:
                 try:  # the process stops on it's own, we just verify it is stopped
                     time.sleep(TIME_WAIT_FOR_COMPONENTS_FINISH_EXECUTION)  # to avoid race conditions
 
                     if self.pcap_dumper_subprocess.is_alive():
-                        response = MsgReply(request, ok=False)
+                        response = MsgSniffingStopReply(request, ok=False)
                         self.logger.info("Sniffer process couldnt be stopped")
                     else:
-                        response = MsgReply(request, ok=True)
+                        response = MsgSniffingStopReply(request, ok=True)
                         self.logger.info("Sniffer process stopped correctly")
                         self.pcap_dumper_subprocess = None
 
