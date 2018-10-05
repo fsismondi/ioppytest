@@ -128,6 +128,8 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
         logger.warning("No partial_verdicts for TC: %s" % testcase_verdict_report['testcase_id'])
 
     table = list()
+    table_frames = []
+    table_partial_verdicts = []
     ret_string = ""
 
     step_message_fields = [
@@ -166,8 +168,6 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
         display_color = 'warning'
 
     if partial_verdict:
-        table_partial_verdicts = []
-        frames = []
         table_partial_verdicts.append(('Step ID', 'Partial \nVerdict', 'Description'))
         for item in partial_verdict:
             try:
@@ -181,7 +181,7 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
                     logger.error("Index error trying to parse : %s" % str(item))
 
                 if 'Frame' in list_to_str(item):
-                    frames.append(item)
+                    table_frames.append(item)
 
             except Exception as e:
                 logger.error(e)
@@ -195,6 +195,6 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
 
     ret_string += "\n === Frames info ==="
     ret_string += "\n"
-    ret_string += tabulate(frames, tablefmt="grid")
+    ret_string += tabulate(table_frames, tablefmt="grid")
 
     return ret_string, display_color

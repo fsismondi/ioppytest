@@ -46,7 +46,6 @@ from ioppytest.ui_adaptor.message_translators import (
     LwM2MSessionMessageTranslator
 )
 
-
 # init logging with stnd output and amqp handlers
 logging.basicConfig(format=LOGGER_FORMAT)
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'amqp_connector'))
@@ -207,8 +206,8 @@ class AmqpMessagePublisher:
         properties = pika.BasicProperties(**message.get_properties())
 
         logger.debug("Publishing to routing_key: %s, msg: %s"
-                    % (message.routing_key,
-                       repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
+                     % (message.routing_key,
+                        repr(message)[:STDOUT_MAX_TEXT_LENGTH_PER_LINE],))
 
         try:
             time.sleep(PUBLISH_DELAY)
@@ -296,13 +295,15 @@ class AmqpMessagePublisher:
                     )
 
         else:
-            logger.debug("Publishing message REQUEST (synch call): {rk}".format(
-                rk=request.routing_key,
-            ))
+            logger.debug("Publishing message REQUEST (synch call): {rk}".format(rk=request.routing_key,))
 
         # fixme in amqp request use timeout instead of retries
         time.sleep(PUBLISH_DELAY)
-        resp = amqp_request(self.connection, request, COMPONENT_ID, retries=timeout * 2)
+        resp = amqp_request(self.connection,
+                            request,
+                            COMPONENT_ID,
+                            retries=timeout * 2,
+                            use_message_typing=True)
         return resp
 
     def publish_ui_request(self, request, user_id=None):
