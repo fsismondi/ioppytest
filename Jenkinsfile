@@ -261,7 +261,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
-        /*
+
         stage("CONT_INTEROP_TESTS_2: Build docker images."){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
@@ -278,8 +278,14 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
 
-                    try { sh 'sudo -E make clean 2>/dev/null'}
-                    catch (err) {echo "something failed trying to clean repo"}
+                    try {
+                        sh '''
+                            sudo -E make clean 2>/dev/null
+                           '''
+                        }
+                    catch (err) {
+                        echo "something failed trying to clean repo"
+                        }
 
                     try {
                         timeout(time: timeoutInSeconds, unit: 'SECONDS') {
@@ -332,7 +338,6 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
-        */
     }
 }
 
