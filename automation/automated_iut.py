@@ -233,7 +233,7 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        self.log('Event received: %s' % repr(event))
+        self.log('Event received: %s' % type(event))
 
         if type(event) in self.event_to_handler_map:
             callback = self.event_to_handler_map[type(event)]
@@ -297,7 +297,7 @@ class AutomatedIUT(threading.Thread):
                      ))
 
     def handle_test_suite_report(self, event):
-        self.log('Got final test suite report: %s' % event.to_json())
+        self.log('Got final test suite report')
         if self.process_log_file:
             contents = open(self.process_log_file).read()
             self.log('*' * 72)
