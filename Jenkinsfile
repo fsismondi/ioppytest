@@ -341,7 +341,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
         */
-        
+
         stage("CONT_INTEROP_TESTS_3: Build docker images."){
             gitlabCommitStatus("BUILD lwm2m docker images") {
                 sh '''

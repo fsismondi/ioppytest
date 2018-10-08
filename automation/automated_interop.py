@@ -1,18 +1,6 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import os
-import pika
-import pprint
-
-# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
-from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
-from messages import *
-
-from automation.ui_stub import default_configuration, UIStub
-from automation import MessageLogger, log_all_received_messages, UserMock
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
-
 """
 The automation code used the event bus API as stimulation and evaluation point.
 Evaluates a normal test cycle with real automated IUTs. 
@@ -64,11 +52,23 @@ TEST SETUP:
                                          +-----------------------------+
                                          |                             |
                                          |    automated interop driver |
-                                         |        (this component)     |
+                                         |        (this module)        |
                                          |                             |
                                          +-----------------------------+
 
 """
+
+import os
+import pika
+import pprint
+
+# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
+from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
+from messages import *
+
+from automation.ui_stub import default_configuration, UIStub
+from automation import MessageLogger, log_all_received_messages, UserMock
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 COMPONENT_ID = 'perform_testsuite'
 SESSION_TIMEOUT = 900
