@@ -115,7 +115,7 @@ class Coordinator(CoordinatorAmqpInterface):
                 test_url = urlparse(t)
                 session_tc_list.append(str(test_url.path).lstrip("/tests/"))
 
-        except KeyError as e:
+        except (KeyError, TypeError) as e:
             error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
             logging.warning(error_msg)
 
