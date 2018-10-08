@@ -1,18 +1,6 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import os
-import pika
-import pprint
-
-# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
-from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
-from messages import *
-
-from automation.ui_stub import default_configuration, UIStub
-from automation import MessageLogger, log_all_received_messages, UserMock
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
-
 """
 The automation code used the event bus API as stimulation and evaluation point.
 Evaluates a normal test cycle with real automated IUTs. 
@@ -64,23 +52,41 @@ TEST SETUP:
                                          +-----------------------------+
                                          |                             |
                                          |    automated interop driver |
-                                         |        (this component)     |
+                                         |        (this module)        |
                                          |                             |
                                          +-----------------------------+
 
 """
 
+import os
+import pika
+import pprint
+import traceback
+
+# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
+from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
+from ioppytest.ui_adaptor.message_rendering import testsuite_state_to_ascii_table
+from messages import *
+
+from automation.ui_stub import default_configuration, UIStub
+from automation import MessageLogger, log_all_received_messages, UserMock
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
+
 COMPONENT_ID = 'perform_testsuite'
 SESSION_TIMEOUT = 900
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
+LOG_WARNINGS_ONLY = os.environ.get('LOG_WARNINGS_ONLY', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
 COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
 
-logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
-logging.getLogger('pika').setLevel(logging.WARNING)
-logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
-logging.getLogger('messages').setLevel(logging.WARNING)
 
+if LOG_WARNINGS_ONLY:
+    logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.WARNING)
+else:
+    logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
+    logging.getLogger('pika').setLevel(logging.WARNING)
+    logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
+    logging.getLogger('messages').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +100,8 @@ class PerformFullTest(object):
         self.channel = self.connection.channel()
 
         if EXECUTE_ALL_TESTS:
-            self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            #self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            self.tc_list = None  # if tc_list is None => all TCs are executed
             logger.info("Detected CI environment. Executing all test cases.")
         else:
             self.tc_list = [
@@ -180,6 +187,8 @@ class PerformFullTest(object):
         except Exception as e:
             self.error_state = True
             logger.error("Exception encountered in PerformTestsuite:\n%s", e)
+            logger.error("Traceback:\n%s", traceback.format_exc())
+
 
         finally:
             if MsgTestingToolTerminate not in self.msglogger.messages_by_type_dict:
@@ -236,7 +245,7 @@ class PerformFullTest(object):
             )  # get status
 
             if isinstance(current_status, MsgTestSuiteGetStatusReply):
-                logger.info("Testsuite status: %s", current_status)
+                logger.info("Testsuite status: \n%s", testsuite_state_to_ascii_table(current_status.to_dict()))
             else:
                 logger.warning("Could not get testsuite status: unexpected reply")
             pass

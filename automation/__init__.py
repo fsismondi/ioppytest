@@ -82,11 +82,12 @@ class MessageLogger(AmqpListener):
 class UserMock(threading.Thread):
     """
     this class servers for moking user inputs into GUI
+    Behaviour:
+        - if iut_testcases is None => all testcases are executed.
+        - if iut_to_mock_verifications_for is None => no verif.executed is sent to bus.
+
     """
     component_id = 'user_mock'
-
-    # e.g. for TD COAP CORE from 1 to 31
-    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 
     def __init__(self, iut_testcases=None, iut_to_mock_verifications_for=None):
 
@@ -112,12 +113,10 @@ class UserMock(threading.Thread):
 
         self.message_count = 0
 
-        # queues & default exchange declaration
-        if iut_testcases:
-            self.implemented_testcases_list = iut_testcases
-        else:
-            self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
+        # if implemented_testcases_list is None then all test cases should be executed
+        self.implemented_testcases_list = iut_testcases
 
+        # queues & default exchange declaration
         queue_name = '%s::eventbus_subscribed_messages' % self.component_id
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
@@ -215,15 +214,12 @@ class UserMock(threading.Thread):
         self.log('Event received: %s' % type(event))
         self.log('Event description: %s' % event.description)
 
-        # m = MsgTestCaseStart()
-        # publish_message(self.connection, m)
-
-        if event.testcase_id in self.implemented_testcases_list:
-            m = MsgTestCaseStart()
+        if self.implemented_testcases_list and event.testcase_id not in self.implemented_testcases_list:
+            m = MsgTestCaseSkip(testcase_id=event.testcase_id)
             publish_message(self.connection, m)
             self.log('Event pushed: %s' % m)
         else:
-            m = MsgTestCaseSkip(testcase_id=event.testcase_id)
+            m = MsgTestCaseStart()
             publish_message(self.connection, m)
             self.log('Event pushed: %s' % m)
 
