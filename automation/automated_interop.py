@@ -94,7 +94,8 @@ class PerformFullTest(object):
         self.channel = self.connection.channel()
 
         if EXECUTE_ALL_TESTS:
-            self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            #self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            self.tc_list = None  # if tc_list is None => all TCs are executed
             logger.info("Detected CI environment. Executing all test cases.")
         else:
             self.tc_list = [

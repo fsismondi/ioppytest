@@ -273,7 +273,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("CONT_INTEROP_TESTS_2: libcoap_clie VS august_cellars_serv"){
+        stage("CONT_INTEROP_TESTS_3: libcoap_clie VS august_cellars_serv"){
             gitlabCommitStatus("Starting resources..") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -292,6 +292,81 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                             sh '''
                                 echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
                                 sudo -E make _run-coap-mini-interop-libcoap-cli-vs-august_cellars-server
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+            }
+
+            gitlabCommitStatus("Starting tests..") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m automation.automated_interop
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Do you smell the smoke in the room??
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+
+                    sh '''
+                        export LC_ALL=C.UTF-8
+                        export LANG=C.UTF-8
+                        python3 -m ioppytest_cli download_network_traces --destination .
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                    archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
+                    archiveArtifacts artifacts: '*.pcap', fingerprint: true
+                }
+            }
+        }
+        stage("CONT_INTEROP_TESTS_3: Build docker images."){
+            gitlabCommitStatus("BUILD lwm2m docker images") {
+                sh '''
+                    sudo -E make _docker-build-lwm2m
+                    sudo -E make _docker-build-lwm2m-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("CONT_INTEROP_TESTS_3: lwm2m_client VS lwm2m_server"){
+            gitlabCommitStatus("Starting resources..") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        sh '''
+                            sudo -E make clean 2>/dev/null
+                           '''
+                        }
+                    catch (err) {
+                        echo "something failed trying to clean repo"
+                        }
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-lwm2m-mini-interop-leshan-cli-vs-leshan-server
                             '''
                         }
 

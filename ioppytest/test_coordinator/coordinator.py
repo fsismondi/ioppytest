@@ -252,6 +252,9 @@ class Coordinator(CoordinatorAmqpInterface):
         states.update(self.testsuite.get_testsuite_configuration())
         return states
 
+    def get_testsuite_report(self):
+        return self.testsuite.get_report()
+
     def get_nodes_addressing_table(self):
         return self.testsuite.get_addressing_table().copy()
 
