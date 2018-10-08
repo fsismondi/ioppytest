@@ -185,6 +185,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
+        /*
+
         stage("CONT_INTEROP_TESTS_1: Build docker images."){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
@@ -273,7 +275,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
             }
         }
 
-        stage("CONT_INTEROP_TESTS_3: libcoap_clie VS august_cellars_serv"){
+        stage("CONT_INTEROP_TESTS_2: libcoap_clie VS august_cellars_serv"){
             gitlabCommitStatus("Starting resources..") {
                     long startTime = System.currentTimeMillis()
                     long timeoutInSeconds = 120
@@ -338,6 +340,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                 }
             }
         }
+        */
+        
         stage("CONT_INTEROP_TESTS_3: Build docker images."){
             gitlabCommitStatus("BUILD lwm2m docker images") {
                 sh '''
