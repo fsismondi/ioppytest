@@ -5,7 +5,6 @@ import os
 import base64
 from urllib.parse import urlparse
 
-
 from transitions import Machine
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
@@ -112,7 +111,6 @@ class Coordinator(CoordinatorAmqpInterface):
 
         try:
             event_tc_list = received_event.configuration['testsuite.testcases']
-            assert type(event_tc_list) is list, 'Testcases list expected'
             for t in event_tc_list:
                 test_url = urlparse(t)
                 session_tc_list.append(str(test_url.path).lstrip("/tests/"))
@@ -120,11 +118,9 @@ class Coordinator(CoordinatorAmqpInterface):
         except KeyError as e:
             error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
             logging.warning(error_msg)
-            session_tc_list = self.testsuite.get_testcases_list()
 
-        except Exception as e:
-            error_msg = "Wrong message format sent for session configuration."
-            raise CoordinatorError(message=error_msg)
+        if not session_tc_list:  # this catches either None or []
+            session_tc_list = self.testsuite.get_testcases_list()
 
         try:
             session_id = received_event.session_id
@@ -408,8 +404,6 @@ class Coordinator(CoordinatorAmqpInterface):
             self.testsuite.reinit_testcase(self.testsuite.get_current_testcase_id())
         else:
             raise CoordinatorError("No current testcase, no info on what TC to restart")
-
-        # test case switch is handled by prepare_next_testcase
 
     def handle_testcase_select(self, received_event):
         """
