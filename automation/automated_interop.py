@@ -61,6 +61,7 @@ TEST SETUP:
 import os
 import pika
 import pprint
+import traceback
 
 # messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
 from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
@@ -186,6 +187,8 @@ class PerformFullTest(object):
         except Exception as e:
             self.error_state = True
             logger.error("Exception encountered in PerformTestsuite:\n%s", e)
+            logger.error("Traceback:\n%s", traceback.format_exc())
+
 
         finally:
             if MsgTestingToolTerminate not in self.msglogger.messages_by_type_dict:
