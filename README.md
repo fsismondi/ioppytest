@@ -3,17 +3,15 @@ ioppytest framework:
 
 ioppytest is a framework for running interoperability tests.
 
-This initial version tackles technical interoperability testing (CoAP
-and 6LoWPAN interop tests), and effort is being made to implement
-interop semantic tests notably for running tests in the WoT and OneM2M
-context.
+This initial version tackles technical interoperability testing (CoAP,
+ LwM2M, 6LoWPAN and OneM2M interop tests).
 
 This repo contains all necessary software (and their dependencies) for
 running a interoperability test sessions between two implementations
 under test (IUT).
 
 This can be run as standalone software and also integrated to f-interop
-architecture.
+platform (go.f-interop.eu)
 
 
 Implemented test suites in the ioppytest framework:
@@ -25,6 +23,8 @@ framework are:
 - CoAP Test Suite (user's IUT vs automated-IUT)
 - CoAP Test Suite (between two users' IUT)
 - 6LoWPAN Test Suite (between two users' IUT) (WIP)
+- LwM2M Test Suite (between two users' IUT) (WIP)
+- oneM2M Test Suite (between two users' IUT) (WIP)
 
 
 
@@ -91,10 +91,7 @@ Event Bus API:
 
 All the calls between the components are documented here:
 
-[CORE API doc](http://doc.f-interop.eu/interop/)
-and
 [interop tests API doc](http://doc.f-interop.eu/interop/)
-
 
 
 Running a test suite:
@@ -103,26 +100,46 @@ Running a test suite:
 user needs :
 
 - an implementation under test (IUT) of a standard supported/protocol
-by ioppytest framework, which either runs in some specific hardware or
-locally in user's PC, e.g. a coap client implementation
+by ioppytest framework e.g. a coap client implementation
 -  run
 [the agent component](http://doc.f-interop.eu/interop/#agent)
-which will route all the packets emitted from the IUT to the backend
-and also to the second IUT (and viceversa)
+which plays the role of a vpn-client , and which will route all the
+packets sent from the IUT (on a certain ipv6 network) to the
+backend -which is later on routed to second IUT (and viceversa)-.
 - a user interface to help coordinating the tests
 (either GUI or CLI component)
 
 For simplifying the access to CLI, agent and other components, ioppytest
-inlcudes a Makefile, with it you can use `make cmd`,
+includes a Makefile, with it you can use `make <cmd>`,
 for more information execute `make help`
 
-# Running a test suite using F-Interop platform
+### make commands
 
-go to [go.f-interop.eu](go.f-interop.eu) and follow the instructions
+```
+➜  ioppytest git:(master) ✗ make help
+help:                          Help dialog.
+build-all-coap-images:         Build all testing tool in docker images, and other docker image resources too
+build-tools:                   builds all testing tool docker images (only testing tool)
+build-automated-iuts:          Build all automated-iut docker images
+build-all:                     Build all testing tool in docker images, and other docker image resources too
+clean:                         clean data directory
+sniff-bus:                     Listen and echo all messages in the event bus
+run-cli:                       Run interactive shell
+run-6lowpan-testing-tool:      Run 6LoWPAN testing tool in docker container
+run-coap-testing-tool:         Run CoAP testing tool in docker container
+run-lwm2m-testing-tool:        Run lwm2m testing tool in docker container
+run-onem2m-testing-tool:       Run oneM2M testing tool in docker container
+run-comi-testing-tool:         Run CoMI testing tool in docker container
+stop-all:                      stops testing tools and IUTs running as docker containers
+validate-test-description-syntax: validate (yaml) test description file syntax
+run-tests:                     runs all unittests
+get-logs:                      echoes logs from the running containers
+install-python-dependencies:   installs all py2 and py3 pip dependencies
+```
 
-# Running a test suite standalone
+# Test session setups:
 
-This mode of execution work for any of the following circumstances
+The supported setups are:
 
 - user controls one IUT and wants to run tests against one of the
 automated-IUTs the framework supports
@@ -131,15 +148,30 @@ controlling a second IUT
 - user controls both implementations (IUTs) taking part in the interop
 session
 
-## Set up up the message broker
+## Running a test suite using F-Interop platform
 
-The interop testing tool use AMQP for sending messages between its
-components, and the remote ones (like the agent). When running a
-standalone setup the user first needs to have a RMQ broker running..
+go to [go.f-interop.eu](go.f-interop.eu) and follow the instructions
+
+## Running a test suite standalone
+
+for this, you will use ioppytest_cli  as CLI for
+interfacing with testing tool (comms go over AMQP event bus).
+
+
+### Set up up the message broker
+
+The interop testing tool use RabbitMQ (RMQ) message broker for sending
+messages between its components, and the remote ones (like the agent).
 
 RMQ broker is a component which is **external** to the testing tool
-and which establish the session and infrastructure so compomnents can
+and which establish the session and infrastructure so components can
 communicate with each other during the test session.
+
+If using [go.f-interop.eu](go.f-interop.eu) then this is automatically
+set-up for you.
+
+When running a standalone setup the user first needs to have a RMQ
+broker running..
 
 The options for this are:
 
@@ -149,12 +181,12 @@ create RMQ vhost, user, pass on local machine
     (# TODO add instructions)
 
 - Request a remote vhost and credentials (user,pass) to
-federico.sismondi@inria.fr (recommended)
+federico<dot>sismondi<at>inria<dot>fr (recommended)
 
 don't hesitate to contact me, this is a very simple procedure and it's
 free :D
 
-## Export AMQP environment variables
+### Export AMQP environment variables
 
 after having a created vhost with its user/password,
 export in the machine where the testing tool is running the following
@@ -165,31 +197,31 @@ export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
 export AMQP_EXCHANGE='amq.topic'
 ```
 
-## Download the source code (see `Clonning the project` for more info)
+### Download the source code (see `Clonning the project` for more info)
 ```
-git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
+git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
 cd ioppytest
 ```
 
 
-## Build the testing tools
+### Build the testing tools
 
 (docker, py2 and py3 needs to be installed in the machine)
 ```
 make build-all
 ```
 
-## Run testing tool (CoAP testing tool example)
+### Run testing tool (CoAP testing tool example)
 ```
 make run-coap-testing-tool
 ```
 
-## Connect to the interop session using the CLI
+### Connect to the interop session using the CLI
 ```
 make run-cli
 ```
 
-## Connect the agent to the backend
+### Connect the agent to the backend
 
 if user's IUT is a CoAP client:
 
@@ -203,9 +235,9 @@ if user's IUT is a CoAP server:
 make run-agent-coap-server
 ```
 
-## Running a second IUT
+### Running a second IUT
 
-### User to user session, second user with his/her own IUT
+#### User to user session, second user with his/her own IUT
 
 The second IUT needs to connect to the same VHOST the same way first IUT
 did. For this the RMQ broker needs to be reachable by this second IUT
@@ -214,7 +246,7 @@ did. For this the RMQ broker needs to be reachable by this second IUT
 If this is the case then user 2 should just export the same environment
  variables as user 1, and launch agent, and CLI just as user 1 did.
 
-### Single user session, against an automated-IUT
+#### Single user session, against an automated-IUT
 
  If the user wants to run test against one of the automated-IUT
  (~reference implementation) supported by ioppytest:
@@ -244,36 +276,9 @@ Developping a new test suite:
 
 ## Clonning the project
 ```
-git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
+git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
 cd ioppytest
 ```
-
-### Attention with the git submodules!
-
-remember when cloning a project with submodules to use --recursive flag
-```
-git clone --recursive ...
-```
-
-or else (in case you forgot about the flag), right after cloning you can:
-```
-git submodule update --init --recursive
-```
-
-whenever you find that your utils libraries are not the latests versions
-you can 'bring' those last changes from the main utils repo to your project
-with:
-```
-git submodule update --remote --merge
-```
-
-after bringing the last changes you can update your project with the last changes by doing:
-```
-git add <someSubModuleDir>
-git commit -m 'updated submodule reference to last commit'
-git push
-```
-
 
 ## How to merge new features to upstream branch ?
 
@@ -299,7 +304,8 @@ docker run -it
 
 
 alternatively, if you are curious and you want to know
-what's under the hood:
+what's under the hood, you can see which processes are being run -in
+the docker container- by the testing tool:
 
 ```
 docker run -it
@@ -332,7 +338,7 @@ you can use for example envs/coap_testing_tool/supervisor.conf.ini
 for using the coap_testing_tool
 
 note: use -E when launching supervisor process, it preserves the
-env vars
+env vars (like an exported AMQP_URL)
 
 
 FAQ
@@ -351,7 +357,7 @@ FAQ
 - I have my own CoAP implementation, how can I add it as an
 automated-IUT into CoAP Testing Tool:
 
-    please contact federico.sismondi@inria.fr
+    please contact federico<dot>sismondi<at>inria<dot>fr
 
 
 - Docker build returns a "cannot fetch package" or a "cannot resolve .."
