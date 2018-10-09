@@ -148,17 +148,20 @@ controlling a second IUT
 - user controls both implementations (IUTs) taking part in the interop
 session
 
-## Running a test suite using F-Interop platform
+# (opt 1) Running a test suite using F-Interop platform
 
 go to [go.f-interop.eu](go.f-interop.eu) and follow the instructions
 
-## Running a test suite standalone
+Recommended option (more user friendly).
+
+# (opt 2) Running a test suite standalone
 
 for this, you will use ioppytest_cli  as CLI for
 interfacing with testing tool (comms go over AMQP event bus).
 
+Recommended option only for testing tool contributors.
 
-### Set up up the message broker
+## (opt 2.1) Set up up the message broker
 
 The interop testing tool use RabbitMQ (RMQ) message broker for sending
 messages between its components, and the remote ones (like the agent).
@@ -186,7 +189,7 @@ federico<dot>sismondi<at>inria<dot>fr (recommended)
 don't hesitate to contact me, this is a very simple procedure and it's
 free :D
 
-### Export AMQP environment variables
+## (opt 2.2) Export AMQP environment variables
 
 after having a created vhost with its user/password,
 export in the machine where the testing tool is running the following
@@ -197,31 +200,31 @@ export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
 export AMQP_EXCHANGE='amq.topic'
 ```
 
-### Download the source code (see `Clonning the project` for more info)
+## (opt 2.3) Download the source code (see `Clonning the project` for more info)
 ```
 git clone https://gitlab.f-interop.eu/f-interop-contributors/ioppytest.git
 cd ioppytest
 ```
 
 
-### Build the testing tools
+## (opt 2.4) Build the testing tools
 
 (docker, py2 and py3 needs to be installed in the machine)
 ```
 make build-all
 ```
 
-### Run testing tool (CoAP testing tool example)
+## (opt 2.5) Run testing tool (CoAP testing tool example)
 ```
 make run-coap-testing-tool
 ```
 
-### Connect to the interop session using the CLI
+## (opt 2.6) Connect to the interop session using the CLI
 ```
 make run-cli
 ```
 
-### Connect the agent to the backend
+## (opt 2.7) Connect the agent to the backend
 
 if user's IUT is a CoAP client:
 
@@ -235,9 +238,9 @@ if user's IUT is a CoAP server:
 make run-agent-coap-server
 ```
 
-### Running a second IUT
+## (opt 2.8) Running a second IUT
 
-#### User to user session, second user with his/her own IUT
+### (opt 2.8.1) User to user session, second user with his/her own IUT
 
 The second IUT needs to connect to the same VHOST the same way first IUT
 did. For this the RMQ broker needs to be reachable by this second IUT
@@ -246,7 +249,7 @@ did. For this the RMQ broker needs to be reachable by this second IUT
 If this is the case then user 2 should just export the same environment
  variables as user 1, and launch agent, and CLI just as user 1 did.
 
-#### Single user session, against an automated-IUT
+### (opt 2.8.2) Single user session, against an automated-IUT
 
  If the user wants to run test against one of the automated-IUT
  (~reference implementation) supported by ioppytest:
@@ -262,7 +265,7 @@ make run-coap-client
 ```
 
 
-## Running the interop session
+## (opt 2.9) Running the interop session
 
 Simply follow the CLI instructions and enjoy! :)
 
