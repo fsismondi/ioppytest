@@ -3,7 +3,10 @@ import json
 import logging
 from collections.__init__ import OrderedDict
 
-from ioppytest.ui_adaptor.message_rendering import testsuite_results_to_ascii_table, testcase_verdict_to_ascii_table
+from ioppytest.ui_adaptor.message_rendering import (testsuite_results_to_ascii_table,
+                                                    testcase_verdict_to_ascii_table,
+                                                    testsuite_state_to_ascii_table
+                                                    )
 from event_bus_utils import AmqpListener, publish_message
 from messages import (MsgUiRequestSessionConfiguration,
                       MsgTestingToolTerminate,
@@ -17,7 +20,7 @@ logger = logging.getLogger(__name__)
 TESTSUITE_NAME = os.environ.get('TESTNAME', 'noname')
 TESTSUITE_REPORT_DELIM = os.environ.get('DELIM', '===TESTRESULT===')
 default_configuration = {
-    "testsuite.testcases": None  # None => default config (all test cases)
+    "testsuite.testcases": None  # None (default config) ->  all test cases
 }
 
 

@@ -264,7 +264,7 @@ if(env.JOB_NAME =~ 'ioppytest-lwm2m-implementation-continuous-testing/'){
 }
 
 
-if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
+if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
     node('docker'){
 
         /* attention, here we use external RMQ server*/
@@ -386,6 +386,58 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing/'){
                     '''
                     archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
                     archiveArtifacts artifacts: '*.pcap', fingerprint: true
+                }
+            }
+        }
+    }
+}
+
+
+if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
+    node('docker'){
+
+        /* attention, here we use external RMQ server*/
+        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_implementations_continuous_testing_2"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        env.CI = "True"
+
+        stage("Check if DOCKER is installed on node"){
+            sh '''
+                docker version
+            '''
+        }
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh '''
+                git submodule update --init
+                tree .
+            '''
+        }
+
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
+                        sudo apt-get install --fix-missing -y -qq make
+
+                        sudo make install-python-dependencies
+                    '''
                 }
             }
         }

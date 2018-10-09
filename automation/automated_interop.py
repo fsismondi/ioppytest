@@ -64,6 +64,7 @@ import pprint
 
 # messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
 from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
+from ioppytest.ui_adaptor.message_rendering import testsuite_state_to_ascii_table
 from messages import *
 
 from automation.ui_stub import default_configuration, UIStub
@@ -73,14 +74,18 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 COMPONENT_ID = 'perform_testsuite'
 SESSION_TIMEOUT = 900
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
+LOG_WARNINGS_ONLY = os.environ.get('LOG_WARNINGS_ONLY', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
 COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
 
-logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
-logging.getLogger('pika').setLevel(logging.WARNING)
-logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
-logging.getLogger('messages').setLevel(logging.WARNING)
 
+if LOG_WARNINGS_ONLY:
+    logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.WARNING)
+else:
+    logging.basicConfig(format='%(levelname)s [%(name)s]:%(message)s', level=logging.INFO)
+    logging.getLogger('pika').setLevel(logging.WARNING)
+    logging.getLogger('event_bus_utils').setLevel(logging.WARNING)
+    logging.getLogger('messages').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +242,7 @@ class PerformFullTest(object):
             )  # get status
 
             if isinstance(current_status, MsgTestSuiteGetStatusReply):
-                logger.info("Testsuite status: %s", current_status)
+                logger.info("Testsuite status: \n%s", testsuite_state_to_ascii_table(current_status.to_dict()))
             else:
                 logger.warning("Could not get testsuite status: unexpected reply")
             pass
