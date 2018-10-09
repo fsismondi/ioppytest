@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 TESTSUITE_NAME = os.environ.get('TESTNAME', 'noname')
 TESTSUITE_REPORT_DELIM = os.environ.get('DELIM', '===TESTRESULT===')
 default_configuration = {
-    "testsuite.testcases": ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
+    "testsuite.testcases": None  # None => default config (all test cases)
 }
 
 

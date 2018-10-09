@@ -1,18 +1,6 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
-import os
-import pika
-import pprint
-
-# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
-from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
-from messages import *
-
-from automation.ui_stub import default_configuration, UIStub
-from automation import MessageLogger, log_all_received_messages, UserMock
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
-
 """
 The automation code used the event bus API as stimulation and evaluation point.
 Evaluates a normal test cycle with real automated IUTs. 
@@ -64,11 +52,23 @@ TEST SETUP:
                                          +-----------------------------+
                                          |                             |
                                          |    automated interop driver |
-                                         |        (this component)     |
+                                         |        (this module)        |
                                          |                             |
                                          +-----------------------------+
 
 """
+
+import os
+import pika
+import pprint
+
+# messages and event_bus_utils are packages that are installed with `pip3 install ioppytest-utils`
+from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
+from messages import *
+
+from automation.ui_stub import default_configuration, UIStub
+from automation import MessageLogger, log_all_received_messages, UserMock
+from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 COMPONENT_ID = 'perform_testsuite'
 SESSION_TIMEOUT = 900
@@ -94,7 +94,8 @@ class PerformFullTest(object):
         self.channel = self.connection.channel()
 
         if EXECUTE_ALL_TESTS:
-            self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            #self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+            self.tc_list = None  # if tc_list is None => all TCs are executed
             logger.info("Detected CI environment. Executing all test cases.")
         else:
             self.tc_list = [
