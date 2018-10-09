@@ -1,0 +1,30 @@
+- name: "aiocoap-cli-vs-californium-server"
+  target_start: "_setup-coap-mini-interop-aiocoap-cli-vs-californium-server"
+  target_stop: "stop-all" 
+  delim: "aiocoap-cli-vs-californium-server"
+
+- name: "libcoap-cli-vs-californium-server"
+  target_start: "_setup-coap-mini-interop-libcoap-cli-vs-californium-server"
+  target_stop: "stop-all"
+  delim: "libcoap-cli-vs-californium-server"
+
+- name: "californium-cli-vs-californium-server"
+  target_start: "_setup-coap-mini-interop-californium-cli-vs-californium-server"
+  target_stop: "stop-all"
+  delim: "californium-cli-vs-californium-server"
+
+- name: "coapthon-cli-vs-californium-server"
+  target_start: "_setup-coap-mini-interop-coapthon-cli-vs-californium-server"
+  target_stop: "stop-all"
+  delim: "coapthon-cli-vs-californium-server"
+
+- name: "californium-cli-vs-coapthon-server"
+  target_start: "_setup-coap-mini-interop-californium-cli-vs-coapthon-server"
+  target_stop: "stop-all"
+  delim: "californium-cli-vs-coapthon-server"
+
+- name: "coapthon-cli-vs-coapthon-server"
+  target_start: "_setup-coap-mini-interop-coapthon-cli-vs-coapthon-server"
+  target_stop: "stop-all"
+  delim: "coapthon-cli-vs-coapthon-server"
+
