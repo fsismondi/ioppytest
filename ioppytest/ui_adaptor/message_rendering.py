@@ -78,48 +78,16 @@ def testsuite_state_to_ascii_table(state_dict: dict):
     :param state_dict: dict of session info, see example
     :return: string-based (ascii chars) table of all states
 
-    example of state dict:
+    started = True, step_id = TD_COAP_CORE_01_step_01, testcase_id = TD_COAP_CORE_01, testcase_state = executing
 
-    {
-    "configuration": null,
-    "ok": true,
-    "session_id": null,
-    "started": true,
-    "step_id": null,
-    "tc_list": [
-        {
-            "testcase_id": "TD_COAP_CORE_01",
-            "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-            "state": "finished",
-            "objective": "Perform GET transaction(CON mode)"
-        },
-        {
-            "testcase_id": "TD_COAP_CORE_02",
-            "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-            "state": "finished",
-            "objective": "Perform DELETE transaction (CON mode)"
-        },
-        {
-            "testcase_id": "TD_COAP_CORE_23",
-            "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_23",
-            "state": "configuring",
-            "objective": "Perform PUT transaction containing the If-None-Match option (CON mode)"
-        },
-        {
-            "testcase_id": "TD_COAP_CORE_31",
-            "testcase_ref": "http://doc.f-interop.eu/tests/TD_COAP_CORE_31",
-            "state": null,
-            "objective": "Perform CoAP Ping (CON mode)"
-        }
-    ],
-    "testcase_id": "TD_COAP_CORE_23",
-    "testcase_state": "configuring",
-    "users": null
-}
+    example of state dict:
+    >>> MsgTestSuiteGetStatusReply().to_dict()
+    {'_api_version': '1.2.10', 'ok': True, 'started': True, 'step_id': 'TD_COAP_CORE_01_step_01', 'testcase_id': 'TD_COAP_CORE_01', 'testcase_state': 'executing'}
     """
+
     assert type(state_dict) is dict
 
-    table_keys = ['session_id', 'configuration', 'started', 'testcase_id', 'testcase_state']
+    table_keys = ['started', 'testcase_id', 'testcase_state', 'step_id']
     table_dict = {key: state_dict[key] for key in table_keys}
 
     return tabulate(table_dict, tablefmt="grid")
