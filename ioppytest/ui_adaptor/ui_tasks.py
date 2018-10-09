@@ -117,7 +117,8 @@ def get_session_configuration_from_ui(amqp_publisher):
     if resp is None:
         raise UiResponseError("Got session config None from UI")
 
-    if not resp.ok:
+    # (!) UI is not 100% compliant with specification and doesnt always answer with an ok field :/
+    if hasattr(resp, 'ok') and not resp.ok:
         raise UiResponseError("Got NOK response from UI, response: %s" % repr(resp))
 
     resp_dict = resp.to_dict()
