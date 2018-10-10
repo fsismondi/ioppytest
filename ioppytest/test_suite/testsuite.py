@@ -599,7 +599,7 @@ class TestSuite:
 
         assert partial_verdict.lower() in Verdict.values
 
-        self.current_tc.current_step.set_result(partial_verdict.lower(), "CHECK step: %s" % description)
+        self.current_tc.current_step.set_result(partial_verdict.lower(), "postponed for later analysis." % description)
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
