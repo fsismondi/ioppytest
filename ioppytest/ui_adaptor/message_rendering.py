@@ -138,8 +138,6 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
         ('testcase_id', 'Test case ID'),
         ('objective', 'Test Purpose'),
         ('testcase_ref', 'Test case URL'),
-        ('pre_conditions', 'Pre-conditions'),
-
     ]
 
     for i in step_message_fields:
@@ -149,7 +147,7 @@ def testcase_verdict_to_ascii_table(testcase_verdict_report):
             col2 = list_to_str(col2)  # flattens info
             table.append([col1, col2])
         except KeyError as e:
-            logger.warning(e)
+            logger.warning("Non existing message field. Got exception: %s" % e)
 
     ret_string += "\n === Verdict info ==="
     ret_string += "\n"
