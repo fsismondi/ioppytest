@@ -335,11 +335,11 @@ class Coordinator(CoordinatorAmqpInterface):
                         # format : [[partial verdict : str, description : str]]
                         partial_verd = []
                         step_count = 0
-                        len = len(tat_response.partial_verdicts)
+                        ls_len = len(tat_response.partial_verdicts)
                         for item in tat_response.partial_verdicts:
                             # let's partial verdict id
                             step_count += 1
-                            p = ("frame_check_[{}/{}]".format(step_count, len), item[0], item[1])
+                            p = ("frame_check_[{}/{}]".format(step_count, ls_len), item[0], item[1])
                             partial_verd.append(p)
                             logger.debug("Processing partial verdict received from TAT: %s" % str(p))
 
