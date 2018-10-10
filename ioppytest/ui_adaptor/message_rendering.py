@@ -90,7 +90,7 @@ def testsuite_state_to_ascii_table(state_dict: dict):
     table_keys = ['started', 'testcase_id', 'testcase_state', 'step_id']
     table_dict = {key: state_dict[key] for key in table_keys}
 
-    return tabulate(table_dict, tablefmt="grid")
+    return tabulate(table_dict.items(), tablefmt="grid")
 
 
 def testcase_verdict_to_ascii_table(testcase_verdict_report):
