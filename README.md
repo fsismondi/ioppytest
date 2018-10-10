@@ -141,12 +141,12 @@ install-python-dependencies:   installs all py2 and py3 pip dependencies
 
 The supported setups are:
 
-- user controls one IUT and wants to run tests against one of the
+- user drives one IUT and wants to run tests against one of the
 automated-IUTs the framework supports
-- user controls one IUT and is in direct contact with a second user
-controlling a second IUT
-- user controls both implementations (IUTs) taking part in the interop
+- user drives both implementations (IUTs) taking part in the interop
 session
+- user1 drives an IUT, user2 drives an IUT, users are either both
+in-situ, or remotely located.
 
 # (opt 1) Running a test suite using F-Interop platform
 
