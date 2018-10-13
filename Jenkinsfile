@@ -460,7 +460,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
 
                     try {
                         sh '''
-                            sudo -E make clean 2>/dev/null
+                            make clean
                            '''
                         }
                     catch (err) {
