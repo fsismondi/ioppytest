@@ -299,7 +299,7 @@ class AutomatedIUT(threading.Thread):
     def handle_test_suite_report(self, event):
         self.log('Got final test suite report')
         if self.process_log_file:
-            contents = open(self.process_log_file).read()
+            contents = open(self.process_log_file, "r", encoding="utf-8").read()
             self.log('*' * 72)
             self.log('AUTOMATED_IUT LOGS %s' % self.process_log_file)
             self.log('*' * 72)
