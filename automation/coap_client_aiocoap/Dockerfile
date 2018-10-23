@@ -27,12 +27,13 @@ WORKDIR /ioppytest
 RUN python -m pip install ioppytest-agent
 RUN python3 -m pip install ioppytest-utils
 
-#py3 requirements
-RUN python3 -m pip install -r automation/coap_client_aiocoap/requirements.txt
+# requirements on automated-iut python code
+RUN python3 -m pip install -r automation/requirements.txt
+
+# install aiocoap from PyPI
+RUN python3 -m pip install aiocoap
 
 #RUN cp automation/coap_client_aiocoap/supervisor.conf supervisor.conf
-
-EXPOSE 5671 5672
 
 # launch processes
 CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "automation/coap_client_aiocoap/supervisor.conf"]
