@@ -349,8 +349,15 @@ class Coordinator(CoordinatorAmqpInterface):
                     else:
                         error_msg += 'Response from Test Analyzer NOK: %s' % repr(tat_response)
                         logger.warning(error_msg)
-                        gen_verdict = 'error'
-                        gen_description = error_msg
+
+                        # generate verdict and verdict description
+                        try:
+                            gen_description = tat_response.error_code
+                            gen_verdict = 'inconclusive'
+                        except AttributeError:
+                            gen_description = error_msg
+                            gen_verdict = 'error'
+
                         report = []
                 else:
                     error_msg += 'Error encountered with packet sniffer: %s' % repr(sniffer_response)
