@@ -325,8 +325,10 @@ _docker-build-lwm2m-additional-resources:
 
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
-	@echo "TBD"
-
+	
+	docker build --quiet -t automated_iut-onem2m_server-eclipse_om2m-v$(version) -f automated_IUTs/onem2m_cse_eclipse_om2m/Dockerfile .
+	docker tag automated_iut-onem2m_server-eclipse_om2m-v$(version):latest automated_iut-onem2m_server-eclipse_om2m
+	
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
 	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automation/comi_server_acklio/Dockerfile .
