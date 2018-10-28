@@ -328,6 +328,9 @@ _docker-build-onem2m-additional-resources:
 	
 	docker build --quiet -t automated_iut-onem2m_server-eclipse_om2m-v$(version) -f automation/onem2m_cse_eclipse_om2m/Dockerfile .
 	docker tag automated_iut-onem2m_server-eclipse_om2m-v$(version):latest automated_iut-onem2m_server-eclipse_om2m
+        
+        docker build --quiet -t automated_iut-onem2m_adn-v$(version) -f automation/onem2m_adn_etsi_implementation/Dockerfile .
+	docker tag automated_iut-onem2m_adn-v$(version):latest automated_iut-onem2m_adn
 	
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
