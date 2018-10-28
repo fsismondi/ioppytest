@@ -2,8 +2,8 @@
 # !/usr/bin/env python3
 
 import subprocess
-from automated_IUTs import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
-from automated_IUTs.automation import *
+from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
+from automation.automated_iut import *
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
@@ -18,7 +18,7 @@ class ADN(AutomatedIUT):
     java -jar (..)/adn.jar -h [bbbb::2] -p 5683 -ci server -cn server -o Cae-admin -t TD_M2M_NH_01
     """
 
-    component_id = 'automated_iut-onem2m_client-etsi_adn'
+    component_id = 'automated_iut-onem2m_adn'
     node = 'adn'
     iut_base_cmd = 'java -jar automation/onem2m_adn_etsi_implementation/target/adn/adn.jar -h [bbbb::2] -p 5683 -ci server -cn server -o Cae-admin -t'
 
