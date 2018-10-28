@@ -42,6 +42,8 @@ LIST = automated_iut-coap_client-coapthon \
 	   testing_tool-interoperability-lwm2m \
 	   reference_iut-coap_server \
 	   reference_iut-coap_client \
+           automated_iut-onem2m_adn \
+           automated_iut-onem2m_server-eclipse_om2m \
 
 info:
 	@echo $(info_message)
