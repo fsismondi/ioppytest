@@ -5,7 +5,7 @@ import subprocess
 
 from ioppytest import TMPDIR
 #from automated_IUTs import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
-from automated_IUTs.automation import *
+from automation.automated_iut import *
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
@@ -24,7 +24,7 @@ class onem2mServer(AutomatedIUT):
 
     iut_cmd = [
         'sh',
-        'automated_IUTs/onem2m_cse_eclipse_om2m/in-cse/start.sh',
+        'automation/onem2m_cse_eclipse_om2m/in-cse/start.sh',
     ]
 
     def __init__(self):
