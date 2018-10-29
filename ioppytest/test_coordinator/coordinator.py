@@ -5,7 +5,6 @@ import os
 import base64
 from urllib.parse import urlparse
 
-
 from transitions import Machine
 from transitions.extensions.states import add_state_features, Tags, Timeout
 
@@ -112,19 +111,16 @@ class Coordinator(CoordinatorAmqpInterface):
 
         try:
             event_tc_list = received_event.configuration['testsuite.testcases']
-            assert type(event_tc_list) is list, 'Testcases list expected'
             for t in event_tc_list:
                 test_url = urlparse(t)
                 session_tc_list.append(str(test_url.path).lstrip("/tests/"))
 
-        except KeyError as e:
+        except (KeyError, TypeError) as e:
             error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
             logging.warning(error_msg)
-            session_tc_list = self.testsuite.get_testcases_list()
 
-        except Exception as e:
-            error_msg = "Wrong message format sent for session configuration."
-            raise CoordinatorError(message=error_msg)
+        if not session_tc_list:  # this catches either None or []
+            session_tc_list = self.testsuite.get_testcases_list()
 
         try:
             session_id = received_event.session_id
@@ -252,6 +248,9 @@ class Coordinator(CoordinatorAmqpInterface):
         states.update(self.testsuite.get_testsuite_configuration())
         return states
 
+    def get_testsuite_report(self):
+        return self.testsuite.get_report()
+
     def get_nodes_addressing_table(self):
         return self.testsuite.get_addressing_table().copy()
 
@@ -336,12 +335,13 @@ class Coordinator(CoordinatorAmqpInterface):
                         # format : [[partial verdict : str, description : str]]
                         partial_verd = []
                         step_count = 0
+                        ls_len = len(tat_response.partial_verdicts)
                         for item in tat_response.partial_verdicts:
                             # let's partial verdict id
                             step_count += 1
-                            p = ("tat_check_%d" % step_count, item[0], item[1])
+                            p = ("frame_check_[{}/{}]".format(step_count, ls_len), item[0], item[1])
                             partial_verd.append(p)
-                            logger.debug("Processing partical verdict received from TAT: %s" % str(p))
+                            logger.debug("Processing partial verdict received from TAT: %s" % str(p))
 
                         # generates a general verdict considering other steps partial verdicts besides TAT's
                         gen_verdict, gen_description, report = current_tc.generate_testcases_verdict(partial_verd)
@@ -405,8 +405,6 @@ class Coordinator(CoordinatorAmqpInterface):
             self.testsuite.reinit_testcase(self.testsuite.get_current_testcase_id())
         else:
             raise CoordinatorError("No current testcase, no info on what TC to restart")
-
-        # test case switch is handled by prepare_next_testcase
 
     def handle_testcase_select(self, received_event):
         """

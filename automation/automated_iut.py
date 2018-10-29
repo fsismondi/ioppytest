@@ -233,7 +233,7 @@ class AutomatedIUT(threading.Thread):
         if event is None:
             return
 
-        self.log('Event received: %s' % repr(event))
+        self.log('Event received: %s' % type(event))
 
         if type(event) in self.event_to_handler_map:
             callback = self.event_to_handler_map[type(event)]
@@ -254,11 +254,23 @@ class AutomatedIUT(threading.Thread):
             self.log('IUT %s (%s) READY to handle test case: %s' % (self.component_id, self.node, event.testcase_id))
 
     def handle_stimuli_execute(self, event):
-        if event.node == self.node and event.step_id in self.implemented_stimuli_list:
+        # TODO should we check if stimuli is implemented or not?
+        if event.node == self.node and self.implemented_stimuli_list and event.step_id not in self.implemented_stimuli_list:
+            self.log('[%s] STIMULI (%s) doesnt seem to be implemented by automated IUT:' %
+                     (
+                         self.node if self.node else "misc.",
+                         event.step_id,
+                     ))
+
+        if event.node == self.node:
             step = event.step_id
             addr = event.target_address  # may be None
-            self._execute_stimuli(step, addr)  # blocking till stimuli execution
-            publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
+            try:
+                self._execute_stimuli(step, addr)  # blocking till stimuli execution
+                publish_message(self.connection, MsgStepStimuliExecuted(node=self.node))
+            except NotImplementedError as e:  # either method not overriden, or stimuli step not implemented :/
+                publish_message(self.connection, MsgStepStimuliExecuted(description=str(e), node=self.node))
+
         else:
             self.log('[%s] Event received and ignored: \n\tEVENT:%s \n\tNODE:%s \n\tSTEP: %s' %
                      (
@@ -285,9 +297,9 @@ class AutomatedIUT(threading.Thread):
                      ))
 
     def handle_test_suite_report(self, event):
-        self.log('Got final test suite report: %s' % event.to_json())
+        self.log('Got final test suite report')
         if self.process_log_file:
-            contents = open(self.process_log_file).read()
+            contents = open(self.process_log_file, "r", encoding="utf-8").read()
             self.log('*' * 72)
             self.log('AUTOMATED_IUT LOGS %s' % self.process_log_file)
             self.log('*' * 72)

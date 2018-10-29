@@ -3,15 +3,16 @@ import logging
 import os
 import threading
 import time
-
+import base64
 import pika
+
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest import get_from_environment, AMQP_URL, AMQP_EXCHANGE, RESULTS_DIR
 from event_bus_utils import AmqpListener, publish_message
 from messages import MsgTestingToolTerminate, MsgSessionLog, MsgTestCaseReady, MsgTestingToolReady, \
     MsgTestingToolConfigured, MsgTestSuiteReport, MsgTestCaseVerdict, MsgStepVerifyExecute, \
     MsgTestingToolComponentReady, Message, MsgStepVerifyExecuted, MsgTestSuiteStart, MsgTestCaseStart, MsgTestCaseSkip, \
-    MsgTestingToolComponentShutdown
+    MsgTestingToolComponentShutdown, MsgSniffingGetCaptureReply
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,55 @@ COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
     logger.debug(traces_of_all_messages_in_event_bus)
 
 
+class ResultsLogger(AmqpListener):
+    def __init__(self, amqp_url, amqp_exchange):
+        AmqpListener.__init__(self, amqp_url, amqp_exchange,
+                              callback=self.process_message,
+                              topics=['#'],
+                              use_message_typing=True)
+
+        self.messages_list = []
+        self.messages_by_type_dict = {}
+
+    @classmethod
+    def process_message(cls, message):
+
+        print('Event received: %s' % type(message))
+
+        if isinstance(message, MsgTestSuiteReport):
+            #  Save report
+            json_file = os.path.join(
+                RESULTS_DIR,
+                'final_report.json'
+            )
+            with open(json_file, 'w') as f:
+                f.write(message.to_json())
+            print("Saved test suite report")
+
+        elif isinstance(message, MsgSniffingGetCaptureReply):
+
+            if message.ok:
+                file_path = os.path.join(RESULTS_DIR, message.filename)
+                with open(file_path, "wb") as pcap_file:
+                    nb = pcap_file.write(base64.b64decode(message.value))
+                    print("Saved pcap file with %s bytes" % nb)
+            else:
+                print("Got Capture result reply with NOK field")
+
+        elif isinstance(message, MsgTestCaseVerdict):
+            #  Save verdict
+            json_file = os.path.join(
+                RESULTS_DIR,
+                message.testcase_id + '_verdict.json'
+            )
+            with open(json_file, 'w') as f:
+                f.write(message.to_json())
+            print("Verdict saved: %s" % message.testcase_id)
+
+        else:
+            print("No handler defined for msg: %s" % type(message))
+
+
 class MessageLogger(AmqpListener):
     def __init__(self, amqp_url, amqp_exchange):
         AmqpListener.__init__(self, amqp_url, amqp_exchange,
@@ -70,7 +120,7 @@ class MessageLogger(AmqpListener):
         self.messages_by_type_dict = {}
 
     def process_message(self, message):
-   #     logger.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+        #     logger.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
         self.messages_list.append(message)
         self.messages_by_type_dict[type(message)] = message
 
@@ -82,11 +132,12 @@ class MessageLogger(AmqpListener):
 class UserMock(threading.Thread):
     """
     this class servers for moking user inputs into GUI
+    Behaviour:
+        - if iut_testcases is None => all testcases are executed.
+        - if iut_to_mock_verifications_for is None => no verif.executed is sent to bus.
+
     """
     component_id = 'user_mock'
-
-    # e.g. for TD COAP CORE from 1 to 31
-    DEFAULT_TC_LIST = ['TD_COAP_CORE_%02d' % tc for tc in range(1, 32)]
 
     def __init__(self, iut_testcases=None, iut_to_mock_verifications_for=None):
 
@@ -112,12 +163,10 @@ class UserMock(threading.Thread):
 
         self.message_count = 0
 
-        # queues & default exchange declaration
-        if iut_testcases:
-            self.implemented_testcases_list = iut_testcases
-        else:
-            self.implemented_testcases_list = UserMock.DEFAULT_TC_LIST
+        # if implemented_testcases_list is None then all test cases should be executed
+        self.implemented_testcases_list = iut_testcases
 
+        # queues & default exchange declaration
         queue_name = '%s::eventbus_subscribed_messages' % self.component_id
         self.channel.queue_declare(queue=queue_name, auto_delete=True)
 
@@ -215,15 +264,12 @@ class UserMock(threading.Thread):
         self.log('Event received: %s' % type(event))
         self.log('Event description: %s' % event.description)
 
-        # m = MsgTestCaseStart()
-        # publish_message(self.connection, m)
-
-        if event.testcase_id in self.implemented_testcases_list:
-            m = MsgTestCaseStart()
+        if self.implemented_testcases_list and event.testcase_id not in self.implemented_testcases_list:
+            m = MsgTestCaseSkip(testcase_id=event.testcase_id)
             publish_message(self.connection, m)
             self.log('Event pushed: %s' % m)
         else:
-            m = MsgTestCaseSkip(testcase_id=event.testcase_id)
+            m = MsgTestCaseStart()
             publish_message(self.connection, m)
             self.log('Event pushed: %s' % m)
 
@@ -268,3 +314,4 @@ class UserMock(threading.Thread):
             self.connection.process_data_events()
             time.sleep(0.3)
         self.log('%s shutting down..' % self.component_id)
+

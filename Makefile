@@ -44,6 +44,9 @@ LIST = automated_iut-coap_client-coapthon \
 	   reference_iut-coap_client \
            automated_iut-onem2m_adn \
            automated_iut-onem2m_server-eclipse_om2m \
+	   automated_iut-lwm2m_server-leshan \
+	   automated_iut-lwm2m_client-leshan \
+
 
 info:
 	@echo $(info_message)
@@ -95,6 +98,10 @@ build-all: ## Build all testing tool in docker images, and other docker image re
 	$(MAKE) build-tools
 	$(MAKE) build-automated-iuts
 
+clean: ## clean data directory
+	@echo "running $@"
+	rm *.pcap
+	rm data/results/*.json
 
 # # # # Testing Tool & other resources RUN commands # # # #
 
@@ -288,11 +295,11 @@ _docker-build-coap-additional-resources:
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
 	# build without using caché packages (slower builds)
-	# docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile . --no-cache
-	# docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile . --no-cache
+	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile . --no-cache
+	#docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile . --no-cache
 
 	# automated_iut-coap_server-californium  & automated_iut-coap_client-californium
-	docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
+	#docker build --quiet -t automated_iut-coap_server-californium-v$(version) -f automation/coap_server_californium/Dockerfile .
 	docker build --quiet -t automated_iut-coap_client-californium-v$(version) -f automation/coap_client_californium/Dockerfile .
 	docker tag automated_iut-coap_client-californium-v$(version):latest automated_iut-coap_client-californium
 	docker tag automated_iut-coap_server-californium-v$(version):latest automated_iut-coap_server-californium
@@ -367,6 +374,11 @@ _setup-coap-mini-interop-libcoap-cli-vs-californium-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-californium automated_iut-coap_server-californium
 
+_setup-coap-mini-interop-libcoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
 
 _run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -374,6 +386,14 @@ _run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
 	$(MAKE) run-coap-testing-tool
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
+
+_run-coap-mini-interop-aiocoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
+
 
 _run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
@@ -399,6 +419,24 @@ _run-coap-mini-interop-libcoap-cli-vs-californium-server:
 	@echo "running $@"
 	$(MAKE) run-coap-testing-tool
 	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-californium-server
+
+_run-coap-mini-interop-libcoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	$(MAKE) _setup-coap-mini-interop-libcoap-cli-vs-august_cellars-server
+
+_run-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-lwm2m-testing-tool
+	$(MAKE) _setup-coap-mini-interop-leshan-cli-vs-leshan-server
+
+_setup-coap-mini-interop-leshan-cli-vs-leshan-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_client-leshan automated_iut-lwm2m_client-leshan
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_server-leshan automated_iut-lwm2m_server-leshan
 
 _setup-coap-mini-interop-californium-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"

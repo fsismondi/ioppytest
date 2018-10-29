@@ -42,7 +42,7 @@ PRE-CONDITIONS:
 """
 
 COMPONENT_ID = 'fake_session'
-SESSION_TIMEOUT = 300
+SESSION_TIMEOUT = 900
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
 COAP_SERVER_IS_AUTOMATED = os.environ.get('COAP_SERVER_IS_AUTOMATED', 'True') == 'True'
@@ -148,7 +148,12 @@ class CompleteFunctionalCoapSessionTests(unittest.TestCase):
             connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
 
             if t >= SESSION_TIMEOUT:
-                r = amqp_request(connection, MsgTestSuiteGetStatus(), COMPONENT_ID)
+                r = amqp_request(
+                    connection,
+                    MsgTestSuiteGetStatus(),
+                    COMPONENT_ID,
+                    use_message_typing=True,
+                )
                 logging.warning('Test TIMED-OUT! Test suite status:\n%s' % pprint.pformat(r.to_dict()))
 
             if MsgTestingToolTerminate not in events_sniffed_on_bus_dict:
