@@ -215,7 +215,6 @@ install-python-dependencies: ## installs all py2 and py3 pip dependencies
 	@python -m pip -qq install ioppytest-agent
 
 	@echo "installing py3 submodule's dependencies..."
-	@python3 -m pip -qq install pytest
 	@python3 -m pip -qq install ioppytest-utils
 
 	@echo "installing py3 ioppytest's dependencies..."
