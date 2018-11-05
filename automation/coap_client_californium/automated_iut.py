@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import traceback
 from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST, LOG_LEVEL
 from automation.automated_iut import *
 
@@ -106,3 +107,4 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
+        logger.error(traceback.format_exc())

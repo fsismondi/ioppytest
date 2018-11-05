@@ -67,6 +67,7 @@ Some tests have several stimulis, those are specified with the attribute
 aux_stimuli_to_function_map.
 """
 
+import traceback
 import os
 import logging
 import binascii
@@ -396,4 +397,5 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
+        logger.error(traceback.format_exc())
         exit(1)

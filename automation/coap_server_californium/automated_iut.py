@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
+
 import os
-import subprocess
+import traceback
 import logging
 
 from ioppytest import TMPDIR
@@ -57,3 +58,4 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logging.error(e)
+        logging.error(traceback.format_exc())

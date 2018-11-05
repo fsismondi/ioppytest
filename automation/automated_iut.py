@@ -96,6 +96,8 @@ class AutomatedIUT(threading.Thread):
     def __init__(self, node):
         self._init_logger()
 
+        assert self.implemented_testcases_list,  self.component_id
+
         configuration = {}
         for i in ['implemented_testcases_list', 'component_id', 'node', 'process_log_file']:
             configuration[i] = getattr(self, i, "not defined")

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-import os
-import subprocess
 
+import traceback
 from ioppytest import TMPDIR
 from automation import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
 from automation.automated_iut import *
@@ -59,6 +58,9 @@ class AcklioCoMiServer(AutomatedIUT):
         return server_base_url
 
 if __name__ == '__main__':
-    iut = AcklioCoMiServer()
-    iut.start()
-    iut.join()
+    try:
+        iut = AcklioCoMiServer()
+        iut.start()
+        iut.join()
+    except:
+        logger.error(traceback.format_exc())

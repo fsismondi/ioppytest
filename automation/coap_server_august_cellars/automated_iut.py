@@ -3,6 +3,7 @@
 
 import os
 import logging
+import traceback
 
 from ioppytest import TMPDIR
 from automation import COAP_SERVER_PORT, COAP_SERVER_HOST, COAP_CLIENT_HOST, LOG_LEVEL
@@ -59,3 +60,4 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
+        logger.error(traceback.format_exc())

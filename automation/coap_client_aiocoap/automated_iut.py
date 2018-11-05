@@ -33,7 +33,7 @@ We will have to use the API to implement those.
 ******************************
 
 """
-
+import traceback
 import logging
 from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automation.automated_iut import AutomatedIUT, launch_short_automated_iut_process
@@ -326,4 +326,5 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
+        logger.error(traceback.format_exc())
         exit(1)

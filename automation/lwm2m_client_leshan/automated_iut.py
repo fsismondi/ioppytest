@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import traceback
 from automation.automated_iut import *
 from ioppytest import TMPDIR, TD_LWM2M, TD_LWM2M_CFG
 from ioppytest.test_suite.testsuite import TestSuite
@@ -19,7 +20,6 @@ class LwM2MClient(AutomatedIUT):
     component_id = 'automated_iut-lwm2m_client_leshan'
     node = 'lwm2m_client'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
-
     implemented_testcases_list = []  # special case: all test cases can be executed by IUT
 
     iut_cmd = [
@@ -63,3 +63,5 @@ if __name__ == '__main__':
 
     except Exception as e:
         logger.error(e)
+        print("critical error found: %s" % e)
+        print(traceback.format_exc())

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
 
+import traceback
 import subprocess
 import logging
 from urllib.parse import urlparse
@@ -104,3 +105,4 @@ if __name__ == '__main__':
         iut.join()
     except Exception as e:
         logger.error(e)
+        logger.error(traceback.format_exc())
