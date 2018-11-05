@@ -42,8 +42,11 @@ LIST = automated_iut-coap_client-coapthon \
 	   testing_tool-interoperability-lwm2m \
 	   reference_iut-coap_server \
 	   reference_iut-coap_client \
+           automated_iut-onem2m_adn \
+           automated_iut-onem2m_server-eclipse_om2m \
 	   automated_iut-lwm2m_server-leshan \
 	   automated_iut-lwm2m_client-leshan \
+
 
 info:
 	@echo $(info_message)
@@ -330,8 +333,13 @@ _docker-build-lwm2m-additional-resources:
 
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
-	@echo "TBD"
-
+	
+	docker build --quiet -t automated_iut-onem2m_server-eclipse_om2m-v$(version) -f automation/onem2m_cse_eclipse_om2m/Dockerfile .
+	docker tag automated_iut-onem2m_server-eclipse_om2m-v$(version):latest automated_iut-onem2m_server-eclipse_om2m
+        
+	docker build --quiet -t automated_iut-onem2m_adn-v$(version) -f automation/onem2m_adn_etsi_implementation/Dockerfile .
+	docker tag automated_iut-onem2m_adn-v$(version):latest automated_iut-onem2m_adn
+	
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
 	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automation/comi_server_acklio/Dockerfile .
