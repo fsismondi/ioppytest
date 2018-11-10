@@ -4,7 +4,7 @@ FROM node:10
 WORKDIR /usr/src/app
 
 # Bundle app source
-COPY . .
+# COPY . .
 
 RUN git clone https://github.com/eclipse/thingweb.node-wot
 WORKDIR thingweb.node-wot
@@ -18,4 +18,5 @@ RUN npm install
 RUN npm run build
 
 EXPOSE 8080
-CMD [ "npm packages/cli/dist/cli.js examples/scripts/counter.js"]
+#CMD [ "npm", "packages/cli/dist/cli.js", "examples/scripts/counter.js"]
+ENTRYPOINT [ "node", "packages/cli/dist/cli.js", "examples/scripts/counter.js"]
