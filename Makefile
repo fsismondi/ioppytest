@@ -84,6 +84,7 @@ build-tools: ## builds all testing tool docker images (only testing tool)
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-lwm2m
 	$(MAKE) _docker-build-comi
+	$(MAKE) _docker-build-wot
 
 build-automated-iuts: ## Build all automated-iut docker images
 	@echo "Starting to build docker images.. "
@@ -91,6 +92,7 @@ build-automated-iuts: ## Build all automated-iut docker images
 	$(MAKE) _docker-build-comi-additional-resources
 	$(MAKE) _docker-build-onem2m-additional-resources
 	$(MAKE) _docker-build-lwm2m-additional-resources
+	$(MAKE) _docker-build-wot-additional-resources
 
 build-all: ## Build all testing tool in docker images, and other docker image resources too
 	@echo $(info_message)
@@ -247,6 +249,16 @@ _docker-build-lwm2m:
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-lwm2m-v$(version):latest testing_tool-interoperability-lwm2m
 
+_docker-build-wot:
+	@echo "Starting to build the wot testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build --quiet -t testing_tool-interoperability-wot-v$(version) -f envs/wot_testing_tool/Dockerfile .
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-wot-v$(version):latest testing_tool-interoperability-wot
+
+
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
 
@@ -330,6 +342,14 @@ _docker-build-lwm2m-additional-resources:
 
 	docker tag automated_iut-lwm2m_client-leshan-v$(version):latest automated_iut-lwm2m_client-leshan
 	docker tag automated_iut-lwm2m_server-leshan-v$(version):latest automated_iut-lwm2m_server-leshan
+
+_docker-build-wot-additional-resources:
+	@echo "Starting to build wot-additional-resources.. "
+	docker build --quiet -t automated_iut-wot_arenahub-v$(version) -f automation/wot_arenahub/Dockerfile .
+	docker build --quiet -t automated_iut-wot_thingweb-v$(version) -f automation/wot_thingweb/Dockerfile .
+
+	docker tag automated_iut-wot_arenahub-v$(version):latest automated_iut-wot_arenahub
+	docker tag automated_iut-wot_thingweb-v$(version):latest automated_iut-wot_thingweb
 
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
