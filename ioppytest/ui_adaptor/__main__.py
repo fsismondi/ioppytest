@@ -728,12 +728,11 @@ def main():
                 loop_count = 0
                 logger.debug("reset loop count")
 
-            # elif loop_count % 500 == 0:  # run less frequently
-            #     new_users = get_new_user_on_session(amqp_message_publisher)
-            #     logger.info("Checking if new users in the session..")
-            #     if new_users:
-            #         logger.info("New users detected in the session!!")
-            #         message_translator.callback_on_new_users_in_the_session(amqp_message_publisher, new_users)
+            elif loop_count % 500 == 0:  # run less frequently
+                new_users = get_new_user_on_session(amqp_message_publisher)
+                if new_users:
+                    logger.info("New users detected in the session. Calling handler")
+                    message_translator.callback_on_new_users_in_the_session(amqp_message_publisher, new_users)
 
             loop_count += 1
             time.sleep(0.01)
