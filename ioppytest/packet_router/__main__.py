@@ -3,13 +3,13 @@
 import argparse
 import sys
 import threading
-
+import tabulate
 import pika
 import yaml
 
 from messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
-from ioppytest.test_suite.testsuite import TestConfig
+from ioppytest.test_suite.testsuite import TestConfig, get_dict_of_all_test_cases_configurations
 from event_bus_utils import publish_message
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
@@ -171,90 +171,77 @@ class PacketRouter(threading.Thread):
 
 
 def generate_routing_table_from_test_configuration(testconfig: TestConfig):
+    """
+    Builds routing table (not IP based, but using amqp topics), example for COAP_CFG_01
+
+    ----------------------------------------------  ------------------------------------------------------------------------------------------------
+    data.serial.fromAgent.coap_client               ['data.serial.toAgent.coap_server', 'data.serial.toAgent.agent_TT']
+    fromAgent.coap_client.802154.serial.packet.raw  ['toAgent.coap_server.802154.serial.packet.raw', 'toAgent.agent_TT.802154.serial.packet.raw']
+    fromAgent.coap_client.ip.tun.packet.raw         ['toAgent.coap_server.ip.tun.packet.raw', 'toAgent.agent_TT.ip.tun.packet.raw']
+    data.serial.fromAgent.coap_server               ['data.serial.toAgent.coap_client', 'data.serial.toAgent.agent_TT']
+    fromAgent.coap_server.802154.serial.packet.raw  ['toAgent.coap_client.802154.serial.packet.raw', 'toAgent.agent_TT.802154.serial.packet.raw']
+    fromAgent.coap_server.ip.tun.packet.raw         ['toAgent.coap_client.ip.tun.packet.raw', 'toAgent.agent_TT.ip.tun.packet.raw']
+    data.serial.fromAgent.agent_TT                  ['data.serial.toAgent.coap_client', 'data.serial.toAgent.coap_server']
+    fromAgent.agent_TT.802154.serial.packet.raw     ['toAgent.coap_client.802154.serial.packet.raw', 'toAgent.coap_server.802154.serial.packet.raw']
+    fromAgent.agent_TT.ip.tun.packet.raw            ['toAgent.coap_client.ip.tun.packet.raw', 'toAgent.coap_server.ip.tun.packet.raw']
+    ----------------------------------------------  ------------------------------------------------------------------------------------------------
+    :param testconfig:
+    :return:
+    """
+
     assert testconfig.nodes
     assert len(testconfig.nodes) >= 2
 
     agent_tt = 'agent_TT'
+    routing_table = dict()
 
     for link in testconfig.topology:
+        link_routes = {}
+
         # I assume node to node links (this MUST be like this for any ioppytest interop test)
-        assert len(link['nodes']) == 2
 
-        nodes = link['nodes']
-
+        nodes = link['nodes'].copy()
+        nodes.append(agent_tt)  # every single packet needs to be forwarded to agent TT
         logging.info("Configuring routing tables for nodes: %s" % nodes)
 
-        # routes for agents' serial interfaces (802.15.4 nodes)
-        serial_routes = {
-            # TODO deprecate API v0.1
-            'data.serial.fromAgent.%s' % nodes[0]:
-                [
-                    'data.serial.toAgent.%s' % nodes[1],
-                    'data.serial.toAgent.%s' % 'agent_TT',
-                ],
-            'data.serial.fromAgent.%s' % nodes[1]:
-                [
-                    'data.serial.toAgent.%s' % nodes[0],
-                    'data.serial.toAgent.%s' % 'agent_TT',
-                ],
 
+        # TODO deprecate old API from 802.15.4 based test suites like sixlowpan
+        table_entry_from_serial_v0 = "data.serial.fromAgent.{node}"
+        table_entry_to_serial_v0 = "data.serial.toAgent.{node}"
+
+        table_entry_from_serial_v1 = "fromAgent.{node}.802154.serial.packet.raw"
+        table_entry_to_serial_v1 = "toAgent.{node}.802154.serial.packet.raw"
+
+        table_entry_from_tun = "fromAgent.{node}.ip.tun.packet.raw"
+        table_entry_to_tun = "toAgent.{node}.ip.tun.packet.raw"
+
+        for i in nodes:
+            # # routes for agents' serial interfaces (802.15.4 nodes) # #
+
+            # API version v.0.1 (ToDO deprecate legacy stuff)
+            link_routes[table_entry_from_serial_v0.format(node=i)] = [table_entry_to_serial_v0.format(node=j) for j in
+                                                                      nodes if j != i]
             # API v.1.0 [toAgent|fromAgent.*.802154.serial.packet.raw]
-            'fromAgent.%s.802154.serial.packet.raw' % nodes[0]:
-                [
-                    'toAgent.%s.802154.serial.packet.raw' % nodes[1],
-                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
-                ],
-            'fromAgent.%s.802154.serial.packet.raw' % nodes[1]:
-                [
-                    'toAgent.%s.802154.serial.packet.raw' % nodes[0],
-                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
-                ],
-        }
+            link_routes[table_entry_from_serial_v1.format(node=i)] = [table_entry_to_serial_v1.format(node=j) for j in
+                                                                      nodes if j != i]
 
-        # routes for agents' TUNs interfaces (ipv6 nodes)
-        tun_routes = {
-            # TODO deprecate API v0.1
-            'data.tun.fromAgent.%s' % nodes[0]:
-                [
-                    'data.tun.toAgent.%s' % nodes[1],
-                    'data.tun.toAgent.%s' % 'agent_TT',
-                ],
-            'data.tun.fromAgent.%s' % nodes[1]:
-                [
-                    'data.tun.toAgent.%s' % nodes[0],
-                    'data.tun.toAgent.%s' % 'agent_TT',
-                ],
+            # # routes for agents' TUNs interfaces (ipv6 nodes) # #
+
             # API v.1.0 [toAgent|fromAgent.*.ip.tun.packet.raw]
-            'fromAgent.%s.ip.tun.packet.raw' % nodes[0]:
-                [
-                    'toAgent.%s.ip.tun.packet.raw' % nodes[1],
-                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
-                ],
-            'fromAgent.%s.ip.tun.packet.raw' % nodes[1]:
-                [
-                    'toAgent.%s.ip.tun.packet.raw' % nodes[0],
-                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
-                ],
-        }
-        routing_table = dict()
-        routing_table.update(serial_routes)
-        routing_table.update(tun_routes)
+            link_routes[table_entry_from_tun.format(node=i)] = [table_entry_to_tun.format(node=j) for j in
+                                                                nodes if j != i]
 
-        return routing_table
+            routing_table.update(link_routes)
+        #print(tabulate.tabulate([*routing_table.items()]))
+
+    return routing_table
 
 
 def main():
-    td_config = {}
 
-    for TD in TEST_DESCRIPTIONS_CONFIGS:
-        with open(TD, "r", encoding="utf-8") as stream:
-            configs = yaml.load_all(stream)
-            for c in configs:
-                logging.info("Configuration found: %s" % c.id)
-                td_config[c.id] = c
+    td_config = get_dict_of_all_test_cases_configurations()
 
-    if len(td_config) == 0:
-        raise Exception('No test case configuration files found!')
+    assert len(td_config) > 0, 'No test case configuration files found!'
 
     try:
         parser = argparse.ArgumentParser()
