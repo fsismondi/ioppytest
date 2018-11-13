@@ -19,6 +19,7 @@ from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
                                            get_current_users_online,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
+from ioppytest.ui_adaptor.tt_tasks import bootstrap_all_tun_interfaces
 
 from ioppytest.ui_adaptor.user_help_text import *
 from ioppytest.ui_adaptor.message_rendering import list_to_str
@@ -1903,26 +1904,7 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
             ui_msg="Confirm that agent has been started as described below"
         )
 
-        # BOOTSTRAP INTERFACES
-        send_start_test_suite_event()
-
-        disp = MsgUiDisplay(
-            tags=UI_TAG_AGENT_CONNECT,
-            fields=[{
-                "type": "p",
-                "value": "bootstrapping agent(s) interface.."
-            }, ]
-        )
-
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )  # TODO some prettier solution for this maybe?
-
-        time.sleep(2)
-
         # TEST AGENT
-
         agents_kickstart_help = vpn_ping_tests
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
@@ -1943,6 +1925,22 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
             amqp_connector=amqp_connector,
             ui_tag=UI_TAG_AGENT_TEST,
         )
+
+        # BOOTSTRAP INTERFACES
+        bootstrap_all_tun_interfaces(amqp_connector,self.vpn_agents)
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": "bootstrapping agent(s) interface.."
+            }, ]
+        )
+
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )  # TODO some prettier solution for this maybe?
 
         return True
 
