@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
 
 --- !configuration
+
 configuration_id: WOT_CFG_01
 uri: http://doc.f-interop.eu/tests/WOT_CFG_01
 nodes:
-  - thing1
-  - thing2
-  - thing3
+    - thing3
+    - thing4
+    - thing5
+    - thing6
+    - wot_arenahub
+    - wot_thingweb
+    - coap_client
+    - coap_server
 topology:
   - link_id : link_01
     capture_filter: udp
     nodes:
-    - thing1
-    - thing2
     - thing3
     - thing4
     - thing5
+    - thing6
     - wot_arenahub
     - wot_thingweb
-
+    - coap_client
+    - coap_server
 addressing:
-
-    - node: thing1
-      ipv6_prefix : bbbb
-      ipv6_host: 1
-    - node: thing2
-      ipv6_prefix : bbbb
-      ipv6_host: 2
     - node: thing3
       ipv6_prefix : bbbb
       ipv6_host: 3
@@ -36,6 +35,9 @@ addressing:
     - node: thing5
       ipv6_prefix : bbbb
       ipv6_host: 5
+    - node: thing6
+      ipv6_prefix : bbbb
+      ipv6_host: 5
 
     - node: wot_arenahub
       ipv6_prefix : bbbb
@@ -43,6 +45,14 @@ addressing:
     - node: wot_thingweb
       ipv6_prefix : bbbb
       ipv6_host: 101
+
+    - node: coap_server
+      ipv6_prefix : bbbb
+      ipv6_host: 2
+    - node: coap_client
+      ipv6_prefix : bbbb
+      ipv6_host: 1
+
 description:
   - node: thing1
     message:

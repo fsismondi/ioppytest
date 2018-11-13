@@ -1968,8 +1968,7 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
             fields.append(
                 {
                     'type': 'p',
-                    'value': '%s TUN started, IPv6 interface %s::%s' % (
-                        message.name, message.ipv6_prefix, message.ipv6_host)
+                    'value': '%s TUN started, IPv6 interface %s::%s' % (message.name, message.ipv6_prefix, message.ipv6_host)
                 }
             )
 
