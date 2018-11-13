@@ -313,13 +313,13 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
             }
         )
 
-    # add also a 'BOTH' roles option
+    # add also a 'ALL' roles option
     fields.append(
         {
             "name": 'iut_role',
             "type": "radio",
-            "label": 'both',
-            "value": 'both',
+            "label": 'all',
+            "value": 'all',
         }
     )
 
@@ -334,9 +334,9 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
         timeout=120
     )
 
-    if resp and resp.ok:
+    try:
         user_lead_iut_role = resp.fields.pop()['iut_role']
-    else:
+    except:
         raise UiResponseError('received from the UI: %s' % repr(resp))
 
     # echo response back to *ALL* users

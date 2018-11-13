@@ -1295,10 +1295,3 @@ def import_test_description_from_yaml(yamlfile):
                 else:
                     logging.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
     return td_list
-
-
-if __name__ == '__main__':
-    COMPONENT_ID = '%s' % ('testsuite_tests')
-    # init logging to stnd output and log files
-    logger = logging.getLogger(COMPONENT_ID)
-    logger.setLevel(logging.DEBUG)

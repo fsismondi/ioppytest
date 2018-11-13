@@ -43,7 +43,8 @@ from ioppytest.ui_adaptor.message_translators import (
     CoAPSessionMessageTranslator,
     SixLoWPANSessionMessageTranslator,
     OneM2MSessionMessageTranslator,
-    LwM2MSessionMessageTranslator
+    LwM2MSessionMessageTranslator,
+    WoTSessionMessageTranslator,
 )
 
 # init logging with stnd output and amqp handlers
@@ -62,6 +63,11 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 # timer used to avoid bumpping into UI error (message dropped on two "simultaneous" messages arrival )
 PUBLISH_DELAY = 0.1
 
+# globals
+iut_role_to_user_id_mapping = {}
+session_configuration = {}
+online_users = []
+
 mapping_testsuite_to_message_translator = {
     'dummy': DummySessionMessageTranslator,
     'coap': CoAPSessionMessageTranslator,
@@ -69,6 +75,7 @@ mapping_testsuite_to_message_translator = {
     '6lowpan': SixLoWPANSessionMessageTranslator,
     'comi': CoMISessionMessageTranslator,
     'lwm2m': LwM2MSessionMessageTranslator,
+    'wot': WoTSessionMessageTranslator,
 }
 
 # see doc from GenericBidirectonalTranslator.__doc__
@@ -295,7 +302,7 @@ class AmqpMessagePublisher:
                     )
 
         else:
-            logger.debug("Publishing message REQUEST (synch call): {rk}".format(rk=request.routing_key,))
+            logger.debug("Publishing message REQUEST (synch call): {rk}".format(rk=request.routing_key, ))
 
         # fixme in amqp request use timeout instead of retries
         time.sleep(PUBLISH_DELAY)
@@ -507,10 +514,23 @@ def process_message_from_testing_tool(message_publisher, message_translator, mes
         logger.info("routing TT -> UI: %s : no associated action/request" % (message_received.routing_key))
 
 
+def get_new_user_on_session(message_publisher):
+    global online_users
+    new_list_of_online_users = get_current_users_online(message_publisher)
+
+    if len(new_list_of_online_users) > len(online_users):
+        diff = list(set(new_list_of_online_users) - set(online_users))
+        online_users = new_list_of_online_users
+        return diff
+
+    return None
+
+
 def main():
     # main vars
-    iut_role_to_user_id_mapping = {}
-    session_configuration = {}
+    global iut_role_to_user_id_mapping
+    global session_configuration
+    global online_users
 
     logger.info('Using params: AMQP_URL=%s | AMQP_EXCHANGE=%s' % (AMQP_URL, AMQP_EXCHANGE))
 
@@ -550,99 +570,99 @@ def main():
     tt_amqp_listener_thread.setName('TT_listener_thread')
     tt_amqp_listener_thread.start()
 
-    # # # # # # # # # # # # # # # # # #   REQUEST INFO FROM USER # # # # # # # # # # # # # # # # # # # # # # #
+    # # # # # # # # # # # # # # # # # #   GET SESSION INFO AND USER STUFF # # # # # # # # # # # # # # # # # # # # # # #
 
-    logger.debug("PHASE 1 - REQUESTING INFO FROM USERS")
-    try:
-        # get config from UI
-        session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
-        logger.info("Got session configuration reply from UI")
+    # get config from UI
+    session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
+    logger.info("Got session configuration reply from UI")
 
-        if "shared" in session_configuration and session_configuration["shared"]:
-            logger.debug("session is SHARED")
-        else:
-            logger.debug("session is NOT SHARED (single-user vs automated-iut type)")
+    # get list of all users which are online
+    online_users = get_current_users_online(amqp_message_publisher)
+    logger.info("Connected users: %s" % repr(online_users))
 
-        # this call BLOCKS until all users are present "in the room"
-        wait_for_all_users_to_join_session(message_translator,
-                                           amqp_message_publisher,
-                                           session_configuration)
+    # fixMe! WoT env introduced new requirements (several users per session, long lasting sessions )
+    if args.test_suite != "wot":
+        try:
+            if "shared" in session_configuration and session_configuration["shared"]:
+                logger.debug("session is SHARED")
+            else:
+                logger.debug("session is NOT SHARED (single-user vs automated-iut type)")
 
-        # get list of all users which are online
-        online_users = get_current_users_online(amqp_message_publisher)
-        logger.info("Connected users: %s" % repr(online_users))
+            # this call BLOCKS until all users are present "in the room"
+            wait_for_all_users_to_join_session(message_translator,
+                                               amqp_message_publisher,
+                                               session_configuration)
 
-        # create user_id -> iut_role mapping
-        iut_role_to_user_id_mapping = get_user_ids_and_roles_from_ui(message_translator,
-                                                                     amqp_message_publisher,
-                                                                     session_configuration)
+            # create user_id -> iut_role mapping
+            iut_role_to_user_id_mapping = get_user_ids_and_roles_from_ui(message_translator,
+                                                                         amqp_message_publisher,
+                                                                         session_configuration)
 
-        logger.info("IUT_roles->users_id mapping: %s" % repr(iut_role_to_user_id_mapping))
+            logger.info("IUT_roles->users_id mapping: %s" % repr(iut_role_to_user_id_mapping))
 
-        # In case of user_to_user session AmqpMessagePublisher publishes to UI1 or UI2 or both depending on what the
-        # message that has been passed to publish() looks like.
-        # Hence, amqp_message_publisher needs to be fed with the user->role mapping info
-        amqp_message_publisher.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
+            # In case of user_to_user session AmqpMessagePublisher publishes to UI1 or UI2 or both depending on what the
+            # message that has been passed to publish() looks like.
+            # Hence, amqp_message_publisher needs to be fed with the user->role mapping info
+            amqp_message_publisher.update_iut_role_to_user_id_mapping(iut_role_to_user_id_mapping)
 
-    except AmqpSynchCallTimeoutError as tout:
-        err_msg = "UI response timeout, entering default testsuite configuration. \nException: %s" % str(tout)
-        m = MsgUiDisplay(fields=[
-            {"type": "p",
-             "value": err_msg}
-        ])
-        logger.error(err_msg)
-        amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
+        except AmqpSynchCallTimeoutError as tout:
+            err_msg = "UI response timeout, entering default testsuite configuration. \nException: %s" % str(tout)
+            m = MsgUiDisplay(fields=[
+                {"type": "p",
+                 "value": err_msg}
+            ])
+            logger.error(err_msg)
+            amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
-    except UiResponseError as ui_error:
-        err_msg = "UI response error caught. \nException: %s" % str(ui_error)
-        m = MsgUiDisplay(fields=[
-            {"type": "p",
-             "value": err_msg}
-        ])
-        logger.error(err_msg)
-        # logger.error(traceback.format_exc())
-        amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
+        except UiResponseError as ui_error:
+            err_msg = "UI response error caught. \nException: %s" % str(ui_error)
+            m = MsgUiDisplay(fields=[
+                {"type": "p",
+                 "value": err_msg}
+            ])
+            logger.error(err_msg)
+            # logger.error(traceback.format_exc())
+            amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
 
-    except SessionError as s_err:
-        err_msg = "Session error caught. \nException: %s" % str(s_err)
-        m = MsgUiDisplay(fields=[
-            {"type": "p",
-             "value": err_msg}
-        ])
-        logger.error(s_err)
-        logger.error(traceback.format_exc())
-        amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
-        return  # breaks the flow, user shoud restart the session if he want to give it another try
+        except SessionError as s_err:
+            err_msg = "Session error caught. \nException: %s" % str(s_err)
+            m = MsgUiDisplay(fields=[
+                {"type": "p",
+                 "value": err_msg}
+            ])
+            logger.error(s_err)
+            logger.error(traceback.format_exc())
+            amqp_message_publisher.publish_ui_display(m, user_id='all', level='error')
+            return  # breaks the flow, user shoud restart the session if he want to give it another try
 
-    except KeyboardInterrupt:
-        logger.info('user interruption captured, exiting..')
-        logger.info('UI adaptor stopping..')
-        tt_amqp_listener_thread.stop()  # thread
-        amqp_message_publisher.stop()  # not a thread
-        return
+        except KeyboardInterrupt:
+            logger.info('user interruption captured, exiting..')
+            logger.info('UI adaptor stopping..')
+            tt_amqp_listener_thread.stop()  # thread
+            amqp_message_publisher.stop()  # not a thread
+            return
 
-    except Exception as err:
-        logger.error(err)
-        logger.error(traceback.format_exc())
-        raise err
+        except Exception as err:
+            logger.error(err)
+            logger.error(traceback.format_exc())
+            raise err
 
-    # # # # # # # # # # # # # # # # # #  REQUEST SESSION INFO FROM UI # # # # # # # # # # # # # # # # # #
+        # # # # # # # # # # # # # # # # # #  WAIT UNTIL TT IS READY # # # # # # # # # # # # # # # # # #
 
-    logger.debug("PHASE 2 - REQUESTING SESSION INFO FROM UI")
-    try:
-        wait_for_testing_tool_ready(amqp_message_publisher)
-        logger.info("Configuring testing tool..")
-        configure_testing_tool(amqp_message_publisher)
+        try:
+            wait_for_testing_tool_ready(amqp_message_publisher)
+            logger.info("Configuring testing tool..")
+            configure_testing_tool(amqp_message_publisher)
 
-    except Exception as err:
-        logger.error(err)
-        logger.error(traceback.format_exc())
-        send_default_testing_tool_configuration(amqp_message_publisher)
+        except Exception as err:
+            logger.error(err)
+            logger.error(traceback.format_exc())
+            send_default_testing_tool_configuration(amqp_message_publisher)
 
-        # # # # # # # # # # # # # # # # #  SESSION EXECUTION  # # # # # # # # # # # # # # # # # #
+    # # # # # # # # # # # # # # # # #  SESSION EXECUTION  # # # # # # # # # # # # # # # # # #
 
-    logger.debug("PHASE 3 - SESSION EXECUTION")
     logger.info("UI adaptor bootstrapping..")
+
     # bootstrap(producer) call blocks until it has done its thing
     message_translator.bootstrap(amqp_message_publisher)
 
@@ -702,14 +722,20 @@ def main():
                 amqp_message_publisher.publish_tt_chained_message(msg_to_tt)
 
             # this is for monitoring the consumed messages' queues
-            if loop_count == 1000:
+            if loop_count == 10001:
                 for q in queues:
                     logger.debug("queue %s size: %s" % (repr(q), q.qsize()))
                 loop_count = 0
                 logger.debug("reset loop count")
-            else:
-                loop_count += 1
 
+            # elif loop_count % 500 == 0:  # run less frequently
+            #     new_users = get_new_user_on_session(amqp_message_publisher)
+            #     logger.info("Checking if new users in the session..")
+            #     if new_users:
+            #         logger.info("New users detected in the session!!")
+            #         message_translator.callback_on_new_users_in_the_session(amqp_message_publisher, new_users)
+
+            loop_count += 1
             time.sleep(0.01)
 
     except KeyboardInterrupt:
