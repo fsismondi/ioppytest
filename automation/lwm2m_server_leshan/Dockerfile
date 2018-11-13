@@ -28,6 +28,7 @@ RUN apt-get -y install default-jre
 RUN apt-get -y install nodejs
 RUN apt-get -y install npm
 RUN npm install body-parser
+RUN npm install express
 
 ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"
