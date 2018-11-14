@@ -151,13 +151,13 @@ def send_vpn_join_help_to_user(vpn_agents: dict, user='all'):
 
 
 def _get_vpn_table_representation(vpn_agents):
-    table = [('agent_name', 'agent_ipv6', 'last_connected')]
+    table = [('agent_name', 'agent_ipv6', 'last_connection')]
     for agent_name, agent_params in vpn_agents.items():
         table.append(
             (
                 str(agent_name),
                 "{}::{}".format(agent_params[0], agent_params[1]),
-                str(agent_params[2]) if agent_params[2] else "unknown"
+                str(agent_params[2]) if agent_params[2] else "n/a (still not used)"
             )
         )
 
@@ -519,10 +519,13 @@ class GenericBidirectonalTranslator(object):
         # search for specialized visualization, returns fields
         if type(message) in self.specialized_visualization:
             specialized_visualization_handler = self.specialized_visualization[type(message)]
-            msg_ret = specialized_visualization_handler(message)
 
-        # generic message visualization (message as a table)
-        else:
+            if specialized_visualization_handler: #  message_translators may dereference some handlers on purpose
+                msg_ret = specialized_visualization_handler(message)
+            else:
+                logger.warning("UI handler for message %s appears is %s" % (type(message),
+                                                                            specialized_visualization_handler))
+        else: # generic message visualization (message as a table)
             logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
             msg_ret = self._get_ui_message_as_table(message)
 
@@ -1504,7 +1507,7 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 amqp_connector=amqp_connector,
                 ui_msg="Confirm to continue",
                 ui_tag=UI_TAG_AGENT_INFO,
-                user= u ,
+                user=u,
             )
 
         # AGENT INSTALL
@@ -1529,9 +1532,8 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 amqp_connector=amqp_connector,
                 ui_msg="Confirm installation finished",
                 ui_tag=UI_TAG_AGENT_INSTALL,
-                user= u ,
+                user=u,
             )
-
 
         # ENV VAR export
         disp = MsgUiDisplay(
@@ -1549,11 +1551,10 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         for u in users:
             send_to_ui_confirmation_request(
                 amqp_connector=amqp_connector,
-                ui_msg= "Confirm that variables have been exported",
+                ui_msg="Confirm that variables have been exported",
                 ui_tag=UI_TAG_AGENT_CONNECT,
                 user=u,
             )
-
 
         # AGENT RUN
         agents_kickstart_help = help_agents_run_for_raw_ip_mode
@@ -1797,17 +1798,23 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
     node_addresses = test_config.get_default_addressing_table()
     IUT_ROLES = test_config.nodes
 
+    PERIOD_FOR_STATS_UPDATES = 5  # in seconds
+
     def __init__(self):
         super().__init__()
 
         self.vpn_agents = OrderedDict()
+        self.counters_packet_from_agents = OrderedDict()
+        self.stats_update_datetime = datetime.datetime.now()
 
-        # write default one
+        # write default values for vpn agents table
         for node_dict in self.node_addresses:
             self.vpn_agents[node_dict['node']] = (node_dict['ipv6_prefix'], node_dict['ipv6_host'], None)
 
-        # overrides standard handler
+        # overrides handlers for certain UI messages
         self.specialized_visualization[MsgAgentTunStarted] = self._handle_new_agent_in_vpn
+        self.specialized_visualization[MsgPacketSniffedRaw] = self._handle_new_packet_from_agent
+        self.specialized_visualization[MsgPacketInjectRaw] = None
 
     def _bootstrap(self, amqp_connector):
         """
@@ -1820,14 +1827,17 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
 
         # # # WELCOME MESSAGE # # #
 
-        welcome_message = "Welcome! This is the Web of Things F-Interop playground.\n\n" \
-                          "This environment allows users to:\n" \
-                          "    o create a IPv6 based VPN where each implementation gets a private IPV6 address\n" \
-                          "    o VPN doesnt modify your OS default gateway\n" \
-                          "    o two virtualized WoT implementations (arenahub and wot_thingweb) are available on " \
-                          "bbbb::100 and bbbb::101\n\n" \
-                          " Note others users can join the same environment, to do so click on the SHARE button " \
-                          "(see top-right) and send the url to the user"
+        welcome_message = "### Welcome to Web of Things F-Interop playground!  \n" \
+                          "##### This environment provides:\n" \
+                          "    o IPv6 based VPN env where each implementation running a VPN client gets a private " \
+                          "IPV6 address\n" \
+                          "    o two virtualized WoT implementations (wot_thingweb and arenahub) are available on " \
+                          "bbbb::101 and bbbb::102\n" \
+                          "    o a virtualized CoAP server for testing, test GET coap://[bbbb::2]/test \n\n" \
+                          "##### Notes: \n"\
+                          "    o other users can join the same environment, click on the SHARE button " \
+                          "(see blue button on the top-right) and share the link to do so\n" \
+                          "    o VPN client (agent component) doesnt modify your OS default gateway\n"
 
         send_to_ui_confirmation_request(
             amqp_connector=amqp_connector,
@@ -1951,7 +1961,7 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
             tags=UI_TAG_AGENT_CONNECT,
             fields=[{
                 "type": "p",
-                "value": tabulate(table, tablefmt="grid", headers="firstrow")
+                "value": "Agents in VPN:\n{}".format(tabulate(table, tablefmt="grid", headers="firstrow"))
             }, ]
         )
         amqp_connector.publish_ui_display(
@@ -1965,6 +1975,7 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
 
         if message.name and message.ipv6_prefix and message.ipv6_host:
             self.vpn_agents[message.name] = (message.ipv6_prefix, message.ipv6_host, datetime.datetime.now())
+            table = _get_vpn_table_representation(self.vpn_agents)
             fields.append(
                 {
                     'type': 'p',
@@ -1975,16 +1986,43 @@ class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
             fields.append(
                 {
                     'type': 'p',
-                    'value': tabulate(_get_vpn_table_representation(self.vpn_agents), tablefmt="grid", headers="firstrow")
-
+                    "value": "Agents in VPN:\n{}".format(tabulate(table, tablefmt="grid", headers="firstrow"))
                 }
             )
 
         return MsgUiDisplayMarkdownText(
             tags=UI_TAG_VPN_STATUS,
-            level='info',
             fields=fields
         )
+
+    def _handle_new_packet_from_agent(self, message):
+        """
+        +1 to packet count
+        displays stats in GUI (if certain conditions are met)
+        """
+
+        agent_name = message.routing_key.split('.')[1]
+
+        try:
+            self.counters_packet_from_agents[agent_name] += 1
+        except KeyError:
+            self.counters_packet_from_agents[agent_name] = 1
+
+        if (datetime.datetime.now() - self.stats_update_datetime).seconds > self.PERIOD_FOR_STATS_UPDATES:
+
+            ascii_table = tabulate(
+                [("source", "number of packets sent")] + list(self.counters_packet_from_agents.items()),
+                tablefmt="grid",
+                headers="firstrow"
+            )
+
+            self.stats_update_datetime = datetime.datetime.now()
+
+            return MsgUiDisplay(
+                tags=UI_TAG_VPN_STATUS,
+                fields=[{"type": "p", "value": "IPv6 packets stats:\n%s" % ascii_table},]
+            )
+        return
 
     def callback_on_new_users_in_the_session(self, amqp_connector, new_user_list):
 

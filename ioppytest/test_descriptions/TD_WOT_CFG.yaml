@@ -17,6 +17,8 @@ topology:
   - link_id : link_01
     capture_filter: udp
     nodes:
+    - thing1
+    - thing2
     - thing3
     - thing4
     - thing5
@@ -26,29 +28,43 @@ topology:
     - coap_client
     - coap_server
 addressing:
+
+    - node: thing1
+      ipv6_prefix : bbbb
+      ipv6_host: 11
+
+    - node: thing2
+      ipv6_prefix : bbbb
+      ipv6_host: 12
+
     - node: thing3
       ipv6_prefix : bbbb
-      ipv6_host: 3
+      ipv6_host: 13
+
     - node: thing4
       ipv6_prefix : bbbb
-      ipv6_host: 4
+      ipv6_host: 14
+
     - node: thing5
       ipv6_prefix : bbbb
-      ipv6_host: 5
+      ipv6_host: 15
+
     - node: thing6
       ipv6_prefix : bbbb
-      ipv6_host: 5
+      ipv6_host: 16
 
-    - node: wot_arenahub
-      ipv6_prefix : bbbb
-      ipv6_host: 100
     - node: wot_thingweb
       ipv6_prefix : bbbb
       ipv6_host: 101
 
+    - node: wot_arenahub
+      ipv6_prefix : bbbb
+      ipv6_host: 102
+
     - node: coap_server
       ipv6_prefix : bbbb
       ipv6_host: 2
+
     - node: coap_client
       ipv6_prefix : bbbb
       ipv6_host: 1
