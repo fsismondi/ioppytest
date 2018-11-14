@@ -69,7 +69,7 @@ if(env.JOB_NAME =~ 'ioppytest-unitests-and-integration-tests/'){
 	            git clone https://github.com/obgm/libcoap.git /tmp/libcoap_git
 	            cd /tmp/libcoap_git
 	            ./autogen.sh
-	            ./configure --enable-examples --disable-doxygen --disable-manpages
+	            ./configure --enable-examples --disable-doxygen --disable-manpages --disable-dtls
 	            sudo make
 	            sudo make install
 	            export PATH="/tmp/libcoap_gitgit/examples:$PATH"
@@ -699,7 +699,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-4/'){
             }
         }
 
-        stage("CONT_INTEROP_TESTS_3: Build docker images."){
+        stage("CONT_INTEROP_TESTS_4: Build docker images."){
             gitlabCommitStatus("BUILD CoAP docker images") {
                 sh '''
                     sudo -E docker build --quiet -t automated_iut-coap_server-californium -f automation/coap_server_californium/Dockerfile .
