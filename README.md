@@ -1,18 +1,63 @@
 ioppytest framework:
 --------------------
 
-ioppytest is a framework for running interoperability tests.
-
-This initial version tackles technical interoperability testing (CoAP,
- LwM2M, 6LoWPAN and OneM2M interop tests).
+ioppytest is a framework for building interoperability testing tools.
 
 This repo contains all necessary software (and their dependencies) for
 running a interoperability test sessions between two implementations
 under test (IUT).
 
-This can be run as standalone software and also integrated to f-interop
-platform (go.f-interop.eu)
+Handles requirements coming from:
 
+- interop testing best practises for network protocols
+- distributed execution of the tests (IUTs may be in remote locations)
+- test coordination between users (user-assisted test)
+- driving automated IUTs, in a generic, program-language-agnostic way
+- tunneling mechanism for enabling remote interop test over
+distant locations and bypass middle-box.
+
+Some of the features include:
+tunneling, sniffing, test coordination, dissection, traces analysis,
+test spec online server, etc. Each of these are independent python
+modules, they communicate using json messages over AMQP.
+
+For more about this check out the AMQP API defined in the `messages`
+package which is installed with
+(ioppytest-utils)*[https://pypi.org/project/ioppytest-utils/]:
+
+
+Test suites
+-----------
+
+currently ioppytest includes interop tests for:
+
+- coap
+- 6lowpan
+- onem2m
+- lwm2m
+- wot
+
+see http://doc.f-interop.eu/testsuites/
+
+ioppytest is parametrized for running the different test suites using
+the files in env/<test_suite_folder> and ioppytest/test_descriptions
+
+Either if you are a testing tool developers or test suite users,
+you can opt to disable some features. You can do this just by modifying
+supervisor.conf.ini in env/<test_suite_folder> directory.
+
+How can I use it?
+-----------------
+
+You can either go to (F-Interop Platform)*[https://go.f-interop.eu]
+which builds and deploys the tool automatically for you, this provides
+also a nice looking web-based GUI (recommended).
+
+Run in a stanalone less user friendly way. Some docker images builds,
+and setting up of a RMQ server is needed. User will then use the CLI
+for interfacing with the testin tool.
+
+for more info about the standalone deployment, continue reading..
 
 Implemented test suites in the ioppytest framework:
 ---------------------------------------------------
@@ -25,8 +70,6 @@ framework are:
 - 6LoWPAN Test Suite (between two users' IUT) (WIP)
 - LwM2M Test Suite (between two users' IUT) (WIP)
 - oneM2M Test Suite (between two users' IUT) (WIP)
-
-
 
 Test setup:
 -----------
