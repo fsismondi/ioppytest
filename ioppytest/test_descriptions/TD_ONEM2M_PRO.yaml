@@ -2364,7 +2364,7 @@ sequence:
 --- !testcase
 
 testcase_id: TD_M2M_NH_46
-uri : http://doc.f-interop.eu/tests/TD_M2M_NH_08
+uri : http://doc.f-interop.eu/tests/TD_M2M_NH_46
 configuration: M2M_CFG_01
 objective: AE updates an <container> resource of each member resource.
 pre_conditions:
