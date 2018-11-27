@@ -19,7 +19,6 @@ class LwM2MClient(AutomatedIUT):
     component_id = 'automated_iut-lwm2m_client_leshan'
     node = 'lwm2m_client'
     process_log_file = os.path.join(TMPDIR, component_id + '.log')
-
     implemented_testcases_list = []  # special case: all test cases can be executed by IUT
 
     iut_cmd = [
