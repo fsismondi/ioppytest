@@ -11,6 +11,7 @@ logger.setLevel(LOG_LEVEL)
 lwm2m_client_ip_prefix, lwm2m_client_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_client')
 lwm2m_server_ip_prefix, lwm2m_server_ip_host = TestSuite(TD_LWM2M, TD_LWM2M_CFG).get_node_address('lwm2m_server')
 
+
 class LeshanServerTrigger(AutomatedIUT):
     """
     Leshan Server trigger expects:
@@ -20,27 +21,29 @@ class LeshanServerTrigger(AutomatedIUT):
     component_id = 'automated_iut-lwm2m_server-leshan'
     node = 'lwm2m_server'
     iut_base_cmd = 'nodejs automation/lwm2m_server_leshan/trigger.js'
+    implemented_testcases_list = []  # special case: all test cases can be executed by IUT
 
     def __init__(self):
+        logging.info('init .. %s  [ %s ]' % (self.node, self.component_id))
         super().__init__(self.node)
-        logger.info('starting %s  [ %s ]' % (self.node, self.component_id))
+        logging.info('init finished.. %s  [ %s ]' % (self.node, self.component_id))
 
     def _execute_verify(self, verify_step_id):
-        logger.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
+        logging.warning('Ignoring: %s. No auto-iut mechanism for verify step implemented.' % verify_step_id)
 
     def _execute_stimuli(self, stimuli_step_id, addr):
 
-        logger.info('got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
+        logging.info('got stimuli execute request: \n\tSTIMULI_ID=%s,\n\tTARGET_ADDRESS=%s' % (stimuli_step_id, addr))
 
         try:
 
             # Generate IUT CMD for stimuli
 
             cmd = self.iut_base_cmd
-            cmd += ' {option} {value}'.format(option='-s', value=self.stimuli_step_id)
+            cmd += ' {option} {value}'.format(option='-s', value=stimuli_step_id)
 
             # Execute IUT CMD for stimuli
-            logger.info('Spawning process with : %s' % cmd)
+            logging.info('Spawning process with : %s' % cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
             proc.wait(timeout=STIMULI_HANDLER_TOUT)
 
@@ -49,11 +52,11 @@ class LeshanServerTrigger(AutomatedIUT):
             while proc.poll() is None:
                 output += str(proc.stdout.readline())
             output += str(proc.stdout.read())
-            logger.info('EXECUTED: %s' % stimuli_step_id)
-            logger.info('Process STDOUT: %s' % output)
+            logging.info('EXECUTED: %s' % stimuli_step_id)
+            logging.info('Process STDOUT: %s' % output)
 
         except subprocess.TimeoutExpired as tout:
-            logger.warning('Process TIMEOUT. info: %s' % str(tout))
+            logging.warning('Process TIMEOUT. info: %s' % str(tout))
 
         except Exception as e:
             logging.error('Error found on automated-iut while tryning to execute stimuli %s' % stimuli_step_id)
@@ -67,9 +70,9 @@ class LeshanServerTrigger(AutomatedIUT):
 if __name__ == '__main__':
 
     try:
-        logger.info('*********************************************************************')
+        logging.info('*********************************************************************')
         iut = LeshanServerTrigger()
         iut.start()
         iut.join()
     except Exception as e:
-        logger.error(e)
+        logging.error(e)
