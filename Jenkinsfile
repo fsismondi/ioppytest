@@ -264,6 +264,133 @@ if(env.JOB_NAME =~ 'ioppytest-lwm2m-implementation-continuous-testing/'){
 }
 
 
+if(env.JOB_NAME =~ 'ioppytest-onem2m-implementation-continuous-testing/'){
+    node('docker'){
+
+        /* attention, here we use external RMQ server*/
+        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+
+        env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.onem2m_implementations_continuous_testing"
+        env.AMQP_EXCHANGE="amq.topic"
+        env.DOCKER_CLIENT_TIMEOUT=3000
+        env.COMPOSE_HTTP_TIMEOUT=3000
+
+        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        env.CI = "True"
+
+        stage("Check if DOCKER is installed on node"){
+            sh '''
+                docker version
+            '''
+        }
+
+        stage("Clone repo and submodules"){
+            checkout scm
+            sh '''
+                git submodule update --init
+                # tree .
+            '''
+        }
+
+        stage("Install python dependencies"){
+            gitlabCommitStatus("Install python dependencies"){
+                withEnv(["DEBIAN_FRONTEND=noninteractive"]){
+                    sh '''
+                        sudo apt-get clean
+                        sudo apt-get update
+                        sudo apt-get upgrade -y -qq
+                        sudo apt-get install --fix-missing -y -qq python-dev python-pip python-setuptools
+                        sudo apt-get install --fix-missing -y -qq python3-dev python3-pip python3-setuptools
+                        sudo apt-get install --fix-missing -y -qq build-essential
+                        sudo apt-get install --fix-missing -y -qq libyaml-dev
+                        sudo apt-get install --fix-missing -y -qq libssl-dev openssl
+                        sudo apt-get install --fix-missing -y -qq libffi-dev
+                        sudo apt-get install --fix-missing -y -qq make
+
+                        sudo make install-python-dependencies
+                    '''
+                }
+            }
+        }
+
+        stage("CONT_INTEROP_TESTS_1: Build docker images."){
+            gitlabCommitStatus("BUILD lwm2m docker images") {
+                sh '''
+                    sudo -E make _docker-build-onem2m
+                    sudo -E make _docker-build-onem2m-additional-resources
+                    sudo -E docker images
+                '''
+            }
+        }
+
+        stage("CONT_INTEROP_TESTS_1: onem2m_iut1 VS onem2m_iut2"){
+            gitlabCommitStatus("Starting resources..") {
+                    long startTime = System.currentTimeMillis()
+                    long timeoutInSeconds = 120
+
+                    try {
+                        sh '''
+                            make clean
+                           '''
+                        }
+                    catch (err) {
+                        echo "something failed trying to clean repo"
+                        }
+
+                    try {
+                        timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                            sh '''
+                                echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                                sudo -E make _run-onem2m-mini-interop-etsi-adn-vs-eclipse-cse
+                            '''
+                        }
+
+                    } catch (err) {
+                        long timePassed = System.currentTimeMillis() - startTime
+                        if (timePassed >= timeoutInSeconds * 1000) {
+                            echo 'Docker container kept on running!'
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+            }
+
+            gitlabCommitStatus("Starting tests..") {
+                long timeoutInSeconds = 600
+                try {
+                    timeout(time: timeoutInSeconds, unit: 'SECONDS') {
+                        sh '''
+                            echo AMQP params:  { url: $AMQP_URL , exchange: $AMQP_EXCHANGE}
+                            python3 -m automation.automated_interop
+                        '''
+                    }
+                }
+                catch (e){
+                    sh '''
+                        echo Something broke while running the interop in the cloud :/
+                        echo docker container logs :
+                        sudo make get-logs
+                    '''
+                    throw e
+                }
+                finally {
+
+                    sh '''
+                        export LC_ALL=C.UTF-8
+                        export LANG=C.UTF-8
+                        python3 -m ioppytest_cli download_network_traces --destination .
+                        sudo -E make stop-all
+                        sudo -E docker ps
+                    '''
+                    archiveArtifacts artifacts: 'data/results/*.json', fingerprint: true
+                    archiveArtifacts artifacts: '*.pcap', fingerprint: true
+                }
+            }
+        }
+    }
+}
+
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
     node('docker'){
 
