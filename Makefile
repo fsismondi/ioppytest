@@ -339,7 +339,7 @@ _docker-build-onem2m-additional-resources:
         
 	docker build --quiet -t automated_iut-onem2m_adn-v$(version) -f automation/onem2m_adn_etsi_implementation/Dockerfile .
 	docker tag automated_iut-onem2m_adn-v$(version):latest automated_iut-onem2m_adn
-	
+
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
 	docker build --quiet -t automated_iut-comi_server-acklio-v$(version) -f automation/comi_server_acklio/Dockerfile .
@@ -393,7 +393,6 @@ _run-coap-mini-interop-aiocoap-cli-vs-august_cellars-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
 
-
 _run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
@@ -429,9 +428,21 @@ _run-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	$(MAKE) run-lwm2m-testing-tool
-	$(MAKE) _setup-coap-mini-interop-leshan-cli-vs-leshan-server
+	$(MAKE) _setup-lwm2m-mini-interop-leshan-cli-vs-leshan-server
 
-_setup-coap-mini-interop-leshan-cli-vs-leshan-server:
+_run-onem2m-mini-interop-etsi-adn-vs-eclipse-cse:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-onem2m-testing-tool
+	$(MAKE) _setup-onem2m-mini-interop-etsi-adn-vs-eclipse-cse
+
+_setup-onem2m-mini-interop-etsi-adn-vs-eclipse-cse:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-onem2m_adn automated_iut-onem2m_adn
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-onem2m_server-eclipse_om2m automated_iut-onem2m_server-eclipse_om2m
+
+_setup-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_client-leshan automated_iut-lwm2m_client-leshan
