@@ -2,20 +2,29 @@
 # !/usr/bin/env python3
 
 """
-The automation code used the event bus API as stimulation and evaluation point.
-Evaluates a normal test cycle with real automated IUTs. 
+The automation code uses the event bus API as stimulation and evaluation point for driving and monitoring the tests.
+Evaluates a normal test cycle with real automated IUTs.
 
-EXECUTE AS:
+This implmenets a python CLI for driving automated tests using ioppytest testing tools and automated IUTs.
 
-    python3 -m automation.automated_interop 
+Note: requires MAKE to be installed in the OS, and leverage from the Makefile in the root dir of the project.
+For running very specif actions is recommended use make entry points (see Makefile) instead of this CLI.
 
+usage: automated_interop.py [-h] [--all-interops] [--result-logger]
+                            [--result-logger-only]
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    --all-interops        Runs all automated interop tests (requires local
+                            docker daemon to be running, and tools to be already
+                            build as docker images)
+    --result-logger       Dumps all results into files
+    --result-logger-only  Run (ONLY) a component to log all the results into
+                            files
 
 PRE-CONDITIONS:
 - Export AMQP_URL in the running environment
-- Have CoAP testing tool running & listening to the bus
-- Have an automated-iut coap client and an automated-iut coap server running & listening to the bus
 
-\
 TEST SETUP:
 
 +-----------------------------------+                                       +--------------------------------+
@@ -59,19 +68,22 @@ TEST SETUP:
 """
 
 import os
+import yaml
 import pika
 import pprint
 import traceback
 import argparse
+import subprocess
+import datetime
 
 # messages and event_bus_utils are modules are installed with `pip3 install ioppytest-utils`
-from automation.ui_stub import default_configuration, UIStub
+from automation import default_configuration, UIStub, ResultsLogToStdout
 from event_bus_utils import publish_message, amqp_request, AmqpSynchCallTimeoutError
 
 from messages import *
-from ioppytest import AMQP_URL, AMQP_EXCHANGE
+from ioppytest import AMQP_URL, AMQP_EXCHANGE, RESULTS_DIR
 from ioppytest.ui_adaptor.message_rendering import testsuite_state_to_ascii_table
-from automation import MessageLogger, log_all_received_messages, UserMock, ResultsLogger
+from automation import MessageLogger, log_all_received_messages, UserMock, ResultsLogToFile
 
 COMPONENT_ID = 'perform_testsuite'
 SESSION_TIMEOUT = 900
@@ -92,62 +104,81 @@ logger = logging.getLogger(__name__)
 
 
 class PerformFullTest(object):
-    def __init__(self):
-        self.error_state = False
+    """
+    Automated interop test suite driver.
 
+    Notes:
+    This is pretty much independent from the protocol under test, unless using for doing integration tests.
+    For that purpose run_all_tests_cases is leaved as None or False and EXECUTE_ALL_TESTS )imported from env is left
+    undefined).
+    I know.. ugly and confusing.. there are some legacy jenkins tests out there using this, so this avoids breaking that
+
+    """
+
+    def __init__(self,
+                 run_all_tests_cases=None,
+                 use_special_delimiters_for_report=True,
+                 dump_results_to_files=False,
+                 dump_files_directory=RESULTS_DIR):
+        self.error_state = False
         self.connection = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
         self.channel = self.connection.channel()
 
-        if EXECUTE_ALL_TESTS:
-            # self.tc_list = ['TD_COAP_CORE_%02d' % i for i in range(1, 32)]
+        if run_all_tests_cases or EXECUTE_ALL_TESTS:
             self.tc_list = None  # if tc_list is None => all TCs are executed
-            logger.info("Detected CI environment. Executing all test cases.")
+            logger.info("Full test suite execution mode detected. Executing all test cases.")
         else:
+            logger.warning("Soon to be depricated! use run-all-tests-cases options instead!")
             self.tc_list = [
                 'TD_COAP_CORE_01',
                 'TD_COAP_CORE_02',
                 'TD_COAP_CORE_03'
             ]  # the rest of the testcases are going to be skipped
             logger.info("Executing 3 first tests")
+
         self.non_automated_iuts = []
+
         if not COAP_CLIENT_IS_AUTOMATED:
             self.non_automated_iuts.append('coap_client')
         if not COAP_SERVER_IS_AUTOMATED:
             self.non_automated_iuts.append('coap_server')
 
-        self.msglogger = MessageLogger(AMQP_URL, AMQP_EXCHANGE)
+        # prepare threads
+        self.msg_logger_th = MessageLogger(AMQP_URL, AMQP_EXCHANGE)
+        self.ui_services_stub_th = UIStub(AMQP_URL, AMQP_EXCHANGE)
+        self.results_to_stdout_th = ResultsLogToStdout(AMQP_URL, AMQP_EXCHANGE, use_special_delimiters_for_report)
+        self.u_mock_th = UserMock(iut_testcases=self.tc_list, iut_to_mock_verifications_for=self.non_automated_iuts)
+
+        self.msg_logger_th.setName('msg_validator')
+        self.u_mock_th.setName('user_mock_stub')
+        self.ui_services_stub_th.setName('ui_services_stub')
+        self.results_to_stdout_th.setName('results_to_stdout')
+
+        self.threads = [
+            self.u_mock_th,
+            self.msg_logger_th,
+            self.ui_services_stub_th,
+            self.results_to_stdout_th,
+
+        ]
+
+        if dump_results_to_files:
+            self.results_to_file_th = ResultsLogToFile(AMQP_URL, AMQP_EXCHANGE, results_dir=dump_files_directory)
+            self.results_to_file_th.setName('results_to_file')
+            self.threads.append(self.results_to_file_th)
+
+        logger.info("Created threads: \n%s"%pprint.pformat(self.threads,indent=4))
 
     def stop(self):
         self.connection.close()
 
         if self.error_state:
-            log_all_received_messages(self.msglogger.messages_list)
+            log_all_received_messages(self.msg_logger_th.messages_list)
 
     def run(self):
 
-        # start the various threads
-
-        # thread
-        ui_stub = UIStub(AMQP_URL, AMQP_EXCHANGE)
-
-        # thread
-        user_stub = UserMock(
-            iut_testcases=self.tc_list,
-            iut_to_mock_verifications_for=self.non_automated_iuts
-        )
-
-        self.msglogger.setName('msg_validator')
-        user_stub.setName('user_stub')
-        ui_stub.setName('ui_stub')
-
-        threads = [
-            user_stub,
-            self.msglogger,
-            ui_stub,
-        ]
-
         try:
-            for th in threads:
+            for th in self.threads:
                 th.start()
 
             self.check_session_start_status()
@@ -160,7 +191,7 @@ class PerformFullTest(object):
 
             t = 0
             # wait until we get MsgTestSuiteReport
-            while t < SESSION_TIMEOUT and MsgTestSuiteReport not in self.msglogger.messages_by_type_dict:
+            while t < SESSION_TIMEOUT and MsgTestSuiteReport not in self.msg_logger_th.messages_by_type_dict:
                 time.sleep(5)
                 t += 5
 
@@ -173,7 +204,7 @@ class PerformFullTest(object):
                                  COMPONENT_ID)
                 logger.warning('Test TIMED-OUT! Test suite status:\n%s' % pprint.pformat(r.to_dict()))
             else:
-                assert MsgTestSuiteReport in self.msglogger.messages_by_type_dict
+                assert MsgTestSuiteReport in self.msg_logger_th.messages_by_type_dict
 
                 # we can now terminate the session
                 publish_message(
@@ -185,12 +216,11 @@ class PerformFullTest(object):
 
         except Exception as e:
             self.error_state = True
-            logger.error("Exception encountered in PerformTestsuite:\n%s", e)
+            logger.error("Exception encountered in %s:\n%s" % (self.__class__.__name__, e))
             logger.error("Traceback:\n%s", traceback.format_exc())
 
-
         finally:
-            if MsgTestingToolTerminate not in self.msglogger.messages_by_type_dict:
+            if MsgTestingToolTerminate not in self.msg_logger_th.messages_by_type_dict:
                 logger.warning('Never received TERMINATE signal')
                 publish_message(
                     self.connection,
@@ -200,7 +230,7 @@ class PerformFullTest(object):
             time.sleep(10)  # so threads process TERMINATE signal
 
             try:
-                for th in threads:
+                for th in self.threads:
                     if th.is_alive():
                         logger.warning("Thread %s didn't stop" % th.name)
                         th.stop()
@@ -255,26 +285,104 @@ class PerformFullTest(object):
 # # # # # # AUXILIARY TEST METHODS # # # # # # #
 
 
+def run_blocking_process(cmd: list, timeout=300):
+    """
+    Launches process and logs all output using logger.
+    Execution BLOCKS until process finished or timed-out
+
+    Returns bool based of exec code, True if exec code is 0, else False
+    """
+    assert type(cmd) is list
+
+    logging.info('Process cmd: {}'.format(cmd))
+    try:
+        o = subprocess.check_output(cmd,
+                                    stderr=subprocess.STDOUT,
+                                    shell=False,
+                                    timeout=timeout)
+    except subprocess.CalledProcessError as p_err:
+        logging.error('Execution failed, ret code: {}'.format(p_err.returncode))
+        logging.error('Error: {}'.format(p_err))
+        return False
+
+    except subprocess.TimeoutExpired as tout_err:
+        logging.error('Process executed but timed-out...')
+        logging.error('Error: {}'.format(tout_err))
+        return False
+
+    # logging.info('Process ran successfully')
+    return True
+
+
 #######################
 
 
 if __name__ == '__main__':
+    MANIFEST_INTEROP_TESTS = 'automated_interop_tests.yaml'
 
     # be careful with the order of the items as it's used along the main
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--all-interops",
+                        help="Runs all automated interop tests (requires local docker daemon to be running, "
+                             "and tools to be already build as docker images)",
+                        action="store_true")
+
     parser.add_argument("--result-logger",
+                        help="Dumps all results into files",
+                        action="store_true")
+
+    parser.add_argument("--result-logger-only",
                         help="Run (ONLY) a component to log all the results into files",
                         action="store_true")
-    args = parser.parse_args()
-    result_logger = args.result_logger
 
-    if result_logger:
-        print("Starting RESULTS LOGGER..")
-        r_logger = ResultsLogger(AMQP_URL, AMQP_EXCHANGE)
-        r_logger.run()
+    args = parser.parse_args()
+
+    if args.all_interops:
+        print("*" * 70)
+        print("RUNNING ALL INTEROP SESSIONS COMBINATIONS")
+        print("*" * 70)
+
+        with open(MANIFEST_INTEROP_TESTS, 'r') as stream:
+            manif = yaml.load(stream)
+
+        for test in manif:
+            print('Starting {interop_name}, datetime {datetime}'.format(
+                datetime=datetime.datetime.now(),
+                interop_name=test['name'])
+            )
+
+            print('Running with make command <{}>'.format(test['target_start']))
+            run_blocking_process(['make', test['target_start']])
+
+            print('Starting interop test actions')
+
+            test_dir = os.path.join(RESULTS_DIR, "{}_{}".format(str(datetime.datetime.now().date()), test['name']))
+            os.makedirs(test_dir, exist_ok=True)
+            pft = PerformFullTest(
+                run_all_tests_cases=True,
+                use_special_delimiters_for_report=False,
+                dump_results_to_files=args.result_logger,
+                dump_files_directory=test_dir,
+            )
+            pft.run()
+            pft.stop()
+            print('Finished interop test actions')
+
+            print('Stopping with make command <{}>'.format(test['target_stop']))
+            run_blocking_process(['make', test['target_stop']])
+
+    elif args.result_logger_only:
+        results_to_file_th = ResultsLogToFile(AMQP_URL, AMQP_EXCHANGE)
+        results_to_file_th.setName('results_to_file')
+        results_to_file_th.run()
+
     else:
-        # action==actions[1]:
         print("Starting AUTOMATED INTEROP DRIVER..")
-        pft = PerformFullTest()
+        pft = PerformFullTest(
+            run_all_tests_cases=True,
+            use_special_delimiters_for_report=True,
+            dump_results_to_files=False
+        )
         pft.run()
         pft.stop()
