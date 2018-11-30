@@ -984,16 +984,11 @@ if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
                         throw e
                     }
                     finally {
-                        sh '''
-                            sudo -E docker ps
-                        '''
 
                         sh '''
-                            export LC_ALL=C.UTF-8
-                            export LANG=C.UTF-8
-                            python3 -m ioppytest_cli download_network_traces --destination .
                             sudo -E make stop-all
                             sudo -E docker ps
+                            ls data/results/*
                         '''
                         archiveArtifacts artifacts: 'data/results/**/*.json', fingerprint: true
                         archiveArtifacts artifacts: 'data/results/**/*.pcap', fingerprint: true
