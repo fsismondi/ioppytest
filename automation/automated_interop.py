@@ -167,7 +167,7 @@ class PerformFullTest(object):
             self.results_to_file_th.setName('results_to_file')
             self.threads.append(self.results_to_file_th)
 
-        logger.info("Created threads: \n%s"%pprint.pformat(self.threads,indent=4))
+        logger.info("Created threads: \n%s" % pprint.pformat(self.threads, indent=4))
 
     def stop(self):
         self.connection.close()
@@ -319,6 +319,7 @@ def run_blocking_process(cmd: list, timeout=300):
 
 if __name__ == '__main__':
     MANIFEST_INTEROP_TESTS = 'automated_interop_tests.yaml'
+    DELIM = "*" * 70
 
     # be careful with the order of the items as it's used along the main
     parser = argparse.ArgumentParser()
@@ -339,26 +340,31 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.all_interops:
-        print("*" * 70)
-        print("RUNNING ALL INTEROP SESSIONS COMBINATIONS")
-        print("*" * 70)
+        logging.info("\n{delim}\nRUNNING ALL INTEROP SESSIONS COMBINATIONS\n{delim}".format(delim=DELIM))
 
         with open(MANIFEST_INTEROP_TESTS, 'r') as stream:
             manif = yaml.load(stream)
 
         for test in manif:
-            print('Starting {interop_name}, datetime {datetime}'.format(
-                datetime=datetime.datetime.now(),
-                interop_name=test['name'])
-            )
+            logging.info('\n{delim} \n'
+                         'Starting interop test session: \n'
+                         '\tinterop test: {interop_name} \n'
+                         '\tdatetime start: {datetime} \n'
+                         '\tmake cmd: {cmd} \n'
+                         '{delim}'.format(delim=DELIM,
+                                          interop_name=test['name'],
+                                          cmd=test['target_start'],
+                                          datetime=datetime.datetime.now(),)
+                         )
 
-            print('Running with make command <{}>'.format(test['target_start']))
+            # run make command
             run_blocking_process(['make', test['target_start']])
 
-            print('Starting interop test actions')
-
+            # create dir for results
             test_dir = os.path.join(RESULTS_DIR, "{}_{}".format(str(datetime.datetime.now().date()), test['name']))
             os.makedirs(test_dir, exist_ok=True)
+
+            # launch automated test driver
             pft = PerformFullTest(
                 run_all_tests_cases=True,
                 use_special_delimiters_for_report=False,
@@ -367,9 +373,18 @@ if __name__ == '__main__':
             )
             pft.run()
             pft.stop()
-            print('Finished interop test actions')
 
-            print('Stopping with make command <{}>'.format(test['target_stop']))
+            logging.info('\n{delim} \n'
+                         'Stopping interop test session: \n'
+                         '\tinterop test: {interop_name} \n'
+                         '\tdatetime finished: {datetime} \n'
+                         '\tmake cmd: {cmd} \n'
+                         '{delim}'.format(delim=DELIM,
+                                          interop_name=test['name'],
+                                          cmd=test['target_stop'],
+                                          datetime=datetime.datetime.now(),)
+                         )
+
             run_blocking_process(['make', test['target_stop']])
 
     elif args.result_logger_only:
