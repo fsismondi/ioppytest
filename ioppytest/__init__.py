@@ -68,7 +68,7 @@ TD_DIR = os.path.join(project_dir, 'ioppytest', 'test_descriptions')
 # fixme: refact the code so TD_XXX is a list of yaml files containing test cases from several groups
 
 TD_DUMMY_CFG = os.path.join(TD_DIR, "TD_DUMMY_CFG.yaml")
-
+TD_WOT_CFG = os.path.join(TD_DIR, "TD_WOT_CFG.yaml")
 TD_COAP_CORE = os.path.join(TD_DIR, "TD_COAP_CORE.yaml")
 TD_COAP_CFG = os.path.join(TD_DIR, "TD_COAP_CFG.yaml")
 TD_COAP = [
@@ -126,6 +126,7 @@ TEST_DESCRIPTIONS_CONFIGS = [
     TD_ONEM2M_CFG,
     TD_COMI_CFG,
     TD_LWM2M_CFG,
+    TD_WOT_CFG
 ]
 
 TEST_DESCRIPTIONS_CONFIGS_DICT = {
@@ -135,6 +136,7 @@ TEST_DESCRIPTIONS_CONFIGS_DICT = {
     'onem2m': [TD_ONEM2M_CFG],
     'comi': [TD_COMI_CFG],
     'lwm2m': [TD_LWM2M_CFG],
+    'wot': [TD_WOT_CFG],
 }
 
 AUTO_DISSECTION_FILE = os.path.join(project_dir, '/data/auto_dissection.json')

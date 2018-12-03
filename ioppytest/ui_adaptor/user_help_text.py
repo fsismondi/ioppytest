@@ -2,16 +2,6 @@ from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
 env_vars_export = """
 
-### Agent requirements
-
-The agent component, which is needed for running interop tests works for both MacOs (tested with MacOs 10.12.x)
-and also debian-based distributions.
-
-(!) Windows is for the time being not supported by the agent. If your implementation can run into a virtual machine
-or docker container please setup that environment so yo can run the agent from within.
-
-------------------------------------------------------------------------------
-
 ### Prepare environment
 
 Please open a Terminal where to execute the agent component 
@@ -22,47 +12,63 @@ and export environment variables:
 ------------------------------------------------------------------------------
 """.format(url=AMQP_URL)
 
+agent_requirements = """
+
+### Agent requirements
+
+\n
+
+    - [OS requirement] agent component runs on MacOs (tested with MacOs 10.12.x) and debian-based distributions
+    - [OS requirement] for MacOs, `tuntap` driver is needed: `brew install Caskroom/cask/tuntap`
+    - [python version] python 2.7 needed (virtualenv use is recommended)
+
+\n
+---------------------------------------------------------------------------------
+(!) Windows is for the time being not supported by the agent. \n
+If your implementation can run into a virtual machine or docker container please\n
+setup that environment so yo can run the agent from within.\n
+----------------------------------------------------------------------------------
+
+\n\n
+"""
 
 agent_install_help = """
 
 ### Please install the agent using PyPi (python script):
 
 \n\n
-
-using virtual env (recommended):
-
-\n
+---
+OPTION 1: using virtual env (recommended):
 
 \n
 ```
 
 # install venv
-> pip install virtualenv 
+>>> pip install virtualenv 
 
 # create a python 2.7 env
-> virtualenv -p /usr/bin/python2.7 my_venv 
+>>> virtualenv -p /usr/bin/python2.7 my_venv 
 
 # activate env
-> source my_venv/bin/activate
+>>> source my_venv/bin/activate
 
 # install package
-> pip install ioppytest-agent 
+>>> pip install ioppytest-agent 
 
 ```
-\n\n
-
-or else (without virtualenv):
-
-```
-
-> python2.7 -m pip install ioppytest-agent
+\n
+---
+OPTION 2: (without virtualenv):
 
 ```
-\n\n
 
+# install package
+>>> python2.7 -m pip install ioppytest-agent
+
+```
+\n
 ------------------------------------------------------------------------------
-
-\n\n
+\n
 
 You can execute directly from source code, for this use, and check out README.md:
 
@@ -70,21 +76,11 @@ You can execute directly from source code, for this use, and check out README.md
 
 ```
 
-> git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent
+>>> git clone --recursive https://gitlab.f-interop.eu/f-interop-contributors/agent
 
 ```
-
 \n\n
 ------------------------------------------------------------------------------
-
-\n\n
-
-Installation didn't work? Check the agent dependencies:
-
-\n
-    - python 2.7 needed (virtualenv use recommended if no py2.7 version installed in OS )
-    - for MacOs users, tuntap driver is needed: `brew install Caskroom/cask/tuntap`
-
 \n\n
 """
 
@@ -120,6 +116,9 @@ WSN network) please check out the agent help section describing these setups
 ```
 
 """
+
+help_agent_run_for_raw_ip_single_entry = "sudo -E python2.7 -m agent connect --url $AMQP_URL --name {agent_name} " \
+                                         "--force-bootstrap --ipv6-host {ipv6_host} --ipv6-prefix {ipv6_prefix}"
 
 vpn_setup = """
 ### How does my implementation will reach other implementations?
