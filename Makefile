@@ -319,9 +319,9 @@ _docker-build-coap-additional-resources:
 	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automation/coap_client_libcoap/Dockerfile .
 	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
 
-	# automated_iut-coap_server-august_cellars (WIP)
-	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
-	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
+	# # automated_iut-coap_server-august_cellars (WIP)
+	# docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
+	# docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
