@@ -347,12 +347,13 @@ class Coordinator(CoordinatorAmqpInterface):
                         gen_verdict, gen_description, report = current_tc.generate_testcases_verdict(partial_verd)
 
                     else:
-                        error_msg += 'Response from Test Analyzer NOK: %s' % repr(tat_response)
+                        error_msg += 'PCAP analysis NOK. Error message: %s (err.code: %s)' % (tat_response.error_message,
+                                                                                             tat_response.error_code)
                         logger.warning(error_msg)
 
                         # generate verdict and verdict description
                         try:
-                            gen_description = tat_response.error_code
+                            gen_description = error_msg
                             gen_verdict = 'inconclusive'
                         except AttributeError:
                             gen_description = error_msg

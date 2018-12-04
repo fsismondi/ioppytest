@@ -39,10 +39,10 @@ class PacketRouterTestCase(unittest.TestCase):
         logging.info('using AMQP vars: %s, %s' % (AMQP_URL, AMQP_EXCHANGE,))
 
         self.routing_table = {
-            'fromAgent.agent1':
-                ['toAgent.agent2'],  # routes to only one destination
-            'fromAgent.agent2':
-                ['toAgent.agent1'],  # routes to only one destination
+            'fromAgent.agent1.ip.tun.packet.raw':
+                ['toAgent.agent2.ip.tun.packet.raw'],  # routes to only one destination
+            'fromAgent.agent2.ip.tun.packet.raw':
+                ['toAgent.agent1.ip.tun.packet.raw'],  # routes to only one destination
         }
 
         # start packet router
