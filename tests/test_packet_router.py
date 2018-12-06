@@ -5,7 +5,7 @@ import time
 import json
 import pika
 
-from messages import MsgPacketInjectRaw
+from messages import MsgPacketInjectRaw, MsgRoutingStartLossyLink
 from ioppytest.packet_router.__main__ import PacketRouter
 from ioppytest import AMQP_URL, AMQP_EXCHANGE
 
@@ -51,6 +51,9 @@ class PacketRouterTestCase(unittest.TestCase):
         packet_router.start()
 
     def test_packet_routing(self):
+        """
+        Tests that (Agent-like) IP packet messages are routed to correct destination.
+        """
         assert self.channel.is_open, 'no channel opened for tests'
 
         self._send_packet_fromAgent1()
@@ -67,6 +70,26 @@ class PacketRouterTestCase(unittest.TestCase):
         time.sleep(TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED)
         method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
         print(method_frame, header_frame, body)
+        assert method_frame is not None, 'Expected to get a message, but nothing was received'
+        self.channel.basic_ack(method_frame.delivery_tag)
+
+    def test_packet_routing_drops(self):
+        """
+        Tests that a packet is dropped (not routed) , when we send a drop request, and following this
+        we make sure that the following one is actually routed.
+        """
+        assert self.channel.is_open, 'no channel opened for tests'
+        self._send_drop_message_request() # tells router to drop message
+        self._send_packet_fromAgent1()
+        time.sleep(TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED)
+        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
+        assert method_frame is None, 'Expected None, meaning that the packet was dropped'
+
+        # test that the next one is actually routed
+        self._send_packet_fromAgent1()
+        time.sleep(TIME_NEEDED_FOR_EVENT_TO_BE_ROUTED)
+        method_frame, header_frame, body = self.channel.basic_get(self.queue_name)
+        print(body)
         assert method_frame is not None, 'Expected to get a message, but nothing was received'
         self.channel.basic_ack(method_frame.delivery_tag)
 
@@ -102,3 +125,15 @@ class PacketRouterTestCase(unittest.TestCase):
                 content_type='application/json',
             )
         )
+
+    def _send_drop_message_request(self):
+        m = MsgRoutingStartLossyLink(number_of_packets_to_drop=1)
+        self.channel.basic_publish(
+            body=m.to_json(),
+            routing_key=m.routing_key,
+            exchange=AMQP_EXCHANGE,
+            properties=pika.BasicProperties(
+                content_type='application/json',
+            )
+        )
+
