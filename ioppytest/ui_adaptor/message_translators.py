@@ -274,6 +274,7 @@ class GenericBidirectonalTranslator(object):
             MsgStepVerifyExecuted: self._get_ui_message_highlighted_description,
             MsgConfigurationExecute: self._get_ui_testcase_configure,
             MsgTestCaseSkip: self._get_ui_testcase_skip,
+            MsgRoutingStartLossyLink: self._get_ui_lossy_context,
 
             # info
             MsgTestSuiteGetTestCasesReply: self._get_ui_testcases_list,
@@ -999,6 +1000,16 @@ class GenericBidirectonalTranslator(object):
         ]
         return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
 
+    def _get_ui_lossy_context(self, message):
+
+        fields = [
+            {
+                'type': 'p',
+                'value': 'Test configured to drop the following %s packet(s)' % message.number_of_packets_to_drop
+            }
+        ]
+        return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
+
     def _get_ui_message_highlighted_description(self, message):
         fields = [
             {
@@ -1625,7 +1636,6 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
                 ui_tag=UI_TAG_AGENT_TEST,
                 user=u,
             )
-
 
         return True
 
