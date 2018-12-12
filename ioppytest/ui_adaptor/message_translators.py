@@ -2333,11 +2333,7 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         try:
-            ui_reply = amqp_request(connection,
-                                    ui_request,
-                                    'dummy_component',
-                                    retries=5,
-                                    time_between_retries=1)
+            ui_reply = amqp_request(connection,ui_request,'dummy_component',retries=5,time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "checkbox"})

@@ -318,11 +318,20 @@ def run_blocking_process(cmd: list, timeout=300):
 
 
 if __name__ == '__main__':
+    help="""
+    This program drives an interop test suite by sending AMQP API messages to the event bus.
+    These typically are "testsuite.*" or "testingtool.*" type of messages.
+    
+    It doesnt really run protocol implementations (implementations under test) 
+    nor testing tool code (ioppytest testing tools)  unless explicitly indicated by using options.
+    
+    See optional arguments help for more information.
+    """
     MANIFEST_INTEROP_TESTS = 'automated_interop_tests.yaml'
     DELIM = "*" * 70
 
     # be careful with the order of the items as it's used along the main
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=help)
 
     parser.add_argument("--all-interops",
                         help="Runs all automated interop tests (requires local docker daemon to be running, "
@@ -346,6 +355,7 @@ if __name__ == '__main__':
             manif = yaml.load(stream)
 
         for test in manif:
+
             logging.info('\n{delim} \n'
                          'Starting interop test session: \n'
                          '\tinterop test: {interop_name} \n'
