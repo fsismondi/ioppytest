@@ -343,8 +343,8 @@ class Coordinator(CoordinatorAmqpInterface):
                         gen_verdict, gen_description, report = current_tc.generate_testcases_verdict(partial_verd)
 
                     else:
-                        error_msg += 'PCAP analysis NOK. Error message: %s (err.code: %s)' % (tat_response.error_message,
-                                                                                             tat_response.error_code)
+                        error_msg += 'Error message: %s (err.code: %s)' % (tat_response.error_message,
+                                                                           tat_response.error_code)
                         logger.warning(error_msg)
 
                         # generate verdict and verdict description
