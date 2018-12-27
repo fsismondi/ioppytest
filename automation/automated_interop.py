@@ -86,7 +86,7 @@ from ioppytest.ui_adaptor.message_rendering import testsuite_state_to_ascii_tabl
 from automation import MessageLogger, log_all_received_messages, UserMock, ResultsLogToFile
 
 COMPONENT_ID = 'perform_testsuite'
-SESSION_TIMEOUT = 900
+SESSION_TIMEOUT = 1200
 EXECUTE_ALL_TESTS = os.environ.get('CI', 'False') == 'True'
 LOG_WARNINGS_ONLY = os.environ.get('LOG_WARNINGS_ONLY', 'False') == 'True'
 COAP_CLIENT_IS_AUTOMATED = os.environ.get('COAP_CLIENT_IS_AUTOMATED', 'True') == 'True'
