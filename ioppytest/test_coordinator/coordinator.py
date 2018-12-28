@@ -73,7 +73,7 @@ class Coordinator(CoordinatorAmqpInterface):
         else:
             self.event = event
 
-    def generate_testcases_verdict(self, received_event):
+    def save_current_testcase_report_to_file(self, received_event):
         verdict_info = {}
         info1 = self.testsuite.get_current_testcase().to_dict(verbose=True)
         info2 = self.testsuite.get_testcase_report()
@@ -252,10 +252,10 @@ class Coordinator(CoordinatorAmqpInterface):
 
     def finish_testcase(self):
         """
-        :return:
         """
+
         if self.testsuite.check_testcase_finished() is False:
-            msg = 'expected testcase to be finished'
+            msg = 'Expected testcase to be finished.'
             logger.error(msg)
             ls_tc, ls_steps = self.testsuite.get_detailed_status()
 
@@ -263,142 +263,140 @@ class Coordinator(CoordinatorAmqpInterface):
             logger.error('steps: %s' % ls_steps)
             raise CoordinatorError(msg)
 
+        # Get 'pointer' to current test case and update status
         current_tc = self.testsuite.get_current_testcase()
         current_tc.change_state('analyzing')
         current_tc.current_step = None
 
-        # get TC params
+        # Get TC params
         tc_id = current_tc.id
         tc_ref = current_tc.uri
 
-        # Finish sniffer and get PCAP
+        # Stop sniffing packets for this test case
         logger.debug("Sending sniffer stop request...")
         self.call_service_sniffer_stop()
-        time.sleep(0.5)
+        time.sleep(0.1)
 
-        # TODO break this function in smaller pieces
-        if ANALYSIS_MODE == 'post_mortem':
+        # Get capture of test case
+        logger.debug("Sending get capture request to sniffer...")
+        sniffer_response = self.call_service_sniffer_get_capture(capture_id=tc_id)
 
-            tat_response = None
-            gen_verdict = ''
-            gen_description = ''
-            report = []
-            error_msg = ''
+        # Save .pcap file locally
+        try:
+            if sniffer_response.ok:
+                pcap_file_base64 = sniffer_response.value
+                filename = sniffer_response.filename
 
-            logger.debug("Sending get capture request to sniffer...")
-            sniffer_response = self.call_service_sniffer_get_capture(capture_id=tc_id)
+                with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
+                    nb = pcap_file.write(base64.b64decode(pcap_file_base64))
+                    logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
+            else:
+                error_msg = 'Error encountered with packet sniffer: %s' % repr(sniffer_response)
+                logger.warning(error_msg)
 
-            # let's try to save the file and then push it to results repo
-            try:
-                if sniffer_response.ok:
-                    pcap_file_base64 = sniffer_response.value
-                    filename = sniffer_response.filename
+                # generate error verdict/report
+                current_tc.generate_testcase_report(err_msg=error_msg)
+                self.save_current_testcase_report_to_file(None)
 
-                    # save PCAP to file
-                    with open(os.path.join(PCAP_DIR, filename), "wb") as pcap_file:
-                        nb = pcap_file.write(base64.b64decode(pcap_file_base64))
-                        logger.debug("Pcap correctly saved (%d Bytes) at %s" % (nb, TMPDIR))
+                # change tc state
+                current_tc.change_state('finished')
+                return
 
-                    logger.debug("Sending PCAP file to TAT for analysis...")
+        except AttributeError as ae:
+            error_msg = 'Failed to process packet sniffer response. ' \
+                        'Wrongly formatted response? : %s' % repr(sniffer_response)
+            logger.error(error_msg)
 
-                    # Forwards PCAP to TAT to get CHECKs results
-                    try:
-                        tat_response = self.call_service_testcase_analysis(
-                            protocol=self.testsuite_name,
-                            testcase_id=tc_id,
-                            testcase_ref=tc_ref,
-                            file_enc="pcap_base64",
-                            filename=tc_id + ".pcap",
-                            value=pcap_file_base64)
-
-                    except AmqpSynchCallTimeoutError as e:
-                        error_msg += "TAT didnt answer to the analysis request"
-                        logger.error(error_msg)
-
-                    if tat_response and tat_response.ok:
-
-                        logger.info("Response received from TAT: %s " % repr(tat_response))
-                        # Save the json object received
-                        json_file = os.path.join(
-                            TMPDIR,
-                            '%s_analysis.json' % tc_id
-                        )
-
-                        with open(json_file, 'w') as f:
-                            f.write(tat_response.to_json())
-
-                        # let's process the partial verdicts from TAT's answer
-                        # format : [[partial verdict : str, description : str]]
-                        partial_verd = []
-                        step_count = 0
-                        ls_len = len(tat_response.partial_verdicts)
-                        for item in tat_response.partial_verdicts:
-                            # let's partial verdict id
-                            step_count += 1
-                            p = ("frame_check_[{}/{}]".format(step_count, ls_len), item[0], item[1])
-                            partial_verd.append(p)
-                            logger.debug("Processing partial verdict received from TAT: %s" % str(p))
-
-                        # generates a general verdict considering other steps partial verdicts besides TAT's
-                        gen_verdict, gen_description, report = current_tc.generate_testcases_verdict(partial_verd)
-
-                    else:
-                        error_msg += 'Error message: %s (err.code: %s)' % (tat_response.error_message,
-                                                                           tat_response.error_code)
-                        logger.warning(error_msg)
-
-                        # generate verdict and verdict description
-                        try:
-                            gen_description = error_msg
-                            gen_verdict = 'inconclusive'
-                        except AttributeError:
-                            gen_description = error_msg
-                            gen_verdict = 'error'
-
-                        report = []
-                else:
-                    error_msg += 'Error encountered with packet sniffer: %s' % repr(sniffer_response)
-                    logger.warning(error_msg)
-                    gen_verdict = 'error'
-                    gen_description = error_msg
-                    report = []
-
-            except AttributeError as ae:
-                error_msg += 'Failed to process Sniffer response. Wrongly formated response? : %s' % repr(
-                    sniffer_response)
-                logger.error(error_msg)
-                gen_verdict = 'error'
-                gen_description = error_msg
-                report = []
-
-            # TODO this should be hanlded directly by generate_testcases_verdict method
-            # save sent message in RESULTS dir
-            final_report = OrderedDict()
-            final_report['verdict'] = gen_verdict
-            final_report['description'] = gen_description
-            final_report['partial_verdicts'] = report
-
-            # TODO this should be hanlded directly by generate_testcases_verdict method
-            # lets generate test case report
-            current_tc.report = final_report
-
-            # Save the final verdict as json
-            json_file = os.path.join(
-                TMPDIR,
-                tc_id + '_verdict.json'
-            )
-            with open(json_file, 'w') as f:
-                json.dump(final_report, f)
+            # generate error verdict/report
+            current_tc.generate_testcase_report(err_msg=error_msg)
+            self.save_current_testcase_report_to_file(None)
 
             # change tc state
             current_tc.change_state('finished')
-            logger.info("General verdict generated: %s" % json.dumps(current_tc.report))
+            return
 
-        else:
-            # TODO implement step-by-step analysis
-            raise NotImplementedError()
+        # Forward .pcap to TAT to get CHECKs results
+        try:
+            tat_response = self.call_service_testcase_analysis(
+                protocol=self.testsuite_name,
+                testcase_id=tc_id,
+                testcase_ref=tc_ref,
+                file_enc="pcap_base64",
+                filename=tc_id + ".pcap",
+                value=pcap_file_base64)
 
-        return current_tc.report
+        except AmqpSynchCallTimeoutError as e:
+            error_msg = "TAT service timeout error"
+            logger.error(error_msg)
+
+            # generate error verdict/report
+            current_tc.generate_testcase_report(err_msg=error_msg)
+            self.save_current_testcase_report_to_file(None)
+
+            # change tc state
+            current_tc.change_state('finished')
+            return
+
+        # Process TAT response and create final test case report
+        try:
+            if tat_response.ok:
+
+                logger.info("Response received from TAT: %s " % repr(tat_response))
+                # Save the json object received
+                json_file = os.path.join(
+                    TMPDIR,
+                    '%s_analysis.json' % tc_id
+                )
+
+                with open(json_file, 'w') as f:
+                    f.write(tat_response.to_json())
+
+                # let's process the partial verdicts from TAT's answer
+                # format : [[partial verdict : str, description : str]]
+                partial_verd = []
+                step_count = 0
+                ls_len = len(tat_response.partial_verdicts)
+                for item in tat_response.partial_verdicts:
+                    # let's partial verdict id
+                    step_count += 1
+                    p = ("frame_check_[{}/{}]".format(step_count, ls_len), item[0], item[1])
+                    partial_verd.append(p)
+                    logger.debug("Processing partial verdict received from TAT: %s" % str(p))
+
+            else:
+                error_msg = 'Error response from TAT : %s (err.code: %s)' % (tat_response.error_message,
+                                                                             tat_response.error_code)
+                logger.warning(error_msg)
+
+                # generate error verdict/report
+                current_tc.generate_testcase_report(err_msg=error_msg)
+                self.save_current_testcase_report_to_file(None)
+
+                # change tc state
+                current_tc.change_state('finished')
+                return
+
+        except AttributeError:
+            error_msg = "TAT didn't send a correctly formatted message, we got %s"% repr(tat_response)
+            logger.error(error_msg)
+
+            # generate error verdict/report
+            current_tc.generate_testcase_report(err_msg=error_msg)
+            self.save_current_testcase_report_to_file(None)
+
+            # change tc state
+            current_tc.change_state('finished')
+            return
+
+        # Create final test case report from TAT partial verdicts
+        # Note: report is generated from TAT partial verdicts (CHECKS), as well as IUTs' VERIFY steps
+        current_tc.generate_testcase_report(partial_verd)
+        logger.info("General verdict generated: %s" % json.dumps(current_tc.report))
+        self.save_current_testcase_report_to_file(None)
+
+        # change tc state
+        current_tc.change_state('finished')
+        self.save_current_testcase_report_to_file(None)
 
     def handle_testcase_restart(self, received_event):
         """
