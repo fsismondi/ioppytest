@@ -19,12 +19,8 @@ from event_bus_utils import AmqpSynchCallTimeoutError
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
 ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem # TODO test suite param?
-
-# if left empty => packet_sniffer chooses the loopback
-SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?
-
-# TODO 6lo FIX ME !
-# - tun notify method -> execute only if test suite needs it (create a test suite param profiling)
+SNIFFER_FILTER_IF = 'tun0'  # TODO test suite param?, # if left empty packet_sniffer chooses the loopback
+LOSSY_CONTEXT__NUMBER_OF_PACKETS_TO_DROP = 2  # TODO test suite param?
 
 # component identification & bus params
 COMPONENT_ID = '%s|%s' % ('test_coordinator', 'FSM')
@@ -94,7 +90,7 @@ class Coordinator(CoordinatorAmqpInterface):
             f.write(json.dumps(verdict_info))
 
     def configure_agent_data_plane_interfaces(self, received_event):
-        # todo find a way of switching between different configuration requirements coming from each test suite
+        # ToDo find a way of switching between different configuration requirements coming from each test suite
         # coap config is different from 6lowpan config
         self.notify_tun_interfaces_start(received_event)
 
@@ -347,12 +343,13 @@ class Coordinator(CoordinatorAmqpInterface):
                         gen_verdict, gen_description, report = current_tc.generate_testcases_verdict(partial_verd)
 
                     else:
-                        error_msg += 'Response from Test Analyzer NOK: %s' % repr(tat_response)
+                        error_msg += 'Error message: %s (err.code: %s)' % (tat_response.error_message,
+                                                                           tat_response.error_code)
                         logger.warning(error_msg)
 
                         # generate verdict and verdict description
                         try:
-                            gen_description = tat_response.error_code
+                            gen_description = error_msg
                             gen_verdict = 'inconclusive'
                         except AttributeError:
                             gen_description = error_msg
@@ -415,7 +412,7 @@ class Coordinator(CoordinatorAmqpInterface):
 
     def handle_testcase_select(self, received_event):
         """
-        this is more like a jump to function rather than select
+        this is more like a "jump to" function rather than select
         """
         self.testsuite.reinit_testcase(self.testsuite.get_current_testcase_id())
 
@@ -474,9 +471,17 @@ class Coordinator(CoordinatorAmqpInterface):
 
             # sniffer calls are blocking
             if self.call_service_sniffer_start(**sniff_params):
-                logger.debug('Sniffer succesfully started')
+                logger.debug('Sniffer successfully started')
             else:
                 logger.error("Sniffer COULDN'T be started")
+
+            #check if we need to trigger some special behaviour (e.g. f links)
+            try:
+                special_mode = link['special_mode']
+                if special_mode == "lossy_context":
+                    self.call_service_router_drop_packets(number_packets_to_drop = LOSSY_CONTEXT__NUMBER_OF_PACKETS_TO_DROP)
+            except KeyError:
+                pass
 
     def _prepare_next_testcase(self, received_event):
         logger.info('Preparing next testcase..')

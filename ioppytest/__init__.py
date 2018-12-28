@@ -24,7 +24,6 @@ __all__ = [
     'AMQP_URL',
     'TEST_DESCRIPTIONS_DICT',
     'TEST_DESCRIPTIONS_CONFIGS_DICT',
-    'INTERACTIVE_SESSION',
     'LOGGER_FORMAT'
 ]
 
@@ -142,9 +141,6 @@ TEST_DESCRIPTIONS_CONFIGS_DICT = {
 AUTO_DISSECTION_FILE = os.path.join(project_dir, '/data/auto_dissection.json')
 
 # # # # # # ENV variables # # # # # # # # # #
-
-# INTERACTIVE_SESSION: if not an interactive session then user input is emulated
-INTERACTIVE_SESSION = get_from_environment("INTERACTIVE_SESSION", True)
 
 # AMQP ENV variables (either get them all from ENV or set them all as default)
 try:

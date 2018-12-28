@@ -88,7 +88,6 @@ uri: http://doc.f-interop.eu/tests/COAP_CFG_02
 nodes:
   - coap_client
   - coap_server
-  - gateway
 addressing:
     - node: coap_client
       ipv6_prefix : bbbb
@@ -96,19 +95,12 @@ addressing:
     - node: coap_server
       ipv6_prefix : bbbb
       ipv6_host: 2
-    - node: gateway
-      ipv6_prefix : bbbb
-      ipv6_host: 3
 topology:
   - link_id : link_01
+    special_mode : lossy_context
     capture_filter: udp
     nodes:
       - coap_client
-      - gateway
-  - link_id : link_02
-    capture_filter: udp
-    nodes:
-      - gateway
       - coap_server
 description:
   - node: coap_client

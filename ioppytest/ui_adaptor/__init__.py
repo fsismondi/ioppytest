@@ -43,11 +43,11 @@ TESTING_TOOL_TOPIC_SUBSCRIPTIONS = [
     'testingtool.#',
     'testsuite.#',
     'session.#',
-    #'log.#'
+    #'log.#',
     'fromAgent.#',
     'toAgent.#',
+    MsgRoutingStartLossyLink.routing_key
 ]
-
 
 class UiResponseError(Exception):
     pass
