@@ -9,7 +9,7 @@ import datetime
 from transitions.core import MachineError
 from ioppytest import AMQP_EXCHANGE, AMQP_URL, LOG_LEVEL
 from ioppytest import RESULTS_DIR
-from event_bus_utils import amqp_request, AmqpSynchCallTimeoutError
+from event_bus_utils import amqp_request, publish_message, AmqpSynchCallTimeoutError
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest.exceptions import CoordinatorError
 from messages import *
@@ -166,6 +166,8 @@ class CoordinatorAmqpInterface:
         Creates temporary channel on it's own
         Connection must be a pika.BlockingConnection
         """
+        #publish_message(self.connection, message)
+
         connection = None
         channel = None
         properties = pika.BasicProperties(**message.get_properties())
@@ -486,3 +488,6 @@ class CoordinatorAmqpInterface:
             return response
         except AmqpSynchCallTimeoutError as e:
             raise e  # let caller handle it
+
+    def call_service_router_drop_packets(self, number_packets_to_drop=3):
+        self._publish_message(MsgRoutingStartLossyLink(number_of_packets_to_drop=number_packets_to_drop))

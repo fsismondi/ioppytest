@@ -694,7 +694,7 @@ sequence:
 testcase_id : TD_COAP_CORE_15
 uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_15
 objective: Perform GET transaction (CON mode, piggybacked response) in a lossy context
-configuration: COAP_CFG_01
+configuration: COAP_CFG_02
 references: "[COAP] 4.4.1, 5.2.1, 5.8.1"
 pre_conditions:
   - Gateway is introduced and configured to produce packet losses
@@ -752,7 +752,7 @@ sequence:
 testcase_id : TD_COAP_CORE_16
 uri : http://doc.f-interop.eu/tests/TD_COAP_CORE_16
 objective: Perform GET transaction (CON mode, delayed response) in a lossy context
-configuration: COAP_CFG_01
+configuration: COAP_CFG_02
 references: "[COAP] 4.4.1, 5.2.2, 5.8.1"
 pre_conditions:
   - Gateway is introduced and configured to produce packet losses
