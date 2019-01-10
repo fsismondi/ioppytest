@@ -38,6 +38,10 @@ import logging
 from automation import COAP_SERVER_HOST, COAP_SERVER_PORT, COAP_CLIENT_HOST
 from automation.automated_iut import AutomatedIUT, launch_short_automated_iut_process
 
+# IUT API (py3 only):
+import asyncio
+import aiocoap
+
 default_base_url = 'coap://[%s]:%s' % (COAP_SERVER_HOST, COAP_SERVER_PORT)
 coap_host_address = COAP_CLIENT_HOST
 BASE_CMD = ["aiocoap-client"]
@@ -65,7 +69,8 @@ def get(base_url,
     launch_short_automated_iut_process(cmd)
 
 
-def put(base_url,
+
+def put_cli_call(base_url,
         resource,
         content_format="text/plain",
         confirmable=True,
@@ -82,6 +87,56 @@ def put(base_url,
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
+
+def put_api_call(base_url,
+        resource,
+        content_format="text/plain",
+        confirmable=True,
+        payload="'my interop test payload'",
+        **kwargs):
+
+    # GET hanlder
+    # async def main():
+    #     protocol = await aiocoap.Context.create_client_context()
+    #
+    #     request = aiocoap.Message(
+    #         code=aiocoap.GET,
+    #         uri='{url}{resource_path}'.format(url=base_url, resource_path=resource)
+    #     )
+    #
+    #     try:
+    #         response = await aiocoap.protocol.request(request).response
+    #     except Exception as e:
+    #         print('Failed to fetch resource:')
+    #         print(e)
+    #     else:
+    #         print('Result: %s\n%r' % (response.code, response.payload))
+
+    async def main():
+        """Perform a single PUT request to localhost on the default port, URI
+        "/other/block". The request is sent 2 seconds after initialization.
+
+        The payload is bigger than 1kB, and thus sent as several blocks."""
+
+        context = await aiocoap.Context.create_client_context()
+
+        await asyncio.sleep(2)
+
+        payload = b"The quick brown fox jumps over the lazy dog.\n" * 30
+        request = aiocoap.Message(
+            code=aiocoap.PUT,
+            payload=payload,
+            uri='{url}{resource_path}'.format(url=base_url, resource_path=resource)
+        )
+
+        response = await aiocoap.context.request(request).response
+
+        print('Result: %s\n%r' % (response.code, response.payload))
+
+    asyncio.get_event_loop().run_until_complete(main())
+
+# defines which hanlder to use for the PUT request
+put=put_api_call
 
 def post(base_url,
          resource,
