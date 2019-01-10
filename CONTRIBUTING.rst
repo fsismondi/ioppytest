@@ -6,11 +6,11 @@ List of devs and network testers that contributed to the tool:
 ==============================================================
 
 Federico Sismondi (fsismondi)
-Constant (cdx)
-Benjamin (btu)
 Erwan Le Flem (BhzErlb)
 Ghada Gharbi (ggharbi)
 Mahdi Ben Alaya (mbenalaya)
+Benjamin (btu)
+Constant (cdx)
 Nicolas Le Gall
 Thijs Walcarius
 Pauline Gaudet-Chardonnet
@@ -20,7 +20,6 @@ ETSI CTI
 
 Git workflow - Merge request guidelines
 =======================================
-
 
 If you can, please submit a merge request with the fix or improvements
 including tests. If you don't know how to fix the issue but can write a test

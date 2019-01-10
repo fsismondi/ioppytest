@@ -391,6 +391,7 @@ if(env.JOB_NAME =~ 'ioppytest-onem2m-implementation-continuous-testing/'){
     }
 }
 
+/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
     node('docker'){
 
@@ -518,8 +519,10 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
         }
     }
 }
+*/
 
 
+/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
     node('docker'){
 
@@ -647,8 +650,10 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
         }
     }
 }
+*/
 
 
+/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-3/'){
     node('docker'){
 
@@ -776,6 +781,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-3/'){
         }
     }
 }
+*/
 
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-4/'){
     node('docker'){
