@@ -112,7 +112,7 @@ class Coordinator(CoordinatorAmqpInterface):
                 session_tc_list.append(str(test_url.path).lstrip("/tests/"))
 
         except (KeyError, TypeError) as e:
-            error_msg = "Empty 'testsuite.testcases' received, using as default all test cases in test description"
+            error_msg = "No 'testsuite.testcases' param. passed, using default (all test cases)"
             logging.warning(error_msg)
 
         if not session_tc_list:  # this catches either None or []
