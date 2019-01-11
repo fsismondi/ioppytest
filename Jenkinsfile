@@ -135,19 +135,19 @@ if(env.JOB_NAME =~ 'ioppytest-unitests-and-integration-tests/'){
     }
 }
 
-
+/* commenting out jobs which are resource expensive
 if(env.JOB_NAME =~ 'ioppytest-lwm2m-implementation-continuous-testing/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.lwm2m_implementations_continuous_testing"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        // This will tell the continuous-testing autoamtion code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -267,15 +267,15 @@ if(env.JOB_NAME =~ 'ioppytest-lwm2m-implementation-continuous-testing/'){
 if(env.JOB_NAME =~ 'ioppytest-onem2m-implementation-continuous-testing/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.onem2m_implementations_continuous_testing"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        // This will tell the continuous-testing autoamtion code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -391,19 +391,18 @@ if(env.JOB_NAME =~ 'ioppytest-onem2m-implementation-continuous-testing/'){
     }
 }
 
-/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_implementations_continuous_testing"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        // This will tell the continuous-testing autoamtion code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -519,22 +518,20 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-1/'){
         }
     }
 }
-*/
 
 
-/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_implementations_continuous_testing_2"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing autoamtion code to run all test cases!*/
+        // This will tell the continuous-testing autoamtion code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -650,22 +647,20 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-2/'){
         }
     }
 }
-*/
 
 
-/* [DISABLED TEST CAMPAIGN FOR COAP IUT PAIR]
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-3/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_implementations_continuous_testing_3"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing automation code to run all test cases!*/
+        // This will tell the continuous-testing automation code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -781,20 +776,22 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-3/'){
         }
     }
 }
+
+(!) END OF COMMENTED BLOCK
 */
 
 if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-4/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.coap_implementations_continuous_testing_4"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
         env.COMPOSE_HTTP_TIMEOUT=3000
 
-        /*This will tell the continuous-testing automation code to run all test cases!*/
+        // This will tell the continuous-testing automation code to run all test cases!
         env.CI = "True"
 
         stage("Check if DOCKER is installed on node"){
@@ -914,8 +911,8 @@ if(env.JOB_NAME =~ 'ioppytest-coap-implementation-continuous-testing-4/'){
 if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
     node('docker'){
 
-        /* attention, here we use external RMQ server*/
-        /* if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL */
+        // attention, here we use external RMQ server
+        // if integration tests take too long to execute we need to allow docker containers to access localhost's ports (docker host ports), and change AMQP_URL
 
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/jenkins.full_coap_interop_session"
         env.AMQP_EXCHANGE="amq.topic"
@@ -1009,8 +1006,7 @@ if(env.JOB_NAME =~ 'ioppytest-coap-automated-iuts/'){
 
 if(env.JOB_NAME =~ 'ioppytest-build-and-run-all-testing-tools/'){
     node('docker'){
-        /* attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports) */
-        /* TODO use a deficated VHOST for these tests */
+        // attention, here we use external RMQ server, else we would need to allow docker containers to access localhost's ports (docker host ports)
         env.AMQP_URL="amqp://paul:iamthewalrus@f-interop.rennes.inria.fr/session02"
         env.AMQP_EXCHANGE="amq.topic"
         env.DOCKER_CLIENT_TIMEOUT=3000
