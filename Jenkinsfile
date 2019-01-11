@@ -64,6 +64,9 @@ if(env.JOB_NAME =~ 'ioppytest-unitests-and-integration-tests/'){
                 sudo -H apt-get -y install libtool
                 sudo -H apt-get -y install autotools-dev
                 sudo -H apt-get -y install automake
+                
+                # Install aiocoap
+                python3 -m pip install aiocoap
 
                 # Install libcoap API & CLI from sources
 	            git clone https://github.com/obgm/libcoap.git /tmp/libcoap_git

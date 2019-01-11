@@ -10,7 +10,7 @@ import traceback
 from shutil import which
 from automation.automated_iut import AutomatedIUT
 
-# automated clients
+# import automated IUT drivers 
 from automation.coap_client_libcoap.automated_iut import AutomatedLibcoapClient
 from automation.coap_client_aiocoap.automated_iut import AutomatedAiocoapClient
 from automation.coap_client_californium.automated_iut import AutomatedCaliforniumCoapClient
