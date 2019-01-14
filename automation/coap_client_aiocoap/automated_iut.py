@@ -55,7 +55,6 @@ def get(base_url,
         confirmable=True,
         accept_option=None,
         **kwargs):
-
     for k, v in kwargs.items():
         logger.warning("ignoring {}:{}".format(k, v))
 
@@ -68,14 +67,18 @@ def get(base_url,
         cmd += ['--non']
     launch_short_automated_iut_process(cmd)
 
-
+# - - - - PUT - - - -
 
 def put_cli_call(base_url,
-        resource,
-        content_format="text/plain",
-        confirmable=True,
-        payload="'my interop test payload'",
-        **kwargs):
+                 resource,
+                 content_format="text/plain",
+                 confirmable=True,
+                 payload="'my interop test payload'",
+                 **kwargs):
+    """
+    Execute PUT request using CLI
+
+    """
 
     for k, v in kwargs.items():
         logger.warning("ignoring {}:{}".format(k, v))
@@ -89,28 +92,15 @@ def put_cli_call(base_url,
 
 
 def put_api_call(base_url,
-        resource,
-        content_format="text/plain",
-        confirmable=True,
-        payload="'my interop test payload'",
-        **kwargs):
+                 resource,
+                 content_format="text/plain",
+                 confirmable=True,
+                 payload="'my interop test payload'",
+                 **kwargs):
+    """
+    Execute PUT request using programmatically API
 
-    # GET hanlder
-    # async def main():
-    #     protocol = await aiocoap.Context.create_client_context()
-    #
-    #     request = aiocoap.Message(
-    #         code=aiocoap.GET,
-    #         uri='{url}{resource_path}'.format(url=base_url, resource_path=resource)
-    #     )
-    #
-    #     try:
-    #         response = await aiocoap.protocol.request(request).response
-    #     except Exception as e:
-    #         print('Failed to fetch resource:')
-    #         print(e)
-    #     else:
-    #         print('Result: %s\n%r' % (response.code, response.payload))
+    """
 
     async def main():
         """Perform a single PUT request to localhost on the default port, URI
@@ -135,8 +125,12 @@ def put_api_call(base_url,
 
     asyncio.get_event_loop().run_until_complete(main())
 
-# defines which hanlder to use for the PUT request
-put=put_api_call
+
+# defines which handler to use for the PUT request
+# put=put_api_call
+put = put_cli_call
+
+# - - - - o - - - -
 
 def post(base_url,
          resource,
@@ -144,7 +138,6 @@ def post(base_url,
          confirmable=True,
          payload="'my interop test payload'",
          **kwargs):
-
     for k, v in kwargs.items():
         logger.warning("ignoring {}:{}".format(k, v))
 
@@ -160,7 +153,6 @@ def delete(base_url,
            resource,
            confirmable=True,
            **kwargs):
-
     for k, v in kwargs.items():
         logger.warning("ignoring {}:{}".format(k, v))
 
@@ -177,7 +169,6 @@ def observe(base_url,
             confirmable=True,
             duration=15,
             **kwargs):
-
     for k, v in kwargs.items():
         logger.warning("ignoring {}:{}".format(k, v))
 
@@ -240,7 +231,8 @@ stimuli_to_aiocoap_cli_call = {
     "TD_COAP_CORE_06_step_01":
         (delete, {"base_url": default_base_url, "resource": "/test", "confirmable": False}),
     "TD_COAP_CORE_07_step_01":
-        (put, {"base_url": default_base_url, "resource": "/test", "content_format": "text/plain", "confirmable": False}),
+        (
+        put, {"base_url": default_base_url, "resource": "/test", "content_format": "text/plain", "confirmable": False}),
     "TD_COAP_CORE_08_step_01":
         (post, {"base_url": default_base_url, "resource": "/test", "content_format": "text/plain"}),
     "TD_COAP_CORE_09_step_01":
@@ -279,9 +271,11 @@ stimuli_to_aiocoap_cli_call = {
     "TD_COAP_CORE_22_step_08":
         (put, {"base_url": default_base_url, "resource": "/validate"}),
     "TD_COAP_CORE_23_step_01":
-        (put, {"base_url": default_base_url, "resource": "/create1","content_format": "text/plain","use_if_none_match": True}),
+        (put, {"base_url": default_base_url, "resource": "/create1", "content_format": "text/plain",
+               "use_if_none_match": True}),
     "TD_COAP_CORE_23_step_05":
-        (put, {"base_url": default_base_url, "resource": "/create1","content_format": "text/plain","use_if_none_match": True}),
+        (put, {"base_url": default_base_url, "resource": "/create1", "content_format": "text/plain",
+               "use_if_none_match": True}),
     "TD_COAP_OBS_01_step_01":
         (observe, {"base_url": default_base_url, "resource": "/obs"}),
     "TD_COAP_OBS_02_step_01":
@@ -305,11 +299,14 @@ stimuli_to_aiocoap_cli_call = {
     "TD_COAP_BLOCK_02_step_01":
         (get, {"base_url": default_base_url, "resource": "/large", "use_block_option": False}),
     "TD_COAP_BLOCK_03_step_01":
-        (put, {"base_url": default_base_url, "resource": "/large-update","use_block_option": True, "content_format": "text/plain","payload": large_payload}),
+        (put, {"base_url": default_base_url, "resource": "/large-update", "use_block_option": True,
+               "content_format": "text/plain", "payload": large_payload}),
     "TD_COAP_BLOCK_04_step_01":
-        (post, {"base_url": default_base_url, "resource": "/large-create","use_block_option": True, "content_format": "text/plain","payload": large_payload}),
+        (post, {"base_url": default_base_url, "resource": "/large-create", "use_block_option": True,
+                "content_format": "text/plain", "payload": large_payload}),
     "TD_COAP_BLOCK_05_step_01":
-        (post, {"base_url": default_base_url, "resource": "/large-post","use_block_option": True, "content_format": "text/plain","payload": large_payload}),
+        (post, {"base_url": default_base_url, "resource": "/large-post", "use_block_option": True,
+                "content_format": "text/plain", "payload": large_payload}),
     "TD_COAP_BLOCK_06_step_01":
         (get, {"base_url": default_base_url, "resource": "/large", "use_block_option": True, "block_size": 16}),
 
