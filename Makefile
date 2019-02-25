@@ -42,8 +42,11 @@ LIST = automated_iut-coap_client-coapthon \
 	   testing_tool-interoperability-lwm2m \
 	   reference_iut-coap_server \
 	   reference_iut-coap_client \
+       automated_iut-onem2m_adn \
+       automated_iut-onem2m_server-eclipse_om2m \
 	   automated_iut-lwm2m_server-leshan \
 	   automated_iut-lwm2m_client-leshan \
+
 
 info:
 	@echo $(info_message)
@@ -81,6 +84,7 @@ build-tools: ## builds all testing tool docker images (only testing tool)
 	$(MAKE) _docker-build-onem2m
 	$(MAKE) _docker-build-lwm2m
 	$(MAKE) _docker-build-comi
+	$(MAKE) _docker-build-wot
 
 build-automated-iuts: ## Build all automated-iut docker images
 	@echo "Starting to build docker images.. "
@@ -88,6 +92,7 @@ build-automated-iuts: ## Build all automated-iut docker images
 	$(MAKE) _docker-build-comi-additional-resources
 	$(MAKE) _docker-build-onem2m-additional-resources
 	$(MAKE) _docker-build-lwm2m-additional-resources
+	$(MAKE) _docker-build-wot-additional-resources
 
 build-all: ## Build all testing tool in docker images, and other docker image resources too
 	@echo $(info_message)
@@ -215,7 +220,6 @@ install-python-dependencies: ## installs all py2 and py3 pip dependencies
 	@python -m pip -qq install ioppytest-agent
 
 	@echo "installing py3 submodule's dependencies..."
-	@python3 -m pip -qq install pytest
 	@python3 -m pip -qq install ioppytest-utils
 
 	@echo "installing py3 ioppytest's dependencies..."
@@ -244,6 +248,16 @@ _docker-build-lwm2m:
 
 	# tag all last version images also with a version-less name
 	docker tag testing_tool-interoperability-lwm2m-v$(version):latest testing_tool-interoperability-lwm2m
+
+_docker-build-wot:
+	@echo "Starting to build the wot testing tools.."
+
+	# let's build the testing tool image (same for interop and conformance)
+	docker build --quiet -t testing_tool-interoperability-wot-v$(version) -f envs/wot_testing_tool/Dockerfile .
+
+	# tag all last version images also with a version-less name
+	docker tag testing_tool-interoperability-wot-v$(version):latest testing_tool-interoperability-wot
+
 
 _docker-build-onem2m:
 	@echo "Starting to build the oneM2M testing tools.."
@@ -317,9 +331,9 @@ _docker-build-coap-additional-resources:
 	docker build --quiet -t automated_iut-coap_client-libcoap-v$(version) -f automation/coap_client_libcoap/Dockerfile .
 	docker tag automated_iut-coap_client-libcoap-v$(version):latest automated_iut-coap_client-libcoap
 
-	# automated_iut-coap_server-august_cellars (WIP)
-	docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
-	docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
+	# # automated_iut-coap_server-august_cellars (WIP)
+	# docker build --quiet -t automated_iut-coap_server-august_cellars-v$(version) -f automation/coap_server_august_cellars/Dockerfile .
+	# docker tag automated_iut-coap_server-august_cellars-v$(version):latest automated_iut-coap_server-august_cellars
 
 _docker-build-lwm2m-additional-resources:
 	@echo "Starting to build lwm2m-additional-resources.. "
@@ -329,9 +343,22 @@ _docker-build-lwm2m-additional-resources:
 	docker tag automated_iut-lwm2m_client-leshan-v$(version):latest automated_iut-lwm2m_client-leshan
 	docker tag automated_iut-lwm2m_server-leshan-v$(version):latest automated_iut-lwm2m_server-leshan
 
+_docker-build-wot-additional-resources:
+	@echo "Starting to build wot-additional-resources.. "
+	docker build --quiet -t automated_iut-wot_arenahub-v$(version) -f automation/wot_arenahub/Dockerfile .
+	docker build --quiet -t automated_iut-wot_thingweb-v$(version) -f automation/wot_thingweb/Dockerfile .
+
+	docker tag automated_iut-wot_arenahub-v$(version):latest automated_iut-wot_arenahub
+	docker tag automated_iut-wot_thingweb-v$(version):latest automated_iut-wot_thingweb
+
 _docker-build-onem2m-additional-resources:
 	@echo "Starting to build onem2m-additional-resources.. "
-	@echo "TBD"
+	
+	docker build --quiet -t automated_iut-onem2m_server-eclipse_om2m-v$(version) -f automation/onem2m_cse_eclipse_om2m/Dockerfile .
+	docker tag automated_iut-onem2m_server-eclipse_om2m-v$(version):latest automated_iut-onem2m_server-eclipse_om2m
+        
+	docker build --quiet -t automated_iut-onem2m_adn-v$(version) -f automation/onem2m_adn_etsi_implementation/Dockerfile .
+	docker tag automated_iut-onem2m_adn-v$(version):latest automated_iut-onem2m_adn
 
 _docker-build-comi-additional-resources:
 	@echo "Starting to build comi-additional-resources.. "
@@ -379,6 +406,13 @@ _run-coap-mini-interop-libcoap-cli-vs-august-cellars-server:
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-libcoap automated_iut-coap_client-libcoap
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
 
+_run-coap-mini-interop-aiocoap-cli-vs-august_cellars-server:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-coap-testing-tool
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_client-aiocoap automated_iut-coap_client-aiocoap
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-coap_server-august_cellars automated_iut-coap_server-august_cellars
+
 _run-coap-mini-interop-aiocoap-cli-vs-coapthon-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
@@ -414,9 +448,21 @@ _run-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	$(MAKE) run-lwm2m-testing-tool
-	$(MAKE) _setup-coap-mini-interop-leshan-cli-vs-leshan-server
+	$(MAKE) _setup-lwm2m-mini-interop-leshan-cli-vs-leshan-server
 
-_setup-coap-mini-interop-leshan-cli-vs-leshan-server:
+_run-onem2m-mini-interop-etsi-adn-vs-eclipse-cse:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	$(MAKE) run-onem2m-testing-tool
+	$(MAKE) _setup-onem2m-mini-interop-etsi-adn-vs-eclipse-cse
+
+_setup-onem2m-mini-interop-etsi-adn-vs-eclipse-cse:
+	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
+	@echo "running $@"
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-onem2m_adn automated_iut-onem2m_adn
+	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-onem2m_server-eclipse_om2m automated_iut-onem2m_server-eclipse_om2m
+
+_setup-lwm2m-mini-interop-leshan-cli-vs-leshan-server:
 	@echo "Using AMQP env vars: {url : $(AMQP_URL), exchange : $(AMQP_EXCHANGE)}"
 	@echo "running $@"
 	docker run -d --rm  --env AMQP_EXCHANGE=$(AMQP_EXCHANGE) --env AMQP_URL=$(AMQP_URL) --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --name automated_iut-lwm2m_client-leshan automated_iut-lwm2m_client-leshan

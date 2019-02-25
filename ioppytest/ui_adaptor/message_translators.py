@@ -9,7 +9,8 @@ import textwrap
 import datetime
 import traceback
 
-from ioppytest import LOG_LEVEL, LOGGER_FORMAT
+from ioppytest import LOG_LEVEL, LOGGER_FORMAT, TD_WOT_CFG
+from ioppytest.test_suite import testsuite
 from messages import *
 from event_bus_utils import publish_message
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
@@ -18,6 +19,7 @@ from ioppytest.ui_adaptor.ui_tasks import (get_field_keys_from_ui_reply,
                                            get_current_users_online,
                                            get_field_keys_from_ui_request,
                                            get_field_value_from_ui_reply)
+from ioppytest.ui_adaptor.tt_tasks import bootstrap_all_tun_interfaces
 
 from ioppytest.ui_adaptor.user_help_text import *
 from ioppytest.ui_adaptor.message_rendering import list_to_str
@@ -27,10 +29,13 @@ from ioppytest.ui_adaptor import (COMPONENT_ID,
                                   STDOUT_MAX_STRING_LENGTH_KEY_COLUMN,
                                   STDOUT_MAX_STRING_LENGTH_VALUE_COLUMN,
                                   UI_TAG_AGENT_CONNECT,
+                                  UI_TAG_AGENT_REQUIREMENTS,
+                                  UI_TAG_AGENT_INSTALL,
                                   UI_TAG_AGENT_TEST,
                                   UI_TAG_AGENT_INFO,
                                   UI_TAG_SETUP,
-                                  UI_TAG_REPORT)
+                                  UI_TAG_REPORT,
+                                  UI_TAG_VPN_STATUS)
 
 # init logging to stnd output and log files
 logger = logging.getLogger("%s|%s" % (COMPONENT_ID, 'msg_translator'))
@@ -49,12 +54,114 @@ TESTING_TOOL_AGENT_NAME = 'agent_TT'
 def NotImplementedField(self):
     raise NotImplementedError
 
+# IMPORTANT! the following module methods create their own connections instead of re-using main thread's
+# this is expensive in resources so use a little as possible!
+
 
 def send_start_test_suite_event():
     con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
     ui_request = MsgTestSuiteStart()
     print("publishing .. %s" % repr(ui_request))
     publish_message(con, ui_request)
+    con.close()
+
+
+def send_to_ui_confirmation_request(amqp_connector, user='all', ui_msg="Confirm to continue",ui_tag={"tbd": ""}):
+
+    req = MsgUiRequestConfirmationButton(
+        tags=ui_tag,
+        fields=[
+            {
+                "type": "p",
+                "value": ui_msg,
+            },
+            {
+                "name": "confirm",
+                "type": "button",
+                "value": True
+            },
+        ]
+    )
+    req.routing_key = req.routing_key.replace('all', user)
+    req.reply_to = req.reply_to.replace('all', user)
+
+    resp_confirm_agent_up = None
+
+    try:
+        resp_confirm_agent_up = amqp_connector.synch_request(
+            request=req,
+            timeout=300,
+        )
+    except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
+        pass
+
+    return resp_confirm_agent_up
+
+
+def send_vpn_join_help_to_user(vpn_agents: dict, user='all'):
+
+    con = pika.BlockingConnection(pika.URLParameters(AMQP_URL))
+
+    # lets give UI an exmple of command with the info que can directly copy and paste in terminal
+    cmd_agent_example = "(!) Amount of devices in VPN has reached it's maximum"
+
+    for name, params in vpn_agents.items():
+        if params[2] is None:
+            cmd_agent_example = help_agent_run_for_raw_ip_single_entry.format(
+                agent_name=name,
+                ipv6_prefix=params[0],
+                ipv6_host=params[1])
+            break
+
+    disp = MsgUiDisplay(
+        tags=UI_TAG_AGENT_CONNECT,
+        fields=[
+            {
+                "type": "p",
+                "value": env_vars_export
+            },
+
+            {
+                "type": "p",
+                "value": "### Run agent\n"
+            },
+
+            {
+                "type": "p",
+                "value": "Please run agent with (use one of the none used entries from table), e.g.:\n"
+            },
+
+            {
+                "type": "p",
+                "value": "`{command}`".format(command=cmd_agent_example)
+            },
+
+            {
+                "type": "p",
+                "value": tabulate(_get_vpn_table_representation(vpn_agents), tablefmt="grid", headers="firstrow")
+            },
+
+
+        ]
+    )
+
+    disp.routing_key = disp.routing_key.replace('all', user)
+    publish_message(con, disp)
+    con.close()
+
+
+def _get_vpn_table_representation(vpn_agents):
+    table = [('agent_name', 'agent_ipv6', 'last_connection')]
+    for agent_name, agent_params in vpn_agents.items():
+        table.append(
+            (
+                str(agent_name),
+                "{}::{}".format(agent_params[0], agent_params[1]),
+                str(agent_params[2]) if agent_params[2] else "n/a (still not used)"
+            )
+        )
+
+    return table
 
 
 class GenericBidirectonalTranslator(object):
@@ -140,7 +247,7 @@ class GenericBidirectonalTranslator(object):
 
     def __init__(self):
 
-        logger.info("Starting UI message tanslator..")
+        logger.info("Starting UI message translator..")
 
         self._current_tc = None
         self._current_step = None
@@ -167,6 +274,7 @@ class GenericBidirectonalTranslator(object):
             MsgStepVerifyExecuted: self._get_ui_message_highlighted_description,
             MsgConfigurationExecute: self._get_ui_testcase_configure,
             MsgTestCaseSkip: self._get_ui_testcase_skip,
+            MsgRoutingStartLossyLink: self._get_ui_lossy_context,
 
             # info
             MsgTestSuiteGetTestCasesReply: self._get_ui_testcases_list,
@@ -247,6 +355,9 @@ class GenericBidirectonalTranslator(object):
 
     def get_iut_roles(self):
         return self.IUT_ROLES
+
+    def callback_on_new_users_in_the_session(self, amqp_connector, new_user_list):
+        pass  # should be re-implemented by the child -testsuite specialized- class
 
     def update_state(self, message):
         """
@@ -409,10 +520,13 @@ class GenericBidirectonalTranslator(object):
         # search for specialized visualization, returns fields
         if type(message) in self.specialized_visualization:
             specialized_visualization_handler = self.specialized_visualization[type(message)]
-            msg_ret = specialized_visualization_handler(message)
 
-        # generic message visualization (message as a table)
-        else:
+            if specialized_visualization_handler: #  message_translators may dereference some handlers on purpose
+                msg_ret = specialized_visualization_handler(message)
+            else:
+                logger.warning("UI handler for message %s appears is %s" % (type(message),
+                                                                            specialized_visualization_handler))
+        else: # generic message visualization (message as a table)
             logger.info("No specialized UI visualisation for message type: %s" % str(type(message)))
             msg_ret = self._get_ui_message_as_table(message)
 
@@ -886,6 +1000,16 @@ class GenericBidirectonalTranslator(object):
         ]
         return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
 
+    def _get_ui_lossy_context(self, message):
+
+        fields = [
+            {
+                'type': 'p',
+                'value': 'Test configured to drop the following %s packet(s)' % message.number_of_packets_to_drop
+            }
+        ]
+        return MsgUiDisplayMarkdownText(level='highlighted', fields=fields)
+
     def _get_ui_message_highlighted_description(self, message):
         fields = [
             {
@@ -1329,7 +1453,7 @@ class GenericBidirectonalTranslator(object):
     def _get_ui_agent_messages(self, message):
         fields = []
 
-        if MsgAgentTunStarted:
+        if message:
             fields.append(
                 {
                     'type': 'p',
@@ -1390,79 +1514,20 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         for u in users:
-            req = MsgUiRequestConfirmationButton(
-                tags=UI_TAG_AGENT_INFO,
-                fields=[
-                    {
-                        "type": "p",
-                        "value": "Confirm to continue",
-                    },
-
-                    {
-                        "name": "confirm",
-                        "type": "button",
-                        "value": True
-                    }, ]
+            send_to_ui_confirmation_request(
+                amqp_connector=amqp_connector,
+                ui_msg="Confirm to continue",
+                ui_tag=UI_TAG_AGENT_INFO,
+                user=u,
             )
-
-            req.routing_key = req.routing_key.replace('all', u)
-            req.reply_to = req.reply_to.replace('all', u)
-            try:
-                resp = amqp_connector.synch_request(
-                    request=req,
-                    timeout=300,
-                )
-            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-                pass
-
-        # ENV VAR export
-
-        disp = MsgUiDisplay(
-            tags=UI_TAG_AGENT_CONNECT,
-            fields=[{
-                "type": "p",
-                "value": env_vars_export
-            }]
-        )
-        amqp_connector.publish_ui_display(
-            message=disp,
-            user_id='all'
-        )
-
-        for u in users:
-            req = MsgUiRequestConfirmationButton(
-                tags=UI_TAG_AGENT_CONNECT,
-                fields=[
-                    {
-                        "type": "p",
-                        "value": "Confirm that variables have been exported",
-                    },
-                    {
-                        "name": "confirm",
-                        "type": "button",
-                        "value": True
-                    },
-                ]
-            )
-
-            req.routing_key = req.routing_key.replace('all', u)
-            req.reply_to = req.reply_to.replace('all', u)
-
-            try:
-                resp = amqp_connector.synch_request(
-                    request=req,
-                    timeout=300,
-                )
-            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-                pass
 
         # AGENT INSTALL
-        agents_kickstart_help = agent_install_help
+        agents_kickstart_help = agent_requirements + agent_install_help
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
 
         disp = MsgUiDisplay(
-            tags=UI_TAG_AGENT_CONNECT,
+            tags=UI_TAG_AGENT_INSTALL,
             fields=[{
                 "type": "p",
                 "value": agents_kickstart_help
@@ -1474,31 +1539,33 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         for u in users:
-            req = MsgUiRequestConfirmationButton(
-                tags=UI_TAG_AGENT_CONNECT,
-                fields=[
-                    {
-                        "type": "p",
-                        "value": "Confirm installation finished",
-                    },
-                    {
-                        "name": "confirm",
-                        "type": "button",
-                        "value": True
-                    },
-                ]
+            send_to_ui_confirmation_request(
+                amqp_connector=amqp_connector,
+                ui_msg="Confirm installation finished",
+                ui_tag=UI_TAG_AGENT_INSTALL,
+                user=u,
             )
-            req.routing_key = req.routing_key.replace('all', u)
-            req.reply_to = req.reply_to.replace('all', u)
 
-            resp_confirm_agent_up = None
-            try:
-                resp_confirm_agent_up = amqp_connector.synch_request(
-                    request=req,
-                    timeout=300,
-                )
-            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-                pass
+        # ENV VAR export
+        disp = MsgUiDisplay(
+                tags=UI_TAG_AGENT_CONNECT,
+                fields=[{
+                    "type": "p",
+                    "value": env_vars_export
+                }]
+        )
+        amqp_connector.publish_ui_display(
+                message=disp,
+                user_id='all'
+        )
+
+        for u in users:
+            send_to_ui_confirmation_request(
+                amqp_connector=amqp_connector,
+                ui_msg="Confirm that variables have been exported",
+                ui_tag=UI_TAG_AGENT_CONNECT,
+                user=u,
+            )
 
         # AGENT RUN
         agents_kickstart_help = help_agents_run_for_raw_ip_mode
@@ -1518,55 +1585,34 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         for u in users:
-            req = MsgUiRequestConfirmationButton(
-                tags=UI_TAG_AGENT_CONNECT,
-                fields=[
-                    {
-                        "type": "p",
-                        "value": "Confirm that agent component is running",
-                    },
-                    {
-                        "name": "confirm",
-                        "type": "button",
-                        "value": True
-                    },
-                ]
+            send_to_ui_confirmation_request(
+                amqp_connector=amqp_connector,
+                ui_msg="Confirm that agent component is running",
+                ui_tag=UI_TAG_AGENT_CONNECT,
+                user=u,
             )
-
-            req.routing_key = req.routing_key.replace('all', u)
-            req.reply_to = req.reply_to.replace('all', u)
-
-            resp_confirm_agent_up = None
-            try:
-                resp_confirm_agent_up = amqp_connector.synch_request(
-                    request=req,
-                    timeout=300,
-                )
-            except Exception:
-                pass
 
         # BOOTSTRAP INTERFACES
-        if resp_confirm_agent_up:
-            send_start_test_suite_event()
 
-            disp = MsgUiDisplay(
-                tags=UI_TAG_AGENT_CONNECT,
-                fields=[{
-                    "type": "p",
-                    "value": "bootstrapping agent(s) interface.."
-                }, ]
-            )
+        send_start_test_suite_event()
 
-            amqp_connector.publish_ui_display(
-                message=disp,
-                user_id='all'
-            )
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": "bootstrapping agent(s) interface.."
+            }, ]
+        )
 
-            #  TODO some prettier solution for this maybe?
-            time.sleep(5)
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        #  TODO some prettier solution for this maybe?
+        time.sleep(2)
 
         # TEST AGENT
-
         agents_kickstart_help = vpn_ping_tests
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
         agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
@@ -1584,30 +1630,12 @@ class CoAPSessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         for u in users:
-            req = MsgUiRequestConfirmationButton(
-                tags=UI_TAG_AGENT_TEST,
-                fields=[
-                    {
-                        "type": "p",
-                        "value": "Confirm to continue",
-                    },
-                    {
-                        "name": "confirm",
-                        "type": "button",
-                        "value": True
-                    }, ]
+            send_to_ui_confirmation_request(
+                amqp_connector=amqp_connector,
+                ui_msg="Confirm to continue",
+                ui_tag=UI_TAG_AGENT_TEST,
+                user=u,
             )
-
-            req.routing_key = req.routing_key.replace('all', u)
-            req.reply_to = req.reply_to.replace('all', u)
-
-            try:
-                resp = amqp_connector.synch_request(
-                    request=req,
-                    timeout=300,
-                )
-            except Exception:  # fixme import and hanlde AmqpSynchCallTimeoutError only
-                pass
 
         return True
 
@@ -1761,6 +1789,267 @@ class CoMISessionMessageTranslator(CoAPSessionMessageTranslator):
 
     def __init__(self):
         super().__init__()
+
+
+class WoTSessionMessageTranslator(CoAPSessionMessageTranslator):
+    # get nodes info, ip addresses etc from test configuration file
+    # snippet on API use:
+    """
+    >>> a=testsuite.import_test_description_from_yaml(testsuite.TEST_DESCRIPTIONS_CONFIGS_DICT['wot'])[0]
+    >>> a.
+    a.configuration_diagram         a.get_default_addressing_table( a.get_target_node(              a.nodes                         a.to_dict(                      a.uri
+    a.default_addressing            a.get_nodes_on_link(            a.id                            a.nodes_description             a.topology
+    >>> a.get_default_addressing_table()
+    [{'node': 'thing1', 'ipv6_prefix': 'bbbb', 'ipv6_host': 1}, {'node': 'thing2', 'ipv6_prefix': 'bbbb', 'ipv6_host': 2}, {'node': 'thing3', 'ipv6_prefix': 'bbbb', 'ipv6_host': 3}]
+    """
+    test_configs = testsuite.get_test_configurations_list_from_yaml(TD_WOT_CFG)
+    assert len(test_configs) == 1
+    test_config = test_configs.pop()
+    node_addresses = test_config.get_default_addressing_table()
+    IUT_ROLES = test_config.nodes
+
+    PERIOD_FOR_STATS_UPDATES = 5  # in seconds
+
+    def __init__(self):
+        super().__init__()
+
+        self.vpn_agents = OrderedDict()
+        self.counters_packet_from_agents = OrderedDict()
+        self.stats_update_datetime = datetime.datetime.now()
+
+        # write default values for vpn agents table
+        for node_dict in self.node_addresses:
+            self.vpn_agents[node_dict['node']] = (node_dict['ipv6_prefix'], node_dict['ipv6_host'], None)
+
+        # overrides handlers for certain UI messages
+        self.specialized_visualization[MsgAgentTunStarted] = self._handle_new_agent_in_vpn
+        self.specialized_visualization[MsgPacketSniffedRaw] = self._handle_new_packet_from_agent
+        self.specialized_visualization[MsgPacketInjectRaw] = None
+
+    def _bootstrap(self, amqp_connector):
+        """
+        see doc of overridden method
+
+        only the following API calls should be used from bootstrap method:
+            amqp_connector.synch_request(self, request, timeout)
+            amqp_connector.publish_ui_display(self, message: Message, user_id=None, level=None)
+        """
+
+        # # # WELCOME MESSAGE # # #
+
+        welcome_message = "### Welcome to Web of Things F-Interop playground!  \n" \
+                          "##### This environment provides:\n" \
+                          "    o IPv6 based VPN env where each implementation running a VPN client gets a private " \
+                          "IPV6 address\n" \
+                          "    o two virtualized WoT implementations (wot_thingweb and arenahub) are available on " \
+                          "bbbb::101 and bbbb::102\n" \
+                          "    o a virtualized CoAP server for testing, test GET coap://[bbbb::2]/test \n\n" \
+                          "##### Notes: \n"\
+                          "    o other users can join the same environment, click on the SHARE button " \
+                          "(see blue button on the top-right) and share the link to do so\n" \
+                          "    o VPN client (agent component) doesnt modify your OS default gateway\n"
+
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_msg=welcome_message,
+            ui_tag=UI_TAG_SETUP,
+        )
+
+        # # # Set Up the VPN between users' IUTs # # #
+
+        # AGENT INFO
+        agents_kickstart_help = vpn_setup
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_INFO,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_tag=UI_TAG_AGENT_INFO,
+        )
+
+        # AGENT REQUIREMENTS
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_REQUIREMENTS,
+            fields=[{
+                "type": "p",
+                "value": agent_requirements
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_tag=UI_TAG_AGENT_REQUIREMENTS,
+        )
+
+        # AGENT INSTALL
+        agents_kickstart_help = agent_install_help
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_INSTALL,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_tag=UI_TAG_AGENT_INSTALL,
+            ui_msg="Confirm installation finished",
+        )
+
+        # RUN agent and connect to VPN
+        send_vpn_join_help_to_user(self.vpn_agents,user='all')
+
+        # RUN agent and connect to VPN
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_tag=UI_TAG_AGENT_CONNECT,
+            ui_msg="Confirm that agent has been started as described below"
+        )
+
+        # TEST AGENT
+        agents_kickstart_help = vpn_ping_tests
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost1', self.IUT_ROLES[0])
+        agents_kickstart_help = agents_kickstart_help.replace('AgentNameHost2', self.IUT_ROLES[1])
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_TEST,
+            fields=[{
+                "type": "p",
+                "value": agents_kickstart_help
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        send_to_ui_confirmation_request(
+            amqp_connector=amqp_connector,
+            ui_tag=UI_TAG_AGENT_TEST,
+        )
+
+        # BOOTSTRAP INTERFACES
+        bootstrap_all_tun_interfaces(amqp_connector,self.vpn_agents)
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": "bootstrapping agent(s) interface.."
+            }, ]
+        )
+
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )  # TODO some prettier solution for this maybe?
+
+        return True
+
+    def _send_vpn_table_to_gui(self, amqp_connector):
+
+        table = _get_vpn_table_representation(self.vpn_agents)
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_CONNECT,
+            fields=[{
+                "type": "p",
+                "value": "Agents in VPN:\n{}".format(tabulate(table, tablefmt="grid", headers="firstrow"))
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+    def _handle_new_agent_in_vpn(self, message):
+
+        fields = []
+
+        if message.name and message.ipv6_prefix and message.ipv6_host:
+            self.vpn_agents[message.name] = (message.ipv6_prefix, message.ipv6_host, datetime.datetime.now())
+            table = _get_vpn_table_representation(self.vpn_agents)
+            fields.append(
+                {
+                    'type': 'p',
+                    'value': '%s TUN started, IPv6 interface %s::%s' % (message.name, message.ipv6_prefix, message.ipv6_host)
+                }
+            )
+
+            fields.append(
+                {
+                    'type': 'p',
+                    "value": "Agents in VPN:\n{}".format(tabulate(table, tablefmt="grid", headers="firstrow"))
+                }
+            )
+
+        return MsgUiDisplayMarkdownText(
+            tags=UI_TAG_VPN_STATUS,
+            fields=fields
+        )
+
+    def _handle_new_packet_from_agent(self, message):
+        """
+        +1 to packet count
+        displays stats in GUI (if certain conditions are met)
+        """
+
+        agent_name = message.routing_key.split('.')[1]
+
+        try:
+            self.counters_packet_from_agents[agent_name] += 1
+        except KeyError:
+            self.counters_packet_from_agents[agent_name] = 1
+
+        if (datetime.datetime.now() - self.stats_update_datetime).seconds > self.PERIOD_FOR_STATS_UPDATES:
+
+            ascii_table = tabulate(
+                [("source", "number of packets sent")] + list(self.counters_packet_from_agents.items()),
+                tablefmt="grid",
+                headers="firstrow"
+            )
+
+            self.stats_update_datetime = datetime.datetime.now()
+
+            return MsgUiDisplay(
+                tags=UI_TAG_VPN_STATUS,
+                fields=[{"type": "p", "value": "IPv6 packets stats:\n%s" % ascii_table},]
+            )
+        return
+
+    def callback_on_new_users_in_the_session(self, amqp_connector, new_user_list):
+
+        disp = MsgUiDisplay(
+            tags=UI_TAG_AGENT_TEST,
+            fields=[{
+                "type": "p",
+                "value": "New user on session detected: {}".format(new_user_list)
+            }, ]
+        )
+        amqp_connector.publish_ui_display(
+            message=disp,
+            user_id='all'
+        )
+
+        #self._bootstrap(amqp_connector)
+        send_vpn_join_help_to_user(self.vpn_agents, user='all')
 
 
 class OneM2MSessionMessageTranslator(CoAPSessionMessageTranslator):
@@ -2044,11 +2333,7 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
         )
 
         try:
-            ui_reply = amqp_request(connection,
-                                    ui_request,
-                                    'dummy_component',
-                                    retries=5,
-                                    time_between_retries=1)
+            ui_reply = amqp_request(connection,ui_request,'dummy_component',retries=5,time_between_retries=1)
         except AmqpSynchCallTimeoutError:
             self.basic_display("The message request: \n`%s`" % repr(ui_request),
                                tags={"snippet": "checkbox"})
@@ -2165,12 +2450,11 @@ class DummySessionMessageTranslator(GenericBidirectonalTranslator):
         )
         publish_message(connection, message)
 
-
-__all__ = [
-    GenericBidirectonalTranslator,
-    CoAPSessionMessageTranslator,
-    OneM2MSessionMessageTranslator,
-    LwM2MSessionMessageTranslator,
-    SixLoWPANSessionMessageTranslator,
-    CoMISessionMessageTranslator,
-]
+# __all__ = [
+#     GenericBidirectonalTranslator,
+#     CoAPSessionMessageTranslator,
+#     OneM2MSessionMessageTranslator,
+#     LwM2MSessionMessageTranslator,
+#     SixLoWPANSessionMessageTranslator,
+#     CoMISessionMessageTranslator,
+# ]

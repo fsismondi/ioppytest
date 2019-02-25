@@ -25,9 +25,12 @@ RUN python3 -m pip install --upgrade pip
 RUN apt-get -y install default-jre
 
 #requirement for leshan server trigger
-RUN apt-get -y install nodejs
-RUN apt-get -y install npm
+RUN  apt-get update -yq \
+    && apt-get install curl gnupg -yq \
+    && curl -sL https://deb.nodesource.com/setup_8.x | bash \
+    && apt-get install nodejs -yq
 RUN npm install body-parser
+RUN npm install request
 
 ADD . /ioppytest
 ENV PATH="/ioppytest:$PATH"

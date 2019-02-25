@@ -73,6 +73,26 @@ def testsuite_results_to_ascii_table(testcases_results: list):
     return tabulate(summary_table, tablefmt="grid", headers="firstrow")
 
 
+def testsuite_state_to_ascii_table(state_dict: dict):
+    """
+    :param state_dict: dict of session info, see example
+    :return: string-based (ascii chars) table of all states
+
+    started = True, step_id = TD_COAP_CORE_01_step_01, testcase_id = TD_COAP_CORE_01, testcase_state = executing
+
+    example of state dict:
+    >>> MsgTestSuiteGetStatusReply().to_dict()
+    {'_api_version': '1.2.10', 'ok': True, 'started': True, 'step_id': 'TD_COAP_CORE_01_step_01', 'testcase_id': 'TD_COAP_CORE_01', 'testcase_state': 'executing'}
+    """
+
+    assert type(state_dict) is dict
+
+    table_keys = ['started', 'testcase_id', 'testcase_state', 'step_id']
+    table_dict = {key: state_dict[key] for key in table_keys}
+
+    return tabulate(table_dict.items(), tablefmt="grid")
+
+
 def testcase_verdict_to_ascii_table(testcase_verdict_report):
     """
     returns a stringed based description of MsgTestCaseVerdict

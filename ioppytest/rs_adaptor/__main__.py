@@ -51,10 +51,12 @@ def save_result_into_RS_db(message: Message):
     )
     logger.info("Sending %s results to RS" % m_type)
     try:
+
         reply = amqp_request(
             connection=pika.BlockingConnection(pika.URLParameters(AMQP_URL)),
             request_message=m,
             component_id=COMPONENT_ID,
+            retries=3,
             use_message_typing=True,
         )
 

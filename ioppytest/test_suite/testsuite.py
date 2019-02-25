@@ -118,8 +118,6 @@ COMPONENT_ID = 'testsuite'
 logger = logging.getLogger(COMPONENT_ID)
 logger.setLevel(LOG_LEVEL)
 
-ANALYSIS_MODE = 'post_mortem'  # either step_by_step or post_mortem
-
 # AMQP log handler with f-interop's json formatter
 rabbitmq_handler = RabbitMQHandler(AMQP_URL, COMPONENT_ID)
 json_formatter = JsonFormatter()
@@ -320,13 +318,7 @@ class TestSuite:
             report_item = {'testcase_id': tc.id}
             if tc.report is None:
                 logger.warning("Empty report found. Generating dummy report for skipped testcase : %s" % tc.id)
-                # TODO this should be hanlded directly by generate_testcases_verdict method
-                gen_verdict, gen_description, rep = tc.generate_testcases_verdict(None)
-                final_report = OrderedDict()
-                final_report['verdict'] = gen_verdict
-                final_report['description'] = gen_description
-                final_report['partial_verdicts'] = rep
-                tc.report = final_report
+                tc.generate_testcase_report(err_msg="No test case verdict/report found for test case")
 
             report_item.update(tc.report)
             report.append(report_item)
@@ -599,7 +591,7 @@ class TestSuite:
 
         assert partial_verdict.lower() in Verdict.values
 
-        self.current_tc.current_step.set_result(partial_verdict.lower(), "CHECK step: %s" % description)
+        self.current_tc.current_step.set_result(partial_verdict.lower(), "postponed for later analysis." % description)
         self.current_tc.current_step.change_state('finished')
 
         # some info logs:
@@ -662,13 +654,10 @@ class TestSuite:
 
         if testcase_id:
             assert type(testcase_id) is str
-        # assigns the one which is not None:
+
         tc = self.get_testcase(testcase_id) or self.get_current_testcase()
 
-        if tc:
-            return tc.report
-        else:
-            return None
+        return tc.report if tc else None
 
     def reinit_testcase(self, testcase_id):
         """
@@ -883,10 +872,15 @@ class TestConfig:
 
 class Step():
     def __init__(self, step_id, type, description, node=None):
-        self.id = step_id
         assert type in ("stimuli", "check", "verify", "feature")
+        self.id = step_id
         self.type = type
+        self.state = None
         self.description = description
+
+        # stimuli steps dont have a verdict, they are IUT actions
+        if type != 'stimuli':
+            self.partial_verdict = Verdict()
 
         # stimuli and verify step MUST have a iut field in the YAML file
         if type == 'stimuli' or type == 'verify':
@@ -894,11 +888,6 @@ class Step():
             self.iut = Iut(node)
         else:
             self.iut = None
-
-        # stimulis step dont get partial verdict
-        self.partial_verdict = Verdict()
-
-        self.state = None
 
     def __repr__(self):
         node = ''
@@ -911,16 +900,16 @@ class Step():
 
     def reinit(self):
 
-        if self.type in ('check', 'verify', 'feature'):
-            self.partial_verdict = Verdict()
+        logger.debug('Step (re)initing for: step_id: %s, step_type: %s' % (self.id, self.type))
 
-            # when using post_mortem analysis mode all checks are postponed , and analysis is done at the end of the TC
-            logger.debug('Processing step init, step_id: %s, step_type: %s, ANALYSIS_MODE is %s' % (
-                self.id, self.type, ANALYSIS_MODE))
-            if self.type == 'check' or self.type == 'feature' and ANALYSIS_MODE == 'post_mortem':
-                self.change_state('postponed')
-            else:
-                self.change_state(None)
+        if self.type in ('check', 'feature'):
+            self.partial_verdict = Verdict()
+            self.change_state('postponed')
+
+        elif self.type == 'verify':
+            self.partial_verdict = Verdict()
+            self.change_state(None)
+
         else:  # its a stimuli
             self.change_state(None)
 
@@ -931,7 +920,7 @@ class Step():
             step_dict['step_type'] = self.type
             step_dict['step_info'] = self.description
             step_dict['step_state'] = self.state
-            # it the step is a stimuli then lets add the IUT info(note that checks dont have that info)
+            # let's return IUT info for steps associated to an IUT
             if self.type == 'stimuli' or self.type == 'verify':
                 step_dict.update(self.iut.to_dict())
         return step_dict
@@ -1078,21 +1067,29 @@ class TestCase:
             logger.debug("[TESTCASE] - all steps in TC are either finished (or pending).")
             return True
 
-    def generate_testcases_verdict(self, tat_post_mortem_analysis_report=None):
+    def generate_testcase_report(self, tat_analysis_report=None, err_msg=None):
         """
-        Generates the final verdict of TC and report taking into account the CHECKs and VERIFYs of the testcase
-        :return: tuple: (final_verdict, verdict_description, tc_report) ,
-                 where final_verdict in ("None", "error", "inconclusive", "pass" , "fail")
-                 where description is String type
-                 where tc report is a list :
-                                [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
+        Generates the final verdict (report) of TC taking into consideration the CHECKs and VERIFYs of the testcase.
+        Updates report attribute from tc object
+
+        :return:
+                tc report format: [(step, step_partial_verdict, step_verdict_info, associated_frame_id (can be null))]
         """
+
+        if err_msg:
+            self.report = {
+                'verdict': 'error',
+                'description': err_msg,
+                'partial_verdicts': [],
+            }
+
+            return self.report
+
         logger.debug("[VERDICT GENERATION] starting the verdict generation")
 
         if self.state is None or self.state == 'skipped' or self.state == 'aborted':
             return ('None', 'Testcase %s was %s.' % (self.id, self.state), [])
 
-        # TODO hanlde frame id associated to the step , used for GUI purposes
         if self.check_all_steps_finished() is False:
             logger.warning("Found non finished steps: %s" % json.dumps(self.seq_to_dict(verbose=False)))
             return
@@ -1104,24 +1101,26 @@ class TestCase:
             # for the verdict we use the info in the checks and verify steps
             if step.type in ("check", "verify", "feature"):
 
-                logger.debug("[VERDICT GENERATION] Processing step %s" % step.id)
-
                 if step.state == "postponed":
-                    tc_report.append((step.id, None, "%s step: postponed" % step.type.upper(), ""))
+                    #tc_report.append((step.id, None, "%s step: postponed" % step.type.upper(), ""))
+                    pass
+
                 elif step.state == "finished":
                     tc_report.append(
-                        (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), ""))
+                        (step.id, step.partial_verdict.get_value(), step.partial_verdict.get_message(), "")
+                    )
                     # update global verdict
                     final_verdict.update(step.partial_verdict.get_value(), step.partial_verdict.get_message())
+
                 else:
                     msg = "step %s not ready for analysis" % (step.id)
                     logger.error("[VERDICT GENERATION] " + msg)
                     raise TestSuiteError(msg)
 
         # append at the end of the report the analysis done a posteriori (if any)
-        if tat_post_mortem_analysis_report and len(tat_post_mortem_analysis_report) != 0:
-            logger.info('Processing TAT partial verdict: ' + str(tat_post_mortem_analysis_report))
-            for item in tat_post_mortem_analysis_report:
+        if tat_analysis_report and len(tat_analysis_report) != 0:
+            logger.info('Processing TAT partial verdict: ' + str(tat_analysis_report))
+            for item in tat_analysis_report:
                 # TODO process the items correctly
                 tc_report.append(item)
                 final_verdict.update(item[1], item[2])
@@ -1133,12 +1132,16 @@ class TestCase:
         # hack to overwrite the final verdict MESSAGE in case of pass
         if final_verdict.get_value() == 'pass':
             final_verdict.update('pass', 'No interoperability error was detected.')
-            logger.debug("[VERDICT GENERATION] Test case executed correctly, a PASS was issued.")
         else:
-            logger.debug("[VERDICT GENERATION] Test case executed correctly, but FAIL was issued as verdict.")
             logger.debug("[VERDICT GENERATION] info: %s' " % final_verdict.get_value())
 
-        return final_verdict.get_value(), final_verdict.get_message(), tc_report
+        self.report = {
+            'verdict': final_verdict.get_value(),
+            'description': final_verdict.get_message(),
+            'partial_verdicts': tc_report,
+        }
+
+        return self.report
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -1170,7 +1173,7 @@ def testcase_constructor(loader, node):
     instance = TestCase.__new__(TestCase)
     yield instance
     state = loader.construct_mapping(node, deep=True)
-    logging.debug("pasing test case: " + str(state))
+    #logging.debug("pasing test case: " + str(state))
     instance.__init__(**state)
 
 
@@ -1295,10 +1298,3 @@ def import_test_description_from_yaml(yamlfile):
                 else:
                     logging.error('Couldnt processes import: %s from %s' % (str(yaml_doc), yamlfile))
     return td_list
-
-
-if __name__ == '__main__':
-    COMPONENT_ID = '%s' % ('testsuite_tests')
-    # init logging to stnd output and log files
-    logger = logging.getLogger(COMPONENT_ID)
-    logger.setLevel(logging.DEBUG)

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python3
-import argparse
 import sys
-import threading
-
-import pika
 import yaml
+import pika
+import tabulate
+import argparse
+import threading
 
 from messages import *
 from ioppytest import AMQP_URL, AMQP_EXCHANGE, LOG_LEVEL, TEST_DESCRIPTIONS_CONFIGS, LOGGER_FORMAT
-from ioppytest.test_suite.testsuite import TestConfig
+from ioppytest.test_suite.testsuite import TestConfig, get_dict_of_all_test_cases_configurations
 from event_bus_utils import publish_message
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 
@@ -24,6 +24,10 @@ logging.getLogger('pika').setLevel(logging.WARNING)
 
 
 class PacketRouter(threading.Thread):
+    DEFAULT_TOPICS = [
+        'routing.#',
+    ]  # this list is further extended on __init__ with the routing table
+
     def __init__(self, amqp_url, amqp_exchange, routing_table):
         assert routing_table
 
@@ -41,9 +45,12 @@ class PacketRouter(threading.Thread):
         self.logger = logging.getLogger(self.component_id)
         self.logger.setLevel(LOG_LEVEL)
 
-        self.logger.info('routing table (rkey_src:[rkey_dst]) : {table}'.format(table=json.dumps(self.routing_table)))
+        self.logger.info('routing table (rkey_src:[rkey_dst]) : \n{table}'.format(
+            table=tabulate.tabulate([[k, list(v)] for k, v in self.routing_table.items()], tablefmt="grid")
+        ))
 
         self.message_count = 0
+        self.pending_number_of_packets_to_drop = 0
         self._set_up_connection()
         self._queues_init()
 
@@ -52,7 +59,7 @@ class PacketRouter(threading.Thread):
         )
         publish_message(self.connection, msg)
 
-        self.logger.info('packet router waiting for new messages in the data plane..')
+        self.logger.info('Waiting for new messages in the data plane..')
 
     def _set_up_connection(self):
 
@@ -70,10 +77,23 @@ class PacketRouter(threading.Thread):
             self.channel.basic_qos(prefetch_count=1)
 
         except pika.exceptions.ConnectionClosed as cc:
-            self.logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % cc)
+            self.logger.error(' AMQP connection cannot be established, is message broker up? \n More: %s' % cc)
             sys.exit(1)
 
     def _queues_init(self):
+        # declare a multi-purpose amqp queue for services provided by component
+        self.channel.queue_declare(queue='services_queue@%s' % COMPONENT_ID, auto_delete=True)
+        self.channel.queue_purge('services_queue@%s' % COMPONENT_ID)
+
+        for t in self.DEFAULT_TOPICS:
+            self.channel.queue_bind(exchange=self.exchange_name,
+                                    queue='services_queue@%s' % COMPONENT_ID,
+                                    routing_key=t)
+
+            self.channel.basic_qos(prefetch_count=1)
+            self.channel.basic_consume(self._on_request, queue='services_queue@%s' % COMPONENT_ID)
+
+        # handle subscriptions for routing table declarations
         for src_rkey, dst_rkey_list in self.routing_table.items():
             assert type(src_rkey) is str
             assert type(dst_rkey_list) is list
@@ -106,47 +126,73 @@ class PacketRouter(threading.Thread):
 
     def _on_request(self, ch, method, props, body):
 
-        # TODO implement forced message drop mechanism
-        # obj hook so json.loads respects the order of the fields sent -just for visualization purposeses-
-        body_dict = json.loads(body.decode('utf-8'), object_pairs_hook=OrderedDict)
+        # ack message received
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        self.message_count += 1
 
-        # let's route the message to the right agent
+        self.logger.info('Identifying request with rkey: %s' % method.routing_key)
+
         try:
-            m = MsgPacketInjectRaw(data=body_dict['data'],
-                                   timestamp=body_dict['timestamp'],
-                                   interface_name=body_dict['interface_name'])
-        except:
-            self.logger.error(
-                'wrong message format, <data> , <timestamp> and <interface_name> fields expected, got: {msg}'.
-                    format(msg=json.dumps(body_dict))
-            )
+            msg_received = Message.load_from_pika(method, props, body)
+            print(msg_received.routing_key)
+        except Exception as e:
+            self.logger.info(str(e))
             return
 
-        src_rkey = method.routing_key
-        if src_rkey in self.routing_table.keys():
-            list_dst_rkey = self.routing_table[src_rkey]
-            for dst_rkey in list_dst_rkey:
-                # forward to dst_rkey
-                self.channel.basic_publish(
-                    body=m.to_json(),
-                    routing_key=dst_rkey,
-                    exchange=self.exchange_name,
-                    properties=pika.BasicProperties(
-                        content_type='application/json',
-                    )
-                )
+        if isinstance(msg_received, MsgPacketSniffedRaw):
 
+            self.message_count += 1
+            if self.pending_number_of_packets_to_drop > 0:
+                self.pending_number_of_packets_to_drop -= 1
                 self.logger.info(
-                    "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
+                    'Dropping packet due to lossy link config. Pending packets to drop: %s' %
+                    self.pending_number_of_packets_to_drop
+                )
+                return
 
-        elif 'toAgent' in src_rkey:
-            pass  # echo of router message
+            # let's route the message to the right agent
+            try:
+                msg_to_send = MsgPacketInjectRaw(
+                    data=msg_received.data,
+                    timestamp=msg_received.timestamp,
+                    interface_name=msg_received.interface_name
+                )
+            except:
+                self.logger.error(
+                    'wrong message format, <data> , <timestamp> and <interface_name> fields expected, got: {msg}'.
+                        format(msg=repr(msg_received))
+                )
+                return
 
+            src_rkey = msg_received.routing_key
+            json_to_send = msg_to_send.to_json()
+            if src_rkey in self.routing_table.keys():
+                list_dst_rkey = self.routing_table[src_rkey]
+                for dst_rkey in list_dst_rkey:
+                    # forward to dst_rkey
+                    self.channel.basic_publish(
+                        body=json_to_send,
+                        routing_key=dst_rkey,
+                        exchange=self.exchange_name,
+                        properties=pika.BasicProperties(
+                            content_type='application/json',
+                        )
+                    )
+
+                    self.logger.info(
+                        "Routing packet (%d) from topic: %s to topic: %s" % (self.message_count, src_rkey, dst_rkey))
+
+            elif 'toAgent' in src_rkey:
+                pass  # this is probably a message echo'ed from a message sent by this same component
+
+            else:
+                self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
+                return
+
+        elif isinstance(msg_received, MsgRoutingStartLossyLink):
+            self.pending_number_of_packets_to_drop = msg_received.number_of_packets_to_drop
+            self.logger.info("Packet router configured to drop %s packet(s)" % self.pending_number_of_packets_to_drop)
         else:
-            self.logger.warning('No known route for r_key source: {r_key}'.format(r_key=src_rkey))
-            return
+            self.logger.warning("Message ignored %s" % repr(msg_received))
 
     def _notify_component_shutdown(self):
 
@@ -171,90 +217,75 @@ class PacketRouter(threading.Thread):
 
 
 def generate_routing_table_from_test_configuration(testconfig: TestConfig):
+    """
+    Builds routing table (not IP based, but using amqp topics), example for COAP_CFG_01
+
+    ----------------------------------------------  --------------------------------------------------------------------
+    data.serial.fromAgent.coap_client               ['data.serial.toAgent.coap_server', 'data.serial.toAgent.agent_TT']
+    fromAgent.coap_client.802154.serial.packet.raw  ['toAgent.coap_server.802154.serial.packet.raw', 'toAgent.agent_...
+    fromAgent.coap_client.ip.tun.packet.raw         ['toAgent.coap_server.ip.tun.packet.raw', 'toAgent.agent_TT.ip.t...
+    data.serial.fromAgent.coap_server               ['data.serial.toAgent.coap_client', 'data.serial.toAgent.agent_T...
+    fromAgent.coap_server.802154.serial.packet.raw  ['toAgent.coap_client.802154.serial.packet.raw', 'toAgent.agent_...
+    fromAgent.coap_server.ip.tun.packet.raw         ['toAgent.coap_client.ip.tun.packet.raw', 'toAgent.agent_TT.ip.t...
+    data.serial.fromAgent.agent_TT                  ['data.serial.toAgent.coap_client', 'data.serial.toAgent.coap_se...
+    fromAgent.agent_TT.802154.serial.packet.raw     ['toAgent.coap_client.802154.serial.packet.raw', 'toAgent.coap_s...
+    fromAgent.agent_TT.ip.tun.packet.raw            ['toAgent.coap_client.ip.tun.packet.raw', 'toAgent.coap_server.i...
+    ----------------------------------------------  --------------------------------------------------------------------
+    :param testconfig:
+    :return:
+    """
+
     assert testconfig.nodes
     assert len(testconfig.nodes) >= 2
 
     agent_tt = 'agent_TT'
+    routing_table = dict()
 
     for link in testconfig.topology:
+        link_routes = {}
+
         # I assume node to node links (this MUST be like this for any ioppytest interop test)
-        assert len(link['nodes']) == 2
 
-        nodes = link['nodes']
-
+        nodes = link['nodes'].copy()
+        nodes.append(agent_tt)  # every single packet needs to be forwarded to agent TT
         logging.info("Configuring routing tables for nodes: %s" % nodes)
 
-        # routes for agents' serial interfaces (802.15.4 nodes)
-        serial_routes = {
-            # TODO deprecate API v0.1
-            'data.serial.fromAgent.%s' % nodes[0]:
-                [
-                    'data.serial.toAgent.%s' % nodes[1],
-                    'data.serial.toAgent.%s' % 'agent_TT',
-                ],
-            'data.serial.fromAgent.%s' % nodes[1]:
-                [
-                    'data.serial.toAgent.%s' % nodes[0],
-                    'data.serial.toAgent.%s' % 'agent_TT',
-                ],
+        # TODO deprecate old API from 802.15.4 based test suites like sixlowpan
+        table_entry_from_serial_v0 = "data.serial.fromAgent.{node}"
+        table_entry_to_serial_v0 = "data.serial.toAgent.{node}"
 
+        table_entry_from_serial_v1 = "fromAgent.{node}.802154.serial.packet.raw"
+        table_entry_to_serial_v1 = "toAgent.{node}.802154.serial.packet.raw"
+
+        table_entry_from_tun = "fromAgent.{node}.ip.tun.packet.raw"
+        table_entry_to_tun = "toAgent.{node}.ip.tun.packet.raw"
+
+        for i in nodes:
+            # # routes for agents' serial interfaces (802.15.4 nodes) # #
+
+            # API version v.0.1 (ToDO deprecate legacy stuff)
+            link_routes[table_entry_from_serial_v0.format(node=i)] = [table_entry_to_serial_v0.format(node=j) for j in
+                                                                      nodes if j != i]
             # API v.1.0 [toAgent|fromAgent.*.802154.serial.packet.raw]
-            'fromAgent.%s.802154.serial.packet.raw' % nodes[0]:
-                [
-                    'toAgent.%s.802154.serial.packet.raw' % nodes[1],
-                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
-                ],
-            'fromAgent.%s.802154.serial.packet.raw' % nodes[1]:
-                [
-                    'toAgent.%s.802154.serial.packet.raw' % nodes[0],
-                    'toAgent.%s.802154.serial.packet.raw' % 'agent_TT',
-                ],
-        }
+            link_routes[table_entry_from_serial_v1.format(node=i)] = [table_entry_to_serial_v1.format(node=j) for j in
+                                                                      nodes if j != i]
 
-        # routes for agents' TUNs interfaces (ipv6 nodes)
-        tun_routes = {
-            # TODO deprecate API v0.1
-            'data.tun.fromAgent.%s' % nodes[0]:
-                [
-                    'data.tun.toAgent.%s' % nodes[1],
-                    'data.tun.toAgent.%s' % 'agent_TT',
-                ],
-            'data.tun.fromAgent.%s' % nodes[1]:
-                [
-                    'data.tun.toAgent.%s' % nodes[0],
-                    'data.tun.toAgent.%s' % 'agent_TT',
-                ],
+            # # routes for agents' TUNs interfaces (ipv6 nodes) # #
+
             # API v.1.0 [toAgent|fromAgent.*.ip.tun.packet.raw]
-            'fromAgent.%s.ip.tun.packet.raw' % nodes[0]:
-                [
-                    'toAgent.%s.ip.tun.packet.raw' % nodes[1],
-                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
-                ],
-            'fromAgent.%s.ip.tun.packet.raw' % nodes[1]:
-                [
-                    'toAgent.%s.ip.tun.packet.raw' % nodes[0],
-                    'toAgent.%s.ip.tun.packet.raw' % 'agent_TT',
-                ],
-        }
-        routing_table = dict()
-        routing_table.update(serial_routes)
-        routing_table.update(tun_routes)
+            link_routes[table_entry_from_tun.format(node=i)] = [table_entry_to_tun.format(node=j) for j in
+                                                                nodes if j != i]
 
-        return routing_table
+            routing_table.update(link_routes)
+            # print(tabulate.tabulate([*routing_table.items()]))
+
+    return routing_table
 
 
 def main():
-    td_config = {}
+    td_config = get_dict_of_all_test_cases_configurations()
 
-    for TD in TEST_DESCRIPTIONS_CONFIGS:
-        with open(TD, "r", encoding="utf-8") as stream:
-            configs = yaml.load_all(stream)
-            for c in configs:
-                logging.info("Configuration found: %s" % c.id)
-                td_config[c.id] = c
-
-    if len(td_config) == 0:
-        raise Exception('No test case configuration files found!')
+    assert len(td_config) > 0, 'No test case configuration files found!'
 
     try:
         parser = argparse.ArgumentParser()

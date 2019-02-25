@@ -1,18 +1,63 @@
 ioppytest framework:
 --------------------
 
-ioppytest is a framework for running interoperability tests.
-
-This initial version tackles technical interoperability testing (CoAP,
- LwM2M, 6LoWPAN and OneM2M interop tests).
+ioppytest is a framework for building interoperability testing tools.
 
 This repo contains all necessary software (and their dependencies) for
 running a interoperability test sessions between two implementations
 under test (IUT).
 
-This can be run as standalone software and also integrated to f-interop
-platform (go.f-interop.eu)
+Handles requirements coming from:
 
+- interop testing best practises for network protocols
+- distributed execution of the tests (IUTs may be in remote locations)
+- test coordination between users (user-assisted test)
+- driving automated IUTs, in a generic, program-language-agnostic way
+- tunneling mechanism for enabling remote interop test over
+distant locations and bypass middle-box.
+
+Some of the features include:
+tunneling, sniffing, test coordination, dissection, traces analysis,
+test spec online server, etc. Each of these are independent python
+modules, they communicate using json messages over AMQP.
+
+For more about this check out the AMQP API defined in the `messages`
+package which is installed with
+(ioppytest-utils)*[https://pypi.org/project/ioppytest-utils/]:
+
+
+Test suites
+-----------
+
+currently ioppytest includes interop tests for:
+
+- coap
+- 6lowpan
+- onem2m
+- lwm2m
+- wot
+
+see http://doc.f-interop.eu/testsuites/
+
+ioppytest is parametrized for running the different test suites using
+the files in env/<test_suite_folder> and ioppytest/test_descriptions
+
+Either if you are a testing tool developers or test suite users,
+you can opt to disable some features. You can do this just by modifying
+supervisor.conf.ini in env/<test_suite_folder> directory.
+
+How can I use it?
+-----------------
+
+You can either go to (F-Interop Platform)*[https://go.f-interop.eu]
+which builds and deploys the tool automatically for you, this provides
+also a nice looking web-based GUI (recommended).
+
+Run in a stanalone less user friendly way. Some docker images builds,
+and setting up of a RMQ server is needed. User will then use the CLI
+for interfacing with the testin tool.
+
+for more info about the standalone deployment, continue reading..
 
 Implemented test suites in the ioppytest framework:
 ---------------------------------------------------
@@ -26,8 +71,6 @@ framework are:
 - LwM2M Test Suite (between two users' IUT) (WIP)
 - oneM2M Test Suite (between two users' IUT) (WIP)
 
-
-
 Test setup:
 -----------
 
@@ -39,51 +82,52 @@ All interactions between components take place using the AMQP event bus
 (AMQP pub/sub mechanism)
 
 ```
-                    +----------------------------+             +----------------------------+             +----------------------------+
-                    |                            |             |                            |             |                            |
-                    |    ioppytest Test Tool     |             |     User Interface         |             |     User Interface         |
-                    |(CoAP, 6LoWPAN, OneM2M, etc)|             |         (user 1)           |             |         (user 2)           |
-                    |                            |             |                            |             |                            |
-                    |                            |             |                            |             |                            |
-                    +----------------------------+             +----------------------------+             +----------------------------+
 
-                             ^    +                                     ^    +                                     ^    +
-                             |    |                                     |    |                                     |    |
-                             |    |                                     |    |                                     |    |
-                             |    |                                     |    |                                     |    |
-fromAgent.agent_x.tun.packet |    | toAgent.agent_y.tun.packet          |    |  ui.user1.step_verify.reply         |    |
-                             |    |                                     |    |                                     |    |
-fromAgent.agent_y.tun.packet |    | toAgent.agent_x.tun.packet          |    |                                     |    |
-                             |    |                                     |    |                                     |    |
-                             |    | ui.user1.step_verify.request        |    |                                     |    |
-                             +    v                                     +    v                                     +    v
+                                                                        +----------------------------+
+                                                                        |                            |
+                                                                        |    ioppytest Test Tool     |
+                                                                        |(CoAP, 6LoWPAN, OneM2M, etc)|
+                                                                        |                            |
+                                                                        |                            |
+                                                                        +----------------------------+
 
-        +------------------------------------------------------------------------------------------------------------------------------------------------>
-                                                                         AMQP Event Bus
-        <-------------------------------------------------------------------------------------------------------------------------------------------------+
+                                                                                    ^    +
+                                                                                    |    |
+                                                                                    |    |
+                                                                                    |    |
+                                                            packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
+                                                                                    |    |
+                                                            packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
+                                                                                    |    |
+                                                            ui.user_1.reply         |    |  ui.user_1.request
+                                                                                    +    v
 
-                                                       +     ^                                        +     ^
-                                                       |     | toAgent.agent_x.tun.packetet           |     |  fromAgent.agent_y.tun.packet
-                              data.tun.toAgent.agent_x |     |                                        |     |
-                                                       |     |              toAgent.agent_y.tun.packet|     |
-                                                       v     |                                        v     |
-                                PC        +------------+-----+-------------+              +-----------+-----+--------------+
-                                user 1    |                                |              |                                |
-                                          |      Agent (agent_x)           |              |      Agent (agent_y)           |
-                                          |        (tun mode)              |              |        (tun mode)              |
-                                          |                                |              |                                |
-                                          |                                |              |                                |
-                                          | +-----+tun interface+-------+  |              | +-----+tun interface+-------+  |
-                                          |                                |              |                                |
-                                          | +----------------------------+ |              | +----------------------------+ |
-                                          | |         IPv6+based         | |              | |         IPv6+based         | |
-                                          | |        communicating       | |              | |        communicating       | |
-                                          | |      piece of software     | |              | |      piece of software     | |
-                                          | |      (e.g. coap client)    | |              | |      (e.g. coap server)    | |
-                                          | |                            | |              | |                            | |
-                                          | +----------------------------+ |              | +----------------------------+ |
-                                          |                                |              |                                |
-                                          +--------------------------------+              +--------------------------------+
+                +------------------------------------------------------------------------------------------------------------------------------------------------>
+                                                                                 AMQP Event Bus
+                <-------------------------------------------------------------------------------------------------------------------------------------------------+
+                      |   ^                              ^  |                                           |   ^                              ^  |
+                      |   |     packet.fromAgent.agent_x |  | packet.toAgent_agent_x                    |   |     packet.fromAgent.agent_y |  | packet.toAgent_agent_y
+             ui.user_1|   |                              |  |                                           |   |                              |  |
+              .request|   | ui.user_1.reply              |  |                          ui.user_2.request|   | ui.user_2.reply              |  |
+                      |   |                              |  |                                           |   |                              |  |
+                      |   |                              |  v                                           |   |                              |  v
+              +-------v-------------+      +--------------------------------+                   +-------v-------------+      +--------------------------------+
+              |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
+              |   User Interface    |      | |      Agent (agent_x)      |  |                   |   User Interface    |      | |      Agent (agent_y)      |  |
+              |       (user 1)      |      | |        (tun mode)         |  |                   |       (user 2)      |      | |        (tun mode)         |  |
+              |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
+              +---------------------+      |                                |                   +---------------------+      |                                |
+                                           | +-----+tun interface+-------+  |                                                | +-----+tun interface+-------+  |
+                                           |                                |                                                |                                |
+                                           | +----------------------------+ |                                                | +----------------------------+ |
+                                           | | Implementation under test  | |                                                | | Implementation under test  | |
+                                           | |          using IP          | |                                                | |          using IP          | |
+                                           | |      (e.g. coapoclient)    | |                                                | |      (e.g. coaposerver)    | |
+                                           | +----------------------------+ |                                                | +----------------------------+ |
+                                           +--------------------------------+                                                +--------------------------------+
+
+
+
 ```
 
 Event Bus API:

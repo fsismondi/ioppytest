@@ -1,4 +1,4 @@
-FROM ubuntu:17.10
+FROM debian:stretch
 MAINTAINER federico.sismondi@inria.fr
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -50,14 +50,10 @@ RUN git clone https://github.com/obgm/libcoap.git
 WORKDIR /ioppytest/automation/coap_client_libcoap/libcoap/libcoap
 
 RUN ./autogen.sh
-RUN ./configure --enable-examples --disable-doxygen --disable-manpages
+RUN ./configure --enable-examples --disable-doxygen --disable-manpages --disable-dtls
 RUN make
 RUN make install
 ENV PATH="/ioppytest/automation/coap_client_libcoap/libcoap/libcoap/examples:$PATH"
-
-## temp PATCH for avoiding https://github.com/celery/py-amqp/issues/191
-#RUN python3 -m pip install -Iv amqp==2.3.1
-#RUN python -m pip install -Iv amqp==2.3.1
 
 WORKDIR /ioppytest
 

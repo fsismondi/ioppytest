@@ -59,7 +59,7 @@ states = [
         'name': 'testcase_finished',
         'on_enter': [
             'notify_testcase_finished',
-            'generate_testcases_verdict',
+            'save_current_testcase_report_to_file',
             'notify_testcase_verdict',
             'to_preparing_next_testcase'],  # jumps to following state, this makes testcase_finished a transition state
         'on_exit': []

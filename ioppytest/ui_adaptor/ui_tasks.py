@@ -117,7 +117,8 @@ def get_session_configuration_from_ui(amqp_publisher):
     if resp is None:
         raise UiResponseError("Got session config None from UI")
 
-    if not resp.ok:
+    # (!) UI is not 100% compliant with specification and doesnt always answer with an ok field :/
+    if hasattr(resp, 'ok') and not resp.ok:
         raise UiResponseError("Got NOK response from UI, response: %s" % repr(resp))
 
     resp_dict = resp.to_dict()
@@ -312,13 +313,13 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
             }
         )
 
-    # add also a 'BOTH' roles option
+    # add also a 'ALL' roles option
     fields.append(
         {
             "name": 'iut_role',
             "type": "radio",
-            "label": 'both',
-            "value": 'both',
+            "label": 'all',
+            "value": 'all',
         }
     )
 
@@ -333,9 +334,9 @@ def get_user_ids_and_roles_from_ui(message_translator, amqp_publisher, session_c
         timeout=120
     )
 
-    if resp and resp.ok:
+    try:
         user_lead_iut_role = resp.fields.pop()['iut_role']
-    else:
+    except:
         raise UiResponseError('received from the UI: %s' % repr(resp))
 
     # echo response back to *ALL* users

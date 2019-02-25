@@ -1,27 +1,44 @@
 # -*- coding: utf-8 -*-
-import logging
 import os
-import threading
 import time
-
+import json
 import pika
+import base64
+import threading
+import logging
+
+from collections import OrderedDict
+from event_bus_utils import AmqpListener, publish_message
 from event_bus_utils.rmq_handler import RabbitMQHandler, JsonFormatter
 from ioppytest import get_from_environment, AMQP_URL, AMQP_EXCHANGE, RESULTS_DIR
-from event_bus_utils import AmqpListener, publish_message
-from messages import MsgTestingToolTerminate, MsgSessionLog, MsgTestCaseReady, MsgTestingToolReady, \
-    MsgTestingToolConfigured, MsgTestSuiteReport, MsgTestCaseVerdict, MsgStepVerifyExecute, \
-    MsgTestingToolComponentReady, Message, MsgStepVerifyExecuted, MsgTestSuiteStart, MsgTestCaseStart, MsgTestCaseSkip, \
-    MsgTestingToolComponentShutdown
+from ioppytest.ui_adaptor.message_rendering import (testsuite_results_to_ascii_table,
+                                                    testcase_verdict_to_ascii_table,
+                                                    testsuite_state_to_ascii_table)
+
+from messages import (MsgTestingToolTerminate, MsgSessionLog,
+                      MsgTestCaseReady, MsgTestingToolReady,
+                      MsgTestingToolConfigured, MsgTestSuiteReport,
+                      MsgTestCaseVerdict, MsgStepVerifyExecute,
+                      MsgTestingToolComponentReady, Message,
+                      MsgStepVerifyExecuted, MsgTestSuiteStart,
+                      MsgTestCaseStart, MsgTestCaseSkip,
+                      MsgTestingToolComponentShutdown, MsgSniffingGetCaptureReply,
+                      MsgUiRequestSessionConfiguration, MsgUiSessionConfigurationReply)
 
 logger = logging.getLogger(__name__)
 
-INTERACTIVE_SESSION = get_from_environment("INTERACTIVE_SESSION", True)
 COAP_CLIENT_HOST = get_from_environment("COAP_CLIENT_HOST", 'bbbb::1')
 COAP_SERVER_HOST = get_from_environment("COAP_SERVER_HOST", 'bbbb::2')
 COAP_SERVER_PORT = get_from_environment("COAP_SERVER_PORT", '5683')
+TESTSUITE_NAME = os.environ.get('TESTNAME', 'noname')
+TESTSUITE_REPORT_DELIM = os.environ.get('DELIM', '===TESTRESULT===')
 
 LOG_LEVEL = 30
 MAX_LINE_LENGTH = 120
+
+default_configuration = {
+    "testsuite.testcases": None  # None => default config (all test cases)
+}
 
 
 def log_all_received_messages(event_list: list):
@@ -59,6 +76,140 @@ COMPLETE LOG TRACE from log messages in event bus (MsgSessionLog)
     logger.debug(traces_of_all_messages_in_event_bus)
 
 
+class ResultsLogToFile(AmqpListener):
+    def __init__(self, amqp_url, amqp_exchange, results_dir=RESULTS_DIR):
+        AmqpListener.__init__(self, amqp_url, amqp_exchange,
+                              callback=self.process_message,
+                              topics=['#'],
+                              use_message_typing=True)
+
+        self.results_dir = results_dir
+        self.messages_list = []
+        self.messages_by_type_dict = {}
+
+    def process_message(self, message):
+
+        if isinstance(message, MsgTestSuiteReport):
+            #  Save report
+            json_file = os.path.join(self.results_dir, 'final_report.json')
+            with open(json_file, 'w') as f:
+                f.write(message.to_json())
+            logger.info("Saved test suite report file %s" % json_file)
+
+        elif isinstance(message, MsgSniffingGetCaptureReply):
+            if message.ok:
+                file_path = os.path.join(self.results_dir, message.filename)
+                with open(file_path, "wb") as pcap_file:
+                    nb = pcap_file.write(base64.b64decode(message.value))
+                    logger.info("Saved pcap file %s with %s bytes" % (file_path, nb))
+            else:
+                logger.warning("Got Capture result reply with NOK field")
+
+        elif isinstance(message, MsgTestCaseVerdict):
+            #  Save verdict
+            json_file = os.path.join(self.results_dir, message.testcase_id + '_verdict.json')
+            with open(json_file, 'w') as f:
+                f.write(message.to_json())
+            logger.info("Saved verdict file %s for testcase %s" % (json_file, message.testcase_id))
+
+        elif isinstance(message, MsgTestingToolTerminate):
+            logger.info("Received termination message. Stopping %s" % self.__class__.__name__)
+            self.stop()
+
+        else:
+            logger.debug("Ignoring msg: %s" % type(message))
+
+
+class ResultsLogToStdout(AmqpListener):
+    """
+    This listener just listens to certain AMQP messages and logs stuff using pretty formatting
+    """
+
+    def __init__(self, amqp_url, amqp_exchange, use_special_delimiters_for_report=True):
+
+        self.use_special_delimiters_for_report = use_special_delimiters_for_report
+        topics = [
+            MsgTestingToolTerminate.routing_key,
+            MsgTestCaseVerdict.routing_key,
+            MsgTestSuiteReport.routing_key,
+        ]
+
+        AmqpListener.__init__(self, amqp_url, amqp_exchange,
+                              callback=self.process_message,
+                              topics=topics,
+                              use_message_typing=True)
+
+    def process_message(self, message):
+
+        if isinstance(message, MsgTestSuiteReport):
+            verdict_content = OrderedDict()
+            verdict_content['testname'] = TESTSUITE_NAME
+            verdict_content.update(message.to_odict())
+
+            # note TESTSUITE_REPORT_DELIM is parsed by continuous interop testing automation components.
+            if self.use_special_delimiters_for_report:
+                logger.info(
+                    "%s %s %s", TESTSUITE_REPORT_DELIM, json.dumps(verdict_content, indent=4), TESTSUITE_REPORT_DELIM)
+            else:
+                logger.info(
+                    "%s: \n%s ", "Test Suite Table Report", testsuite_results_to_ascii_table(message.tc_results))
+
+        elif isinstance(message, MsgTestCaseVerdict):
+            verdict_content = OrderedDict()
+            verdict_content['testname'] = TESTSUITE_NAME
+            verdict_content.update(message.to_odict())
+            ascii_table, _ = testcase_verdict_to_ascii_table(message.to_dict())
+
+            logger.info("%s: \n%s ", "Test Case verdict issued", ascii_table)
+
+        elif isinstance(message, MsgTestingToolTerminate):
+            logger.info("Received termination message. Stopping %s" % self.__class__.__name__)
+            self.stop()
+
+        else:
+            logger.warning('Got not expected message type %s' % type(message))
+
+
+class UIStub(AmqpListener):
+    """
+    This stub listens and replies to configuration messages (normally responded by the user interface services)
+    """
+
+    def __init__(self, amqp_url, amqp_exchange):
+
+        topics = [
+            MsgTestingToolTerminate.routing_key,
+            MsgUiRequestSessionConfiguration.routing_key,
+        ]
+
+        AmqpListener.__init__(self, amqp_url, amqp_exchange,
+                              callback=self.process_message,
+                              topics=topics,
+                              use_message_typing=True)
+
+    def process_message(self, message):
+
+        if isinstance(message, MsgUiRequestSessionConfiguration):
+            resp = {
+                "configuration": default_configuration,
+                "id": '666',
+                "testSuite": "someTestingToolName",
+                "users": ['pablo', 'bengoechea'],
+            }
+            m = MsgUiSessionConfigurationReply(
+                message,
+                **resp
+            )
+            publish_message(self.connection, m)
+
+        elif isinstance(message, MsgTestingToolTerminate):
+            logger.info("Received termination message. Stopping %s" % self.__class__.__name__)
+            self.stop()
+
+        else:
+            logger.warning('Got not expected message type %s' % type(message))
+
+
 class MessageLogger(AmqpListener):
     def __init__(self, amqp_url, amqp_exchange):
         AmqpListener.__init__(self, amqp_url, amqp_exchange,
@@ -70,12 +221,12 @@ class MessageLogger(AmqpListener):
         self.messages_by_type_dict = {}
 
     def process_message(self, message):
-   #     logger.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
+        #     logger.debug('[%s]: %s' % (sys._getframe().f_code.co_name, repr(message)[:MAX_LINE_LENGTH]))
         self.messages_list.append(message)
         self.messages_by_type_dict[type(message)] = message
 
         if isinstance(message, MsgTestingToolTerminate):
-            logger.info("Received termination message. Stopping logging")
+            logger.info("Received termination message. Stopping %s" % self.__class__.__name__)
             self.stop()
 
 
@@ -85,7 +236,6 @@ class UserMock(threading.Thread):
     Behaviour:
         - if iut_testcases is None => all testcases are executed.
         - if iut_to_mock_verifications_for is None => no verif.executed is sent to bus.
-
     """
     component_id = 'user_mock'
 
@@ -196,19 +346,7 @@ class UserMock(threading.Thread):
         self.log('Event pushed: %s' % m)
 
     def handle_testing_tool_ready(self, event):
-        # m = MsgSessionConfiguration(
-        #     configuration={
-        #         "testsuite.testcases": [
-        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_01",
-        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_02",
-        #             "http://doc.f-interop.eu/tests/TD_COAP_CORE_03",
-        #         ]
-        #     }
-        # )  # from TC1 to TC3
-        #
-        # publish_message(self.connection, m)
-        self.log('Event received: %s' % type(event))
-        # self.log('Event pushed %s' % m)
+        self.log('Event ignored: %s' % type(event))
 
     def handle_test_case_ready(self, event):
         self.log('Event received: %s' % type(event))
