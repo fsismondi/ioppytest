@@ -29,38 +29,33 @@ package which is installed with
 Test suites
 -----------
 
-currently ioppytest includes interop tests for:
+ioppytest includes interop test tools for:
 
 - coap
 - 6lowpan
 - onem2m
 - lwm2m
-- wot
 
-see http://doc.f-interop.eu/testsuites/
+each ioppytest test suite is defined by config files found in `env/<test_suite_folder>` and `ioppytest/test_descriptions`
 
-ioppytest is parametrized for running the different test suites using
-the files in env/<test_suite_folder> and ioppytest/test_descriptions
-
-Either if you are a testing tool developers or test suite users,
-you can opt to disable some features. You can do this just by modifying
-supervisor.conf.ini in env/<test_suite_folder> directory.
+You can opt to disable some features by dissabling directy certain python processes. 
+You can do this just by modifying `supervisor.conf.ini` in `env/<test_suite_folder>` directory.
 
 How can I use it?
------------------
+-------------------
 
 You can either go to (F-Interop Platform)*[https://go.f-interop.eu]
 which builds and deploys the tool automatically for you, this provides
 also a nice looking web-based GUI (recommended).
 
-Run in a stanalone less user friendly way. Some docker images builds,
-and setting up of a RMQ server is needed. User will then use the CLI
-for interfacing with the testin tool.
+Run in a stanalone, less user friendly way.
+For this you will need to build some docker images, and set up of a RMQ server. 
+User will then use a CLI for interfacing with the testin tool.
 
-for more info about the standalone deployment, continue reading..
+For more info about the standalone deployment, continue reading..
 
 Implemented test suites in the ioppytest framework:
----------------------------------------------------
+------------------------------------------------------------
 
 The test suites implemented which are currently supported by the
 framework are:
@@ -72,62 +67,57 @@ framework are:
 - oneM2M Test Suite (between two users' IUT) (WIP)
 
 Test setup:
------------
+------------
 
-An interop session happens between two implementation under test (IUT),
-the following diagram shows the setup including the IUTs, testing tool
-and auxiliary components needed for running a interop session.
+An interoperability test happens between two `implementation under test (IUT)`.
+Each IUT is normally "driven" by a different user, each user normally makes use of a `UI` for following the test procedure.
+Each IUT sends IP packets using the `TUN interface` (virutal interface), which is created by the `agent` component.
 
-All interactions between components take place using the AMQP event bus
-(AMQP pub/sub mechanism)
+The following diagram shows what the interop test setup used when using `ioppytest`.  
+Component of the setup interact with each other using the `AMQP event bus` (AMQP pub/sub mechanism), routing keys/topics used for these intereactions are documented below.
 
 ```
+                                      +----------------------------+
+                                      |                            |
+                                      |    ioppytest Test Tool     |
+                                      |(CoAP, 6LoWPAN, OneM2M, etc)|
+                                      |                            |
+                                      |                            |
+                                      +----------------------------+
+                                                 ^    +
+                                                 |    |
+                                                 |    |
+                                                 |    |
+                         packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
+                                                 |    |
+                         packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
+                                                 |    |
+                         ui.user_1.reply         |    |  ui.user_1.request
+                                                 +    v
 
-                                                                        +----------------------------+
-                                                                        |                            |
-                                                                        |    ioppytest Test Tool     |
-                                                                        |(CoAP, 6LoWPAN, OneM2M, etc)|
-                                                                        |                            |
-                                                                        |                            |
-                                                                        +----------------------------+
-
-                                                                                    ^    +
-                                                                                    |    |
-                                                                                    |    |
-                                                                                    |    |
-                                                            packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
-                                                                                    |    |
-                                                            packet.fromAgent.agent_x|    |  packet.toAgent_agent_y
-                                                                                    |    |
-                                                            ui.user_1.reply         |    |  ui.user_1.request
-                                                                                    +    v
-
-                +------------------------------------------------------------------------------------------------------------------------------------------------>
-                                                                                 AMQP Event Bus
-                <-------------------------------------------------------------------------------------------------------------------------------------------------+
-                      |   ^                              ^  |                                           |   ^                              ^  |
-                      |   |     packet.fromAgent.agent_x |  | packet.toAgent_agent_x                    |   |     packet.fromAgent.agent_y |  | packet.toAgent_agent_y
-             ui.user_1|   |                              |  |                                           |   |                              |  |
-              .request|   | ui.user_1.reply              |  |                          ui.user_2.request|   | ui.user_2.reply              |  |
-                      |   |                              |  |                                           |   |                              |  |
-                      |   |                              |  v                                           |   |                              |  v
-              +-------v-------------+      +--------------------------------+                   +-------v-------------+      +--------------------------------+
-              |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
-              |   User Interface    |      | |      Agent (agent_x)      |  |                   |   User Interface    |      | |      Agent (agent_y)      |  |
-              |       (user 1)      |      | |        (tun mode)         |  |                   |       (user 2)      |      | |        (tun mode)         |  |
-              |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
-              +---------------------+      |                                |                   +---------------------+      |                                |
-                                           | +-----+tun interface+-------+  |                                                | +-----+tun interface+-------+  |
-                                           |                                |                                                |                                |
-                                           | +----------------------------+ |                                                | +----------------------------+ |
-                                           | | Implementation under test  | |                                                | | Implementation under test  | |
-                                           | |          using IP          | |                                                | |          using IP          | |
-                                           | |      (e.g. coapoclient)    | |                                                | |      (e.g. coaposerver)    | |
-                                           | +----------------------------+ |                                                | +----------------------------+ |
-                                           +--------------------------------+                                                +--------------------------------+
-
-
-
++------------------------------------------------------------------------------------------------------------------------------------------------>
+                                                                AMQP Event Bus
+<-------------------------------------------------------------------------------------------------------------------------------------------------+
+         |   ^                              ^  |                                           |   ^                              ^  |
+         |   |     packet.fromAgent.agent_x |  | packet.toAgent_agent_x                    |   |     packet.fromAgent.agent_y |  | 
+ui.user_1|   |                              |  |                                           |   |                              |  |
+ .request|   | ui.user_1.reply              |  |                          ui.user_2.request|   | ui.user_2.reply              |  |
+         |   |                              |  |                                           |   |                              |  |
+         |   |                              |  v                                           |   |                              |  v
+ +-------v-------------+      +--------------------------------+                   +-------v-------------+      +--------------------------------+
+ |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
+ |   User Interface    |      | |      Agent (agent_x)      |  |                   |   User Interface    |      | |      Agent (agent_y)      |  |
+ |       (user 1)      |      | |        (tun mode)         |  |                   |       (user 2)      |      | |        (tun mode)         |  |
+ |                     |      | +---------------------------+  |                   |                     |      | +---------------------------+  |
+ +---------------------+      |                                |                   +---------------------+      |                                |
+                              | +-----+tun interface+-------+  |                                                | +-----+tun interface+-------+  |
+                              |                                |                                                |                                |
+                              | +----------------------------+ |                                                | +----------------------------+ |
+                              | | Implementation under test  | |                                                | | Implementation under test  | |
+                              | |          using IP          | |                                                | |          using IP          | |
+                              | |      (e.g. coapoclient)    | |                                                | |      (e.g. coaposerver)    | |
+                              | +----------------------------+ |                                                | +----------------------------+ |
+                              +--------------------------------+                                                +--------------------------------+
 ```
 
 Event Bus API:
@@ -137,25 +127,24 @@ All the calls between the components are documented here:
 
 [interop tests API doc](http://doc.f-interop.eu/interop/)
 
+You are really into knowing how this happens, look into the python module `ioppytest-utils`, which includes a package called `messages`.
+
 
 Running a test suite:
 ---------------------
 
-user needs :
+User needs :
 
-- an implementation under test (IUT) of a standard supported/protocol
-by ioppytest framework e.g. a coap client implementation
--  run
-[the agent component](http://doc.f-interop.eu/interop/#agent)
-which plays the role of a vpn-client , and which will route all the
-packets sent from the IUT (on a certain ipv6 network) to the
-backend -which is later on routed to second IUT (and viceversa)-.
-- a user interface to help coordinating the tests
-(either GUI or CLI component)
+- an implementation under test (IUT) of a standard supported/protocol by ioppytest framework - e.g. a `CoAP` client -
+- to run [the agent component](http://doc.f-interop.eu/interop/#agent) into his/her environment.
+  The `agent`  basically plays the role of a vpn-client , and which will route all the
+  packets sent from the IUT (on a certain ipv6 network) to the
+  backend -which is later on routed to second IUT (and viceversa)-.
+- a user interface to help coordinating the tests (either GUI or CLI component)
 
-For simplifying the access to CLI, agent and other components, ioppytest
-includes a Makefile, with it you can use `make <cmd>`,
-for more information execute `make help`
+`ioppytest` includes a Makefile which can be used as  `make <cmd>`, which simplifies the building of components needed
+for running the interop test suites.
+For more information execute `make help`
 
 ### make commands
 
@@ -207,18 +196,13 @@ Recommended option only for testing tool contributors.
 
 ## (opt 2.1) Set up up the message broker
 
-The interop testing tool use RabbitMQ (RMQ) message broker for sending
-messages between its components, and the remote ones (like the agent).
+`ioppytest`, the interop testing tool, uses `RabbitMQ` (RMQ), a `AMQP` message broker. 
+All components taking part of the test setup use AMQP for communications, this is used between 
+remote components, like the `agent`, but also for interprocess communications of `ioppytest` tool.
 
-RMQ broker is a component which is **external** to the testing tool
-and which establish the session and infrastructure so components can
-communicate with each other during the test session.
+If using [go.f-interop.eu](go.f-interop.eu) then this is automatically set-up for you.
 
-If using [go.f-interop.eu](go.f-interop.eu) then this is automatically
-set-up for you.
-
-When running a standalone setup the user first needs to have a RMQ
-broker running..
+When running a standalone setup the user first needs to have a RMQ broker running..
 
 The options for this are:
 
@@ -227,17 +211,15 @@ create RMQ vhost, user, pass on local machine
 
     (# TODO add instructions)
 
-- Request a remote vhost and credentials (user,pass) to
-federico<dot>sismondi<at>inria<dot>fr (recommended)
+- Request a remote vhost and credentials (user,pass) to me (see contact at the bottom of document).
 
-don't hesitate to contact me, this is a very simple procedure and it's
-free :D
+
+don't hesitate to contact me, this is a very simple procedure and it's free :D
 
 ## (opt 2.2) Export AMQP environment variables
 
-after having a created vhost with its user/password,
-export in the machine where the testing tool is running the following
-env vars:
+after having created a vhost with its user/password, export in the machine 
+where the testing tool is running the following env vars:
 
 ```
 export AMQP_URL='amqp://someUser:somePassword@server/amqp_vhost'
@@ -258,17 +240,23 @@ cd ioppytest
 make build-all
 ```
 
-## (opt 2.5) Run testing tool (CoAP testing tool example)
+## (opt 2.5) Running the testing tool (CoAP testing tool example)
+
+This runs the docker containers needed for running the tests.
 ```
 make run-coap-testing-tool
 ```
 
-## (opt 2.6) Connect to the interop session using the CLI
+## (opt 2.6) Talking to the testing tool (CLI)
+
+This runs the `ioppytest-cli` which enables you to get info from testing tool, but also to input information.
+E.g. ask to the testing tool __get the current state of the test__, __get table of all executed tests and verdicts__, etc
+
 ```
 make run-cli
 ```
 
-## (opt 2.7) Connect the agent to the backend
+## (opt 2.7) Connecting to the VPN (agent)
 
 if user's IUT is a CoAP client:
 
@@ -282,21 +270,24 @@ if user's IUT is a CoAP server:
 make run-agent-coap-server
 ```
 
-## (opt 2.8) Running a second IUT
+## (opt 2.8) Running the second IUT
 
-### (opt 2.8.1) User to user session, second user with his/her own IUT
+We have two options for running the second IUT. 
+Either we test against agains an IUT driven by a second user (user-to-user interop session,
+or we test against an IUT which is automated (single-user session). Second IUT then is 
+driven automatically by some python driver code (special integration required).
+
+### (opt 2.8.1) User to user session.
 
 The second IUT needs to connect to the same VHOST the same way first IUT
-did. For this the RMQ broker needs to be reachable by this second IUT
- (and it's agent instance).
+did. For this user 2 should just export the same environment
+variables, launch agent, and CLI as user 1 did. 
 
-If this is the case then user 2 should just export the same environment
- variables as user 1, and launch agent, and CLI just as user 1 did.
+See intructions from 2.2 to 2.7.
 
-### (opt 2.8.2) Single user session, against an automated-IUT
+### (opt 2.8.2) Single user session ( testing against an automated-IUT).
 
- If the user wants to run test against one of the automated-IUT
- (~reference implementation) supported by ioppytest:
+ If the user wants to run interop tests against one of the automated-IUT supported by ioppytest:
 
 ```
 make run-coap-server
@@ -308,6 +299,8 @@ or for a coap client automated implementation:
 make run-coap-client
 ```
 
+This two calls automated the "reference implementations" used by `ioppytest`. 
+For further testing against other automated-IUT please contact  
 
 ## (opt 2.9) Running the interop session
 
@@ -404,7 +397,7 @@ FAQ
 - I have my own CoAP implementation, how can I add it as an
 automated-IUT into CoAP Testing Tool:
 
-    please contact federico<dot>sismondi<at>inria<dot>fr
+    please contact me, see contact at bottom of doc.
 
 
 - Docker build returns a "cannot fetch package" or a "cannot resolve .."
@@ -412,3 +405,9 @@ automated-IUT into CoAP Testing Tool:
     try using ```--no-cache``` for the docker build
 
     more info http://stackoverflow.com/questions/24991136/docker-build-could-not-resolve-archive-ubuntu-com-apt-get-fails-to-install-a
+
+
+Contact:
+--------
+
+federicosismondi<at>gmail<dot>com (recommended)
