@@ -573,8 +573,13 @@ def main():
     # # # # # # # # # # # # # # # # # #   GET SESSION INFO AND USER STUFF # # # # # # # # # # # # # # # # # # # # # # #
 
     # get config from UI
-    session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
-    logger.info("Got session configuration reply from UI")
+
+    try:
+        session_configuration = get_session_configuration_from_ui(amqp_message_publisher)
+        logger.info("Got session configuration reply from UI")
+    except AmqpSynchCallTimeoutError:
+        logger.error("Failed to get session configuration from UI due to response TIMEOUT. GUI-Adaptor will stop now..")
+        sys.exit(1)
 
     # get list of all users which are online
     online_users = get_current_users_online(amqp_message_publisher)
