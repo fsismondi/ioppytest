@@ -277,7 +277,7 @@ class UserMock(threading.Thread):
 
         publish_message(self.connection, MsgTestingToolComponentReady(component=self.component_id))
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.basic_consume(self.on_request, queue=queue_name)
+        self.channel.basic_consume(on_message_callback=self.on_request, queue=queue_name)
 
     def _init_logger(self):
         logger_id = self.component_id

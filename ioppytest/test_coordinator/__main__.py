@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
 
         # bind on_ready_signal callback to signals queue
-        channel.basic_consume(on_ready_signal,
+        channel.basic_consume(on_message_callback=on_ready_signal,
                               no_ack=False,
                               queue='bootstrapping')
         logger.info('Waiting components ready signal... signals not checked:' + str(TT_check_list))

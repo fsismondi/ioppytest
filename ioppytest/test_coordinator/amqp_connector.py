@@ -120,11 +120,11 @@ class CoordinatorAmqpInterface:
                                     queue=self.events_q_name,
                                     routing_key=msg.routing_key)
 
-        self.channel.basic_consume(self.handle_service,
+        self.channel.basic_consume(on_message_callback=self.handle_service,
                                    queue=self.requests_replies_q_name,
                                    no_ack=False)
 
-        self.channel.basic_consume(self.handle_control,
+        self.channel.basic_consume(on_message_callback=self.handle_control,
                                    queue=self.events_q_name,
                                    no_ack=False)
 

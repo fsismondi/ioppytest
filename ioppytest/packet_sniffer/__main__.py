@@ -86,7 +86,7 @@ class Sniffer:
                                         routing_key=t)
 
                 self.channel.basic_qos(prefetch_count=1)
-                self.channel.basic_consume(self.on_request, queue='services_queue@%s' % self.COMPONENT_ID)
+                self.channel.basic_consume(on_message_callback=self.on_request, queue='services_queue@%s' % self.COMPONENT_ID)
 
         except pika.exceptions.ConnectionClosed:
             self.logger.error(' AMQP cannot be established, is message broker up? \n More: %s' % traceback.format_exc())

@@ -91,7 +91,7 @@ class PacketRouter(threading.Thread):
                                     routing_key=t)
 
             self.channel.basic_qos(prefetch_count=1)
-            self.channel.basic_consume(self._on_request, queue='services_queue@%s' % COMPONENT_ID)
+            self.channel.basic_consume(on_message_callback=self._on_request, queue='services_queue@%s' % COMPONENT_ID)
 
         # handle subscriptions for routing table declarations
         for src_rkey, dst_rkey_list in self.routing_table.items():
@@ -110,7 +110,7 @@ class PacketRouter(threading.Thread):
                                     routing_key=src_rkey)
 
             # bind all src queues to _on_request callback
-            self.channel.basic_consume(self._on_request, queue=src_queue)
+            self.channel.basic_consume(on_message_callback=self._on_request, queue=src_queue)
 
     def stop(self):
 
