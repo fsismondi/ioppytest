@@ -1,4 +1,4 @@
 art
 pika
-PyYAML==3.12
+PyYAML==5.1
 ioppytest-utils
